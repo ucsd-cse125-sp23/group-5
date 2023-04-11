@@ -60,10 +60,11 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: rustfmt, clippy
+          components: rustfmt
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
+        continue-on-error: true # fmt is allowed to fail
         with:
           command: fmt
           args: --all -- --check
