@@ -1,6 +1,5 @@
-
-use common::add;
 use client::run;
+use common::add;
 fn main() {
     println!("Client: Hello, world!");
 

@@ -1,5 +1,5 @@
-use std::sync::{Arc, mpsc, Mutex};
 use std::sync::mpsc::Receiver;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 use log::debug;
@@ -13,7 +13,6 @@ pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: Option<mpsc::Sender<Job>>,
 }
-
 
 /// A job is a boxed closure that can be executed by a worker thread.
 type Job = Box<dyn FnOnce() + Send + 'static>;
@@ -70,8 +69,8 @@ impl ThreadPool {
     /// pool.execute(|| println!("Hello from a worker thread!"));
     /// ```
     pub fn execute<F>(&self, f: F)
-        where
-            F: FnOnce() + Send + 'static,
+    where
+        F: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
 
@@ -95,8 +94,6 @@ impl Drop for ThreadPool {
         }
     }
 }
-
-
 
 impl Worker {
     /// Creates a new Worker with the given identifier and receiver.

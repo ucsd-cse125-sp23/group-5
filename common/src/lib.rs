@@ -1,3 +1,6 @@
+mod communication;
+mod core;
+
 /// Example of a common function
 /// # Arguments
 /// * `left` - The left side of the addition
