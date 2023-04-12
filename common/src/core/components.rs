@@ -1,6 +1,7 @@
 use glam::{Quat, Vec3};
 use serde::{Deserialize, Serialize};
 
+/// A component that represents the position, rotation, and scale of an entity.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transform {
     pub translation: Vec3,
@@ -48,6 +49,7 @@ impl Transform {
     }
 }
 
+/// A component that represents the physics of an entity.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Physics {
     pub velocity: Vec3,

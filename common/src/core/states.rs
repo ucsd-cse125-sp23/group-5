@@ -2,26 +2,25 @@ use crate::core::components::{Physics, Transform};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-struct PlayerState {
-    id: usize,
-    transform: Transform,
-    physics: Physics,
+pub struct PlayerState {
+    pub id: usize,
+    pub transform: Transform,
+    pub physics: Physics,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-struct WorldState {}
+pub struct WorldState {}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-struct GameState {
-    world: WorldState,
-    players: Vec<PlayerState>,
+pub struct GameState {
+    pub world: WorldState,
+    pub players: Vec<PlayerState>,
 }
 
 mod tests {
-    use super::*;
-
     #[test]
     fn test_default() {
+        use super::*;
         let state = GameState {
             world: WorldState::default(),
             players: vec![PlayerState::default()],
@@ -31,6 +30,7 @@ mod tests {
 
     #[test]
     fn test_serialize_and_deserialize() {
+        use super::*;
         let state = GameState {
             world: WorldState::default(),
             players: vec![PlayerState::default()],

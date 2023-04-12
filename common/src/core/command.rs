@@ -1,17 +1,24 @@
 use glam::Quat;
+use serde::{Deserialize, Serialize};
 
-enum MoveDirection {
+/// Direction of the movement
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MoveDirection {
     Forward,
     Backward,
     Left,
     Right,
 }
 
-enum GameAction {
+/// Game actions that can be performed by the player
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum GameAction {
     Attack,
 }
 
-enum Command {
+/// Commands that can be issued by the client
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Command {
     Spawn,
     Move(MoveDirection),
     Turn(Quat),
