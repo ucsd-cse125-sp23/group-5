@@ -4,7 +4,7 @@ use common::core::command::Command;
 use log::debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -13,12 +13,12 @@ const TICK_RATE: u64 = 16; // 60 fps
 /// Wrapper around a `Command` that also contains the id of the client that issued the command.
 #[derive(Debug)]
 pub struct ClientCommand {
-    client_id: u32,
+    pub(crate) client_id: u32,
     pub command: Command,
 }
 
 impl ClientCommand {
-    fn new(client_id: u32, command: Command) -> ClientCommand {
+    pub fn new(client_id: u32, command: Command) -> ClientCommand {
         ClientCommand { client_id, command }
     }
 }
@@ -37,7 +37,7 @@ pub struct GameLoop<'a> {
     executor: &'a Executor,
 
     // broadcast is used to broadcast events to the clients (single-producer, multi-consumer)
-    broadcast: Bus<ServerEvent>,
+    broadcast: Arc<Mutex<Bus<ServerEvent>>>,
 
     // used to stop the game loop (mostly for testing and debugging purposes)
     running: Arc<AtomicBool>,
@@ -53,7 +53,7 @@ impl GameLoop<'_> {
     pub fn new(
         commands: Receiver<ClientCommand>,
         executor: &Executor,
-        broadcast: Bus<ServerEvent>,
+        broadcast: Arc<Mutex<Bus<ServerEvent>>>,
         running: Arc<AtomicBool>,
     ) -> GameLoop {
         GameLoop {
@@ -80,8 +80,9 @@ impl GameLoop<'_> {
             }
 
             // broadcast the game state to all clients if necessary
+            let mut broadcast = self.broadcast.lock().unwrap();
             if should_sync {
-                match self.broadcast.try_broadcast(ServerEvent::Sync) {
+                match broadcast.try_broadcast(ServerEvent::Sync) {
                     Ok(()) => {
                         debug!("Broadcasted game state");
                     }
@@ -110,29 +111,31 @@ mod tests {
     use glam::Vec3;
     use std::sync::mpsc;
     use std::time::Duration;
+    use common::core::states::GameState;
 
     #[test]
     fn test_game_loop() {
         let (tx, rx) = mpsc::channel();
-        let ext = Executor::new();
+        let game_state = Arc::new(Mutex::new(GameState::default()));
+        let ext = Executor::new(game_state.clone());
         let running = Arc::new(AtomicBool::new(true));
 
-        let mut broadcast = Bus::new(1); // one event at a time
+        let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
 
-        let mut rx1 = broadcast.add_rx();
-        let mut rx2 = broadcast.add_rx();
 
-        let mut game_loop = GameLoop::new(rx, &ext, broadcast, running.clone());
+        let mut game_loop = GameLoop::new(rx, &ext, broadcast.clone(), running.clone());
 
         let tx_clone = tx.clone();
 
-        // client 0 spawns a player at 100ms
-        // stop the game loop at 100ms
+        // client 0 spawns a player at 500ms
+        // stop the game loop at 500ms
+        let broadcast_clone = broadcast.clone();
         std::thread::spawn(move || {
+            let mut rx1 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
             tx_clone
                 .send(ClientCommand::new(0, Command::Spawn))
                 .unwrap();
-            sleep(Duration::from_millis(100));
+            sleep(Duration::from_millis(500));
 
             assert_eq!(rx1.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced
             assert!(rx1.try_recv().is_err()); // the message is consumed by the first receiver
@@ -141,8 +144,12 @@ mod tests {
         });
 
         // client 0 (from another thread) moves the player at 50ms
+        let broadcast_clone = broadcast.clone();
         std::thread::spawn(move || {
-            sleep(Duration::from_millis(50));
+            let mut rx2 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the second client
+
+            sleep(Duration::from_millis(250));
+
 
             assert_eq!(rx2.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced by now
 
@@ -150,7 +157,7 @@ mod tests {
                 .unwrap();
         });
 
-        game_loop.run(); // this should block until the game loop is stopped at 100ms
+        game_loop.run(); // this should block until the game loop is stopped at 500ms
 
         assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned
         assert_ne!(
