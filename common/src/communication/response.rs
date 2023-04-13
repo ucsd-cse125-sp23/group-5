@@ -1,15 +1,23 @@
 // using SystemTime instead?
 use std::time::{Duration};
+use std::convert::From;
+use std::hash::Hasher;
+use std::io::{self, Read, Write};
+use std::net::{SocketAddr, TcpStream};
 
-// server to client interaction: "response"
-// potential improvement: replace data type of VirtualKey Code?
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use crate::communication::commons::*;
 
+/// Response object (server -> client)
 #[derive(Debug)]
 pub struct Response(
     /* Response Format
-         client_id | timestamp(Duration) | game_state(json) |
+         client_id |/ timestamp(Duration) |/ game_state(json) \~|
+         inter-msg delimiter: "|/"
+         final delimiter: "\~|"
      */
-    pub String);
+    pub String
+);
 
 impl Response {
     /// Create a new response with a given message
@@ -29,9 +37,8 @@ impl Serialize for Response {
     /// Returns the number of bytes written
     fn serialize(&self, buf: &mut impl Write) -> io::Result<usize> {
         let resp_bytes = self.0.as_bytes();
-        buf.write_u16::<NetworkEndian>(resp_bytes.len() as u16)?;
         buf.write_all(&resp_bytes)?;
-        Ok(3 + resp_bytes.len()) // Type + len + bytes
+        Ok(resp_bytes.len()) // Type + len + bytes
     }
 }
 
@@ -42,6 +49,4 @@ impl Deserialize for Response {
         let value = extract_string(&mut buf)?;
         Ok(Response(value))
     }
-}
-
 }

@@ -11,8 +11,9 @@ use crate::communication::commons::*;
 #[derive(Debug)]
 pub struct Request (
     /* Request Format
-         client_id(u8) | event | delimiter
-         delimiter: "\~|"
+         client_id(u8) |/ event \~|
+         inter-msg delimiter: "|/"
+         final delimiter: "\~|"
      */
     pub String
 );

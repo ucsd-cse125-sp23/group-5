@@ -7,6 +7,8 @@ use std::net::{SocketAddr, TcpStream};
 
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 
+pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
+
 /// Trait for something that can be converted to bytes (&[u8])
 pub trait Serialize {
     /// Serialize to a `Write`able buffer
@@ -21,8 +23,46 @@ pub trait Deserialize {
     fn deserialize(buf: &mut impl Read) -> io::Result<Self::Output>;
 }
 
+/// Abstracted Protocol that wraps a TcpStream and manages
+/// sending & receiving of messages
+pub struct Protocol {
+    reader: io::BufReader<TcpStream>,
+    stream: TcpStream,
+}
+
+impl Protocol {
+    /// Wrap a TcpStream with Protocol
+    pub fn with_stream(stream: TcpStream) -> io::Result<Self> {
+        Ok(Self {
+            reader: io::BufReader::new(stream.try_clone()?),
+            stream,
+        })
+    }
+
+    /// Establish a connection, wrap stream in BufReader/Writer
+    pub fn connect(dest: SocketAddr) -> io::Result<Self> {
+        let stream = TcpStream::connect(dest)?;
+        eprintln!("Connecting to {}", dest);
+        Self::with_stream(stream)
+    }
+
+    /// Serialize a message to the server and write it to the TcpStream
+    pub fn send_message(&mut self, message: &impl Serialize) -> io::Result<()> {
+        message.serialize(&mut self.stream)?;
+        self.stream.flush()
+    }
+
+    /// Read a message from the inner TcpStream
+    ///
+    /// NOTE: Will block until there's data to read (or deserialize fails with io::ErrorKind::Interrupted)
+    ///       so only use when a message is expected to arrive
+    pub fn read_message<T: Deserialize>(&mut self) -> io::Result<T::Output> {
+        T::deserialize(&mut self.reader)
+    }
+}
+
 /// From a given readable buffer, read the next length (u16) and extract the string bytes
-fn extract_string(buf: &mut impl Read) -> io::Result<String> {
+pub fn extract_string(buf: &mut impl Read) -> io::Result<String> {
     // byteorder ReadBytesExt
     let length = buf.read_u16::<NetworkEndian>()?;
     // Given the length of our string, only read in that quantity of bytes
@@ -31,54 +71,3 @@ fn extract_string(buf: &mut impl Read) -> io::Result<String> {
     // And attempt to decode it as UTF8
     String::from_utf8(bytes).map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid utf8"))
 }
-
-
-// const BUF_SIZE : usize = 1024;
-//
-// pub fn req_to_byte(req: Request, buffer: &mut [u8]) {
-//     buffer[0] = req.client_id;
-//
-//     let byte_array = req.data.as_bytes();
-//     let size = byte_array.len();
-//     for i in 1..size {
-//         buffer[i] = byte_array[i-1];
-//     };
-//     buffer[1+size] = b'\\';
-//     buffer[2+size] = b'~';
-//     buffer[3+size] = b'|';
-// }
-//
-// pub fn resp_to_byte(resp: Response, buffer: &mut [u8]) {
-//     buffer[0] = resp.client_id;
-//
-//     let mut count = 1;
-//
-//     let byte_ts_arr:[u8; 16] = resp.timestamp.as_nanos().to_be_bytes();
-//     for i in 0..15 {
-//         buffer[count] = byte_ts_arr[i];
-//         count += 1;
-//     }
-//
-//     let byte_array = resp.data.as_bytes();
-//     let size = byte_array.len();
-//     for i in 0..size-1 {
-//         buffer[count] = byte_array[i];
-//         count += 1;
-//     };
-//     buffer[count] = b'\\';
-//     buffer[count+1] = b'~';
-//     buffer[count+2] = b'|';
-// }
-//
-// pub fn byte_to_req(buffer: &[u8], req: &mut Request) {
-//     (*req).client_id = buffer[0];
-//     let byte_array: &[u8; ] = [0; buffer.len()];
-//     for i in 1..buffer.len() {
-//         (*req).data
-//     }
-//
-// }
-//
-// pub fn byte_to_resp() {
-//
-// }

@@ -1,10 +1,12 @@
+use std::io::{self,prelude::*,BufReader,Write};
+use std::str;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
+    window::{Window, WindowBuilder},
 };
 
-pub async fn run() {
+pub async fn run(){
     env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
@@ -21,11 +23,11 @@ pub async fn run() {
                     WindowEvent::CloseRequested
                     | WindowEvent::KeyboardInput {
                         input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
+                        KeyboardInput {
+                            state: ElementState::Pressed,
+                            virtual_keycode: Some(VirtualKeyCode::Escape),
+                            ..
+                        },
                         ..
                     } => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(physical_size) => {
@@ -60,7 +62,6 @@ pub async fn run() {
     });
 }
 
-use winit::window::Window;
 
 struct State {
     surface: wgpu::Surface,
