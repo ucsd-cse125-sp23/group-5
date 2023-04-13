@@ -8,7 +8,7 @@ use common::core::states::GameState;
 use server::executor::Executor;
 use server::game_loop::{ClientCommand, GameLoop, ServerEvent};
 
-use server::thread_pool::ThreadPool;
+use threadpool::ThreadPool;
 
 fn main() {
     env_logger::init();
