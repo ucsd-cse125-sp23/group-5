@@ -16,3 +16,5 @@ env_logger = "0.10"
 log = "0.4"
 wgpu = "0.15"
 pollster = "0.3.0"
+bytemuck = { version = "1.12", features = [ "derive" ] }
+cgmath = "0.18"
