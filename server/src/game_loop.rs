@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-const TICK_RATE: u64 = 16; // 60 fps
+const TICK_RATE: u64 = 30; // 30 fps
 
 /// Wrapper around a `Command` that also contains the id of the client that issued the command.
 #[derive(Debug)]
@@ -68,6 +68,7 @@ impl GameLoop<'_> {
     pub fn run(&mut self) {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
+            
             let mut should_sync = false; // whether we should sync the game state to the clients
 
             // consume all messages in the channel
