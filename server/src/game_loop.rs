@@ -26,7 +26,7 @@ impl ClientCommand {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ServerEvent {
     Sync, // ask for a sync of game state
-    // ... other events like play sound or spawn particle
+          // ... other events like play sound or spawn particle
 }
 
 pub struct GameLoop<'a> {
@@ -68,7 +68,7 @@ impl GameLoop<'_> {
     pub fn run(&mut self) {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
-            
+
             let mut should_sync = false; // whether we should sync the game state to the clients
 
             // consume all messages in the channel
@@ -109,10 +109,10 @@ impl GameLoop<'_> {
 mod tests {
     use super::*;
     use common::core::command::MoveDirection;
+    use common::core::states::GameState;
     use glam::Vec3;
     use std::sync::mpsc;
     use std::time::Duration;
-    use common::core::states::GameState;
 
     #[test]
     fn test_game_loop() {
@@ -122,7 +122,6 @@ mod tests {
         let running = Arc::new(AtomicBool::new(true));
 
         let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
-
 
         let mut game_loop = GameLoop::new(rx, &ext, broadcast.clone(), running.clone());
 
@@ -150,7 +149,6 @@ mod tests {
             let mut rx2 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the second client
 
             sleep(Duration::from_millis(250));
-
 
             assert_eq!(rx2.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced by now
 

@@ -1,13 +1,18 @@
-use std::{io::{prelude::*, BufReader}, net::{TcpListener, TcpStream}, thread};
-use std::io::BufWriter;
-use std::sync::{Arc, mpsc, Mutex};
-use std::sync::atomic::AtomicBool;
 use bus::Bus;
-use common::core::command::Command;
 use common::core::states::GameState;
+use log::debug;
 use server::executor::Executor;
 use server::game_loop::{ClientCommand, GameLoop, ServerEvent};
+use std::sync::atomic::AtomicBool;
+use std::sync::{mpsc, Arc, Mutex};
+use std::{
+    io::{prelude::*},
+    net::{TcpListener, TcpStream},
+    thread,
+};
 
+use common::communication::commons::{Protocol, DEFAULT_SERVER_ADDR};
+use common::communication::message::{HostRole, Message, Payload};
 use threadpool::ThreadPool;
 
 fn main() {
@@ -16,12 +21,11 @@ fn main() {
     let (tx, rx) = mpsc::channel();
     let game_state = Arc::new(Mutex::new(GameState::default()));
     let ext = Executor::new(game_state.clone());
-    let running = Arc::new(AtomicBool::new(true));
 
+    let running = Arc::new(AtomicBool::new(true));
     let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
 
-
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let listener = TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap();
     let pool = ThreadPool::new(4);
 
     let mut broadcast_clone = broadcast.clone();
@@ -29,49 +33,55 @@ fn main() {
         let mut game_loop = GameLoop::new(rx, &ext, broadcast_clone, running.clone());
         game_loop.run();
     });
-    let mut client_id = 0;
     for stream in listener.incoming() {
         let stream = stream.unwrap();
+        debug!("New client connected");
         let tx = tx.clone();
         let broadcast_clone = broadcast.clone();
         let game_state = game_state.clone();
         pool.execute(move || {
             let mut rx = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
+            let mut protocol = Protocol::with_stream(stream).unwrap();
 
-            let read_stream = stream.try_clone().expect("Failed to clone stream");
-            let write_stream = stream;
-
-            // Create a BufReader and BufWriter
-            let reader = BufReader::new(read_stream);
-            let mut writer = BufWriter::new(write_stream);
-
-            // Spawn a thread to handle reading from the stream
+            // need to clone the protocol to be able to read and write from different threads
+            let mut protocol_clone = protocol.try_clone().unwrap();
             let read_handle = thread::spawn(move || {
-                for line in reader.lines() {
-                    let line = line.unwrap();
-                    // Parse command from JSON
-                    let command: Command = serde_json::from_str(&line).unwrap();
-                    tx.send(ClientCommand::new(client_id, command)).unwrap();
+                // TODO: handle disconnection and errors
+                while let Ok(msg) = protocol_clone.read_message::<Message>() {
+                    match msg {
+                        Message {
+                            host_role: HostRole::Client(client_id),
+                            payload,
+                            ..
+                        } => match payload {
+                            Payload::Command(command) => {
+                                tx.send(ClientCommand::new(client_id.into(), command))
+                                    .unwrap();
+                            }
+                            Payload::Ping => {
+                                protocol_clone
+                                    .send_message(&Message::new(HostRole::Server, Payload::Ping))
+                                    .unwrap();
+                            }
+                            _ => {}
+                        },
+                        _ => {}
+                    }
                 }
             });
 
-            // Spawn a thread to handle writing to the stream
             let write_handle = thread::spawn(move || {
                 while let Ok(ServerEvent::Sync) = rx.recv() {
-
-                    // Serialize the message as JSON and write it to the stream
                     let game_state = game_state.lock().unwrap();
-                    let game_state_json = serde_json::to_string(&*game_state).unwrap();
-                    writeln!(&mut writer, "{}", game_state_json).unwrap();
-                    writer.flush().unwrap();
+                    protocol
+                        .send_message(&Message::new(
+                            HostRole::Server,
+                            Payload::StateSync(game_state.clone()),
+                        ))
+                        .unwrap();
                 }
             });
-
-            // Wait for the read and write threads to finish
-            read_handle.join().unwrap();
-            write_handle.join().unwrap();
         });
-        client_id += 1;
     }
 }
 
