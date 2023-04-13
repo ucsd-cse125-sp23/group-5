@@ -73,6 +73,7 @@ pub async fn run() {
 struct Vertex {
     position: [f32; 3],
     color: [f32; 3],
+    normal: [f32; 3],
 }
 
 // const VERTICES: &[Vertex] = &[
@@ -87,94 +88,92 @@ struct Vertex {
 //     0, 3, 2,
 // ];
 
+#[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-0.5, -0.5, 0.5],
-        color: [0.5, 0.5, 0.5],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.5],
-        color: [0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, 0.5],
-        color: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, 0.5],
-        color: [0.0, 1.0, 1.0],
-    },
-    Vertex {
-        position: [-0.5, -0.5, -0.5],
-        color: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, -0.5],
-        color: [1.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, -0.5],
-        color: [1.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, -0.5],
-        color: [1.0, 1.0, 1.0],
-    },
-    // for inverted hull
-    Vertex {
-        position: [-0.52, -0.52, 0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.52, -0.52, 0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.52, 0.52, 0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.52, 0.52, 0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.52, -0.52, -0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.52, -0.52, -0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.52, 0.52, -0.52],
-        color: [0.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [-0.52, 0.52, -0.52],
-        color: [0.0, 0.0, 0.0],
-    },
+    // Front face
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.5, 0.5, 0.5], normal: [0.0, 0.0,  1.0],},
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0,  1.0],},
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0,  1.0],},
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0], normal: [0.0, 0.0,  1.0],},
+    // Back face
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0], normal: [0.0, 0.0, -1.0],},
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 1.0], normal: [0.0, 0.0, -1.0],},
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0], normal: [0.0, 0.0, -1.0],},
+    // Right face
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [ 1.0, 0.0, 0.0],},
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0], normal: [ 1.0, 0.0, 0.0],},
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
+    // Top face
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0], normal: [0.0,  1.0, 0.0],},
+    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0,  1.0, 0.0],},
+    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0], normal: [0.0,  1.0, 0.0],},
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 1.0], normal: [0.0,  1.0, 0.0],},
+    // Left face
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.5, 0.5, 0.5], normal: [-1.0, 0.0, 0.0],},
+    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0], normal: [-1.0, 0.0, 0.0],},
+    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 1.0], normal: [-1.0, 0.0, 0.0],},
+    // Bottom face
+    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
+    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0],},
+    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0],},
+    Vertex { position: [-0.5, -0.5,  0.5], color: [0.5, 0.5, 0.5], normal: [0.0, -1.0, 0.0],},
+    //Inverted Hull
+    // Front face
+    Vertex { position: [-0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
+    Vertex { position: [ 0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
+    Vertex { position: [ 0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
+    Vertex { position: [-0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
+    // Back face
+    Vertex { position: [ 0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
+    Vertex { position: [-0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
+    Vertex { position: [-0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
+    Vertex { position: [ 0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
+    // Right face
+    Vertex { position: [ 0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
+    Vertex { position: [ 0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
+    Vertex { position: [ 0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
+    Vertex { position: [ 0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
+    // Top face
+    Vertex { position: [-0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
+    Vertex { position: [ 0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
+    Vertex { position: [ 0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
+    Vertex { position: [-0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
+    // Left face
+    Vertex { position: [-0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
+    Vertex { position: [-0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
+    Vertex { position: [-0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
+    Vertex { position: [-0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
+    // Bottom face
+    Vertex { position: [-0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
+    Vertex { position: [ 0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
+    Vertex { position: [ 0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
+    Vertex { position: [-0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
 ];
 
+#[rustfmt::skip]
 const INDICES: &[u16] = &[
-    // front face
-    0, 1, 2, 0, 2, 3, // right face
-    1, 5, 6, 1, 6, 2, // top face
-    3, 2, 6, 3, 6, 7, // left face
-    0, 3, 7, 0, 7, 4, // bottom face
-    0, 4, 5, 0, 5, 1, // back face
-    4, 6, 5, 4, 7, 6, // inverted hull
-    // front face
-    10, 9, 8, 11, 10, 8, // right face
-    14, 13, 9, 10, 14, 9, // top face
-    14, 10, 11, 15, 14, 11, // left face
-    15, 11, 8, 12, 15, 8, // bottom face
-    13, 12, 8, 9, 13, 8, // back face
-    13, 14, 12, 14, 15, 12,
+    // Original
+    0,  1,  2,  0,  2,  3, // front
+    4,  5,  6,  4,  6,  7, // back
+    8,  9, 10,  8, 10, 11, // right
+    12, 13, 14, 12, 14, 15, // top
+    16, 17, 18, 16, 18, 19, // left
+    20, 21, 22, 20, 22, 23, // bottom
+    // Inverted hull
+    26, 25, 24, 27, 26, 24, // front
+    30, 29, 28, 31, 30, 28, // back
+    34, 33, 32, 35, 34, 32, // right
+    38, 37, 36, 39, 38, 36, // top
+    42, 41, 40, 43, 42, 40, // left
+    46, 45, 44, 47, 46, 44, // bottom
 ];
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] =
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+    const ATTRIBS: [wgpu::VertexAttribute; 3] =
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x3];
 
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
@@ -294,7 +293,7 @@ impl State {
         let camera = camera::Camera::new(
             // position the camera one unit up and 2 units back
             // +z is out of the screen
-            glm::vec3(3.0, 3.0, -3.0),
+            glm::vec3(3.0, 3.0, 3.0),
             // have it look at the origin
             glm::vec3(0.0, 0.0, 0.0),
             // which way is "up"
@@ -482,7 +481,8 @@ impl State {
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            render_pass.draw_indexed(0..12 * 3, 0, 0..1); // interior
+            render_pass.draw_indexed(12 * 3..self.num_indices, 0, 0..1); // hull
         }
 
         // submit will accept anything that implements IntoIter
