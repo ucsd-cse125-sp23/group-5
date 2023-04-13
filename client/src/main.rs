@@ -1,5 +1,7 @@
 use std::io::{self,prelude::*,BufReader,Write};
 use std::{str, thread};
+use std::sync::{Arc, mpsc, Mutex};
+use std::sync::atomic::AtomicBool;
 use std::net::SocketAddr;
 use std::net::TcpStream;
 use winit::{
@@ -8,13 +10,15 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use client::run;
+use client::event_loop::run;
 use common::communication::commons::*;
 use common::communication::request::Request;
 use common::communication::response::Response;
 
 fn main(){
     env_logger::init();
+    //let (tx, rx) = mpsc::channel();
+
     let server_details = DEFAULT_SERVER_ADDR;
     let dest: SocketAddr = server_details.parse().expect("server details parse fails");
 

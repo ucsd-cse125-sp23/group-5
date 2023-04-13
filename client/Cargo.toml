@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 common = { path = "../common" }
+server = { path = "../server" }
 winit = "0.28.3"
 env_logger = "0.10"
 log = "0.4"
