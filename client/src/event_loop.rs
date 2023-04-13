@@ -1,19 +1,18 @@
-use std::io::{self,prelude::*,BufReader,Write};
+use log::debug;
+use std::io::{self, prelude::*, BufReader, Write};
 use std::str;
-use std::sync::mpsc::{Receiver, Sender, SendError};
+use std::sync::mpsc::{Receiver, SendError, Sender};
+use std::sync::{mpsc, Arc, Mutex};
+use winit::event::Event::WindowEvent;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
-use std::sync::{Arc, mpsc, Mutex};
-use log::debug;
-
 
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
-    commands: Sender<VirtualKeyCode>,
-
+    commands: Sender<KeyboardInput>,
 }
 
 impl PlayerLoop {
@@ -21,12 +20,8 @@ impl PlayerLoop {
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
     /// * `running` - used to stop the game loop (mostly for testing and debugging purposes)
-    pub fn new(
-        commands: Sender<VirtualKeyCode>,
-    ) -> PlayerLoop {
-        PlayerLoop {
-            commands,
-        }
+    pub fn new(commands: Sender<KeyboardInput>) -> PlayerLoop {
+        PlayerLoop { commands }
     }
 
     /// Starts the game loop.
@@ -45,13 +40,14 @@ impl PlayerLoop {
             } if window_id == state.window.id() => {
                 if !state.input(event) {
                     match event {
-                        WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
+                        WindowEvent::CloseRequested
+                        | WindowEvent::KeyboardInput {
                             input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                },
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput {
@@ -98,7 +94,6 @@ impl PlayerLoop {
         });
     }
 }
-
 
 struct State {
     surface: wgpu::Surface,

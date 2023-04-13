@@ -1,21 +1,21 @@
-use std::io::{self,prelude::*,BufReader,Write};
-use std::{str, thread};
-use std::sync::{Arc, mpsc, Mutex};
-use std::sync::atomic::AtomicBool;
+use std::io::{self, prelude::*, BufReader, Write};
 use std::net::SocketAddr;
 use std::net::TcpStream;
+use std::sync::atomic::AtomicBool;
+use std::sync::{mpsc, Arc, Mutex};
+use std::{str, thread};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
-use client::event_loop::{PlayerLoop, run};
+use client::event_loop::{run, PlayerLoop};
 use common::communication::commons::*;
-use common::communication::request::Request;
+use common::communication::message::Message;
 use common::communication::response::Response;
 
-fn main(){
+fn main() {
     env_logger::init();
     let (tx, rx) = mpsc::channel();
 
@@ -44,14 +44,13 @@ fn main(){
             }
             input.virtual_keycode;
             // 2. construct string
-            let mut req = Request::new(input);
+            let mut req = Message::new(input);
             // 3. send to server
             conn.send_message(&req).expect("send to server fails");
         }
         // check for new state
         let new = conn.read_message::<Response>().unwrap();
         // update local game state
-
 
         // render world
     }

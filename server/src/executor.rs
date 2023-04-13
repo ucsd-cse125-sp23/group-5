@@ -1,10 +1,10 @@
 use crate::game_loop::ClientCommand;
 use common::core::command::{Command, MoveDirection};
 use common::core::states::{GameState, PlayerState};
+use glam::Vec2;
 use log::debug;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
-use glam::Vec2;
 
 /// Executor is a struct that is used to execute a command issued by a client.
 /// It maintains the state of the game and is responsible for updating it.
@@ -23,9 +23,7 @@ impl Executor {
     /// let game_state = Arc::new(Mutex::new(GameState::default()));
     /// let executor = Executor::new(game_state);
     pub fn new(game_state: Arc<Mutex<GameState>>) -> Executor {
-        Executor {
-            game_state,
-        }
+        Executor { game_state }
     }
 
     /// Executes a command issued by a client.
@@ -44,7 +42,6 @@ impl Executor {
                 });
             }
             Command::Move(dir) => {
-
                 let delta_vec = match dir {
                     MoveDirection::Forward => Vec2::new(0.0, 1.0),
                     MoveDirection::Backward => Vec2::new(0.0, -1.0),
@@ -52,7 +49,7 @@ impl Executor {
                     MoveDirection::Right => Vec2::new(1.0, 0.0),
                 };
 
-                game_state.players[client_command.client_id as usize]
+                game_state.players[client_command.client_id as usize - 1]
                     .transform
                     .translation += delta_vec.extend(0.0)
             }
@@ -61,5 +58,7 @@ impl Executor {
     }
 
     /// get a clone of the game state
-    pub fn game_state(&self) -> GameState { self.game_state.lock().unwrap().clone() }
+    pub fn game_state(&self) -> GameState {
+        self.game_state.lock().unwrap().clone()
+    }
 }
