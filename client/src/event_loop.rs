@@ -8,22 +8,21 @@ use winit::{
 };
 use std::sync::{Arc, mpsc, Mutex};
 use log::debug;
-use winit::event::Event::WindowEvent;
 
 
-pub struct PlayerLoop<'a> {
+pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
-    commands: Sender<KeyboardInput>,
+    commands: Sender<VirtualKeyCode>,
 
 }
 
-impl PlayerLoop<'_> {
+impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
     /// * `running` - used to stop the game loop (mostly for testing and debugging purposes)
     pub fn new(
-        commands: Sender<KeyboardInput>,
+        commands: Sender<VirtualKeyCode>,
     ) -> PlayerLoop {
         PlayerLoop {
             commands,
@@ -55,8 +54,16 @@ impl PlayerLoop<'_> {
                             },
                             ..
                         } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput { input } => {
-                            self.commands.send(input).expect("Failed to send input");
+                        WindowEvent::KeyboardInput {
+                            input:
+                            KeyboardInput{
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(..),
+                                ..
+                            },
+                            ..
+                        } => {
+                            self.commands.send(*input).expect("Failed to send input");
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);

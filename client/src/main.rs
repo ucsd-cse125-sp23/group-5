@@ -32,8 +32,17 @@ fn main(){
     loop {
         // get input from event
         let rx_clone = rx.clone();
-        while let Ok(event) = rx_clone.recv() {
+        while let Ok(WindowEvent::KeyboardInput(input, ..)) = rx_clone.recv() {
+            let mut keystr= String::new();
             // 1. parser from event to String
+            if let Some(keycode) = input.virtual_keycode {
+                if input.state == ElementState::Pressed {
+                    if let Some(keychar) = keycode.char() {
+                        let keystr = keychar.to_string();
+                    }
+                }
+            }
+            input.virtual_keycode;
             // 2. construct string
             let mut req = Request::new(input);
             // 3. send to server
