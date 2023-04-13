@@ -10,14 +10,14 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use client::event_loop::run;
+use client::event_loop::{PlayerLoop, run};
 use common::communication::commons::*;
 use common::communication::request::Request;
 use common::communication::response::Response;
 
 fn main(){
     env_logger::init();
-    //let (tx, rx) = mpsc::channel();
+    let (tx, rx) = mpsc::channel();
 
     let server_details = DEFAULT_SERVER_ADDR;
     let dest: SocketAddr = server_details.parse().expect("server details parse fails");
@@ -25,16 +25,20 @@ fn main(){
     let mut conn = Protocol::connect(dest).unwrap();
 
     thread::spawn(move || {
-        pollster::block_on(run());
+        let mut event_loop = PlayerLoop::new(tx);
+        pollster::block_on(event_loop.run());
     });
 
     loop {
-        // send input to server
-        let mut input = String::new();
-        // how can I get the state update from here????
-
-        let mut req = Request::new(input);
-        conn.send_message(&req).unwrap();
+        // get input from event
+        let rx_clone = rx.clone();
+        while let Ok(event) = rx_clone.recv() {
+            // 1. parser from event to String
+            // 2. construct string
+            let mut req = Request::new(input);
+            // 3. send to server
+            conn.send_message(&req).expect("send to server fails");
+        }
         // check for new state
         let new = conn.read_message::<Response>().unwrap();
         // update local game state
