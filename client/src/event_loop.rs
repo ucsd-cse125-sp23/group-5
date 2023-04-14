@@ -3,16 +3,28 @@ use std::io::{self, prelude::*, BufReader, Write};
 use std::str;
 use std::sync::mpsc::{Receiver, SendError, Sender};
 use std::sync::{mpsc, Arc, Mutex};
-use winit::event::Event::WindowEvent;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
+use crate::user_input::Inputs;
+
+pub struct UserInput {
+    pub(crate) client_id: u32,
+    pub input: Inputs,
+}
+
+impl UserInput {
+    pub fn new(client_id: u32, input: Inputs) -> UserInput {
+        UserInput { client_id, input }
+    }
+}
 
 pub struct PlayerLoop<'a> {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
-    commands: Sender<KeyboardInput>,
+    commands: Sender<UserInput>,
+    user_input: &'a mut KeyboardInput,
 }
 
 impl PlayerLoop<'_> {
@@ -20,8 +32,8 @@ impl PlayerLoop<'_> {
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
     /// * `running` - used to stop the game loop (mostly for testing and debugging purposes)
-    pub fn new(commands: Sender<KeyboardInput>) -> PlayerLoop {
-        PlayerLoop { commands }
+    pub fn new(commands: Sender<UserInput>, user_input: &KeyboardInput) -> PlayerLoop {
+        PlayerLoop { commands, user_input }
     }
 
     /// Starts the game loop.
@@ -50,8 +62,16 @@ impl PlayerLoop<'_> {
                             },
                             ..
                         } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput { input } => {
-                            self.commands.send(input).expect("Failed to send input");
+                        WindowEvent::KeyboardInput {
+                            input
+                            ,
+                            ..
+                        } => {
+                            input.clone().clone_into(self.user_input);
+                            // let k_clone_heap = Box::new(*input);
+                            // let input_clone:&'a KeyboardInput = input.clone;
+                            // self.commands.send(UserInput::new(0, Inputs::Keyboard(*input)));
+                            // self.commands.send(0, k_clone_heap)).expect("Failed to send input");
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);
