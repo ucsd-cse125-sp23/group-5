@@ -10,12 +10,12 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-pub struct PlayerLoop {
+pub struct PlayerLoop<'a> {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
     commands: Sender<KeyboardInput>,
 }
 
-impl PlayerLoop {
+impl PlayerLoop<'_> {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
@@ -43,23 +43,15 @@ impl PlayerLoop {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
                             input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput {
-                            input:
-                            KeyboardInput{
+                            KeyboardInput {
                                 state: ElementState::Pressed,
-                                virtual_keycode: Some(..),
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
                                 ..
                             },
                             ..
-                        } => {
-                            self.commands.send(*input).expect("Failed to send input");
+                        } => *control_flow = ControlFlow::Exit,
+                        WindowEvent::KeyboardInput { input } => {
+                            self.commands.send(input).expect("Failed to send input");
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);
