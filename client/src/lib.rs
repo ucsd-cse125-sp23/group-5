@@ -12,19 +12,28 @@ pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
+        .with_title("test")
         .with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
         .build(&event_loop)
         .unwrap();
 
-    let mut state = State::new(window).await;
+    let mut state = State::new(window).await; 
+    let mut last_render_time = instant::Instant::now();
 
     event_loop.run(move |event, _, control_flow| match event {
+        Event::DeviceEvent {
+            event: DeviceEvent::MouseMotion{ delta, },
+            .. // We're not using device_id currently
+        } => {
+            state.camera_controller.process_mouse(delta.0, delta.1)
+        }
         Event::WindowEvent {
             ref event,
             window_id,
         } if window_id == state.window.id() => {
             if !state.input(event) {
                 match event {
+                    #[cfg(not(target_arch="wasm32"))]
                     WindowEvent::CloseRequested
                     | WindowEvent::KeyboardInput {
                         input:
@@ -47,7 +56,10 @@ pub async fn run() {
             }
         }
         Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-            state.update();
+            let now = instant::Instant::now();
+            let dt = now - last_render_time;
+            last_render_time = now;
+            state.update(dt);
             match state.render() {
                 Ok(_) => {}
                 // Reconfigure the surface if lost
@@ -186,6 +198,34 @@ impl Vertex {
     }
 }
 
+// We need this for Rust to store our data correctly for the shaders
+#[repr(C)]
+// This is so we can store this in a buffer
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct CameraUniform {
+    // We can't use cgmath with bytemuck directly so we'll have
+    // to convert the Matrix4 into a 4x4 f32 array
+    pub view_position: [f32; 4],
+    pub view_proj: [[f32; 4]; 4],
+}
+
+impl CameraUniform {
+    pub fn new() -> Self {
+        Self {
+            view_position: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
+            view_proj: glm::mat4(
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            )
+            .into(),
+        }
+    }
+
+    pub fn update_view_proj(&mut self, camera: &camera::Camera, projection: &camera::Projection) {
+        self.view_position = glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
+        self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).into();
+    }
+}
+
 use winit::window::Window;
 
 struct State {
@@ -201,10 +241,13 @@ struct State {
     num_indices: u32,
 
     camera: camera::Camera,
-    camera_uniform: camera::CameraUniform,
+    projection: camera::Projection,
+    camera_controller: camera::CameraController,
+
+    camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-
+    
     depth_texture: texture::Texture,
 }
 
@@ -290,22 +333,12 @@ impl State {
         });
         let num_indices = INDICES.len() as u32;
 
-        let camera = camera::Camera::new(
-            // position the camera one unit up and 2 units back
-            // +z is out of the screen
-            glm::vec3(3.0, 3.0, 3.0),
-            // have it look at the origin
-            glm::vec3(0.0, 0.0, 0.0),
-            // which way is "up"
-            glm::vec3(0.0, 1.0, 0.0),
-            config.width as f32 / config.height as f32,
-            45.0,
-            0.1,
-            100.0,
-        );
+        let camera = camera::Camera::new(glm::vec3(3.0, 3.0, -3.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+        let projection = camera::Projection::new(config.width, config.height, 45.0, 0.1, 100.0);
+        let camera_controller = camera::CameraController::new(4.0, 1.0, 0.7);
 
-        let mut camera_uniform = camera::CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
+        let mut camera_uniform = CameraUniform::new();
+        camera_uniform.update_view_proj(&camera, &projection);
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
@@ -403,10 +436,13 @@ impl State {
             index_buffer,
             num_indices,
             camera,
+            projection,
+            camera_controller,
             camera_uniform,
             camera_buffer,
             camera_bind_group,
             depth_texture,
+
         }
     }
 
@@ -416,28 +452,60 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
+            self.projection.resize(new_size.width, new_size.height);
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.camera
-                .update_aspect((self.config.width) as f32 / (self.config.height) as f32);
-            self.camera_uniform.update_view_proj(&self.camera);
+            
+            self.camera_uniform.update_view_proj(&self.camera, &self.projection);
             self.queue.write_buffer(
                 &self.camera_buffer,
                 0,
                 bytemuck::cast_slice(&[self.camera_uniform]),
             );
+            
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
     }
 
     fn input(&mut self, event: &WindowEvent) -> bool {
-        false
+        match event {
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        virtual_keycode: Some(key),
+                        state,
+                        ..
+                    },
+                ..
+            } => self.camera_controller.process_keyboard(*key, *state),
+            WindowEvent::MouseWheel { delta, .. } => {
+                self.camera_controller.process_scroll(delta);
+                true
+            }
+            WindowEvent::MouseInput {
+                button: MouseButton::Left,
+                state,
+                ..
+            } => {
+                true
+            }
+            _ => false,
+        }
     }
 
-    fn update(&mut self) {}
+    fn update(&mut self, dt: instant::Duration) {
+        self.camera_controller.update_camera(&mut self.camera, dt);
+        self.camera_uniform
+            .update_view_proj(&self.camera, &self.projection);
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
+    }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;

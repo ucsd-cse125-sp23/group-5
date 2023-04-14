@@ -18,3 +18,4 @@ wgpu = "0.15"
 pollster = "0.3.0"
 bytemuck = { version = "1.12", features = [ "derive" ] }
 nalgebra-glm = "0.3"
+instant = "0.1.12"
