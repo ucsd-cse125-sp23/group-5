@@ -80,36 +80,6 @@ pub async fn run() {
     });
 }
 
-
-
-// We need this for Rust to store our data correctly for the shaders
-#[repr(C)]
-// This is so we can store this in a buffer
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct CameraUniform {
-    // We can't use cgmath with bytemuck directly so we'll have
-    // to convert the Matrix4 into a 4x4 f32 array
-    pub view_position: [f32; 4],
-    pub view_proj: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    pub fn new() -> Self {
-        Self {
-            view_position: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
-            view_proj: glm::mat4(
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            )
-            .into(),
-        }
-    }
-
-    pub fn update_view_proj(&mut self, camera: &camera::Camera, projection: &camera::Projection) {
-        self.view_position = glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
-        self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).into();
-    }
-}
-
 use winit::window::Window;
 
 struct State {
@@ -128,7 +98,7 @@ struct State {
     projection: camera::Projection,
     camera_controller: camera::CameraController,
 
-    camera_uniform: CameraUniform,
+    camera_uniform: camera::CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
     
@@ -224,7 +194,7 @@ impl State {
         let projection = camera::Projection::new(config.width, config.height, 45.0, 0.1, 100.0);
         let camera_controller = camera::CameraController::new(4.0, 1.0, 0.7);
 
-        let mut camera_uniform = CameraUniform::new();
+        let mut camera_uniform = camera::CameraUniform::new();
         camera_uniform.update_view_proj(&camera, &projection);
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
