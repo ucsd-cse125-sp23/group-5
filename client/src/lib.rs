@@ -6,6 +6,7 @@ use winit::{
 };
 mod camera;
 mod texture;
+mod objects;
 extern crate nalgebra_glm as glm;
 
 pub async fn run() {
@@ -79,124 +80,7 @@ pub async fn run() {
     });
 }
 
-// Vertex
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
-    normal: [f32; 3],
-}
 
-// const VERTICES: &[Vertex] = &[
-//     Vertex { position: [-0.9, -0.9, 0.0], color: [1.0, 1.0, 1.0] }, // A
-//     Vertex { position: [-0.9, -0.8, 0.0], color: [1.0, 1.0, 1.0] }, // B
-//     Vertex { position: [-0.7, -0.8, 0.0], color: [1.0, 1.0, 1.0] }, // C
-//     Vertex { position: [-0.7, -0.9, 0.0], color: [1.0, 1.0, 1.0] }, // D
-// ];
-
-// const INDICES: &[u16] = &[
-//     0, 2, 1,
-//     0, 3, 2,
-// ];
-
-#[rustfmt::skip]
-const VERTICES: &[Vertex] = &[
-    // Front face
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.5, 0.5, 0.5], normal: [0.0, 0.0,  1.0],},
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0,  1.0],},
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0,  1.0],},
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0], normal: [0.0, 0.0,  1.0],},
-    // Back face
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0], normal: [0.0, 0.0, -1.0],},
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 1.0], normal: [0.0, 0.0, -1.0],},
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0], normal: [0.0, 0.0, -1.0],},
-    // Right face
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [ 1.0, 0.0, 0.0],},
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0], normal: [ 1.0, 0.0, 0.0],},
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
-    // Top face
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0], normal: [0.0,  1.0, 0.0],},
-    Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0,  1.0, 0.0],},
-    Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 1.0, 0.0], normal: [0.0,  1.0, 0.0],},
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 1.0], normal: [0.0,  1.0, 0.0],},
-    // Left face
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.5, 0.5, 0.5], normal: [-1.0, 0.0, 0.0],},
-    Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 1.0, 1.0], normal: [-1.0, 0.0, 0.0],},
-    Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 1.0, 1.0], normal: [-1.0, 0.0, 0.0],},
-    // Bottom face
-    Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
-    Vertex { position: [ 0.5, -0.5, -0.5], color: [1.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0],},
-    Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0],},
-    Vertex { position: [-0.5, -0.5,  0.5], color: [0.5, 0.5, 0.5], normal: [0.0, -1.0, 0.0],},
-    //Inverted Hull
-    // Front face
-    Vertex { position: [-0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
-    Vertex { position: [ 0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
-    Vertex { position: [ 0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
-    Vertex { position: [-0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0,  1.0],},
-    // Back face
-    Vertex { position: [ 0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
-    Vertex { position: [-0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
-    Vertex { position: [-0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
-    Vertex { position: [ 0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0],},
-    // Right face
-    Vertex { position: [ 0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
-    Vertex { position: [ 0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
-    Vertex { position: [ 0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
-    Vertex { position: [ 0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [ 1.0, 0.0, 0.0],},
-    // Top face
-    Vertex { position: [-0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
-    Vertex { position: [ 0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
-    Vertex { position: [ 0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
-    Vertex { position: [-0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0,  1.0, 0.0],},
-    // Left face
-    Vertex { position: [-0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
-    Vertex { position: [-0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
-    Vertex { position: [-0.52,  0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
-    Vertex { position: [-0.52,  0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0],},
-    // Bottom face
-    Vertex { position: [-0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
-    Vertex { position: [ 0.52, -0.52, -0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
-    Vertex { position: [ 0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
-    Vertex { position: [-0.52, -0.52,  0.52], color: [0.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0],},
-];
-
-#[rustfmt::skip]
-const INDICES: &[u16] = &[
-    // Original
-    0,  1,  2,  0,  2,  3, // front
-    4,  5,  6,  4,  6,  7, // back
-    8,  9, 10,  8, 10, 11, // right
-    12, 13, 14, 12, 14, 15, // top
-    16, 17, 18, 16, 18, 19, // left
-    20, 21, 22, 20, 22, 23, // bottom
-    // Inverted hull
-    26, 25, 24, 27, 26, 24, // front
-    30, 29, 28, 31, 30, 28, // back
-    34, 33, 32, 35, 34, 32, // right
-    38, 37, 36, 39, 38, 36, // top
-    42, 41, 40, 43, 42, 40, // left
-    46, 45, 44, 47, 46, 44, // bottom
-];
-
-impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 3] =
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x3];
-
-    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-        use std::mem;
-
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
-        }
-    }
-}
 
 // We need this for Rust to store our data correctly for the shaders
 #[repr(C)]
@@ -323,17 +207,20 @@ impl State {
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
+            contents: bytemuck::cast_slice(objects::SPHERE_VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
+            contents: bytemuck::cast_slice(objects::SPHERE_INDICES),
             usage: wgpu::BufferUsages::INDEX,
         });
-        let num_indices = INDICES.len() as u32;
+        let num_indices = objects::SPHERE_INDICES.len() as u32;
 
-        let camera = camera::Camera::new(glm::vec3(3.0, 3.0, -3.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+        let camera = camera::Camera::new(
+            glm::vec3(0.0, 0.0, 3.0), 
+                glm::vec3(0.0, 0.0, 0.0), 
+                glm::vec3(0.0, 1.0, 0.0));
         let projection = camera::Projection::new(config.width, config.height, 45.0, 0.1, 100.0);
         let camera_controller = camera::CameraController::new(4.0, 1.0, 0.7);
 
@@ -386,7 +273,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
+                buffers: &[objects::Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -549,8 +436,8 @@ impl State {
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-            render_pass.draw_indexed(0..12 * 3, 0, 0..1); // interior
-            render_pass.draw_indexed(12 * 3..self.num_indices, 0, 0..1); // hull
+            render_pass.draw_indexed(0..self.num_indices/2, 0, 0..1); // interior
+            render_pass.draw_indexed(self.num_indices/2..self.num_indices, 0, 0..1); // hull
         }
 
         // submit will accept anything that implements IntoIter
