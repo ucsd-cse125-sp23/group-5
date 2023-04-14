@@ -61,10 +61,10 @@ impl PlayerLoop {
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput {
-                            input
-                            ,
+                            input,
                             ..
                         } => {
+                            // TODO: need to replace client id
                             match self.inputs.send(UserInput::new(1, Inputs::Keyboard(*input))) {
                                 Ok(_) => {}
                                 Err(e) => {

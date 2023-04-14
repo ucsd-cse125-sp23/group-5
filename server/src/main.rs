@@ -73,8 +73,7 @@ fn main() {
             let write_handle = thread::spawn(move || {
                 while let Ok(ServerEvent::Sync) = rx.recv() {
                     let game_state = game_state.lock().unwrap();
-                    protocol
-                        .send_message(&Message::new(
+                    protocol.send_message(&Message::new(
                             HostRole::Server,
                             Payload::StateSync(game_state.clone()),
                         ))
