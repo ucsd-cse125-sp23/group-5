@@ -44,9 +44,15 @@ fn main() {
     // start a new thread to read messages from the server
     let mut protocol_clone = protocol.try_clone().unwrap();
     std::thread::spawn(move || loop {
-        let msg = protocol_clone.read_message::<Message>().unwrap();
-        println!("\n{:?}", msg);
-        print!("> ");
+        match protocol_clone.read_message::<Message>() {
+            Ok(msg) => {
+                println!("\n{:?}", msg);
+                print!("> ");
+            }
+            Err(e) => {
+                panic!("Error reading message: {:?}", e);
+            }
+        }
         std::io::stdout().flush().unwrap();
     });
 
@@ -59,19 +65,25 @@ fn main() {
             }
             if command == "cmd" {
                 let command = tokens.get(1).unwrap();
+                let count = tokens.get(2).unwrap().parse::<u32>().or::<u32>(Ok(1)).unwrap();
                 let command = parse_command(command.to_string()).unwrap();
-                protocol
-                    .send_message(&Message::new(
-                        HostRole::Client(args.id),
-                        Payload::Command(command.clone()),
-                    ))
-                    .unwrap();
-                println!("Sent command: {:?}", command)
+                for _ in 0..count {
+                    match protocol
+                        .send_message(&Message::new(
+                            HostRole::Client(args.id),
+                            Payload::Command(command.clone()),
+                        )) {
+                        Ok(_) => println!("Sent command: {:?}", command),
+                        Err(e) => eprintln!("Error: {:?}", e),
+                    }
+                }
             }
             if command == "ping" {
-                protocol
-                    .send_message(&Message::new(HostRole::Client(args.id), Payload::Ping))
-                    .unwrap();
+                match protocol
+                    .send_message(&Message::new(HostRole::Client(args.id), Payload::Ping)) {
+                    Ok(_) => println!("Sent ping"),
+                    Err(e) => eprintln!("Error: {:?}", e),
+                }
                 println!("Sent ping")
             }
         }
