@@ -14,6 +14,7 @@ pub enum MoveDirection {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GameAction {
     Attack,
+    Jump,
 }
 
 /// Commands that can be issued by the client

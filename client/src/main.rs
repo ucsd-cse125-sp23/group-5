@@ -51,7 +51,7 @@ fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol) {
     info!("Sent command: {:?}", command);
 }
 
-fn handle_mouse_input(input: DeviceEvent, protocol: &mut protocol) {
+fn handle_mouse_input(input: DeviceEvent, protocol: &mut Protocol) {
     let mut command: Option<Command> = None;
     match input {
         DeviceEvent::MouseMotion { delta } => {
@@ -77,7 +77,10 @@ fn main() {
 
     let mut protocol = Protocol::connect(dest).unwrap();
 
-    let mut event_loop = PlayerLoop::new(tx);
+    // TODO: Initial Connection to get current client id
+    const CLIENT_ID: u32 = 1;
+
+    let mut event_loop = PlayerLoop::new(tx, CLIENT_ID);
 
     thread::spawn(move || {
         loop {
@@ -88,11 +91,10 @@ fn main() {
                         handle_keyboard_input(input, &mut protocol);
                         break;
                     },
-                    Input::Mouse(input) => {
+                    Inputs::Mouse(input) => {
                         handle_mouse_input(input, &mut protocol);
                         break;
                     },
-                    _ => {}
                 }
             }
             // check for new state & update local game state

@@ -26,14 +26,17 @@ impl UserInput {
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
     inputs: Sender<UserInput>,
+
+    // current player id
+    client_id: u32
 }
 
 impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<UserInput>) -> PlayerLoop {
-        PlayerLoop { inputs: commands }
+    pub fn new(commands: Sender<UserInput>, id: u32) -> PlayerLoop {
+        PlayerLoop { inputs: commands, client_id: id }
     }
 
     /// Starts the game loop.
@@ -65,8 +68,7 @@ impl PlayerLoop {
                             input,
                             ..
                         } => {
-                            // TODO: need to replace client id
-                            match self.inputs.send(UserInput::new(1, Inputs::Keyboard(*input))) {
+                            match self.inputs.send(UserInput::new(self.client_id, Inputs::Keyboard(*input))) {
                                 Ok(_) => {}
                                 Err(e) => {
                                     debug!("Error sending input: {:?}", e);
@@ -86,18 +88,23 @@ impl PlayerLoop {
             }
             Event::DeviceEvent {
                 ref event,
-                device_id
-            } if device_id == state.device.id() => {
-                // how to handle this
-                //if !state.input(event) {
+                ..
+            } => {
                     match event {
-                        DeviceEvent::MouseMotion { .. } => {}
-                        DeviceEvent::MouseWheel { .. } => {}
-                        DeviceEvent::Button { .. } => {}
+                        DeviceEvent::MouseMotion { .. } |
+                        DeviceEvent::MouseWheel { .. } |
+                        DeviceEvent::Button { .. } => {
+                            let output_event = event.clone();
+                            match self.inputs.send(UserInput::new(self.client_id, Inputs::Mouse(output_event))) {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    debug!("Error sending input: {:?}", e);
+                                }
+                            }
+                        }
                         _ => {}
                     }
-                //}
-            }
+                }
             // graphics
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
                 state.update();
