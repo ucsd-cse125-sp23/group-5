@@ -1,3 +1,4 @@
+use std::any::Any;
 use log::debug;
 use std::io::{self, prelude::*, BufReader, Write};
 use std::str;
@@ -82,6 +83,20 @@ impl PlayerLoop {
                         _ => {}
                     }
                 }
+            }
+            Event::DeviceEvent {
+                ref event,
+                device_id
+            } if device_id == state.device.id() => {
+                // how to handle this
+                //if !state.input(event) {
+                    match event {
+                        DeviceEvent::MouseMotion { .. } => {}
+                        DeviceEvent::MouseWheel { .. } => {}
+                        DeviceEvent::Button { .. } => {}
+                        _ => {}
+                    }
+                //}
             }
             // graphics
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {

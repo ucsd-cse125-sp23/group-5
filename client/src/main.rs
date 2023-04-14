@@ -51,6 +51,22 @@ fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol) {
     info!("Sent command: {:?}", command);
 }
 
+fn handle_mouse_input(input: DeviceEvent, protocol: &mut protocol) {
+    let mut command: Option<Command> = None;
+    match input {
+        DeviceEvent::MouseMotion { delta } => {
+
+        }
+        DeviceEvent::MouseWheel { delta } => {
+
+        }
+        DeviceEvent::Button { button, state } => {
+
+        }
+        _ => {}
+    }
+}
+
 fn main() {
     env_logger::init();
     let (tx, rx) = mpsc::channel::<UserInput>();
@@ -72,6 +88,10 @@ fn main() {
                         handle_keyboard_input(input, &mut protocol);
                         break;
                     },
+                    Input::Mouse(input) => {
+                        handle_mouse_input(input, &mut protocol);
+                        break;
+                    },
                     _ => {}
                 }
             }
@@ -85,7 +105,8 @@ fn main() {
                     } => {
                         match payload {
                             // what should we do with the logic of Ping
-                            // state
+
+                            // statesync
                             Payload::StateSync(update_game_state) => {
                                 // update state
                                 let mut game_state = game_state.lock().unwrap();
@@ -100,6 +121,7 @@ fn main() {
                     _ => {}
                 };
             }
+            // render world with updated game state
         }
     });
 
