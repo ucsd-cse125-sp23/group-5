@@ -15,6 +15,8 @@ serde_json = "1.0"
 threadpool = "1.0"
 clap = {version = "4.2.2",  features = ["derive"]}
 rapier3d = { version = "0.17.2", features = ["simd-stable", "serde-serialize"] }
+derive_more = "0.99.17"
+nalgebra = { version = "0.32.2", features = ["convert-glam023"] }
 
 [[bin]]
 name = "debug_client"

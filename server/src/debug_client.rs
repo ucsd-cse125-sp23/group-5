@@ -46,8 +46,8 @@ fn main() {
     std::thread::spawn(move || loop {
         match protocol_clone.read_message::<Message>() {
             Ok(msg) => {
-                println!("\n{:?}", msg);
-                print!("> ");
+                print!("\r{:?}", msg);
+                print!("\n> ");
             }
             Err(e) => {
                 panic!("Error reading message: {:?}", e);
@@ -65,22 +65,25 @@ fn main() {
             }
             if command == "cmd" {
                 let command = tokens.get(1).unwrap();
-                let count = tokens.get(2).unwrap().parse::<u32>().or::<u32>(Ok(1)).unwrap();
+                let count = if let Some(count) = tokens.get(2) {
+                    count.parse().unwrap()
+                } else {
+                    1
+                };
                 let command = parse_command(command.to_string()).unwrap();
                 for _ in 0..count {
-                    match protocol
-                        .send_message(&Message::new(
-                            HostRole::Client(args.id),
-                            Payload::Command(command.clone()),
-                        )) {
+                    match protocol.send_message(&Message::new(
+                        HostRole::Client(args.id),
+                        Payload::Command(command.clone()),
+                    )) {
                         Ok(_) => println!("Sent command: {:?}", command),
                         Err(e) => eprintln!("Error: {:?}", e),
                     }
                 }
             }
             if command == "ping" {
-                match protocol
-                    .send_message(&Message::new(HostRole::Client(args.id), Payload::Ping)) {
+                match protocol.send_message(&Message::new(HostRole::Client(args.id), Payload::Ping))
+                {
                     Ok(_) => println!("Sent ping"),
                     Err(e) => eprintln!("Error: {:?}", e),
                 }

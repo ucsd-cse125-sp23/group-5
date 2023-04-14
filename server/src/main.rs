@@ -1,18 +1,18 @@
 use bus::Bus;
 use common::core::states::GameState;
-use log::debug;
-use server::executor::Executor;
+use log::{debug, warn};
 use server::game_loop::{ClientCommand, GameLoop, ServerEvent};
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{
-    io::{prelude::*},
+    io::prelude::*,
     net::{TcpListener, TcpStream},
     thread,
 };
 
 use common::communication::commons::{Protocol, DEFAULT_SERVER_ADDR};
 use common::communication::message::{HostRole, Message, Payload};
+use server::executor::Executor;
 use threadpool::ThreadPool;
 
 fn main() {
@@ -73,12 +73,12 @@ fn main() {
             let write_handle = thread::spawn(move || {
                 while let Ok(ServerEvent::Sync) = rx.recv() {
                     let game_state = game_state.lock().unwrap();
-                    protocol
-                        .send_message(&Message::new(
-                            HostRole::Server,
-                            Payload::StateSync(game_state.clone()),
-                        ))
-                        .unwrap();
+                    if let Err(e) = protocol.send_message(&Message::new(
+                        HostRole::Server,
+                        Payload::StateSync(game_state.clone()),
+                    )) {
+                        warn!("Failed to send message: {:?}", e);
+                    }
                 }
             });
         });
