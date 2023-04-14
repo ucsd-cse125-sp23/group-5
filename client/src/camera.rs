@@ -199,7 +199,7 @@ impl CameraController {
         camera.spherical_coords.y = (camera.spherical_coords.y + delta_yaw) % (2.0 * PI); 
 
         // keep the camera's angle from going too high/low
-        camera.spherical_coords.z = (camera.spherical_coords.z + delta_pitch).clamp(-SAFE_FRAC_PI_2, SAFE_FRAC_PI_2); 
+        camera.spherical_coords.z = (camera.spherical_coords.z - delta_pitch).clamp(-SAFE_FRAC_PI_2, SAFE_FRAC_PI_2); 
 
         // calculate new camera position from rotated spherical coords
         camera.position = glm::vec3(
