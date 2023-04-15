@@ -81,30 +81,34 @@ fn main() {
 
     let mut protocol = Protocol::connect(dest).unwrap();
 
-    // TODO: Initial Connection to get current client id
     let mut client_id: u32 = 0;
-    let msg = protocol.read_message::<Message>().unwrap();
-    match msg {
-        Message {
-            host_role: HostRole::Server,
-            payload,
-            ..
-        } => match payload {
-            Payload::Init(incoming_id) => {
-                client_id = incoming_id;
-            }
-            _ => {
-                error!("first contact with server is not init \n");
-            }
-        },
-        _ => {
-            error!("first contact with server is not init \n");
-        }
-    }
 
     let mut event_loop = PlayerLoop::new(tx, client_id);
 
     thread::spawn(move || {
+        // TODO: Initial Connection to get current client id
+        while let Ok(msg) = protocol.read_message::<Message>() {
+            match msg {
+                Message {
+                    host_role: HostRole::Server,
+                    payload,
+                    ..
+                } => match payload {
+                    Payload::Init(incoming_id) => {
+                        client_id = incoming_id;
+                        info!("Received initialization ");
+                        break;
+                    }
+                    _ => {
+                        error!("first contact with server is not init \n");
+                    }
+                },
+                _ => {
+                    error!("first contact with server is not init \n");
+                }
+            }
+        }
+
         let mut mm_tot_dx;
         let mut mm_tot_dy;
         let mut mw_tot_line_dx;
@@ -135,12 +139,20 @@ fn main() {
                 }
             }
 
-            // check if mouse movement durations has passed
-            let elapsed = sample_start_time.elapsed();
+            // also have mouse moved data in parameters (depending on what type of input)
+            //      mm_tot_dx mm_tot_dy for mouse motion delta
+            //      mw_tot_line_dx mw_tot_line_dy for mouse wheel delta
+            //      mw_tot_pixel_dx mw_tot_pixel_dy for track delta
 
+            // sampling: check if mouse movement durations has passed
+            let elapsed = sample_start_time.elapsed();
             if elapsed < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
                 mm_tot_dx = 0.0;
                 mm_tot_dy = 0.0;
+                mw_tot_line_dx = 0.0;
+                mw_tot_line_dy = 0.0;
+                mw_tot_pixel_dx = 0.0;
+                mw_tot_pixel_dy = 0.0;
                 let n = mouse_motion_buf.size();
                 for _ in 1..n {
                     let mm_event = mouse_motion_buf.remove().unwrap();
@@ -154,14 +166,6 @@ fn main() {
                             error!("non-mouse-motion in mouse motion buffer \n")
                         }
                     }
-                }
-
-                mw_tot_line_dx = 0.0;
-                mw_tot_line_dy = 0.0;
-                mw_tot_pixel_dx = 0.0;
-                mw_tot_pixel_dy = 0.0;
-                let n = mouse_wheel_buf.size();
-                for _ in 1..n {
                     let mw_event = mouse_wheel_buf.remove().unwrap();
                     match mw_event {
                         // more on here
@@ -175,13 +179,10 @@ fn main() {
                                 mw_tot_pixel_dx += pixel_delta.x;
                                 mw_tot_pixel_dy += pixel_delta.y;
                             }
-                        },
-                        _ => {
-                            error!("non-mouse-motion in mouse wheel buffer \n")
                         }
+                        _ => {}
                     }
                 }
-
                 sample_start_time = Instant::now();
             }
 
@@ -213,10 +214,6 @@ fn main() {
             }
             // render world with updated game state
 
-            // also have mouse moved data in parameters (depending on what type of input)
-            //      mm_tot_dx mm_tot_dy for mouse motion delta
-            //      mw_tot_line_dx mw_tot_line_dy for mouse wheel delta
-            //      mw_tot_pixel_dx mw_tot_pixel_dy for track delta
         }
     });
 

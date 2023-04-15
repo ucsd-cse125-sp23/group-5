@@ -14,6 +14,7 @@ use std::{
 use common::communication::commons::{Protocol, DEFAULT_SERVER_ADDR};
 use common::communication::message::{HostRole, Message, Payload};
 use threadpool::ThreadPool;
+use common::communication::message::Payload::Ping;
 
 fn main() {
     env_logger::init();
@@ -45,9 +46,11 @@ fn main() {
             let server_id = Client_ID.fetch_add(1, Ordering::SeqCst);
             let mut rx = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
             let mut protocol = Protocol::with_stream(stream).unwrap();
-
             // need to clone the protocol to be able to read and write from different threads
             let mut protocol_clone = protocol.try_clone().unwrap();
+            // initialize connection
+            protocol_clone.send_message(&Message::new(HostRole::Server, Payload::Init(server_id))).expect("send message fails");
+
             let read_handle = thread::spawn(move || {
                 // TODO: handle disconnection and errors
                 while let Ok(msg) = protocol_clone.read_message::<Message>() {
@@ -63,7 +66,7 @@ fn main() {
                             }
                             Payload::Ping => {
                                 protocol_clone
-                                    .send_message(&Message::new(HostRole::Server, Payload::Ping))
+                                    .send_message(&Message::new(HostRole::Server, Ping))
                                     .unwrap();
                             }
                             _ => {}
@@ -74,12 +77,6 @@ fn main() {
             });
 
             let write_handle = thread::spawn(move || {
-                // first need to send a message to client to let client know it's id
-                protocol
-                    .send_message(&Message::new(HostRole::Server, Payload::Init(server_id)))
-                    .unwrap();
-
-                // then proceeds on to later tasks
                 while let Ok(ServerEvent::Sync) = rx.recv() {
                     let game_state = game_state.lock().unwrap();
                     protocol
