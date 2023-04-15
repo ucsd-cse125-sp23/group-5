@@ -136,7 +136,7 @@ mod tests {
         std::thread::spawn(move || {
             let mut rx1 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
             tx_clone
-                .send(ClientCommand::new(0, Command::Spawn))
+                .send(ClientCommand::new(1, Command::Spawn))
                 .unwrap();
             sleep(Duration::from_millis(500));
 
@@ -155,7 +155,7 @@ mod tests {
 
             assert_eq!(rx2.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced by now
 
-            tx.send(ClientCommand::new(0, Command::Move(MoveDirection::Forward)))
+            tx.send(ClientCommand::new(1, Command::Move(MoveDirection::Forward)))
                 .unwrap();
         });
 

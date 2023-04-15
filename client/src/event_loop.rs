@@ -1,15 +1,12 @@
+use crate::user_input::Inputs;
 use log::debug;
-use std::io::{self, prelude::*, BufReader, Write};
-use std::str;
-use std::sync::mpsc::{Receiver, SendError, Sender};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::mpsc::Sender;
+use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
-use winit::platform::run_return::EventLoopExtRunReturn;
-use crate::user_input::Inputs;
 
 pub struct UserInput {
     pub(crate) client_id: u32,
@@ -25,14 +22,20 @@ impl UserInput {
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
     inputs: Sender<UserInput>,
+
+    // current player id
+    client_id: u32,
 }
 
 impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<UserInput>) -> PlayerLoop {
-        PlayerLoop { inputs: commands }
+    pub fn new(commands: Sender<UserInput>, id: u32) -> PlayerLoop {
+        PlayerLoop {
+            inputs: commands,
+            client_id: id,
+        }
     }
 
     /// Starts the game loop.
@@ -53,19 +56,18 @@ impl PlayerLoop {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
                             input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                },
                             ..
                         } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput {
-                            input
-                            ,
-                            ..
-                        } => {
-                            match self.inputs.send(UserInput::new(1, Inputs::Keyboard(*input))) {
+                        WindowEvent::KeyboardInput { input, .. } => {
+                            match self
+                                .inputs
+                                .send(UserInput::new(self.client_id, Inputs::Keyboard(*input)))
+                            {
                                 Ok(_) => {}
                                 Err(e) => {
                                     debug!("Error sending input: {:?}", e);
@@ -83,6 +85,23 @@ impl PlayerLoop {
                     }
                 }
             }
+            Event::DeviceEvent { ref event, .. } => match event {
+                DeviceEvent::MouseMotion { .. }
+                | DeviceEvent::MouseWheel { .. }
+                | DeviceEvent::Button { .. } => {
+                    let output_event = event.clone();
+                    match self
+                        .inputs
+                        .send(UserInput::new(self.client_id, Inputs::Mouse(output_event)))
+                    {
+                        Ok(_) => {}
+                        Err(e) => {
+                            debug!("Error sending input: {:?}", e);
+                        }
+                    }
+                }
+                _ => {}
+            },
             // graphics
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
                 state.update();

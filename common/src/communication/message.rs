@@ -41,6 +41,7 @@ pub enum Payload {
     Ping,
     StateSync(GameState),
     Command(Command),
+    Init(u32),
 }
 
 /// message kind to u8
@@ -50,6 +51,7 @@ impl From<&Payload> for u8 {
             Payload::Ping => 0,
             Payload::StateSync(_) => 1,
             Payload::Command(_) => 2,
+            Payload::Init(_) => 3,
         }
     }
 }
@@ -71,7 +73,7 @@ impl Serialize for Message {
     ///
     /// Returns the number of bytes written
     fn serialize(&self, buf: &mut impl Write) -> io::Result<()> {
-        buf.write_u8((&self.host_role).into()); // write host role
+        buf.write_u8((&self.host_role).into())?; // write host role
         buf.write_u64::<NetworkEndian>(self.timestamp)?; // write timestamp
         buf.write_u8((&self.payload).into())?; // write payload kind
 
@@ -82,6 +84,9 @@ impl Serialize for Message {
             }
             Payload::Command(cmd) => {
                 prefix_len::write_json(buf, cmd)?;
+            }
+            Payload::Init(client_id) => {
+                prefix_len::write_json(buf, client_id)?;
             }
         }
         Ok(())
@@ -100,6 +105,7 @@ impl Deserialize for Message {
             0 => Payload::Ping,
             1 => Payload::StateSync(prefix_len::extract_json(&mut buf)?),
             2 => Payload::Command(prefix_len::extract_json(&mut buf)?),
+            3 => Payload::Init(prefix_len::extract_json(&mut buf)?),
             _ => panic!("Invalid payload kind"),
         };
 

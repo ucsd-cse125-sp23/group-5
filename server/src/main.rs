@@ -2,7 +2,7 @@ use bus::Bus;
 use common::core::states::GameState;
 use log::{debug, warn};
 use server::game_loop::{ClientCommand, GameLoop, ServerEvent};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::{
     io::prelude::*,
@@ -33,6 +33,8 @@ fn main() {
         let mut game_loop = GameLoop::new(rx, &ext, broadcast_clone, running.clone());
         game_loop.run();
     });
+    static Client_ID: AtomicU32 = AtomicU32::new(1);
+
     for stream in listener.incoming() {
         let stream = stream.unwrap();
         debug!("New client connected");
@@ -40,6 +42,7 @@ fn main() {
         let broadcast_clone = broadcast.clone();
         let game_state = game_state.clone();
         pool.execute(move || {
+            let server_id = Client_ID.fetch_add(1, Ordering::SeqCst);
             let mut rx = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
             let mut protocol = Protocol::with_stream(stream).unwrap();
 
@@ -71,6 +74,12 @@ fn main() {
             });
 
             let write_handle = thread::spawn(move || {
+                // first need to send a message to client to let client know it's id
+                protocol
+                    .send_message(&Message::new(HostRole::Server, Payload::Init(server_id)))
+                    .unwrap();
+
+                // then proceeds on to later tasks
                 while let Ok(ServerEvent::Sync) = rx.recv() {
                     let game_state = game_state.lock().unwrap();
                     if let Err(e) = protocol.send_message(&Message::new(
