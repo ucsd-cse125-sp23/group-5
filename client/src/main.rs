@@ -1,13 +1,11 @@
 extern crate queues;
+use log::{debug, error, info};
 use queues::*;
-use log::{debug, info, error};
 use std::net::SocketAddr;
 use std::sync::{mpsc, Arc, Mutex};
-use std::{thread};
-use winit::{
-    event::*,
-};
+use std::thread;
 use std::time::{Duration, Instant};
+use winit::event::*;
 
 use client::event_loop::{PlayerLoop, UserInput};
 use client::user_input::Inputs;
@@ -51,10 +49,12 @@ fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol) {
 }
 
 // mw for mouse wheel, mm for mouse motion
-fn handle_mouse_input(input: DeviceEvent, protocol: &mut Protocol,
-                      mm_buffer: &mut Queue<DeviceEvent>,
-                      mw_buffer: &mut Queue<DeviceEvent>) {
-
+fn handle_mouse_input(
+    input: DeviceEvent,
+    protocol: &mut Protocol,
+    mm_buffer: &mut Queue<DeviceEvent>,
+    mw_buffer: &mut Queue<DeviceEvent>,
+) {
     match input {
         DeviceEvent::MouseMotion { .. } => {
             mm_buffer.add(input).expect("adding to mm_buffer failed \n");
@@ -82,9 +82,27 @@ fn main() {
     let mut protocol = Protocol::connect(dest).unwrap();
 
     // TODO: Initial Connection to get current client id
-    const CLIENT_ID: u32 = 1;
+    let mut client_id: u32 = 0;
+    let msg = protocol.read_message::<Message>().unwrap();
+    match msg {
+        Message {
+            host_role: HostRole::Server,
+            payload,
+            ..
+        } => match payload {
+            Payload::Init(incoming_id) => {
+                client_id = incoming_id;
+            }
+            _ => {
+                error!("first contact with server is not init \n");
+            }
+        },
+        _ => {
+            error!("first contact with server is not init \n");
+        }
+    }
 
-    let mut event_loop = PlayerLoop::new(tx, CLIENT_ID);
+    let mut event_loop = PlayerLoop::new(tx, client_id);
 
     thread::spawn(move || {
         let mut mm_tot_dx;
@@ -96,8 +114,7 @@ fn main() {
 
         let mut mouse_motion_buf = Queue::new();
         let mut mouse_wheel_buf = Queue::new();
-        let mut mm_sample_start_time = Instant::now();
-        let mut mw_sample_start_time = Instant::now();
+        let mut sample_start_time = Instant::now();
         loop {
             // get input from event
             while let Ok(user_input) = rx.recv() {
@@ -107,19 +124,21 @@ fn main() {
                         break;
                     }
                     Inputs::Mouse(input) => {
-                        handle_mouse_input(input, &mut protocol,
-                                           &mut mouse_motion_buf,
-                                           &mut mouse_wheel_buf);
+                        handle_mouse_input(
+                            input,
+                            &mut protocol,
+                            &mut mouse_motion_buf,
+                            &mut mouse_wheel_buf,
+                        );
                         break;
                     }
                 }
             }
 
             // check if mouse movement durations has passed
-            let mm_elapsed = mm_sample_start_time.elapsed();
-            let mw_elapsed = mw_sample_start_time.elapsed();
+            let elapsed = sample_start_time.elapsed();
 
-            if mm_elapsed < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
+            if elapsed < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
                 mm_tot_dx = 0.0;
                 mm_tot_dy = 0.0;
                 let n = mouse_motion_buf.size();
@@ -131,14 +150,12 @@ fn main() {
                             mm_tot_dx += dx;
                             mm_tot_dy += dy;
                         }
-                        _ => {error!("non-mouse-motion in mouse motion buffer \n")}
+                        _ => {
+                            error!("non-mouse-motion in mouse motion buffer \n")
+                        }
                     }
-
                 }
-                mm_sample_start_time = Instant::now();
-            }
 
-            if mw_elapsed < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
                 mw_tot_line_dx = 0.0;
                 mw_tot_line_dy = 0.0;
                 mw_tot_pixel_dx = 0.0;
@@ -149,24 +166,23 @@ fn main() {
                     match mw_event {
                         // more on here
                         // http://who-t.blogspot.com/2015/01/providing-physical-movement-of-wheel.html
-                        DeviceEvent::MouseWheel { delta } => {
-                            match delta {
-                                MouseScrollDelta::LineDelta (dx, dy) => {
-                                    mw_tot_line_dx += dx;
-                                    mw_tot_line_dy += dy;
-                                }
-                                MouseScrollDelta::PixelDelta (pixel_delta) => {
-                                    mw_tot_pixel_dx += pixel_delta.x;
-                                    mw_tot_pixel_dy += pixel_delta.y;
-                                }
-
+                        DeviceEvent::MouseWheel { delta } => match delta {
+                            MouseScrollDelta::LineDelta(dx, dy) => {
+                                mw_tot_line_dx += dx;
+                                mw_tot_line_dy += dy;
                             }
+                            MouseScrollDelta::PixelDelta(pixel_delta) => {
+                                mw_tot_pixel_dx += pixel_delta.x;
+                                mw_tot_pixel_dy += pixel_delta.y;
+                            }
+                        },
+                        _ => {
+                            error!("non-mouse-motion in mouse wheel buffer \n")
                         }
-                        _ => {error!("non-mouse-motion in mouse wheel buffer \n")}
                     }
-
                 }
-                mw_sample_start_time = Instant::now();
+
+                sample_start_time = Instant::now();
             }
 
             // check for new state & update local game state
@@ -196,7 +212,11 @@ fn main() {
                 };
             }
             // render world with updated game state
+
             // also have mouse moved data in parameters (depending on what type of input)
+            //      mm_tot_dx mm_tot_dy for mouse motion delta
+            //      mw_tot_line_dx mw_tot_line_dy for mouse wheel delta
+            //      mw_tot_pixel_dx mw_tot_pixel_dy for track delta
         }
     });
 

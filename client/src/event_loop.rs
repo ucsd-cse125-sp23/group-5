@@ -1,6 +1,6 @@
 use crate::user_input::Inputs;
 use log::debug;
-use std::sync::mpsc::{Sender};
+use std::sync::mpsc::Sender;
 use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::{
     event::*,
