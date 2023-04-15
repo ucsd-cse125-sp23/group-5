@@ -14,19 +14,19 @@ fn cartesian_to_spherical(cartesian: &glm::Vec3) -> glm::Vec3 {
         return glm::vec3(r, 0.0, 0.0);
     }
 
-    let mut phi = (cartesian.z/cartesian.x).atan();
+    let mut yaw = (cartesian.z/cartesian.x).atan();
     if cartesian.x < 0.0 {
-        phi += PI;
+        yaw += PI;
     }
-    let theta = (cartesian.y / r).asin();
-    glm::vec3(r, phi, theta)
+    let pitch = (cartesian.y / r).asin();
+    glm::vec3(r, yaw, pitch)
 }
 
 fn spherical_to_cartesian(spherical: &glm::Vec3) -> glm::Vec3 {
-    let (r, phi, theta) = (spherical.x, spherical.y, spherical.z);
-    let x = r * phi.cos() * theta.cos();
-    let y = r * theta.sin();
-    let z = r * phi.sin() * theta.cos();
+    let (r, yaw, pitch) = (spherical.x, spherical.y, spherical.z);
+    let x = r * yaw.cos() * pitch.cos();
+    let y = r * pitch.sin();
+    let z = r * yaw.sin() * pitch.cos();
     glm::vec3(x, y, z)
 }
 
