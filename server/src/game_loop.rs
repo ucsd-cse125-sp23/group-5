@@ -85,7 +85,7 @@ impl GameLoop<'_> {
             // executor step physics and sync game state
             self.executor.step(delta_time.as_secs_f32());
 
-            // broadcast the game state to all clients if necessary
+            // broadcast the game state to all clients
             let mut broadcast = self.broadcast.lock().unwrap();
             match broadcast.try_broadcast(ServerEvent::Sync) {
                 Ok(()) => {
