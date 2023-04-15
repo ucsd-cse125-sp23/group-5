@@ -4,6 +4,7 @@ use std::io::{self, Read, Write};
 use std::net::{SocketAddr, TcpStream};
 
 pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
+pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
 
 /// Trait for something that can be converted to bytes (&[u8])
 pub trait Serialize {

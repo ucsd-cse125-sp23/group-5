@@ -6,7 +6,7 @@ use server::game_loop::{ClientCommand, GameLoop, ServerEvent};
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{
-    io::{prelude::*},
+    io::prelude::*,
     net::{TcpListener, TcpStream},
     thread,
 };
@@ -73,7 +73,8 @@ fn main() {
             let write_handle = thread::spawn(move || {
                 while let Ok(ServerEvent::Sync) = rx.recv() {
                     let game_state = game_state.lock().unwrap();
-                    protocol.send_message(&Message::new(
+                    protocol
+                        .send_message(&Message::new(
                             HostRole::Server,
                             Payload::StateSync(game_state.clone()),
                         ))
