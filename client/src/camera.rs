@@ -7,6 +7,29 @@ extern crate nalgebra_glm as glm;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.001;
 
+fn cartesian_to_spherical(cartesian: &glm::Vec3) -> glm::Vec3 {
+    let r = glm::length(&cartesian);
+
+    if cartesian.x == 0.0 && cartesian.z == 0.0{
+        return glm::vec3(r, 0.0, 0.0);
+    }
+
+    let mut phi = (cartesian.z/cartesian.x).atan();
+    if cartesian.x < 0.0 {
+        phi += PI;
+    }
+    let theta = (cartesian.y / r).asin();
+    glm::vec3(r, phi, theta)
+}
+
+fn spherical_to_cartesian(spherical: &glm::Vec3) -> glm::Vec3 {
+    let (r, phi, theta) = (spherical.x, spherical.y, spherical.z);
+    let x = r * phi.cos() * theta.cos();
+    let y = r * theta.sin();
+    let z = r * phi.sin() * theta.cos();
+    glm::vec3(x, y, z)
+}
+
 #[derive(Debug)]
 pub struct Camera {
     pub position: glm::TVec3<f32>,
@@ -21,14 +44,11 @@ impl Camera {
         target: glm::TVec3<f32>,
         up: glm::TVec3<f32>,
     ) -> Self {
-        let r = (position.x.powi(2) + position.y.powi(2) + position.z.powi(2)).sqrt(); 
-        let yaw = (position.z / position.x).atan2(position.x);
-        let pitch = (position.y / r).acos(); 
         Self {
             position,
             target,
             up,
-            spherical_coords: glm::vec3(r, yaw, pitch), 
+            spherical_coords: cartesian_to_spherical(&position), 
         }
     }
 
@@ -222,7 +242,7 @@ impl CameraController {
         */
         // Rotate
         let delta_yaw = self.rotate_horizontal * self.x_sensitivity * dt;
-        let delta_pitch = -self.rotate_vertical * self.y_sensitivity * dt;
+        let delta_pitch = self.rotate_vertical * self.y_sensitivity * dt;
         
         // If process_mouse isn't called every frame, these values
         // will not get set to zero, and the camera will rotate
@@ -233,14 +253,10 @@ impl CameraController {
         camera.spherical_coords.y = (camera.spherical_coords.y + delta_yaw) % (2.0 * PI); 
 
         // keep the camera's angle from going too high/low
-        camera.spherical_coords.z = (camera.spherical_coords.z - delta_pitch).clamp(-SAFE_FRAC_PI_2, SAFE_FRAC_PI_2); 
+        camera.spherical_coords.z = (camera.spherical_coords.z + delta_pitch).clamp(-SAFE_FRAC_PI_2, SAFE_FRAC_PI_2); 
 
         // calculate new camera position from rotated spherical coords
-        camera.position = glm::vec3(
-            camera.spherical_coords.x * camera.spherical_coords.z.cos() * camera.spherical_coords.y.cos(),
-            camera.spherical_coords.x * camera.spherical_coords.z.sin(),
-            camera.spherical_coords.x * camera.spherical_coords.z.cos() * camera.spherical_coords.y.sin()
-        );
+        camera.position = camera.target + spherical_to_cartesian(&camera.spherical_coords);
         
     } 
 
