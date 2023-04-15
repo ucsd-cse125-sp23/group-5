@@ -3,36 +3,46 @@ use std::io::{self, prelude::*, BufReader, Write};
 use std::str;
 use std::sync::mpsc::{Receiver, SendError, Sender};
 use std::sync::{mpsc, Arc, Mutex};
-use winit::event::Event::WindowEvent;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
+use winit::platform::run_return::EventLoopExtRunReturn;
+use crate::user_input::Inputs;
 
-pub struct PlayerLoop<'a> {
-    // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
-    commands: Sender<KeyboardInput>,
+pub struct UserInput {
+    pub(crate) client_id: u32,
+    pub input: Inputs,
 }
 
-impl PlayerLoop<'_> {
+impl UserInput {
+    pub fn new(client_id: u32, input: Inputs) -> UserInput {
+        UserInput { client_id, input }
+    }
+}
+
+pub struct PlayerLoop {
+    // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
+    inputs: Sender<UserInput>,
+}
+
+impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    /// * `running` - used to stop the game loop (mostly for testing and debugging purposes)
-    pub fn new(commands: Sender<KeyboardInput>) -> PlayerLoop {
-        PlayerLoop { commands }
+    pub fn new(commands: Sender<UserInput>) -> PlayerLoop {
+        PlayerLoop { inputs: commands }
     }
 
     /// Starts the game loop.
     pub async fn run(&mut self) {
-        env_logger::init();
-        let event_loop = EventLoop::new();
+        let mut event_loop = EventLoop::new();
         let window = WindowBuilder::new().build(&event_loop).unwrap();
 
         let mut state = State::new(window).await;
 
-        event_loop.run(move |event, _, control_flow| match event {
+        event_loop.run_return(move |event, _, control_flow| match event {
             // event
             Event::WindowEvent {
                 ref event,
@@ -43,15 +53,24 @@ impl PlayerLoop<'_> {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
                             input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
                             ..
                         } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput { input } => {
-                            self.commands.send(input).expect("Failed to send input");
+                        WindowEvent::KeyboardInput {
+                            input
+                            ,
+                            ..
+                        } => {
+                            match self.inputs.send(UserInput::new(1, Inputs::Keyboard(*input))) {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    debug!("Error sending input: {:?}", e);
+                                }
+                            }
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);
