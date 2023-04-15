@@ -6,6 +6,7 @@ use rapier3d::parry::transformation::utils::transform;
 use rapier3d::prelude as rapier;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use crate::simulation::obj_collider::FromObject;
 
 #[derive(Error, Debug, Display)]
 pub struct HandlerError {
@@ -18,6 +19,34 @@ pub trait CommandHandler {
     fn handle(&self, game_state: &mut GameState, physics_state: &mut PhysicsState)
         -> HandlerResult;
 }
+
+#[derive(Constructor)]
+/// Handles the startup command that initializes the games state and physics world
+pub struct StartupCommandHandler {
+    map_obj_path: String,
+}
+
+impl CommandHandler for StartupCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+    ) -> HandlerResult {
+        // loading the object model
+        let map = tobj::load_obj("assets/island.obj", &tobj::GPU_LOAD_OPTIONS);
+
+        let (models, materials) = map.unwrap();
+
+        // Physics state
+        let collider = rapier::ColliderBuilder::from_object_models(models)
+            .translation(rapier::vector![0.0, 0.0, 0.0])
+            .build();
+
+        physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
+        Ok(())
+    }
+}
+
 
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
@@ -36,7 +65,7 @@ impl CommandHandler for SpawnCommandHandler {
             .build();
 
         let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-            .translation(rapier::vector![0.0, 0.0, 0.0])
+            .translation(rapier::vector![0.0, 6.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 

@@ -9,12 +9,12 @@ use winit::{
 };
 
 pub struct UserInput {
-    pub(crate) client_id: u32,
+    pub(crate) client_id: u8,
     pub input: Inputs,
 }
 
 impl UserInput {
-    pub fn new(client_id: u32, input: Inputs) -> UserInput {
+    pub fn new(client_id: u8, input: Inputs) -> UserInput {
         UserInput { client_id, input }
     }
 }
@@ -24,14 +24,14 @@ pub struct PlayerLoop {
     inputs: Sender<UserInput>,
 
     // current player id
-    client_id: u32,
+    client_id: u8,
 }
 
 impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<UserInput>, id: u32) -> PlayerLoop {
+    pub fn new(commands: Sender<UserInput>, id: u8) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             client_id: id,

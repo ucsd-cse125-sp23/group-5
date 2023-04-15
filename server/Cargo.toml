@@ -19,6 +19,9 @@ derive_more = "0.99.17"
 nalgebra = { version = "0.32.2", features = ["convert-glam023"] }
 tobj = "3.2.5"
 
+[dev-dependencies]
+approx = "0.5.1"
+
 [[bin]]
 name = "debug_client"
 path = "src/debug_client.rs"

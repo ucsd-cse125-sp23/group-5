@@ -82,7 +82,7 @@ fn main() {
     let mut protocol = Protocol::connect(dest).unwrap();
 
     // TODO: Initial Connection to get current client id
-    let mut client_id: u32 = 0;
+    let mut client_id = 0;
     let msg = protocol.read_message::<Message>().unwrap();
     match msg {
         Message {

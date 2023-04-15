@@ -1,4 +1,4 @@
-use crate::executor::command_handlers::{CommandHandler, MoveCommandHandler, SpawnCommandHandler};
+use crate::executor::command_handlers::{CommandHandler, MoveCommandHandler, SpawnCommandHandler, StartupCommandHandler};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
@@ -31,6 +31,16 @@ impl Executor {
         Executor {
             game_state,
             physics_state: RefCell::new(PhysicsState::new()),
+        }
+    }
+
+    pub fn init(&self) {
+        let mut game_state = self.game_state.lock().unwrap();
+        let mut physics_state = self.physics_state.borrow_mut();
+
+        let handler = StartupCommandHandler::new("assets/island.obj".to_string());
+        if let Err(e) = handler.handle(&mut game_state, &mut physics_state) {
+            panic!("Failed init executor game/physics states: {:?}", e);
         }
     }
 

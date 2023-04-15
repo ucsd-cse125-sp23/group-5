@@ -2,7 +2,6 @@ use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::convert::From;
 use std::hash::Hasher;
 use std::io::{self, Read, Write};
-
 use crate::communication::commons::*;
 use crate::core::command::Command;
 use crate::core::states::GameState;
@@ -30,7 +29,7 @@ impl Message {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum HostRole {
     Server,
     Client(u8), // client id in the range of 1-255
@@ -41,7 +40,7 @@ pub enum Payload {
     Ping,
     StateSync(GameState),
     Command(Command),
-    Init(u32),
+    Init(u8),
 }
 
 /// message kind to u8
@@ -68,12 +67,25 @@ impl From<&HostRole> for u8 {
     }
 }
 
+impl From<Payload> for u8 {
+    fn from(msg: Payload) -> Self {
+        u8::from(&msg)
+    }
+}
+
+impl From<HostRole> for u8 {
+    fn from(role: HostRole) -> Self {
+        u8::from(&role)
+    }
+}
+
+
 impl Serialize for Message {
     /// Serialize Request to bytes (to send to client)
     ///
     /// Returns the number of bytes written
     fn serialize(&self, buf: &mut impl Write) -> io::Result<()> {
-        buf.write_u8((&self.host_role).into())?; // write host role
+        buf.write_u8(self.host_role.into())?; // write host role
         buf.write_u64::<NetworkEndian>(self.timestamp)?; // write timestamp
         buf.write_u8((&self.payload).into())?; // write payload kind
 

@@ -18,22 +18,30 @@ use threadpool::ThreadPool;
 fn main() {
     env_logger::init();
 
+    // some multithreading primitives
+    // channel for sending events to the game loop
     let (tx, rx) = mpsc::channel();
-    let game_state = Arc::new(Mutex::new(GameState::default()));
-    let ext = Executor::new(game_state.clone());
-
+    // atomic bool to signal when to stop the game loop
     let running = Arc::new(AtomicBool::new(true));
+    // bus for broadcasting events to all clients
     let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
 
+    // create game state which will be shared among all threads
+    let game_state = Arc::new(Mutex::new(GameState::default()));
+
+    // create executor and init game state
+    let executor = Executor::new(game_state.clone());
+    executor.init();
+
+    // start listening for new clients
     let listener = TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap();
     let pool = ThreadPool::new(4);
 
     let mut broadcast_clone = broadcast.clone();
     thread::spawn(move || {
-        let mut game_loop = GameLoop::new(rx, &ext, broadcast_clone, running.clone());
+        let mut game_loop = GameLoop::new(rx, &executor, broadcast_clone, running.clone());
         game_loop.run();
     });
-    static Client_ID: AtomicU32 = AtomicU32::new(1);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
@@ -42,7 +50,6 @@ fn main() {
         let broadcast_clone = broadcast.clone();
         let game_state = game_state.clone();
         pool.execute(move || {
-            let server_id = Client_ID.fetch_add(1, Ordering::SeqCst);
             let mut rx = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
             let mut protocol = Protocol::with_stream(stream).unwrap();
 
@@ -76,7 +83,7 @@ fn main() {
             let write_handle = thread::spawn(move || {
                 // first need to send a message to client to let client know it's id
                 protocol
-                    .send_message(&Message::new(HostRole::Server, Payload::Init(server_id)))
+                    .send_message(&Message::new(HostRole::Server, Payload::Init(HostRole::Server.into())))
                     .unwrap();
 
                 // then proceeds on to later tasks
@@ -86,7 +93,13 @@ fn main() {
                         HostRole::Server,
                         Payload::StateSync(game_state.clone()),
                     )) {
-                        warn!("Failed to send message: {:?}", e);
+                        match e.kind() {
+                            std::io::ErrorKind::BrokenPipe => {
+                                warn!("Client disconnected");
+                                break;
+                            }
+                            _ => {}
+                        }
                     }
                 }
             });

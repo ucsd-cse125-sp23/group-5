@@ -4,11 +4,12 @@ use rapier3d::math::Real;
 use tobj;
 
 pub trait FromObject {
-    fn from_object(models: Vec<tobj::Model>) -> Self;
+    fn from_object_models(models: Vec<tobj::Model>) -> Self;
 }
 
 impl FromObject for ColliderBuilder {
-    fn from_object(models: Vec<tobj::Model>) -> ColliderBuilder {
+    /// Create a collider from a list of object models (combine all the meshes into one collider)
+    fn from_object_models(models: Vec<tobj::Model>) -> ColliderBuilder {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let mut vertex_offset = 0;
@@ -34,23 +35,29 @@ impl FromObject for ColliderBuilder {
 
 #[cfg(test)]
 mod tests {
-    use nalgebra::{Point, Point3};
+    use approx::relative_eq;
     use rapier3d::geometry::ColliderBuilder;
-    use rapier3d::math::Real;
     use rapier3d::prelude::Isometry;
     use crate::simulation::obj_collider::{FromObject};
 
     #[test]
-    fn test() {
-        let cornell_box = tobj::load_obj("assets/unit_cube_divided_dup.obj", &tobj::GPU_LOAD_OPTIONS);
+    fn test_loading_simple_model() {
+        // use parent of CARGO_MANIFEST_DIR
+        let path = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        let path = std::path::Path::new(&path).parent().unwrap();
+        let island = tobj::load_obj(path.join("assets/island.obj"), &tobj::GPU_LOAD_OPTIONS);
 
-        let (models, materials) = cornell_box.unwrap();
+        let (models, materials) = island.unwrap();
 
-        let collider = ColliderBuilder::from_object(models);
-        let bounding_sphere = collider.shape.0.compute_bounding_sphere(&Isometry::identity());
-        let radius = bounding_sphere.radius();
-        let center = bounding_sphere.center();
-        assert!(radius > 0.86);
-        assert_ne!(center, &Point3::<Real>::origin());
+        let collider = ColliderBuilder::from_object_models(models);
+        let aabb = collider.shape.0.compute_aabb(&Isometry::identity());
+
+        // mins: [-4.934327, -1.3986979, -3.9341192], maxs: [4.454054, 3.599072, 4.615514] }
+        relative_eq!(aabb.mins.x, -4.934327);
+        relative_eq!(aabb.mins.y, -1.3986979);
+        relative_eq!(aabb.mins.z, -3.9341192);
+        relative_eq!(aabb.maxs.x, 4.454054);
+        relative_eq!(aabb.maxs.y, 3.599072);
+        relative_eq!(aabb.maxs.z, 4.615514);
     }
 }
