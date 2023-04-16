@@ -1,20 +1,93 @@
+use bus::Bus;
+use common::core::states::GameState;
+use log::debug;
+use server::executor::Executor;
+use server::game_loop::{ClientCommand, GameLoop, ServerEvent};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{mpsc, Arc, Mutex};
 use std::{
-    io::{prelude::*, BufReader},
+    io::prelude::*,
     net::{TcpListener, TcpStream},
+    thread,
 };
 
-use server::thread_pool::ThreadPool;
+use common::communication::commons::{Protocol, DEFAULT_SERVER_ADDR};
+use common::communication::message::{HostRole, Message, Payload};
+use threadpool::ThreadPool;
+use common::communication::message::Payload::Ping;
 
 fn main() {
     env_logger::init();
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+
+    let (tx, rx) = mpsc::channel();
+    let game_state = Arc::new(Mutex::new(GameState::default()));
+    let ext = Executor::new(game_state.clone());
+
+    let running = Arc::new(AtomicBool::new(true));
+    let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
+
+    let listener = TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap();
     let pool = ThreadPool::new(4);
+
+    let mut broadcast_clone = broadcast.clone();
+    thread::spawn(move || {
+        let mut game_loop = GameLoop::new(rx, &ext, broadcast_clone, running.clone());
+        game_loop.run();
+    });
+    static Client_ID: AtomicU32 = AtomicU32::new(1);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
+        debug!("New client connected");
+        let tx = tx.clone();
+        let broadcast_clone = broadcast.clone();
+        let game_state = game_state.clone();
+        pool.execute(move || {
+            let server_id = Client_ID.fetch_add(1, Ordering::SeqCst);
+            let mut rx = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
+            let mut protocol = Protocol::with_stream(stream).unwrap();
+            // need to clone the protocol to be able to read and write from different threads
+            let mut protocol_clone = protocol.try_clone().unwrap();
+            // initialize connection
+            protocol_clone.send_message(&Message::new(HostRole::Server, Payload::Init(server_id))).expect("send message fails");
+            debug!("Sending initialization request");
 
-        pool.execute(|| {
-            handle_connection(stream);
+            let read_handle = thread::spawn(move || {
+                // TODO: handle disconnection and errors
+                while let Ok(msg) = protocol_clone.read_message::<Message>() {
+                    match msg {
+                        Message {
+                            host_role: HostRole::Client(client_id),
+                            payload,
+                            ..
+                        } => match payload {
+                            Payload::Command(command) => {
+                                tx.send(ClientCommand::new(client_id.into(), command))
+                                    .unwrap();
+                            }
+                            Payload::Ping => {
+                                protocol_clone
+                                    .send_message(&Message::new(HostRole::Server, Ping))
+                                    .unwrap();
+                            }
+                            _ => {}
+                        },
+                        _ => {}
+                    }
+                }
+            });
+
+            let write_handle = thread::spawn(move || {
+                while let Ok(ServerEvent::Sync) = rx.recv() {
+                    let game_state = game_state.lock().unwrap();
+                    protocol
+                        .send_message(&Message::new(
+                            HostRole::Server,
+                            Payload::StateSync(game_state.clone()),
+                        ))
+                        .unwrap();
+                }
+            });
         });
     }
 }

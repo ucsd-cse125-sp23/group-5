@@ -29,3 +29,6 @@ target/
 # OS
 .DS_Store
 
+# Cargo lock
+Cargo.lock
+
