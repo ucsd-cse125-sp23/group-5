@@ -119,12 +119,39 @@ fn main() {
         let mut mouse_motion_buf = Queue::new();
         let mut mouse_wheel_buf = Queue::new();
         let mut sample_start_time = Instant::now();
+
         loop {
-            // get input from event
             while let Ok(user_input) = rx.recv() {
                 match user_input.input {
                     Inputs::Keyboard(input) => {
                         handle_keyboard_input(input, &mut protocol);
+                        // handle keyboard event
+                        // check for new state & update local game state
+                        while let Ok(msg) = protocol.read_message::<Message>() {
+                            match msg {
+                                Message {
+                                    host_role: HostRole::Server,
+                                    payload,
+                                    ..
+                                } => {
+                                    match payload {
+                                        // statesync
+                                        Payload::StateSync(update_game_state) => {
+                                            // update state
+                                            let mut game_state = game_state.lock().unwrap();
+                                            *game_state = update_game_state;
+                                            // according to the state, render world
+                                            info!("Received game state: {:?}", game_state);
+                                            break;
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                _ => {}
+                            };
+                        }
+                        // render world with updated game state
+
                         break;
                     }
                     Inputs::Mouse(input) => {
@@ -134,85 +161,56 @@ fn main() {
                             &mut mouse_motion_buf,
                             &mut mouse_wheel_buf,
                         );
+                        // handle mouse event
+                        // also have mouse moved data in parameters (depending on what type of input)
+                        //      mm_tot_dx mm_tot_dy for mouse motion delta
+                        //      mw_tot_line_dx mw_tot_line_dy for mouse wheel delta
+                        //      mw_tot_pixel_dx mw_tot_pixel_dy for track delta
+                        // sampling: check if mouse movement durations has passed
+                        let elapsed = sample_start_time.elapsed();
+                        if elapsed < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
+                            mm_tot_dx = 0.0;
+                            mm_tot_dy = 0.0;
+                            mw_tot_line_dx = 0.0;
+                            mw_tot_line_dy = 0.0;
+                            mw_tot_pixel_dx = 0.0;
+                            mw_tot_pixel_dy = 0.0;
+                            let n = mouse_motion_buf.size();
+                            for _ in 1..n {
+                                let mm_event = mouse_motion_buf.remove().unwrap();
+                                match mm_event {
+                                    DeviceEvent::MouseMotion { delta } => {
+                                        let (dx, dy) = delta;
+                                        mm_tot_dx += dx;
+                                        mm_tot_dy += dy;
+                                    }
+                                    _ => {
+                                        error!("non-mouse-motion in mouse motion buffer \n")
+                                    }
+                                }
+                                let mw_event = mouse_wheel_buf.remove().unwrap();
+                                match mw_event {
+                                    // more on here
+                                    // http://who-t.blogspot.com/2015/01/providing-physical-movement-of-wheel.html
+                                    DeviceEvent::MouseWheel { delta } => match delta {
+                                        MouseScrollDelta::LineDelta(dx, dy) => {
+                                            mw_tot_line_dx += dx;
+                                            mw_tot_line_dy += dy;
+                                        }
+                                        MouseScrollDelta::PixelDelta(pixel_delta) => {
+                                            mw_tot_pixel_dx += pixel_delta.x;
+                                            mw_tot_pixel_dy += pixel_delta.y;
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            sample_start_time = Instant::now();
+                        }
                         break;
                     }
                 }
             }
-
-            // also have mouse moved data in parameters (depending on what type of input)
-            //      mm_tot_dx mm_tot_dy for mouse motion delta
-            //      mw_tot_line_dx mw_tot_line_dy for mouse wheel delta
-            //      mw_tot_pixel_dx mw_tot_pixel_dy for track delta
-            // sampling: check if mouse movement durations has passed
-            let elapsed = sample_start_time.elapsed();
-            if elapsed > Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
-                mm_tot_dx = 0.0;
-                mm_tot_dy = 0.0;
-                mw_tot_line_dx = 0.0;
-                mw_tot_line_dy = 0.0;
-                mw_tot_pixel_dx = 0.0;
-                mw_tot_pixel_dy = 0.0;
-                let n = mouse_motion_buf.size();
-                for _ in 1..n {
-                    let mm_event = mouse_motion_buf.remove().unwrap();
-                    match mm_event {
-                        DeviceEvent::MouseMotion { delta } => {
-                            let (dx, dy) = delta;
-                            mm_tot_dx += dx;
-                            mm_tot_dy += dy;
-                        }
-                        _ => {
-                            error!("non-mouse-motion in mouse motion buffer \n")
-                        }
-                    }
-                    let mw_event = mouse_wheel_buf.remove().unwrap();
-                    match mw_event {
-                        // more on here
-                        // http://who-t.blogspot.com/2015/01/providing-physical-movement-of-wheel.html
-                        DeviceEvent::MouseWheel { delta } => match delta {
-                            MouseScrollDelta::LineDelta(dx, dy) => {
-                                mw_tot_line_dx += dx;
-                                mw_tot_line_dy += dy;
-                            }
-                            MouseScrollDelta::PixelDelta(pixel_delta) => {
-                                mw_tot_pixel_dx += pixel_delta.x;
-                                mw_tot_pixel_dy += pixel_delta.y;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                sample_start_time = Instant::now();
-            }
-
-            // check for new state & update local game state
-            while let Ok(msg) = protocol.read_message::<Message>() {
-                match msg {
-                    Message {
-                        host_role: HostRole::Server,
-                        payload,
-                        ..
-                    } => {
-                        match payload {
-                            // what should we do with the logic of Ping
-
-                            // statesync
-                            Payload::StateSync(update_game_state) => {
-                                // update state
-                                let mut game_state = game_state.lock().unwrap();
-                                *game_state = update_game_state;
-                                // according to the state, render world
-                                info!("Received game state: {:?}", game_state);
-                                break;
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                };
-            }
-            // render world with updated game state
-
         }
     });
 
