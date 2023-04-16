@@ -80,11 +80,14 @@ fn main() {
     let dest: SocketAddr = server_details.parse().expect("server details parse fails");
 
     let mut protocol = Protocol::connect(dest).unwrap();
+    // need to clone the protocol to be able to receive events and game states from different threads
+    let mut protocol_clone = protocol.try_clone().unwrap();
 
     let mut client_id: u32 = 0;
 
     let mut event_loop = PlayerLoop::new(tx, client_id);
 
+    // message queue for handling input event
     thread::spawn(move || {
         // TODO: Initial Connection to get current client id
         while let Ok(msg) = protocol.read_message::<Message>() {
@@ -192,9 +195,14 @@ fn main() {
                     }
                 }
             }
+        }
+    });
 
+    // client-side update
+    thread::spawn(move || {
+        loop {
             // check for new state & update local game state
-            while let Ok(msg) = protocol.read_message::<Message>() {
+            while let Ok(msg) = protocol_clone.read_message::<Message>() {
                 match msg {
                     Message {
                         host_role: HostRole::Server,

@@ -69,7 +69,7 @@ impl GameLoop<'_> {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
 
-            let mut should_sync = false; // whether we should sync the game state to the clients
+            let mut should_sync = true; // whether we should sync the game state to the clients
 
             // consume all messages in the channel
             while let Ok(command) = self.commands.try_recv() {
