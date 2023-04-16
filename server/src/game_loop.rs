@@ -22,6 +22,7 @@ impl ClientCommand {
         ClientCommand { client_id, command }
     }
 }
+
 /// Server events that are broadcasted to the consumer threads.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ServerEvent {
@@ -66,30 +67,32 @@ impl GameLoop<'_> {
 
     /// Starts the game loop.
     pub fn run(&mut self) {
+        let mut last_instant = Instant::now(); // used to calculate the delta time
+
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
 
-            let mut should_sync = true; // whether we should sync the game state to the clients
-
             // consume all messages in the channel
             while let Ok(command) = self.commands.try_recv() {
-                // for now, if we receive a command, we assume the game state has changed
-                should_sync = true;
-
                 // execute the command
                 self.executor.execute(command);
             }
 
-            // broadcast the game state to all clients if necessary
+            // calculate the delta time
+            let delta_time = Instant::now().duration_since(last_instant);
+            last_instant = Instant::now();
+
+            // executor step physics and sync game state
+            self.executor.step(delta_time.as_secs_f32());
+
+            // broadcast the game state to all clients
             let mut broadcast = self.broadcast.lock().unwrap();
-            if should_sync {
-                match broadcast.try_broadcast(ServerEvent::Sync) {
-                    Ok(()) => {
-                        debug!("Broadcasted game state");
-                    }
-                    Err(e) => {
-                        debug!("Failed to broadcast: {:?} (possibly previous broadcast not received by all consumers)", e);
-                    }
+            match broadcast.try_broadcast(ServerEvent::Sync) {
+                Ok(()) => {
+                    debug!("Broadcasted game state");
+                }
+                Err(e) => {
+                    debug!("Failed to broadcast: {:?} (possibly previous broadcast not received by all consumers)", e);
                 }
             }
 

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerState {
-    pub id: usize,
+    pub id: u32,
     pub transform: Transform,
     pub physics: Physics,
 }
