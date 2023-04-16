@@ -50,6 +50,7 @@ fn main() {
             let mut protocol_clone = protocol.try_clone().unwrap();
             // initialize connection
             protocol_clone.send_message(&Message::new(HostRole::Server, Payload::Init(server_id))).expect("send message fails");
+            debug!("Sending initialization request");
 
             let read_handle = thread::spawn(move || {
                 // TODO: handle disconnection and errors

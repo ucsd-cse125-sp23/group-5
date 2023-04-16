@@ -96,7 +96,7 @@ fn main() {
                 } => match payload {
                     Payload::Init(incoming_id) => {
                         client_id = incoming_id;
-                        info!("Received initialization ");
+                        info!("Connection established ");
                         break;
                     }
                     _ => {
@@ -143,10 +143,9 @@ fn main() {
             //      mm_tot_dx mm_tot_dy for mouse motion delta
             //      mw_tot_line_dx mw_tot_line_dy for mouse wheel delta
             //      mw_tot_pixel_dx mw_tot_pixel_dy for track delta
-
             // sampling: check if mouse movement durations has passed
             let elapsed = sample_start_time.elapsed();
-            if elapsed < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
+            if elapsed > Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
                 mm_tot_dx = 0.0;
                 mm_tot_dy = 0.0;
                 mw_tot_line_dx = 0.0;
