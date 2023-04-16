@@ -14,7 +14,7 @@ use common::communication::message::{HostRole, Message, Payload};
 use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
 
-fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol) {
+fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol, client_id: u32) {
     let mut command: Option<Command> = None;
     match input.virtual_keycode {
         Some(VirtualKeyCode::W) => {
@@ -41,7 +41,7 @@ fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol) {
 
     protocol
         .send_message(&Message::new(
-            HostRole::Client(1),
+            HostRole::Client(client_id as u8),
             Payload::Command(command.clone().unwrap()),
         ))
         .expect("send message fails");
@@ -121,37 +121,11 @@ fn main() {
         let mut sample_start_time = Instant::now();
 
         loop {
+            // handle keyboard event
             while let Ok(user_input) = rx.recv() {
                 match user_input.input {
                     Inputs::Keyboard(input) => {
-                        handle_keyboard_input(input, &mut protocol);
-                        // handle keyboard event
-                        // check for new state & update local game state
-                        while let Ok(msg) = protocol.read_message::<Message>() {
-                            match msg {
-                                Message {
-                                    host_role: HostRole::Server,
-                                    payload,
-                                    ..
-                                } => {
-                                    match payload {
-                                        // statesync
-                                        Payload::StateSync(update_game_state) => {
-                                            // update state
-                                            let mut game_state = game_state.lock().unwrap();
-                                            *game_state = update_game_state;
-                                            // according to the state, render world
-                                            info!("Received game state: {:?}", game_state);
-                                            break;
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                                _ => {}
-                            };
-                        }
-                        // render world with updated game state
-
+                        handle_keyboard_input(input, &mut protocol, client_id);
                         break;
                     }
                     Inputs::Mouse(input) => {
@@ -207,10 +181,44 @@ fn main() {
                             }
                             sample_start_time = Instant::now();
                         }
+                        protocol
+                            .send_message(&Message::new(
+                                HostRole::Client(client_id as u8),
+                                Payload::Command(Command::Turn(Default::default())),
+                            ))
+                            .expect("send message fails");
+                        info!("Sent command: {:?}", "Turn");
                         break;
                     }
                 }
             }
+
+            // check for new state & update local game state
+            while let Ok(msg) = protocol.read_message::<Message>() {
+                match msg {
+                    Message {
+                        host_role: HostRole::Server,
+                        payload,
+                        ..
+                    } => {
+                        match payload {
+                            // statesync
+                            Payload::StateSync(update_game_state) => {
+                                // update state
+                                let mut game_state = game_state.lock().unwrap();
+                                *game_state = update_game_state;
+                                // according to the state, render world
+                                info!("Received game state: {:?}", game_state);
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                };
+            }
+            // render world with updated game state
+
         }
     });
 
