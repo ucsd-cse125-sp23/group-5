@@ -1,5 +1,5 @@
-use crate::user_input::Inputs;
-use log::debug;
+use crate::inputs::Input;
+use log::{debug, info, warn};
 use std::sync::mpsc::Sender;
 use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::{
@@ -8,13 +8,14 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+#[derive(Debug)]
 pub struct UserInput {
-    pub(crate) client_id: u32,
-    pub input: Inputs,
+    pub(crate) client_id: u8,
+    pub input: Input,
 }
 
 impl UserInput {
-    pub fn new(client_id: u32, input: Inputs) -> UserInput {
+    pub fn new(client_id: u8, input: Input) -> UserInput {
         UserInput { client_id, input }
     }
 }
@@ -24,14 +25,14 @@ pub struct PlayerLoop {
     inputs: Sender<UserInput>,
 
     // current player id
-    client_id: u32,
+    client_id: u8,
 }
 
 impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<UserInput>, id: u32) -> PlayerLoop {
+    pub fn new(commands: Sender<UserInput>, id: u8) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             client_id: id,
@@ -64,13 +65,14 @@ impl PlayerLoop {
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput { input, .. } => {
+                            info!("Keyboard input: {:?}", input);
                             match self
                                 .inputs
-                                .send(UserInput::new(self.client_id, Inputs::Keyboard(*input)))
+                                .send(UserInput::new(self.client_id, Input::Keyboard(*input)))
                             {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    debug!("Error sending input: {:?}", e);
+                                    warn!("Error sending input: {:?}", e);
                                 }
                             }
                         }
@@ -92,7 +94,7 @@ impl PlayerLoop {
                     let output_event = event.clone();
                     match self
                         .inputs
-                        .send(UserInput::new(self.client_id, Inputs::Mouse(output_event)))
+                        .send(UserInput::new(self.client_id, Input::Mouse(output_event)))
                     {
                         Ok(_) => {}
                         Err(e) => {
