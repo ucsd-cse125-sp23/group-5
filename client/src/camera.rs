@@ -108,28 +108,40 @@ pub struct CameraUniform {
     // to convert the Matrix4 into a 4x4 f32 array
     pub view_position: [f32; 4],
     pub view_proj: [[f32; 4]; 4],
-    pub invt_view_proj: [[f32; 4]; 4],
+    pub inv_view_proj: [[f32; 4]; 4],
+    pub location: [f32; 4],
 }
 
 impl CameraUniform {
     pub fn new() -> Self {
         Self {
             view_position: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
+            #[rustfmt::skip]
             view_proj: glm::mat4(
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0, 
+                0.0, 0.0, 0.0, 1.0,
             )
             .into(),
-            invt_view_proj: glm::mat4(
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            #[rustfmt::skip]
+            inv_view_proj: glm::mat4(
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0,
             )
             .into(),
+            location: [0.0, 0.0, 1.0, 1.0],
         }
     }
 
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
         self.view_position = glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
         self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).into();
-        self.invt_view_proj = glm::inverse_transpose(projection.calc_matrix() * camera.calc_matrix()).into();
+        self.inv_view_proj = glm::inverse(&(projection.calc_matrix() * camera.calc_matrix())).into();
+        self.location = [camera.position[0], camera.position[1], camera.position[2], 1.0];
+        // print!("{:?}\n", self.location);
     }
 }
 
