@@ -1,10 +1,10 @@
+use crate::communication::commons::*;
+use crate::core::command::Command;
+use crate::core::states::GameState;
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::convert::From;
 use std::hash::Hasher;
 use std::io::{self, Read, Write};
-use crate::communication::commons::*;
-use crate::core::command::Command;
-use crate::core::states::GameState;
 
 #[derive(Debug)]
 pub struct Message {
@@ -78,7 +78,6 @@ impl From<HostRole> for u8 {
         u8::from(&role)
     }
 }
-
 
 impl Serialize for Message {
     /// Serialize Request to bytes (to send to client)

@@ -1,11 +1,11 @@
-use common::communication::commons::Protocol;
-use std::sync::{Arc, mpsc, Mutex};
 use bus::{Bus, BusReader};
+use common::communication::commons::Protocol;
+use common::communication::message::{HostRole, Message, Payload};
 use common::core::states::GameState;
+use log::{debug, info, warn};
 use server::game_loop::{ClientCommand, ServerEvent};
 use std::net::TcpStream;
-use common::communication::message::{HostRole, Message, Payload};
-use log::{debug, info, warn};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 pub struct ClientHandler {
@@ -40,7 +40,12 @@ impl ClientHandler {
         let read_protocol = self.protocol.try_clone().unwrap();
         let write_protocol = self.protocol.try_clone().unwrap();
 
-        self.protocol.try_clone().unwrap()
+        // TODO: First listen Initial Request from Client
+        // if the client doesn't send a valid client_id then it is a new client, else we init
+
+        self.protocol
+            .try_clone()
+            .unwrap()
             .send_message(&Message::new(
                 HostRole::Server,
                 Payload::Init(HostRole::Client(1).into()),

@@ -17,12 +17,16 @@ fn main() {
     let (tx, rx) = mpsc::channel::<UserInput>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
-    let dest: SocketAddr = DEFAULT_SERVER_ADDR.parse().expect("server addr parse fails");
+    let dest: SocketAddr = DEFAULT_SERVER_ADDR
+        .parse()
+        .expect("server addr parse fails");
 
     let protocol = Protocol::connect(dest).unwrap();
 
     // need to clone the protocol to be able to receive events and game states from different threads
     let mut protocol_clone = protocol.try_clone().unwrap();
+
+    // TODO: should send message about myself being a new client perhaps
 
     // init connection with server and get client id
     let client_id = init_connection(&mut protocol_clone).unwrap();
