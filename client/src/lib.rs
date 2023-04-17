@@ -7,6 +7,7 @@ use winit::{
 mod camera;
 mod texture;
 mod objects;
+mod lights;
 extern crate nalgebra_glm as glm;
 
 pub async fn run() {
@@ -97,12 +98,13 @@ struct State {
     camera: camera::Camera,
     projection: camera::Projection,
     camera_controller: camera::CameraController,
-
     camera_uniform: camera::CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
     
     depth_texture: texture::Texture,
+
+    light_state: lights::LightState,
 }
 
 impl State {
@@ -230,10 +232,17 @@ impl State {
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
+        #[rustfmt::skip]
+        let TEST_LIGHTING : Vec<lights::Light> = Vec::from([
+            lights::Light{ position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0)},
+            lights::Light{ position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.5, 0.0)},
+        ]);
+        let light_state = lights::LightState::new(TEST_LIGHTING, &device);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout],
+                bind_group_layouts: &[&camera_bind_group_layout, &light_state.light_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -299,7 +308,7 @@ impl State {
             camera_buffer,
             camera_bind_group,
             depth_texture,
-
+            light_state,
         }
     }
 
@@ -362,6 +371,11 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
+        self.queue.write_buffer(
+            &self.light_state.light_buffer,
+            0,
+            bytemuck::cast_slice(&[self.light_state.light_uniform]),
+        );
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -403,6 +417,7 @@ impl State {
             // render()
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.light_state.light_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
