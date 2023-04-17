@@ -256,7 +256,7 @@ impl CameraController {
         camera.spherical_coords.z = (camera.spherical_coords.z + delta_pitch).clamp(-SAFE_FRAC_PI_2, SAFE_FRAC_PI_2); 
 
         // calculate new camera position from rotated spherical coords
-        camera.position = camera.target + spherical_to_cartesian(&camera.spherical_coords);
+        camera.position = spherical_to_cartesian(&camera.spherical_coords);
         
     } 
 
