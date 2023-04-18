@@ -5,8 +5,9 @@ struct CameraUniform {
     inv_view_proj: mat4x4<f32>,
     location: vec4<f32>,
 };
-@group(0) @binding(0)
+@group(1) @binding(0)
 var<uniform> camera: CameraUniform;
+
 
 const MAX_LIGHT = 16;
 struct LightsUniform{
@@ -17,49 +18,55 @@ struct LightsUniform{
     _p1: f32,
     _p2: f32,
 };
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> lights: LightsUniform;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) @interpolate(linear, center) normal: vec3<f32>,
-    @location(2) @interpolate(flat) ambient: vec3<f32>,
-    @location(3) @interpolate(flat) diffuse: vec3<f32>,
-    @location(4) @interpolate(flat) specular: vec3<f32>,
-    @location(5) @interpolate(flat) emission: vec3<f32>,
-    @location(6) @interpolate(flat) s: f32,
-};
+    @location(1) tex_coords: vec2<f32>,
+}
+struct InstanceInput {
+    @location(5) model_matrix_0: vec4<f32>,
+    @location(6) model_matrix_1: vec4<f32>,
+    @location(7) model_matrix_2: vec4<f32>,
+    @location(8) model_matrix_3: vec4<f32>,
+}
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(1) @interpolate(linear, center) normal: vec3<f32>,
-    @location(2) @interpolate(flat) ambient: vec3<f32>,
-    @location(3) @interpolate(flat) diffuse: vec3<f32>,
-    @location(4) @interpolate(flat) specular: vec3<f32>,
-    @location(5) @interpolate(flat) emission: vec3<f32>,
-    @location(6) @interpolate(flat) s: f32,
-    @location(7) world_coords: vec3<f32>,
-};
+    @location(0) tex_coords: vec2<f32>,
+    @location(1) world_coords: vec3<f32>,
+}
 
 @vertex
 fn vs_main(
     model: VertexInput,
+    instance: InstanceInput,
 ) -> VertexOutput {
+    let model_matrix = mat4x4<f32>(
+        instance.model_matrix_0,
+        instance.model_matrix_1,
+        instance.model_matrix_2,
+        instance.model_matrix_3,
+    );
     var out: VertexOutput;
-    out.clip_position = camera.view_proj * vec4<f32>(model.position, 1.0);
-    out.normal = model.normal;
-    out.ambient = model.ambient;
-    out.diffuse = model.diffuse;
-    out.specular = model.specular;
-    out.s = model.s;
+    out.tex_coords = model.tex_coords;
+    out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
     out.world_coords = model.position;
     return out;
 }
 
 // Fragment shader
 
+@group(0) @binding(0)
+var t_diffuse: texture_2d<f32>;
+@group(0)@binding(1)
+var s_diffuse: sampler;
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    return textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    // diff begins here
     var normal = normalize(in.normal);
     var c_loc = vec3<f32>(camera.location[0], camera.location[1], camera.location[2]);
     var eye_dirn : vec3<f32> = normalize(c_loc - in.world_coords);
