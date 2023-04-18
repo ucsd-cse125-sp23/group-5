@@ -18,6 +18,7 @@ wgpu = "0.15"
 pollster = "0.3.0"
 bytemuck = { version = "1.12", features = [ "derive" ] }
 nalgebra-glm = "0.3"
+instant = "0.1.12"
 tobj = { version = "3.2.1", features = [
     "async",
 ]}
@@ -37,3 +38,4 @@ reqwest = { version = "0.11" }
 version = "0.24"
 default-features = false
 features = ["png", "jpeg"]
+

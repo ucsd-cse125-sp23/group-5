@@ -10,7 +10,8 @@ use crate::model::DrawModel;
 mod camera;
 mod texture;
 mod resources;
-
+mod objects;
+mod lights;
 extern crate nalgebra_glm as glm;
 use cgmath::prelude::*; // change all cgmath stuff to use nalgebra
 
@@ -20,19 +21,28 @@ pub async fn run() {
     env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
+        .with_title("test")
         .with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
         .build(&event_loop)
         .unwrap();
 
-    let mut state = State::new(window).await;
+    let mut state = State::new(window).await; 
+    let mut last_render_time = instant::Instant::now();
 
     event_loop.run(move |event, _, control_flow| match event {
+        Event::DeviceEvent {
+            event: DeviceEvent::MouseMotion{ delta, },
+            .. // We're not using device_id currently
+        } => {
+            state.camera_controller.process_mouse(delta.0, delta.1)
+        }
         Event::WindowEvent {
             ref event,
             window_id,
         } if window_id == state.window.id() => {
             if !state.input(event) {
                 match event {
+                    #[cfg(not(target_arch="wasm32"))]
                     WindowEvent::CloseRequested
                     | WindowEvent::KeyboardInput {
                         input:
@@ -55,7 +65,10 @@ pub async fn run() {
             }
         }
         Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-            state.update();
+            let now = instant::Instant::now();
+            let dt = now - last_render_time;
+            last_render_time = now;
+            state.update(dt);
             match state.render() {
                 Ok(_) => {}
                 // Reconfigure the surface if lost
@@ -154,11 +167,15 @@ struct State {
     instance_buffer: wgpu::Buffer,
 
     camera: camera::Camera,
+    projection: camera::Projection,
+    camera_controller: camera::CameraController,
     camera_uniform: camera::CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-
+    
     depth_texture: texture::Texture,
+
+    light_state: lights::LightState,
 }
 
 impl State {
@@ -267,21 +284,14 @@ impl State {
         // let num_indices = INDICES.len() as u32;
 
         let camera = camera::Camera::new(
-            // position the camera one unit up and 2 units back
-            // +z is out of the screen
-            glm::vec3(3.0, 3.0, 3.0),
-            // have it look at the origin
-            glm::vec3(0.0, 0.0, 0.0),
-            // which way is "up"
-            glm::vec3(0.0, 1.0, 0.0),
-            config.width as f32 / config.height as f32,
-            45.0,
-            0.1,
-            100.0,
-        );
+            glm::vec3(0.0, 0.0, 3.0), 
+                glm::vec3(0.0, 0.0, 0.0), 
+                glm::vec3(0.0, 1.0, 0.0));
+        let projection = camera::Projection::new(config.width, config.height, 45.0, 0.1, 100.0);
+        let camera_controller = camera::CameraController::new(4.0, 1.0, 0.7);
 
         let mut camera_uniform = camera::CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
+        camera_uniform.update_view_proj(&camera, &projection);
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
@@ -323,7 +333,7 @@ impl State {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -351,10 +361,17 @@ impl State {
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
+        #[rustfmt::skip]
+        let TEST_LIGHTING : Vec<lights::Light> = Vec::from([
+            lights::Light{ position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0)},
+            lights::Light{ position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.5, 0.0)},
+        ]);
+        let light_state = lights::LightState::new(TEST_LIGHTING, &device);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout, &light_state.light_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -419,10 +436,13 @@ impl State {
             instance_buffer,
 
             camera,
+            projection,
+            camera_controller,
             camera_uniform,
             camera_buffer,
             camera_bind_group,
             depth_texture,
+            light_state,
         }
     }
 
@@ -432,28 +452,65 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
+            self.projection.resize(new_size.width, new_size.height);
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.camera
-                .update_aspect((self.config.width) as f32 / (self.config.height) as f32);
-            self.camera_uniform.update_view_proj(&self.camera);
+            
+            self.camera_uniform.update_view_proj(&self.camera, &self.projection);
             self.queue.write_buffer(
                 &self.camera_buffer,
                 0,
                 bytemuck::cast_slice(&[self.camera_uniform]),
             );
+            
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
     }
 
     fn input(&mut self, event: &WindowEvent) -> bool {
-        false
+        match event {
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        virtual_keycode: Some(key),
+                        state,
+                        ..
+                    },
+                ..
+            } => self.camera_controller.process_keyboard(*key, *state),
+            WindowEvent::MouseWheel { delta, .. } => {
+                self.camera_controller.process_scroll(delta);
+                true
+            }
+            WindowEvent::MouseInput {
+                button: MouseButton::Left,
+                state,
+                ..
+            } => {
+                true
+            }
+            _ => false,
+        }
     }
 
-    fn update(&mut self) {}
+    fn update(&mut self, dt: instant::Duration) {
+        self.camera_controller.update_camera(&mut self.camera, dt);
+        self.camera_uniform
+            .update_view_proj(&self.camera, &self.projection);
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
+        self.queue.write_buffer(
+            &self.light_state.light_buffer,
+            0,
+            bytemuck::cast_slice(&[self.light_state.light_uniform]),
+        );
+    }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
@@ -503,7 +560,6 @@ impl State {
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
 
             render_pass.set_pipeline(&self.render_pipeline);
-
             let mesh = &self.obj_model.meshes[0];
             let material = &self.obj_model.materials[mesh.material];
             render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);
