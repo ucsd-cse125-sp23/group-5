@@ -303,7 +303,7 @@ impl State {
         // let num_indices = INDICES.len() as u32;
 
         let camera = camera::Camera::new(
-            glm::vec3(0.0, 0.0, 3.0), 
+            glm::vec3(0.0, 0.0, 15.0), 
                 glm::vec3(0.0, 0.0, 0.0), 
                 glm::vec3(0.0, 1.0, 0.0));
         let projection = camera::Projection::new(config.width, config.height, 45.0, 0.1, 100.0);
