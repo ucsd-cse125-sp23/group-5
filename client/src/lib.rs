@@ -376,7 +376,7 @@ impl State {
             });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
+            label: Some("3D World Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -557,9 +557,11 @@ impl State {
             // render_pass.draw_indexed(0..12 * 3, 0, 0..1); // interior
             // render_pass.draw_indexed(12 * 3..self.num_indices, 0, 0..1); // hull
 
-            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
 
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
+
             let mesh = &self.obj_model.meshes[0];
             let material = &self.obj_model.materials[mesh.material];
             render_pass.draw_mesh_instanced(mesh, material, 0..self.instances.len() as u32, &self.camera_bind_group);

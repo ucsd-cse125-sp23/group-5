@@ -3,10 +3,24 @@ use anyhow::*;
 use image::GenericImageView;
 use std::num::NonZeroU32;
 
+pub struct Phong{
+    pub ambient: [f32; 4],
+    pub diffuse: [f32; 4],
+    pub specular: [f32; 4],
+    pub shininess: [f32; 4],
+}
+
+impl Phong{
+    pub fn default() -> Self{
+        Self { ambient: [0.0; 4], diffuse: [0.0; 4], specular: [0.0; 4], shininess: [0.0; 4] }
+    }
+}
+
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
+    pub phong_mtl: Phong,
 }
 
 impl Texture {
@@ -55,6 +69,7 @@ impl Texture {
             texture,
             view,
             sampler,
+            phong_mtl: Phong::default()
         }
     }
 
@@ -126,6 +141,7 @@ impl Texture {
             texture,
             view,
             sampler,
+            phong_mtl: Phong::default(),
         })
     }
 }

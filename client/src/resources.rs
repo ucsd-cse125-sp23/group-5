@@ -5,17 +5,17 @@ use wgpu::util::DeviceExt;
 
 use crate::{model, texture};
 
-#[cfg(target_arch = "wasm32")]
-fn format_url(file_name: &str) -> reqwest::Url {
-    let window = web_sys::window().unwrap();
-    let location = window.location();
-    let mut origin = location.origin().unwrap();
-    if !origin.ends_with("learn-wgpu") {
-        origin = format!("{}/learn-wgpu", origin);
-    }
-    let base = reqwest::Url::parse(&format!("{}/", origin,)).unwrap();
-    base.join(file_name).unwrap()
-}
+// #[cfg(target_arch = "wasm32")]
+// fn format_url(file_name: &str) -> reqwest::Url {
+//     let window = web_sys::window().unwrap();
+//     let location = window.location();
+//     let mut origin = location.origin().unwrap();
+//     if !origin.ends_with("learn-wgpu") {
+//         origin = format!("{}/learn-wgpu", origin);
+//     }
+//     let base = reqwest::Url::parse(&format!("{}/", origin,)).unwrap();
+//     base.join(file_name).unwrap()
+// }
 
 pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
     cfg_if! {
@@ -102,6 +102,10 @@ pub async fn load_model(
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: TODO,
                 },
             ],
             label: None,
