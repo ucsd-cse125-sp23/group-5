@@ -37,6 +37,7 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
     @location(1) world_coords: vec3<f32>,
+    @location(2) normal: vec3<f32>,
 }
 
 @vertex
@@ -53,7 +54,14 @@ fn vs_main(
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
     out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
-    // out.world_coords = model.position;
+    var world_coords = model_matrix * vec4<f32>(model.position, 1.0);
+    out.world_coords = vec3<f32>(
+        world_coords[0] / world_coords[3],
+        world_coords[1] / world_coords[3],
+        world_coords[2] / world_coords[3],
+    );
+    var norm = model.normal;
+    out.normal = norm;
     return out;
 }
 
@@ -61,19 +69,40 @@ fn vs_main(
 
 @group(0) @binding(0)
 var t_diffuse: texture_2d<f32>;
-@group(0)@binding(1)
+@group(0) @binding(1)
 var s_diffuse: sampler;
+struct PhongUniform{
+    ambient: vec3<f32>,
+    _pa: f32,
+    diffuse: vec3<f32>,
+    _pd: f32,
+    specular: vec3<f32>,
+    _ps: f32,
+    shininess: f32,
+    _p0: f32,
+    _p1: f32,
+    _p2: f32,
+}
+@group(0) @binding(2)
+var<uniform> phong_mtl : PhongUniform;
+@group(0) @binding(3)
+var<uniform> flags : u32;
+const HAS_DIFFUSE_TEXTURE :u32 = 1u;
+const EMPTY_FLAG :u32 = 0u;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    var color : vec3<f32> = phong_mtl.ambient;
+    if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
+        var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+        color *= vec3<f32>(t[0], t[1], t[2]);
+    }
     // // diff begins here
     // var normal = normalize(in.normal);
     // var c_loc = vec3<f32>(camera.location[0], camera.location[1], camera.location[2]);
     // var eye_dirn : vec3<f32> = normalize(c_loc - in.world_coords);
 
-    // var color : vec3<f32> = in.ambient;
-    // color += in.emission;
+    
 
     // // For now, assume light at (1.0, 0.0, 0.0)
     // for (var ind: u32 = 0u; ind < lights.num_lights; ind = ind + 1u) {
@@ -112,5 +141,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     //     }
     // }
 
-    // return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), 1.0);
+    return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;
 }

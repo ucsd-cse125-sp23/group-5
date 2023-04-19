@@ -7,9 +7,52 @@ pub struct Model {
     pub materials: Vec<Material>,
 }
 
+// We need this for Rust to store our data correctly for the shaders
+#[repr(C)]
+// This is so we can store this in a buffer
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Phong{
+    pub ambient: [f32; 4],
+    pub diffuse: [f32; 4],
+    pub specular: [f32; 4],
+    pub shininess: [f32; 4],
+}
+
+impl Phong{
+    pub fn default() -> Self{
+        Self { ambient: [0.0; 4], diffuse: [0.0; 4], specular: [0.0; 4], shininess: [0.0; 4] }
+    }
+
+    pub fn new(m : &tobj::Material) -> Self{
+        Self { 
+            ambient: [m.ambient[0], m.ambient[1], m.ambient[2], 1.0], 
+            diffuse: [m.diffuse[0], m.diffuse[1], m.diffuse[2], 1.0], 
+            specular: [m.specular[0], m.specular[1], m.specular[2], 1.0], 
+            shininess: [m.shininess, 0.0, 0.0, 0.0],
+        }
+    }
+}
+
+// We need this for Rust to store our data correctly for the shaders
+#[repr(C)]
+// This is so we can store this in a buffer
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ShaderFlags{
+    flags: u32,
+}
+
+impl ShaderFlags {
+    pub const HAS_DIFFUSE_TEXTURE :u32 = 1;
+    pub fn new(flags: u32) -> Self{
+        Self { flags }
+    }  
+}
+
 pub struct Material {
     pub name: String,
     pub diffuse_texture: texture::Texture,
+    pub phong_mtl: Phong,
+    pub flags: ShaderFlags,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -90,7 +133,7 @@ where
         self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         self.set_bind_group(0, &material.bind_group, &[]);
-        self.set_bind_group(1, camera_bind_group, &[]);
+        self.set_bind_group(1, &camera_bind_group, &[]);
         self.draw_indexed(0..mesh.num_elements, 0, instances);
     }
 }
