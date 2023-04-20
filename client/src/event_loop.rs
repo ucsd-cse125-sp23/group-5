@@ -17,7 +17,7 @@ pub struct UserInput {
 }
 
 impl UserInput {
-    pub fn new(client_id: u8, input: Input::Keyboard, but_state: ButtonState) -> UserInput {
+    pub fn new(client_id: u8, input: Input, but_state: ButtonState) -> UserInput {
         UserInput { client_id, input, but_state }
     }
 }
@@ -47,7 +47,7 @@ impl PlayerLoop {
         let window = WindowBuilder::new().build(&event_loop).unwrap();
 
         let mut state = State::new(window).await;
-        let mut input = WinitInputHelper::new();
+        let mut input_helper = WinitInputHelper::new();
 
         event_loop.run_return(move |event, _, control_flow| match event {
             // event
