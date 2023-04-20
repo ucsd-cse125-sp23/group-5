@@ -1,4 +1,4 @@
-use crate::inputs::Input;
+use crate::inputs::{ButtonState, Input};
 use log::{debug, info, warn};
 use std::sync::mpsc::Sender;
 use winit::platform::run_return::EventLoopExtRunReturn;
@@ -7,16 +7,18 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
+use winit_input_helper::WinitInputHelper;
 
 #[derive(Debug)]
 pub struct UserInput {
     pub(crate) client_id: u8,
     pub input: Input,
+    pub but_state: ButtonState,
 }
 
 impl UserInput {
-    pub fn new(client_id: u8, input: Input) -> UserInput {
-        UserInput { client_id, input }
+    pub fn new(client_id: u8, input: Input::Keyboard, but_state: ButtonState) -> UserInput {
+        UserInput { client_id, input, but_state }
     }
 }
 
@@ -45,6 +47,7 @@ impl PlayerLoop {
         let window = WindowBuilder::new().build(&event_loop).unwrap();
 
         let mut state = State::new(window).await;
+        let mut input = WinitInputHelper::new();
 
         event_loop.run_return(move |event, _, control_flow| match event {
             // event
@@ -68,7 +71,7 @@ impl PlayerLoop {
                             info!("Keyboard input: {:?}", input);
                             match self
                                 .inputs
-                                .send(UserInput::new(self.client_id, Input::Keyboard(*input)))
+                                .send(UserInput::new(self.client_id, Input::Keyboard(*input), ButtonState::Pressed))
                             {
                                 Ok(_) => {}
                                 Err(e) => {
@@ -94,7 +97,7 @@ impl PlayerLoop {
                     let output_event = event.clone();
                     match self
                         .inputs
-                        .send(UserInput::new(self.client_id, Input::Mouse(output_event)))
+                        .send(UserInput::new(self.client_id, Input::Mouse(output_event), ButtonState::NonKeyboard))
                     {
                         Ok(_) => {}
                         Err(e) => {

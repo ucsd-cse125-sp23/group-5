@@ -16,6 +16,13 @@ pub enum Input {
     Mouse(DeviceEvent),
 }
 
+#[derive(Debug)]
+pub enum ButtonState {
+    Pressed,
+    Released,
+    NonKeyboard
+}
+
 pub struct InputProcessor {
     protocol: Protocol,
     client_id: u8,
