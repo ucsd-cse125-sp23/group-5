@@ -3,6 +3,7 @@ use anyhow::*;
 use image::GenericImageView;
 use std::num::NonZeroU32;
 
+#[derive(Debug)]
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,

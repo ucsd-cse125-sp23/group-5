@@ -28,8 +28,12 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
         } else {
             let path = std::path::Path::new(env!("OUT_DIR"))
                 .join("res")
-                // .join("../common/assets")
+                // .parent()
+                // .unwrap()   // should never fail because our folder structure won't change
+                // .join("common")
+                // .join("assets")
                 .join(file_name);
+            print!("path: {path:?}\n");
             let txt = std::fs::read_to_string(path)?;
         }
     }
@@ -72,6 +76,7 @@ pub async fn load_model(
     queue: &wgpu::Queue,
     layout: &wgpu::BindGroupLayout,
 ) -> anyhow::Result<model::Model> {
+    print!("loading {file_name}\n");
     let obj_text = load_string(file_name).await?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
@@ -92,7 +97,7 @@ pub async fn load_model(
 
     let mut materials = Vec::new();
     for m in obj_materials? {
-        print!("{m:?}");
+        print!("Material: {m:?}\n");
         let phong_mtl = model::Phong::new(&m);
         let phong_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {

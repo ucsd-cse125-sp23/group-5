@@ -232,7 +232,7 @@ impl State {
 
         let camera_state = camera::CameraState::new(
             &device,
-        glm::vec3(0.0, 0.0, 15.0), 
+        glm::vec3(5.0, 10.0, 15.0), 
         glm::vec3(0.0, 0.0, 0.0), 
         glm::vec3(0.0, 1.0, 0.0),
         config.width, config.height, 45.0, 0.1, 100.0,
@@ -241,7 +241,7 @@ impl State {
 
         // Scene
         let obj_model =
-        resources::load_model("cube.obj", &device, &queue, &texture_bind_group_layout)
+        resources::load_model("island.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
         let instance_vec = vec![
@@ -252,7 +252,7 @@ impl State {
                 0.0, 0.0, 0.0, 1.0
             )},
             instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 2.0,
+                1.0, 0.0, 0.0, 10.0,
                 0.0, 1.0, 0.0, 2.0,
                 0.0, 0.0, 1.0, 2.0, 
                 0.0, 0.0, 0.0, 1.0
@@ -266,7 +266,7 @@ impl State {
         #[rustfmt::skip]
         let TEST_LIGHTING : Vec<lights::Light> = Vec::from([
             lights::Light{ position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0)},
-            lights::Light{ position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.5, 0.0)},
+            lights::Light{ position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2)},
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 

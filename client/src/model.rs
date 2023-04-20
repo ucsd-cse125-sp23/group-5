@@ -63,7 +63,7 @@ impl ShaderFlags {
     }  
 }
 
-
+#[derive(Debug)]
 pub struct Material {
     pub name: String,
     pub diffuse_texture: texture::Texture,
@@ -151,6 +151,7 @@ where
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             self.set_bind_group(0, &instanced_model.model.materials[mat_id].bind_group, &[]);
+            // print!("model:154 {:?}\n", &instanced_model.model.materials[mat_id]);
             self.set_bind_group(1, &camera_bind_group, &[]);
             self.draw_indexed(0..mesh.num_elements, 0, instances.clone());
         }

@@ -99,7 +99,7 @@ const EMPTY_FLAG :u32 = 0u;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var color : vec3<f32> = vec3<f32>(0.0, 0.0, 0.0); // phong_mtl.ambient;
+    var color : vec3<f32> = 0.1 * phong_mtl.ambient;
 
     // diff begins here
     var normal = normalize(in.normal);
@@ -142,10 +142,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         }
     }
 
-    // if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
-    //     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    //     color *= vec3<f32>(t[0], t[1], t[2]);
-    // }
+    if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
+        var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+        color *= vec3<f32>(t[0], t[1], t[2]);
+    }
 
     return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;
 }
