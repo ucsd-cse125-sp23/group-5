@@ -54,9 +54,6 @@ impl PlayerLoop {
         let mut input_helper = WinitInputHelper::new();
 
         event_loop.run_return(move |event, _, control_flow| {
-            if input_helper.update(&event) {
-
-            }
             match event {
                 // event
                 Event::WindowEvent {
@@ -68,28 +65,13 @@ impl PlayerLoop {
                             WindowEvent::CloseRequested
                             | WindowEvent::KeyboardInput {
                                 input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    },
                                 ..
                             } => *control_flow = ControlFlow::Exit,
-                            WindowEvent::KeyboardInput { input, .. } => {
-                                if let Some(keycode) = input.virtual_keycode {
-                                    info!("Keyboard input: {:?}", input);
-                                    match self.inputs.send(UserInput::new(
-                                        self.client_id,
-                                        Input::Keyboard(*input),
-                                        ButtonState::Pressed,
-                                    )) {
-                                        Ok(_) => {}
-                                        Err(e) => {
-                                            warn!("Error sending input: {:?}", e);
-                                        }
-                                    }
-                                }
-                            }
                             WindowEvent::Resized(physical_size) => {
                                 state.resize(*physical_size);
                             }
@@ -138,6 +120,26 @@ impl PlayerLoop {
                     state.window().request_redraw();
                 }
                 _ => {}
+            }
+            if input_helper.update(&event) {
+                // input_helper.
+                match event {
+                    Event::WindowEvent { ref event, .. } => match event {
+                        WindowEvent::KeyboardInput { input, .. } => {
+                            info!("key pressed captured");
+                            if let Some(keycode) = input.virtual_keycode {
+                                if input_helper.key_pressed(keycode) {
+                                    info!("key pressed captured");
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+                // if input_helper.key_pressed(VirtualKeyCode::A) {
+                //     info!("here");
+                // }
             }
         });
     }

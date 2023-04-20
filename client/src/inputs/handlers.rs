@@ -68,8 +68,8 @@ pub fn send_mouse_input(
     let mut mw_tot_pixel_dx = 0.0;
     let mut mw_tot_pixel_dy = 0.0;
 
-    let n = mouse_motion_buf.size();
-    for _ in 1..n {
+    let mm_n = mouse_motion_buf.size();
+    for _ in 1..mm_n {
         let mm_event = mouse_motion_buf.remove().unwrap();
         match mm_event {
             DeviceEvent::MouseMotion { delta } => {
@@ -81,6 +81,10 @@ pub fn send_mouse_input(
                 error!("non-mouse-motion in mouse motion buffer \n")
             }
         }
+    }
+
+    let mw_n = mouse_wheel_buf.size();
+    for _ in 1..mw_n {
         let mw_event = mouse_wheel_buf.remove().unwrap();
         if let DeviceEvent::MouseWheel { delta } = mw_event {
             match delta {
@@ -95,6 +99,7 @@ pub fn send_mouse_input(
             }
         }
     }
+
     Instant::now().clone_into(sample_start_time);
 
     protocol
