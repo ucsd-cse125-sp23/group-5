@@ -55,6 +55,12 @@ impl PlayerLoop {
 
         event_loop.run_return(move |event, _, control_flow| match event {
             // event
+            Event::DeviceEvent {
+                event: DeviceEvent::MouseMotion{ delta, },
+                .. // We're not using device_id currently
+            } => {
+                state.camera_state.camera_controller.process_mouse(delta.0, delta.1)
+            }
             Event::WindowEvent {
                 ref event,
                 window_id,
