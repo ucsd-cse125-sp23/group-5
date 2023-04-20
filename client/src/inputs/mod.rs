@@ -4,9 +4,10 @@ use common::communication::message::{HostRole, Message, Payload};
 use common::core::command::Command;
 use log::{error, info};
 use queues::{IsQueue, Queue};
+use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
-use winit::event::{DeviceEvent, KeyboardInput, MouseScrollDelta};
+use winit::event::{DeviceEvent, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
 
 pub mod handlers;
 
@@ -21,7 +22,6 @@ pub enum ButtonState {
     Pressed,
     Held,
     Released,
-    NonKeyboard,
 }
 
 pub struct InputProcessor {
@@ -40,6 +40,8 @@ impl InputProcessor {
     }
 
     pub fn run(&mut self) {
+        let mut held_map:HashMap<VirtualKeyCode, ButtonState> = HashMap::new();
+
         let mut mouse_motion_buf = Queue::new();
         let mut mouse_wheel_buf = Queue::new();
         let mut sample_start_time = Instant::now();
@@ -49,7 +51,7 @@ impl InputProcessor {
             info!("Received input: {:?}", user_input);
             match user_input.input {
                 Input::Keyboard(input) => {
-                    handlers::handle_keyboard_input(input, &mut self.protocol, self.client_id);
+                    handlers::handle_keyboard_input(&mut held_map, input, &mut self.protocol, self.client_id);
                 }
                 Input::Mouse(input) => {
                     handlers::handle_mouse_input(

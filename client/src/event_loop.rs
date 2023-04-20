@@ -13,16 +13,11 @@ use winit_input_helper::WinitInputHelper;
 pub struct UserInput {
     pub(crate) client_id: u8,
     pub input: Input,
-    pub but_state: ButtonState,
 }
 
 impl UserInput {
-    pub fn new(client_id: u8, input: Input, but_state: ButtonState) -> UserInput {
-        UserInput {
-            client_id,
-            input,
-            but_state,
-        }
+    pub fn new(client_id: u8, input: Input) -> UserInput {
+        UserInput { client_id, input, }
     }
 }
 
@@ -72,6 +67,18 @@ impl PlayerLoop {
                                     },
                                 ..
                             } => *control_flow = ControlFlow::Exit,
+                            WindowEvent::KeyboardInput { input , ..} => {
+                                info!("Keyboard input: {:?}", input);
+                                match self.inputs.send(UserInput::new(
+                                    self.client_id,
+                                    Input::Keyboard(*input),
+                                )) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        warn!("Error sending input: {:?}", e);
+                                    }
+                                }
+                            }
                             WindowEvent::Resized(physical_size) => {
                                 state.resize(*physical_size);
                             }
@@ -91,7 +98,6 @@ impl PlayerLoop {
                         match self.inputs.send(UserInput::new(
                             self.client_id,
                             Input::Mouse(output_event),
-                            ButtonState::NonKeyboard,
                         )) {
                             Ok(_) => {}
                             Err(e) => {
@@ -120,26 +126,6 @@ impl PlayerLoop {
                     state.window().request_redraw();
                 }
                 _ => {}
-            }
-            if input_helper.update(&event) {
-                // input_helper.
-                match event {
-                    Event::WindowEvent { ref event, .. } => match event {
-                        WindowEvent::KeyboardInput { input, .. } => {
-                            info!("key pressed captured");
-                            if let Some(keycode) = input.virtual_keycode {
-                                if input_helper.key_pressed(keycode) {
-                                    info!("key pressed captured");
-                                }
-                            }
-                        }
-                        _ => {}
-                    },
-                    _ => {}
-                }
-                // if input_helper.key_pressed(VirtualKeyCode::A) {
-                //     info!("here");
-                // }
             }
         });
     }
