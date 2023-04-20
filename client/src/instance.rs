@@ -1,18 +1,40 @@
+use wgpu::util::DeviceExt;
+extern crate nalgebra_glm as glm;
+
 // Instances
 // Lets us duplicate objects in a scene with less cost
 pub struct Instance {
-    pub position: cgmath::Vector3<f32>,
-    pub rotation: cgmath::Quaternion<f32>,
+    pub transform: nalgebra_glm::TMat4<f32>,
+}
+
+pub struct InstanceState{
+    pub data : Vec<InstanceRaw>,
+    pub buffer: wgpu::Buffer,
 }
 
 impl Instance {
     pub fn to_raw(&self) -> InstanceRaw {
-        let model =
-            cgmath::Matrix4::from_translation(self.position) * cgmath::Matrix4::from(self.rotation);
+        let tmp = glm::inverse_transpose(self.transform);
+        #[rustfmt::skip]
+        let normal : glm::TMat3<f32> = glm::mat3(
+            tmp[0], tmp[1], tmp[2],
+            tmp[4], tmp[5], tmp[6],
+            tmp[8], tmp[9], tmp[10],
+        ); 
         InstanceRaw {
-            model: model.into(),
-            normal: cgmath::Matrix3::from(self.rotation).into(),
+            model: self.transform.into(),
+            normal: normal.into(),
         }
+    }
+
+    pub fn make_buffer(instances : &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
+        let data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: bytemuck::cast_slice(&data),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        InstanceState { data, buffer}
     }
 }
 

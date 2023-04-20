@@ -1,10 +1,25 @@
 use std::ops::Range;
 
 use crate::texture;
+use crate::instance;
 
 pub struct Model {
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
+}
+
+pub struct InstancedModel<'a>{
+    // want instances and instanceState to always be synced
+    // can only be created, cannot be edited
+    // TODO: enforce that somehow?
+    model : &'a Model,
+    instance_state: instance::InstanceState,
+}
+
+impl<'a> InstancedModel<'a>{
+    pub fn new(model : &'a Model, instances : &Vec<instance::Instance>, device: &wgpu::Device) -> Self{
+        Self { model, instance_state: instance::Instance::make_buffer(instances, device)}
+    }
 }
 
 // We need this for Rust to store our data correctly for the shaders
@@ -47,6 +62,7 @@ impl ShaderFlags {
         Self { flags }
     }  
 }
+
 
 pub struct Material {
     pub name: String,
@@ -104,11 +120,10 @@ impl Vertex for ModelVertex {
 }
 
 pub trait DrawModel<'a> {
-    fn draw_mesh(&mut self, mesh: &'a Mesh, material: &'a Material, camera_bind_group: &'a wgpu::BindGroup);
-    fn draw_mesh_instanced(
+    fn draw_model(&mut self, instanced_model : &'a InstancedModel, camera_bind_group: &'a wgpu::BindGroup);
+    fn draw_model_instanced(
         &mut self,
-        mesh: &'a Mesh,
-        material: &'a Material,
+        instanced_model : &'a InstancedModel,
         instances: Range<u32>,
         camera_bind_group: &'a wgpu::BindGroup,
     );
@@ -119,21 +134,25 @@ impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {
-    fn draw_mesh(&mut self, mesh: &'b Mesh, material: &'b Material, camera_bind_group: &'b wgpu::BindGroup) {
-        self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
+    fn draw_model(&mut self, instanced_model : &'a InstancedModel, camera_bind_group: &'b wgpu::BindGroup) {
+        self.draw_model_instanced(instanced_model, 0..1, camera_bind_group);
     }
 
-    fn draw_mesh_instanced(
+    fn draw_model_instanced(
         &mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
+        instanced_model : &'a InstancedModel,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup,
     ) {
-        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        self.set_bind_group(0, &material.bind_group, &[]);
-        self.set_bind_group(1, &camera_bind_group, &[]);
-        self.draw_indexed(0..mesh.num_elements, 0, instances);
+        self.set_vertex_buffer(1, instanced_model.instance_state.buffer.slice(..)); 
+        for mesh in &instanced_model.model.meshes{
+            // assume each mesh has a material
+            let mat_id = mesh.material;
+            self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            self.set_bind_group(0, &instanced_model.model.materials[mat_id].bind_group, &[]);
+            self.set_bind_group(1, &camera_bind_group, &[]);
+            self.draw_indexed(0..mesh.num_elements, 0, instances.clone());
+        }
     }
 }
