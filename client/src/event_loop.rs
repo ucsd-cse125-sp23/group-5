@@ -53,88 +53,92 @@ impl PlayerLoop {
         let mut state = State::new(window).await;
         let mut input_helper = WinitInputHelper::new();
 
-        event_loop.run_return(move |event, _, control_flow|
+        event_loop.run_return(move |event, _, control_flow| {
+            if input_helper.update(&event) {
+
+            }
             match event {
-            // event
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == state.window.id() => {
-                if !state.input(event) {
-                    match event {
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
+                // event
+                Event::WindowEvent {
+                    ref event,
+                    window_id,
+                } if window_id == state.window.id() => {
+                    if !state.input(event) {
+                        match event {
+                            WindowEvent::CloseRequested
+                            | WindowEvent::KeyboardInput {
+                                input:
                                 KeyboardInput {
                                     state: ElementState::Pressed,
                                     virtual_keycode: Some(VirtualKeyCode::Escape),
                                     ..
                                 },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput { input, .. } => {
-                            if let Some(keycode) = input.virtual_keycode{
-                                info!("Keyboard input: {:?}", input);
-                                match self.inputs.send(UserInput::new(
-                                    self.client_id,
-                                    Input::Keyboard(*input),
-                                    ButtonState::Pressed,
-                                )) {
-                                    Ok(_) => {}
-                                    Err(e) => {
-                                        warn!("Error sending input: {:?}", e);
+                                ..
+                            } => *control_flow = ControlFlow::Exit,
+                            WindowEvent::KeyboardInput { input, .. } => {
+                                if let Some(keycode) = input.virtual_keycode {
+                                    info!("Keyboard input: {:?}", input);
+                                    match self.inputs.send(UserInput::new(
+                                        self.client_id,
+                                        Input::Keyboard(*input),
+                                        ButtonState::Pressed,
+                                    )) {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            warn!("Error sending input: {:?}", e);
+                                        }
                                     }
                                 }
                             }
+                            WindowEvent::Resized(physical_size) => {
+                                state.resize(*physical_size);
+                            }
+                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                                // new_inner_size is &&mut so we have to dereference it twice
+                                state.resize(**new_inner_size);
+                            }
+                            _ => {}
                         }
-                        WindowEvent::Resized(physical_size) => {
-                            state.resize(*physical_size);
-                        }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so we have to dereference it twice
-                            state.resize(**new_inner_size);
-                        }
-                        _ => {}
                     }
                 }
-            }
-            Event::DeviceEvent { ref event, .. } => match event {
-                DeviceEvent::MouseMotion { .. }
-                | DeviceEvent::MouseWheel { .. }
-                | DeviceEvent::Button { .. } => {
-                    let output_event = event.clone();
-                    match self.inputs.send(UserInput::new(
-                        self.client_id,
-                        Input::Mouse(output_event),
-                        ButtonState::NonKeyboard,
-                    )) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            debug!("Error sending input: {:?}", e);
+                Event::DeviceEvent { ref event, .. } => match event {
+                    DeviceEvent::MouseMotion { .. }
+                    | DeviceEvent::MouseWheel { .. }
+                    | DeviceEvent::Button { .. } => {
+                        let output_event = event.clone();
+                        match self.inputs.send(UserInput::new(
+                            self.client_id,
+                            Input::Mouse(output_event),
+                            ButtonState::NonKeyboard,
+                        )) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                debug!("Error sending input: {:?}", e);
+                            }
                         }
                     }
+                    _ => {}
+                },
+                // graphics
+                Event::RedrawRequested(window_id) if window_id == state.window().id() => {
+                    state.update();
+                    match state.render() {
+                        Ok(_) => {}
+                        // Reconfigure the surface if lost
+                        Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
+                        // The system is out of memory, we should probably quit
+                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                        // All other errors (Outdated, Timeout) should be resolved by the next frame
+                        Err(e) => eprintln!("{:?}", e),
+                    }
+                }
+                Event::MainEventsCleared => {
+                    // RedrawRequested will only trigger once, unless we manually
+                    // request it.
+                    state.window().request_redraw();
                 }
                 _ => {}
-            },
-            // graphics
-            Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-                state.update();
-                match state.render() {
-                    Ok(_) => {}
-                    // Reconfigure the surface if lost
-                    Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                    // The system is out of memory, we should probably quit
-                    Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                    // All other errors (Outdated, Timeout) should be resolved by the next frame
-                    Err(e) => eprintln!("{:?}", e),
-                }
             }
-            Event::MainEventsCleared => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
-                state.window().request_redraw();
-            }
-            _ => {}
         });
     }
 }
