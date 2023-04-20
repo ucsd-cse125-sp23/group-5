@@ -18,7 +18,11 @@ pub struct UserInput {
 
 impl UserInput {
     pub fn new(client_id: u8, input: Input, but_state: ButtonState) -> UserInput {
-        UserInput { client_id, input, but_state }
+        UserInput {
+            client_id,
+            input,
+            but_state,
+        }
     }
 }
 
@@ -49,7 +53,8 @@ impl PlayerLoop {
         let mut state = State::new(window).await;
         let mut input_helper = WinitInputHelper::new();
 
-        event_loop.run_return(move |event, _, control_flow| match event {
+        event_loop.run_return(move |event, _, control_flow|
+            match event {
             // event
             Event::WindowEvent {
                 ref event,
@@ -68,14 +73,17 @@ impl PlayerLoop {
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput { input, .. } => {
-                            info!("Keyboard input: {:?}", input);
-                            match self
-                                .inputs
-                                .send(UserInput::new(self.client_id, Input::Keyboard(*input), ButtonState::Pressed))
-                            {
-                                Ok(_) => {}
-                                Err(e) => {
-                                    warn!("Error sending input: {:?}", e);
+                            if let Some(keycode) = input.virtual_keycode{
+                                info!("Keyboard input: {:?}", input);
+                                match self.inputs.send(UserInput::new(
+                                    self.client_id,
+                                    Input::Keyboard(*input),
+                                    ButtonState::Pressed,
+                                )) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        warn!("Error sending input: {:?}", e);
+                                    }
                                 }
                             }
                         }
@@ -95,10 +103,11 @@ impl PlayerLoop {
                 | DeviceEvent::MouseWheel { .. }
                 | DeviceEvent::Button { .. } => {
                     let output_event = event.clone();
-                    match self
-                        .inputs
-                        .send(UserInput::new(self.client_id, Input::Mouse(output_event), ButtonState::NonKeyboard))
-                    {
+                    match self.inputs.send(UserInput::new(
+                        self.client_id,
+                        Input::Mouse(output_event),
+                        ButtonState::NonKeyboard,
+                    )) {
                         Ok(_) => {}
                         Err(e) => {
                             debug!("Error sending input: {:?}", e);

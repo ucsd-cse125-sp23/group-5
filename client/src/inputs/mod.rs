@@ -19,8 +19,9 @@ pub enum Input {
 #[derive(Debug)]
 pub enum ButtonState {
     Pressed,
+    Held,
     Released,
-    NonKeyboard
+    NonKeyboard,
 }
 
 pub struct InputProcessor {
