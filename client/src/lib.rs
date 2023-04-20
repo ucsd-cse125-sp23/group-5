@@ -260,7 +260,20 @@ impl State {
                 0.0, 0.0, 0.0, 1.0
             )},
         ];
-        let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
+
+        let cube_model =
+        resources::load_model("cube.obj", &device, &queue, &texture_bind_group_layout)
+        .await
+        .unwrap();
+        let cube_instance_vec = vec![
+            instance::Instance{transform: glm::mat4(
+                1.0, 0.0, 0.0, 5.0,
+                0.0, 1.0, 0.0, 10.0,
+                0.0, 0.0, 1.0, 5.0, 
+                0.0, 0.0, 0.0, 1.0
+            )},
+        ];
+        let scene = scene::Scene{objects: vec![obj_model, cube_model], instance_vectors: vec![instance_vec, cube_instance_vec]};
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -418,8 +431,12 @@ impl State {
             });
         {
             //placed up here because it needs to be dropped after the render pass
-            let instanced_obj = model::InstancedModel::new(
-                &self.scene.objects[0], &self.scene.instance_vectors[0], &self.device);
+            let mut instanced_objs = Vec::new();
+
+            for i in 0..self.scene.objects.len() {
+                let instanced_model = model::InstancedModel::new(&self.scene.objects[i], &self.scene.instance_vectors[i], &self.device);
+                instanced_objs.push(instanced_model);
+            }
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -449,8 +466,10 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
             
-            let count = self.scene.instance_vectors[0].len();
-            render_pass.draw_model_instanced(&instanced_obj, 0..count as u32, &self.camera_state.camera_bind_group);
+            //let count = self.scene.instance_vectors[0].len();
+            for instanced_obj in instanced_objs.iter() {
+                render_pass.draw_model_instanced(&instanced_obj, 0..instanced_obj.num_instances as u32, &self.camera_state.camera_bind_group);
+            }
         }
 
         // submit will accept anything that implements IntoIter

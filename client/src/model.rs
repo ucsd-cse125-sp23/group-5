@@ -12,13 +12,14 @@ pub struct InstancedModel<'a>{
     // want instances and instanceState to always be synced
     // can only be created, cannot be edited
     // TODO: enforce that somehow?
-    model : &'a Model,
-    instance_state: instance::InstanceState,
+    pub model : &'a Model,
+    pub num_instances: usize,
+    pub instance_state: instance::InstanceState,
 }
 
 impl<'a> InstancedModel<'a>{
     pub fn new(model : &'a Model, instances : &Vec<instance::Instance>, device: &wgpu::Device) -> Self{
-        Self { model, instance_state: instance::Instance::make_buffer(instances, device)}
+        Self { model, num_instances: instances.len(), instance_state: instance::Instance::make_buffer(instances, device)}
     }
 }
 
