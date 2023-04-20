@@ -14,7 +14,6 @@ mod lights;
 mod instance;
 mod scene;
 extern crate nalgebra_glm as glm;
-use cgmath::prelude::*; // change all cgmath stuff to use nalgebra
 
 // const NUM_INSTANCES_PER_ROW: u32 = 1;
 
