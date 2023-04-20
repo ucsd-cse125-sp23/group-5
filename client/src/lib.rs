@@ -35,7 +35,7 @@ pub async fn run() {
             event: DeviceEvent::MouseMotion{ delta, },
             .. // We're not using device_id currently
         } => {
-            state.camera_controller.process_mouse(delta.0, delta.1)
+            state.camera_state.camera_controller.process_mouse(delta.0, delta.1)
         }
         Event::WindowEvent {
             ref event,
@@ -98,19 +98,11 @@ struct State {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     window: Window,
+    depth_texture: texture::Texture,
     render_pipeline: wgpu::RenderPipeline,
     scene : scene::Scene,
-
-    camera: camera::Camera,
-    projection: camera::Projection,
-    camera_controller: camera::CameraController,
-    camera_uniform: camera::CameraUniform,
-    camera_buffer: wgpu::Buffer,
-    camera_bind_group: wgpu::BindGroup,
-    
-    depth_texture: texture::Texture,
-
     light_state: lights::LightState,
+    camera_state: camera::CameraState,
 }
 
 impl State {
@@ -238,45 +230,14 @@ impl State {
         // });
         // let num_indices = INDICES.len() as u32;
 
-        let camera = camera::Camera::new(
-            glm::vec3(0.0, 0.0, 15.0), 
-                glm::vec3(0.0, 0.0, 0.0), 
-                glm::vec3(0.0, 1.0, 0.0));
-        let projection = camera::Projection::new(config.width, config.height, 45.0, 0.1, 100.0);
-        let camera_controller = camera::CameraController::new(4.0, 1.0, 0.7);
-
-        let mut camera_uniform = camera::CameraUniform::new();
-        camera_uniform.update_view_proj(&camera, &projection);
-
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let camera_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("camera_bind_group_layout"),
-            });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
-        });
+        let camera_state = camera::CameraState::new(
+            &device,
+        glm::vec3(0.0, 0.0, 15.0), 
+        glm::vec3(0.0, 0.0, 0.0), 
+        glm::vec3(0.0, 1.0, 0.0),
+        config.width, config.height, 45.0, 0.1, 100.0,
+        4.0, 1.0, 0.7,
+        );
 
         // Scene
         let obj_model =
@@ -290,8 +251,14 @@ impl State {
                 0.0, 0.0, 1.0, 0.0, 
                 0.0, 0.0, 0.0, 1.0
             )},
+            instance::Instance{transform: glm::mat4(
+                1.0, 0.0, 0.0, 2.0,
+                0.0, 1.0, 0.0, 2.0,
+                0.0, 0.0, 1.0, 2.0, 
+                0.0, 0.0, 0.0, 1.0
+            )},
         ];
-        let mut scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
+        let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -306,7 +273,7 @@ impl State {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout, &light_state.light_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &camera_state.camera_bind_group_layout, &light_state.light_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -365,12 +332,7 @@ impl State {
             render_pipeline,
             scene,
 
-            camera,
-            projection,
-            camera_controller,
-            camera_uniform,
-            camera_buffer,
-            camera_bind_group,
+            camera_state,
             depth_texture,
             light_state,
         }
@@ -382,17 +344,17 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.projection.resize(new_size.width, new_size.height);
+            self.camera_state.projection.resize(new_size.width, new_size.height);
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
             
-            self.camera_uniform.update_view_proj(&self.camera, &self.projection);
+            self.camera_state.camera_uniform.update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
             self.queue.write_buffer(
-                &self.camera_buffer,
+                &self.camera_state.camera_buffer,
                 0,
-                bytemuck::cast_slice(&[self.camera_uniform]),
+                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
             
             self.depth_texture =
@@ -410,9 +372,9 @@ impl State {
                         ..
                     },
                 ..
-            } => self.camera_controller.process_keyboard(*key, *state),
+            } => self.camera_state.camera_controller.process_keyboard(*key, *state),
             WindowEvent::MouseWheel { delta, .. } => {
-                self.camera_controller.process_scroll(delta);
+                self.camera_state.camera_controller.process_scroll(delta);
                 true
             }
             WindowEvent::MouseInput {
@@ -427,13 +389,13 @@ impl State {
     }
 
     fn update(&mut self, dt: instant::Duration) {
-        self.camera_controller.update_camera(&mut self.camera, dt);
-        self.camera_uniform
-            .update_view_proj(&self.camera, &self.projection);
+        self.camera_state.camera_controller.update_camera(&mut self.camera_state.camera, dt);
+        self.camera_state.camera_uniform
+            .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
         self.queue.write_buffer(
-            &self.camera_buffer,
+            &self.camera_state.camera_buffer,
             0,
-            bytemuck::cast_slice(&[self.camera_uniform]),
+            bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
         );
         self.queue.write_buffer(
             &self.light_state.light_buffer,
@@ -482,21 +444,11 @@ impl State {
                 }),
             });
 
-            // render()
-            // render_pass.set_pipeline(&self.render_pipeline);
-            // render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            // render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            // render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-
-            // render_pass.draw_indexed(0..12 * 3, 0, 0..1); // interior
-            // render_pass.draw_indexed(12 * 3..self.num_indices, 0, 0..1); // hull
-
-
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
             let count = self.scene.instance_vectors[0].len();
-            render_pass.draw_model_instanced(&instanced_obj, 0..count as u32, &self.camera_bind_group);
+            render_pass.draw_model_instanced(&instanced_obj, 0..count as u32, &self.camera_state.camera_bind_group);
         }
 
         // submit will accept anything that implements IntoIter

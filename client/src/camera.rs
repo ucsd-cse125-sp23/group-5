@@ -4,6 +4,8 @@ use instant::Duration;
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
 extern crate nalgebra_glm as glm;
+use wgpu::util::DeviceExt;
+
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.001;
 
@@ -275,3 +277,68 @@ impl CameraController {
 
 }
 
+pub struct CameraState{
+    pub camera: Camera,
+    pub projection: Projection,
+    pub camera_controller: CameraController,
+    pub camera_uniform: CameraUniform,
+    pub camera_buffer: wgpu::Buffer,
+    pub camera_bind_group_layout: wgpu::BindGroupLayout,
+    pub camera_bind_group: wgpu::BindGroup,
+}
+
+impl CameraState{
+    pub fn new(
+        device: &wgpu::Device,
+        eye: glm::TVec3<f32>, target: glm::TVec3<f32>, up: glm::TVec3<f32>, //camera
+        w: u32, h: u32, fovy: f32, znear: f32, zfar: f32, //projection
+        speed: f32, x_sensitivity: f32, y_sensitivity: f32, //camera controller
+    ) -> Self{
+        let camera = Camera::new(eye, target, up);
+        let projection = Projection::new(w, h, fovy, znear, zfar);
+        let camera_controller = CameraController::new(speed, x_sensitivity, y_sensitivity);
+
+        let mut camera_uniform = CameraUniform::new();
+        camera_uniform.update_view_proj(&camera, &projection);
+
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[camera_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let camera_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("camera_bind_group_layout"),
+            });
+
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &camera_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_buffer.as_entire_binding(),
+            }],
+            label: Some("camera_bind_group"),
+        });
+
+        CameraState { 
+            camera, 
+            projection,
+            camera_controller,
+            camera_uniform,
+            camera_buffer,
+            camera_bind_group_layout,
+            camera_bind_group,
+         }
+    }
+}

@@ -31,6 +31,9 @@ struct InstanceInput {
     @location(6) model_matrix_1: vec4<f32>,
     @location(7) model_matrix_2: vec4<f32>,
     @location(8) model_matrix_3: vec4<f32>,
+    @location( 9) normal_matrix_0: vec3<f32>,
+    @location(10) normal_matrix_1: vec3<f32>,
+    @location(11) normal_matrix_2: vec3<f32>,
 }
 
 struct VertexOutput {
@@ -51,6 +54,11 @@ fn vs_main(
         instance.model_matrix_2,
         instance.model_matrix_3,
     );
+    let normal_matrix = mat3x3<f32>(
+        instance.normal_matrix_0,
+        instance.normal_matrix_1,
+        instance.normal_matrix_2,
+    );
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
     out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
@@ -60,8 +68,7 @@ fn vs_main(
         world_coords[1] / world_coords[3],
         world_coords[2] / world_coords[3],
     );
-    var norm = model.normal;
-    out.normal = norm;
+    out.normal = normal_matrix * model.normal;
     return out;
 }
 
@@ -92,7 +99,7 @@ const EMPTY_FLAG :u32 = 0u;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var color : vec3<f32> = phong_mtl.ambient;
+    var color : vec3<f32> = vec3<f32>(0.0, 0.0, 0.0); // phong_mtl.ambient;
 
     // diff begins here
     var normal = normalize(in.normal);
@@ -135,10 +142,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         }
     }
 
-    if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
-        var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-        color *= vec3<f32>(t[0], t[1], t[2]);
-    }
+    // if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
+    //     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    //     color *= vec3<f32>(t[0], t[1], t[2]);
+    // }
 
     return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;
 }
