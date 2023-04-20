@@ -16,6 +16,7 @@ target/
 .idea/
 
 # VSCode project files
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -29,6 +30,6 @@ target/
 # OS
 .DS_Store
 
-# vscode
-.vscode/
+# Cargo lock
+Cargo.lock
 

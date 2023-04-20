@@ -88,7 +88,7 @@ pub async fn load_model(
             single_index: true,
             ..Default::default()
         },
-        |p| async move {
+        |p: String| async move {
             let mat_text = load_string(&p).await.unwrap();
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },

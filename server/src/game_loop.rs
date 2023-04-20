@@ -1,0 +1,170 @@
+use crate::executor::Executor;
+use bus::Bus;
+use common::core::command::Command;
+use log::debug;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::Receiver;
+use std::sync::{Arc, Mutex};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
+
+const TICK_RATE: u64 = 30; // 30 fps
+
+/// Wrapper around a `Command` that also contains the id of the client that issued the command.
+#[derive(Debug)]
+pub struct ClientCommand {
+    pub(crate) client_id: u32,
+    pub command: Command,
+}
+
+impl ClientCommand {
+    pub fn new(client_id: u32, command: Command) -> ClientCommand {
+        ClientCommand { client_id, command }
+    }
+}
+
+/// Server events that are broadcasted to the consumer threads.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ServerEvent {
+    Sync, // ask for a sync of game state
+          // ... other events like play sound or spawn particle
+}
+
+pub struct GameLoop<'a> {
+    // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
+    commands: Receiver<ClientCommand>,
+
+    // executor is used to execute the commands received from the clients
+    executor: &'a Executor,
+
+    // broadcast is used to broadcast events to the clients (single-producer, multi-consumer)
+    broadcast: Arc<Mutex<Bus<ServerEvent>>>,
+
+    // used to stop the game loop (mostly for testing and debugging purposes)
+    running: Arc<AtomicBool>,
+}
+
+impl GameLoop<'_> {
+    /// Creates a new GameLoop.
+    /// # Arguments
+    /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
+    /// * `executor` - used to execute the commands received from the clients
+    /// * `broadcast` - used to broadcast events to the clients (single-producer, multi-consumer)
+    /// * `running` - used to stop the game loop (mostly for testing and debugging purposes)
+    pub fn new(
+        commands: Receiver<ClientCommand>,
+        executor: &Executor,
+        broadcast: Arc<Mutex<Bus<ServerEvent>>>,
+        running: Arc<AtomicBool>,
+    ) -> GameLoop {
+        GameLoop {
+            commands,
+            executor,
+            broadcast,
+            running,
+        }
+    }
+
+    /// Starts the game loop.
+    pub fn run(&mut self) {
+        let mut last_instant = Instant::now(); // used to calculate the delta time
+
+        while self.running.load(Ordering::SeqCst) {
+            let tick_start = Instant::now();
+
+            // consume all messages in the channel
+            while let Ok(command) = self.commands.try_recv() {
+                // execute the command
+                self.executor.execute(command);
+            }
+
+            // calculate the delta time
+            let delta_time = Instant::now().duration_since(last_instant);
+            last_instant = Instant::now();
+
+            // executor step physics and sync game state
+            self.executor.step(delta_time.as_secs_f32());
+
+            // broadcast the game state to all clients
+            let mut broadcast = self.broadcast.lock().unwrap();
+            match broadcast.try_broadcast(ServerEvent::Sync) {
+                Ok(()) => {
+                    debug!("Broadcasted game state");
+                }
+                Err(e) => {
+                    debug!("Failed to broadcast: {:?} (possibly previous broadcast not received by all consumers)", e);
+                }
+            }
+
+            // wait for the fixed interval tick
+            let elapsed = tick_start.elapsed();
+            if elapsed < Duration::from_millis(TICK_RATE) {
+                sleep(Duration::from_millis(TICK_RATE) - elapsed);
+            } else {
+                // this should usually not happen unless the server is under heavy load
+                debug!("Tick took too long: {:?}", elapsed)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use common::core::command::MoveDirection;
+    use common::core::states::GameState;
+    use glam::Vec3;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    #[test]
+    fn test_game_loop() {
+        let (tx, rx) = mpsc::channel();
+        let game_state = Arc::new(Mutex::new(GameState::default()));
+        let ext = Executor::new(game_state.clone());
+        let running = Arc::new(AtomicBool::new(true));
+
+        let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
+
+        let mut game_loop = GameLoop::new(rx, &ext, broadcast.clone(), running.clone());
+
+        let tx_clone = tx.clone();
+
+        // client 0 spawns a player at 500ms
+        // stop the game loop at 500ms
+        let broadcast_clone = broadcast.clone();
+        std::thread::spawn(move || {
+            let mut rx1 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the first client
+            tx_clone
+                .send(ClientCommand::new(1, Command::Spawn))
+                .unwrap();
+            sleep(Duration::from_millis(500));
+
+            assert_eq!(rx1.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced
+            assert!(rx1.try_recv().is_err()); // the message is consumed by the first receiver
+
+            running.store(false, Ordering::SeqCst);
+        });
+
+        // client 0 (from another thread) moves the player at 50ms
+        let broadcast_clone = broadcast.clone();
+        std::thread::spawn(move || {
+            let mut rx2 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the second client
+
+            sleep(Duration::from_millis(250));
+
+            assert_eq!(rx2.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced by now
+
+            tx.send(ClientCommand::new(1, Command::Move(MoveDirection::Forward)))
+                .unwrap();
+        });
+
+        game_loop.run(); // this should block until the game loop is stopped at 500ms
+
+        assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned
+        assert_ne!(
+            ext.game_state().players[0].transform.translation,
+            Vec3::ZERO
+        ); // the player should have moved
+    }
+}
