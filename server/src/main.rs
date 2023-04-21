@@ -56,7 +56,6 @@ fn main() {
 
         pool.execute(move || {
             ClientHandler::new(stream, tx, broadcast_clone, game_state).run();
-            // run client handler
         });
     }
 }

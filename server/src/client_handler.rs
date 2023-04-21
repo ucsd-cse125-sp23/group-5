@@ -38,47 +38,38 @@ impl ClientHandler {
         }
     }
 
-    pub fn run(self) {
+    pub fn run(mut self) {
         let read_protocol = self.protocol.try_clone().unwrap();
         let write_protocol = self.protocol.try_clone().unwrap();
         let client_id;
 
-        // TODO: First listen Initial Request from Client
-        // if the client doesn't send a valid client_id then it is a new client, else we init
-
         // connect with client
-        match self.protocol.try_clone().unwrap().read_message::<Message>() {
-            Ok(msg) => {
-                if let Message {
-                    host_role: HostRole::Client(_),
-                    payload: Payload::Init(incoming_ids),
-                    ..
-                } = msg
-                {
-                    info!("Received connection init request: {:?}", incoming_ids);
-                    if !SESSION_ID.cmp(&(incoming_ids.1)).is_eq() {
-                        client_id = CLIENT_ID_ASSIGNER.fetch_add(1, Ordering::SeqCst);
-                        debug!("New client connected");
-                    } else {
-                        client_id = incoming_ids.0;
-                        debug!("Old client reconnected");
-                    }
-                    self.protocol
-                        .try_clone()
-                        .unwrap()
-                        .send_message(&Message::new(
-                            HostRole::Server,
-                            Payload::Init((
-                                HostRole::Client(client_id).into(),
-                                SESSION_ID.to_owned(),
-                            )),
-                        ))
-                        .expect("send message fails");
+        if let Ok(msg) = self.protocol.read_message::<Message>() {
+            if let Message {
+                host_role: HostRole::Client(_),
+                payload: Payload::Init((incoming_client_id, incoming_session_id)),
+                ..
+            } = msg
+            {
+                if !SESSION_ID.cmp(&incoming_session_id).is_eq() {
+                    info!("New client connected");
+                    client_id = CLIENT_ID_ASSIGNER.fetch_add(1, Ordering::SeqCst);
                 } else {
-                    error!("Unexpected message before connection init: {:?}", msg);
+                    info!("Client reconnected");
+                    client_id = incoming_client_id;
                 }
+                self.protocol
+                    .send_message(&Message::new(
+                        HostRole::Server,
+                        Payload::Init((
+                            HostRole::Client(client_id).into(),
+                            SESSION_ID.to_owned(),
+                        )),
+                    ))
+                    .expect("send message fails");
+            } else {
+                error!("Unexpected message before connection init: {:?}", msg);
             }
-            _ => {}
         }
 
         let read_handler = thread::spawn(move || {

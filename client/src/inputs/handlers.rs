@@ -11,27 +11,11 @@ use std::time::Instant;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
 
 pub enum GameKey {
-    Pressable(PressableKey),
-    Heldable(HeldableKey),
-    PressRelease(PressReleaseKey),
+    Pressable,
+    Holdable,
+    PressRelease,
 }
 
-pub enum PressableKey {
-    ESC,
-    SPACE,
-}
-
-pub enum HeldableKey {
-    W,
-    A,
-    S,
-    D,
-}
-
-pub enum PressReleaseKey {
-    LeftClick,
-    F,
-}
 
 pub fn handle_keyboard_input(
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
@@ -45,28 +29,28 @@ pub fn handle_keyboard_input(
         update_held_map(held_map, keycode, input.state);
         // map keyboard input to command
         let key_command: Option<(GameKey, Command)> = match input.virtual_keycode {
-            // match heldable keys
+            // match Holdable keys
             Some(VirtualKeyCode::W) => Some((
-                GameKey::Heldable(HeldableKey::W),
+                GameKey::Holdable,
                 Command::Move(MoveDirection::Forward),
             )),
             Some(VirtualKeyCode::A) => Some((
-                GameKey::Heldable(HeldableKey::A),
+                GameKey::Holdable,
                 Command::Move(MoveDirection::Left),
             )),
             Some(VirtualKeyCode::S) => Some((
-                GameKey::Heldable(HeldableKey::S),
+                GameKey::Holdable,
                 Command::Move(MoveDirection::Backward),
             )),
             Some(VirtualKeyCode::D) => Some((
-                GameKey::Heldable(HeldableKey::D),
+                GameKey::Holdable,
                 Command::Move(MoveDirection::Right),
             )),
             // match Pressable keys
-            Some(VirtualKeyCode::Space) => Some((GameKey::Pressable(PressableKey::SPACE), Spawn)),
+            Some(VirtualKeyCode::Space) => Some((GameKey::Pressable, Spawn)),
             // match PressRelease keys
             Some(VirtualKeyCode::F) => {
-                Some(((GameKey::PressRelease(PressReleaseKey::F)), Action(Attack)))
+                Some((GameKey::PressRelease, Action(Attack)))
             }
             _ => None,
         };
@@ -80,7 +64,7 @@ pub fn handle_keyboard_input(
 }
 
 pub fn update_held_map(
-    held_map: &mut HashMap<winit::event::VirtualKeyCode, ButtonState>,
+    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
     keycode: VirtualKeyCode,
     ele_state: ElementState,
 ) {
@@ -108,13 +92,13 @@ pub fn handle_game_key_input(
     client_id: u8,
 ) {
     match game_key {
-        GameKey::Pressable(_) => {
+        GameKey::Pressable => {
             handle_pressable_key(command, keycode, held_map, protocol, client_id);
         }
-        GameKey::Heldable(_) => {
-            handle_heldable_key(command, keycode, held_map, protocol, client_id);
+        GameKey::Holdable => {
+            handle_holdable_key(command, keycode, held_map, protocol, client_id);
         }
-        GameKey::PressRelease(_) => {
+        GameKey::PressRelease => {
             handle_press_release_key(command, keycode, held_map, protocol, client_id);
         }
     }
@@ -147,7 +131,7 @@ fn handle_pressable_key(
     }
 }
 
-fn handle_heldable_key(
+fn handle_holdable_key(
     command: Command,
     keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
@@ -157,15 +141,7 @@ fn handle_heldable_key(
     info!("Received game key: {:?}", command);
     match held_map.get(&keycode) {
         // if pressed or held, keep sending command
-        Some(ButtonState::Pressed) => {
-            let message: Message = Message::new(
-                HostRole::Client(client_id),
-                Payload::Command(command.clone()),
-            );
-            protocol.send_message(&message).expect("send message fails");
-            info!("Sent command: {:?}", command);
-        }
-        Some(ButtonState::Held) => {
+        Some(ButtonState::Pressed) | Some(ButtonState::Held) => {
             let message: Message = Message::new(
                 HostRole::Client(client_id),
                 Payload::Command(command.clone()),
@@ -191,15 +167,7 @@ fn handle_press_release_key(
     info!("Received game key: {:?}", command);
     match held_map.get(&keycode) {
         // if pressed or held, keep sending command
-        Some(ButtonState::Pressed) => {
-            let message: Message = Message::new(
-                HostRole::Client(client_id),
-                Payload::Command(command.clone()),
-            );
-            protocol.send_message(&message).expect("send message fails");
-            info!("Sent command: {:?}", command);
-        }
-        Some(ButtonState::Held) => {
+        Some(ButtonState::Pressed) | Some(ButtonState::Held) => {
             let message: Message = Message::new(
                 HostRole::Client(client_id),
                 Payload::Command(command.clone()),
@@ -226,7 +194,6 @@ fn handle_press_release_key(
 // mw for mouse wheel, mm for mouse motion
 pub fn handle_mouse_input(
     input: DeviceEvent,
-    protocol: &mut Protocol,
     mm_buffer: &mut Queue<DeviceEvent>,
     mw_buffer: &mut Queue<DeviceEvent>,
 ) {

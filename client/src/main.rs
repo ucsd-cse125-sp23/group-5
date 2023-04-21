@@ -1,4 +1,5 @@
 extern crate queues;
+
 use std::env;
 
 use log::{error, info};
@@ -29,17 +30,16 @@ fn main() {
 
     // need to clone the protocol to be able to receive events and game states from different threads
     let mut protocol_clone = protocol.try_clone().unwrap();
-    let mut protocol_clone2 = protocol.try_clone().unwrap();
 
     let session_data_path = env::current_dir()
         .unwrap()
         .as_path()
-        .join("client/misc/session_data.txt");
+        .join("session_data.json");
 
-    let (client_id, session_id) = read_from_ids_file(&session_data_path);
+    let (client_id, session_id) = restore_ids(&session_data_path);
 
     // send local ids to see if I am a "broken pipe"
-    protocol_clone2
+    protocol_clone
         .send_message(&Message::new(
             HostRole::Client(client_id),
             Payload::Init((client_id, session_id)),
@@ -50,7 +50,7 @@ fn main() {
     let (client_id, session_id) = init_connection(&mut protocol_clone).unwrap();
 
     // write the client_id, session_id to file
-    write_to_ids_file(session_data_path, client_id, session_id);
+    dump_ids(session_data_path, client_id, session_id);
 
     let mut player_loop = PlayerLoop::new(tx, client_id);
 
@@ -67,30 +67,20 @@ fn main() {
     pollster::block_on(player_loop.run());
 }
 
-fn read_from_ids_file(session_data_path: &PathBuf) -> (u8, u64) {
-    let client_id: u8;
-    let session_id: u64;
-
-    {
-        let mut ids_file = File::open(session_data_path.clone()).unwrap();
-        let mut ids_str = String::new();
-        ids_file.read_to_string(&mut ids_str).unwrap();
-        let (client_id_str, session_id_str) = ids_str.split_once("\n").unwrap();
-        client_id = client_id_str.parse().unwrap();
-        session_id = session_id_str.parse().unwrap();
+fn restore_ids(session_data_path: &PathBuf) -> (u8, u64) {
+    match File::open(session_data_path) {
+        Err(_) => {
+            info!("No session data file found");
+            (114, 514)
+        }
+        Ok(file) => serde_json::from_reader(&file).unwrap()
     }
-    return (client_id, session_id);
 }
 
-fn write_to_ids_file(session_data_path: PathBuf, client_id: u8, session_id: u64) {
-    let mut ids_file = File::create(session_data_path.clone()).unwrap();
-    ids_file
-        .write_all(client_id.to_string().as_bytes())
-        .unwrap();
-    ids_file.write_all(b"\n").unwrap();
-    ids_file
-        .write_all(session_id.to_string().as_bytes())
-        .unwrap();
+fn dump_ids(session_data_path: PathBuf, client_id: u8, session_id: u64) {
+    let file = File::create(session_data_path).unwrap();
+    let ids = (client_id, session_id);
+    serde_json::to_writer(&file, &ids).unwrap();
 }
 
 fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
@@ -128,6 +118,5 @@ fn game_state_update_loop(mut protocol: Protocol, game_state: Arc<Mutex<GameStat
                 break;
             };
         }
-        // render world with updated game state
     }
 }

@@ -61,7 +61,6 @@ impl InputProcessor {
                 Input::Mouse(input) => {
                     handlers::handle_mouse_input(
                         input,
-                        &mut self.protocol,
                         &mut mouse_motion_buf,
                         &mut mouse_wheel_buf,
                     );
