@@ -9,6 +9,7 @@ mod model;
 use model::Vertex;
 use crate::model::DrawModel;
 mod camera;
+mod player;
 mod texture;
 mod resources;
 mod lights;
@@ -102,9 +103,12 @@ struct State {
     window: Window,
     depth_texture: texture::Texture,
     render_pipeline: wgpu::RenderPipeline,
+    player: player::Player,
+    player_controller: player::PlayerController,
     scene : scene::Scene,
     light_state: lights::LightState,
     camera_state: camera::CameraState,
+
 }
 
 impl State {
@@ -231,14 +235,16 @@ impl State {
         //     usage: wgpu::BufferUsages::INDEX,
         // });
         // let num_indices = INDICES.len() as u32;
+        
+        let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
+        let player_controller = player::PlayerController::new(4.0, 1.0, 0.7); 
 
         let camera_state = camera::CameraState::new(
             &device,
-        glm::vec3(5.0, 10.0, 15.0), 
-        glm::vec3(0.0, 0.0, 0.0), 
+        player.position + glm::vec3(-2.0, 2.0, 0.0), 
+        player.position, 
         glm::vec3(0.0, 1.0, 0.0),
         config.width, config.height, 45.0, 0.1, 100.0,
-        4.0, 1.0, 0.7,
         );
 
         // Scene
@@ -267,9 +273,9 @@ impl State {
         .unwrap();
         let cube_instance_vec = vec![
             instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 5.0,
-                0.0, 1.0, 0.0, 10.0,
-                0.0, 0.0, 1.0, 5.0, 
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0, 
                 0.0, 0.0, 0.0, 1.0
             )},
         ];
@@ -347,6 +353,8 @@ impl State {
             render_pipeline,
             scene,
 
+            player,
+            player_controller,
             camera_state,
             depth_texture,
             light_state,
@@ -387,9 +395,9 @@ impl State {
                         ..
                     },
                 ..
-            } => self.camera_state.camera_controller.process_keyboard(*key, *state),
+            } => self.player_controller.process_keyboard(*key, &mut self.player, *state),
             WindowEvent::MouseWheel { delta, .. } => {
-                self.camera_state.camera_controller.process_scroll(delta);
+                self.player_controller.process_scroll(delta);
                 true
             }
             WindowEvent::MouseInput {
@@ -404,7 +412,11 @@ impl State {
     }
 
     fn update(&mut self, dt: instant::Duration) {
-        self.camera_state.camera_controller.update_camera(&mut self.camera_state.camera, dt);
+        self.player_controller.update_player(&mut self.player, &mut self.camera_state.camera, dt);
+
+        // hard code updating player instance for now
+        self.scene.instance_vectors[1][0].transform = self.player.calc_transf_matrix();
+
         self.camera_state.camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
         self.queue.write_buffer(
