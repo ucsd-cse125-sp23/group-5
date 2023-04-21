@@ -147,7 +147,13 @@ impl CommandHandler for MoveCommandHandler {
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
 
+
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
+        let dir_rotation = UnitQuaternion::face_towards(&dir_vec, &Vec3::y());
+
+        let player_rotation = rotation * dir_rotation;
+
+        // apply the rotation to the direction vector
 
         // rotate by just setting the rotation
         // player_rigid_body.set_rotation(rotation, true);
@@ -156,7 +162,7 @@ impl CommandHandler for MoveCommandHandler {
         // (does not guarantee the rotation will be reached, but it will eventually converge to the desired rotation)
 
         // Step 1: Calculate the angular displacement required to reach the desired rotation
-        let rotation_difference = rotation * player_rigid_body.rotation().inverse();
+        let rotation_difference = player_rotation * player_rigid_body.rotation().inverse();
         let angle = rotation_difference.angle();
         let axis = rotation_difference.axis().unwrap();
 
