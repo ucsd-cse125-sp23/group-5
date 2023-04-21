@@ -2480,6 +2480,7 @@ dependencies = [
  "glam",
  "log",
  "nalgebra 0.32.2",
+ "rand 0.8.5",
  "rapier3d",
  "serde_json",
  "threadpool",

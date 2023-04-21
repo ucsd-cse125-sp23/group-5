@@ -64,11 +64,11 @@ impl PlayerLoop {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
                             input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput { input, .. } => {
@@ -82,52 +82,38 @@ impl PlayerLoop {
                                     warn!("Error sending input: {:?}", e);
                                 }
                             }
-                            WindowEvent::Resized(physical_size) => {
-                                state.resize(*physical_size);
-                            }
-                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                                // new_inner_size is &&mut so we have to dereference it twice
-                                state.resize(**new_inner_size);
-                            }
-                            _ => {}
                         }
+                        WindowEvent::Resized(physical_size) => {
+                            state.resize(*physical_size);
+                        }
+                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                            // new_inner_size is &&mut so we have to dereference it twice
+                            state.resize(**new_inner_size);
+                        }
+                        _ => {}
                     }
                 }
-                Event::DeviceEvent { ref event, .. } => match event {
-                    DeviceEvent::MouseMotion { .. }
-                    | DeviceEvent::MouseWheel { .. }
-                    | DeviceEvent::Button { .. } => {
-                        let output_event = event.clone();
-                        match self
-                            .inputs
-                            .send(UserInput::new(self.client_id, Input::Mouse(output_event)))
-                        {
-                            Ok(_) => {}
-                            Err(e) => {
-                                debug!("Error sending input: {:?}", e);
-                            }
-                        }
-                    }
-                    _ => {}
-                },
-                // graphics
-                Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-                    state.update();
-                    match state.render() {
+            }
+            Event::DeviceEvent { ref event, .. } => match event {
+                DeviceEvent::MouseMotion { .. }
+                | DeviceEvent::MouseWheel { .. }
+                | DeviceEvent::Button { .. } => {
+                    let output_event = event.clone();
+                    match self
+                        .inputs
+                        .send(UserInput::new(self.client_id, Input::Mouse(output_event)))
+                    {
                         Ok(_) => {}
-                        // Reconfigure the surface if lost
-                        Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                        // The system is out of memory, we should probably quit
-                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                        // All other errors (Outdated, Timeout) should be resolved by the next frame
-                        Err(e) => eprintln!("{:?}", e),
+                        Err(e) => {
+                            debug!("Error sending input: {:?}", e);
+                        }
                     }
                 }
                 _ => {}
             },
             // graphics
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-                // To check 
+                // To check
                 let now = instant::Instant::now();
                 let dt = now - last_render_time;
                 last_render_time = now;
@@ -141,8 +127,13 @@ impl PlayerLoop {
                     // All other errors (Outdated, Timeout) should be resolved by the next frame
                     Err(e) => eprintln!("{:?}", e),
                 }
-                _ => {}
             }
+            Event::MainEventsCleared => {
+                // RedrawRequested will only trigger once, unless we manually
+                // request it.
+                state.window().request_redraw();
+            }
+            _ => {}
         });
     }
 }
