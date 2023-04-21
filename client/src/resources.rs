@@ -26,13 +26,14 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
                 .text()
                 .await?;
         } else {
-            let path = std::path::Path::new(env!("OUT_DIR"))
-                .join("res")
-                // .parent()
-                // .unwrap()   // should never fail because our folder structure won't change
-                // .join("common")
-                // .join("assets")
-                .join(file_name);
+            // let path = std::path::Path::new(env!("OUT_DIR"))
+            //     .join("res")
+            //     // .parent()
+            //     // .unwrap()   // should never fail because our folder structure won't change
+            //     // .join("common")
+            //     // .join("assets")
+            //     .join(file_name);
+            let path = std::path::Path::new(file_name);
             print!("path: {path:?}\n");
             let txt = std::fs::read_to_string(path)?;
         }
@@ -89,6 +90,14 @@ pub async fn load_model(
             ..Default::default()
         },
         |p: String| async move {
+            // p is relative to the obj file folder
+            let p = std::path::Path::new(file_name)
+                .parent()
+                .unwrap()
+                .join(p)
+                .to_str()
+                .unwrap()
+                .to_string();
             let mat_text = load_string(&p).await.unwrap();
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },

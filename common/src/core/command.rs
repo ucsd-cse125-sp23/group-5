@@ -1,4 +1,5 @@
-use glam::Quat;
+extern crate nalgebra_glm as glm;
+use glm::Quat;
 use serde::{Deserialize, Serialize};
 
 /// Direction of the movement
@@ -23,6 +24,7 @@ pub enum Command {
     Spawn,
     Move(MoveDirection),
     Turn(Quat),
+    UpdateCamera{position: glm::Vec3, spherical_coords: glm::Vec3},
     Action(GameAction),
 }
 

@@ -35,7 +35,7 @@ fn spherical_to_cartesian(spherical: &glm::Vec3) -> glm::Vec3 {
 #[derive(Debug)]
 pub struct Camera {
     pub position: glm::TVec3<f32>,
-    target: glm::TVec3<f32>,
+    pub target: glm::TVec3<f32>,
     up: glm::TVec3<f32>,
     spherical_coords: glm::TVec3<f32>, // r yaw pitch
 }
@@ -59,6 +59,14 @@ impl Camera {
             &self.target,
             &self.up,
         )
+    }
+    
+    pub fn spherical_coords(&self) -> &glm::TVec3<f32> {
+        &self.spherical_coords
+    }
+    
+    pub fn position(&self) -> &glm::TVec3<f32> {
+        &self.position
     }
 }
 
@@ -137,6 +145,7 @@ impl CameraUniform {
             location: [0.0, 0.0, 1.0, 1.0],
         }
     }
+
 
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
         self.view_position = glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
