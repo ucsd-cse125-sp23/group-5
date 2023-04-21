@@ -27,7 +27,7 @@ fn main() {
     // init connection with server and get client id
     let client_id = init_connection(&mut protocol_clone).unwrap();
 
-    let mut player_loop = PlayerLoop::new(tx, client_id);
+    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {

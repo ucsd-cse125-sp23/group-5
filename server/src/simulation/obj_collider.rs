@@ -1,6 +1,8 @@
+use log::debug;
 use nalgebra::Point3;
 use rapier3d::geometry::ColliderBuilder;
-use rapier3d::math::Real;
+use rapier3d::math::{Isometry, Real};
+use rapier3d::prelude::SharedShape;
 use tobj;
 
 pub trait FromObject {
@@ -13,7 +15,9 @@ impl FromObject for ColliderBuilder {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let mut vertex_offset = 0;
+        debug!("Loading {} models", models.len());
         for model in models {
+            debug!("Model: {:?}", model.name);
             let mesh = &model.mesh;
             vertices.extend(mesh
                 .positions

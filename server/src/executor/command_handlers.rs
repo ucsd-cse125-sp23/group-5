@@ -6,6 +6,7 @@ use rapier3d::parry::transformation::utils::transform;
 use rapier3d::prelude as rapier;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use rapier3d::control::KinematicCharacterController;
 use crate::simulation::obj_collider::FromObject;
 
 #[derive(Error, Debug, Display)]
@@ -39,7 +40,6 @@ impl CommandHandler for StartupCommandHandler {
 
         // Physics state
         let collider = rapier::ColliderBuilder::from_object_models(models)
-            .translation(rapier::vector![0.0, 0.0, 0.0])
             .build();
 
         physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
@@ -60,12 +60,27 @@ impl CommandHandler for SpawnCommandHandler {
         physics_state: &mut PhysicsState,
     ) -> HandlerResult {
         // Physics state
-        let collider = rapier::ColliderBuilder::capsule_y(0.5, 0.5)
-            .translation(rapier::vector![0.0, 0.0, 0.0])
+
+        // let player_model = tobj::load_obj("assets/cube.obj", &tobj::GPU_LOAD_OPTIONS);
+        //
+        // let (models, materials) = player_model.unwrap();
+        //
+        // // Physics state
+        // let collider = rapier::ColliderBuilder::from_object_models(models)
+        //     .translation(rapier::vector![0.0, 2.0, 0.0])
+        //     .build();
+
+        if physics_state.get_entity_handles(self.player_id).is_some() {
+            return Err(HandlerError {
+                message: "Player already spawned".to_string(),
+            });
+        }
+
+        let collider = rapier::ColliderBuilder::round_cuboid( 1.0, 1.0, 1.0, 0.01)
             .build();
 
         let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-            .translation(rapier::vector![0.0, 6.0, 0.0])
+            .translation(rapier::vector![0.0, 4.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
@@ -74,6 +89,33 @@ impl CommandHandler for SpawnCommandHandler {
             id: self.player_id,
             ..Default::default()
         });
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
+pub struct UpdateCameraFacingCommandHandler {
+    player_id: u32,
+    camera_position: nalgebra_glm::Vec3,
+    camera_spherical_coords: nalgebra_glm::Vec3,
+}
+
+impl CommandHandler for UpdateCameraFacingCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        _: &mut PhysicsState,
+    ) -> HandlerResult {
+        // Game state
+        let player = game_state
+            .players
+            .iter_mut()
+            .find(|p| p.id == self.player_id)
+            .ok_or(HandlerError {
+                message: "Player not found".to_string(),
+            })?;
+
+        player.camera_facing = self.camera_spherical_coords;
         Ok(())
     }
 }
@@ -91,17 +133,16 @@ impl CommandHandler for MoveCommandHandler {
         physics_state: &mut PhysicsState,
     ) -> HandlerResult {
         // Physics state
-        let delta_vec = match self.direction {
+        let dir_vec = match self.direction {
             MoveDirection::Forward => rapier::vector![0.0, 0.0, 1.0],
             MoveDirection::Backward => rapier::vector![0.0, 0.0, -1.0],
             MoveDirection::Left => rapier::vector![-1.0, 0.0, 0.0],
             MoveDirection::Right => rapier::vector![1.0, 0.0, 0.0],
         };
-        let rigid_body = physics_state
-            .get_entity_rigid_body_mut(self.player_id)
-            .unwrap();
-        rigid_body.set_linvel(delta_vec, true);
 
+        let step_size = 0.1;
+
+        physics_state.move_character_with_velocity(self.player_id, dir_vec * step_size);
         // Game state (not needed since the physics state is synced at the end of the tick)
         Ok(())
     }

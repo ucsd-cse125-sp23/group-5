@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use crate::State;
 use crate::inputs::Input;
 use log::{debug, info, warn};
@@ -8,6 +9,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
+use common::core::states::GameState;
 
 #[derive(Debug)]
 pub struct UserInput {
@@ -25,6 +27,8 @@ pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
     inputs: Sender<UserInput>,
 
+    game_state: Arc<Mutex<GameState>>,
+
     // current player id
     client_id: u8,
 }
@@ -33,9 +37,10 @@ impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<UserInput>, id: u8) -> PlayerLoop {
+    pub fn new(commands: Sender<UserInput>, game_state: Arc<Mutex<GameState>>, id: u8) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
+            game_state,
             client_id: id,
         }
     }
@@ -123,7 +128,15 @@ impl PlayerLoop {
                 let now = instant::Instant::now();
                 let dt = now - last_render_time;
                 last_render_time = now;
+                state.load_game_state(self.game_state.clone());
                 state.update(dt);
+                
+                // send camera position to input processor
+                self.inputs.send(UserInput::new(self.client_id, Input::Camera {
+                    position: *state.camera_state.camera.position(),
+                    spherical_coords: *state.camera_state.camera.spherical_coords()
+                })).unwrap();
+                
                 match state.render() {
                     Ok(_) => {}
                     // Reconfigure the surface if lost

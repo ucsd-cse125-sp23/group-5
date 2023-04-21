@@ -113,9 +113,9 @@ mod tests {
     use super::*;
     use common::core::command::MoveDirection;
     use common::core::states::GameState;
-    use glam::Vec3;
     use std::sync::mpsc;
     use std::time::Duration;
+    use nalgebra_glm::Vec3;
 
     #[test]
     fn test_game_loop() {
@@ -164,7 +164,7 @@ mod tests {
         assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned
         assert_ne!(
             ext.game_state().players[0].transform.translation,
-            Vec3::ZERO
+            Vec3::new(0.0, 0.0, 0.0)
         ); // the player should have moved
     }
 }

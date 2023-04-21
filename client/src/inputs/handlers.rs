@@ -1,7 +1,7 @@
 use common::communication::commons::*;
 use common::communication::message::*;
 use common::core::command::{Command, MoveDirection};
-use log::info;
+use log::{info, warn};
 use queues::{IsQueue, Queue};
 use winit::event::{DeviceEvent, KeyboardInput, VirtualKeyCode};
 
@@ -26,7 +26,7 @@ pub fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol, clie
             Payload::Command(command.clone()),
         );
         protocol.send_message(&message).expect("send message fails");
-        info!("Sent command: {:?}", command);
+        warn!("Sent command: {:?}", command);
     } else {
         info!("No command to send");
     }
