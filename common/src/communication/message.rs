@@ -40,7 +40,7 @@ pub enum Payload {
     Ping,
     StateSync(GameState),
     Command(Command),
-    Init(u8),
+    Init((u8, u64)),
 }
 
 /// message kind to u8
@@ -96,8 +96,8 @@ impl Serialize for Message {
             Payload::Command(cmd) => {
                 prefix_len::write_json(buf, cmd)?;
             }
-            Payload::Init(client_id) => {
-                prefix_len::write_json(buf, client_id)?;
+            Payload::Init(info) => {
+                prefix_len::write_json(buf, info)?;
             }
         }
         Ok(())
@@ -176,5 +176,22 @@ mod tests {
         let msg2 = Message::deserialize(&mut buf.as_slice()).unwrap();
         // cannot directly compare, compare debug string instead
         assert_eq!(format!("{:?}", msg), format!("{:?}", msg2));
+    }
+
+    #[test]
+    fn test_message_serialize_init() {
+        let msg = Message::new(HostRole::Server, Payload::Init((10, 100)));
+        let mut buf = Vec::new();
+        msg.serialize(&mut buf).unwrap();
+        assert_eq!(buf.len(), 22);
+    }
+
+    #[test]
+    fn test_message_deserialize_init() {
+        let msg = Message::new(HostRole::Server, Payload::Init((10, 100)));
+        let mut buf = Vec::new();
+        msg.serialize(&mut buf).unwrap();
+        let msg2 = Message::deserialize(&mut buf.as_slice()).unwrap();
+        assert!(matches!(msg2.payload, Payload::Init((10, 100))));
     }
 }

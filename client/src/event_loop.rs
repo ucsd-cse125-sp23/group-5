@@ -7,7 +7,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
-use winit_input_helper::WinitInputHelper;
 
 #[derive(Debug)]
 pub struct UserInput {
@@ -17,7 +16,7 @@ pub struct UserInput {
 
 impl UserInput {
     pub fn new(client_id: u8, input: Input) -> UserInput {
-        UserInput { client_id, input, }
+        UserInput { client_id, input }
     }
 }
 
@@ -46,7 +45,6 @@ impl PlayerLoop {
         let window = WindowBuilder::new().build(&event_loop).unwrap();
 
         let mut state = State::new(window).await;
-        let mut input_helper = WinitInputHelper::new();
 
         event_loop.run_return(move |event, _, control_flow| {
             match event {
@@ -67,12 +65,12 @@ impl PlayerLoop {
                                     },
                                 ..
                             } => *control_flow = ControlFlow::Exit,
-                            WindowEvent::KeyboardInput { input , ..} => {
+                            WindowEvent::KeyboardInput { input, .. } => {
                                 info!("Keyboard input: {:?}", input);
-                                match self.inputs.send(UserInput::new(
-                                    self.client_id,
-                                    Input::Keyboard(*input),
-                                )) {
+                                match self
+                                    .inputs
+                                    .send(UserInput::new(self.client_id, Input::Keyboard(*input)))
+                                {
                                     Ok(_) => {}
                                     Err(e) => {
                                         warn!("Error sending input: {:?}", e);
@@ -95,10 +93,10 @@ impl PlayerLoop {
                     | DeviceEvent::MouseWheel { .. }
                     | DeviceEvent::Button { .. } => {
                         let output_event = event.clone();
-                        match self.inputs.send(UserInput::new(
-                            self.client_id,
-                            Input::Mouse(output_event),
-                        )) {
+                        match self
+                            .inputs
+                            .send(UserInput::new(self.client_id, Input::Mouse(output_event)))
+                        {
                             Ok(_) => {}
                             Err(e) => {
                                 debug!("Error sending input: {:?}", e);

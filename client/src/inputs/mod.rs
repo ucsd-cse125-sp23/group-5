@@ -40,7 +40,7 @@ impl InputProcessor {
     }
 
     pub fn run(&mut self) {
-        let mut held_map:HashMap<VirtualKeyCode, ButtonState> = HashMap::new();
+        let mut held_map: HashMap<VirtualKeyCode, ButtonState> = HashMap::new();
 
         let mut mouse_motion_buf = Queue::new();
         let mut mouse_wheel_buf = Queue::new();
@@ -51,7 +51,12 @@ impl InputProcessor {
             info!("Received input: {:?}", user_input);
             match user_input.input {
                 Input::Keyboard(input) => {
-                    handlers::handle_keyboard_input(&mut held_map, input, &mut self.protocol, self.client_id);
+                    handlers::handle_keyboard_input(
+                        &mut held_map,
+                        input,
+                        &mut self.protocol,
+                        self.client_id,
+                    );
                 }
                 Input::Mouse(input) => {
                     handlers::handle_mouse_input(

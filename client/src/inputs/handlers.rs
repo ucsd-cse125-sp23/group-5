@@ -1,14 +1,14 @@
-use crate::inputs::{ButtonState};
+use crate::inputs::ButtonState;
 use common::communication::commons::*;
 use common::communication::message::*;
+use common::core::command::Command::{Action, Spawn};
+use common::core::command::GameAction::Attack;
 use common::core::command::{Command, MoveDirection};
 use log::{error, info};
 use queues::{IsQueue, Queue};
-use std::time::Instant;
 use std::collections::HashMap;
+use std::time::Instant;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
-use common::core::command::Command::{Action, Spawn};
-use common::core::command::GameAction::Attack;
 
 pub enum GameKey {
     Pressable(PressableKey),
@@ -33,10 +33,11 @@ pub enum PressReleaseKey {
     F,
 }
 
-
 pub fn handle_keyboard_input(
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    input: KeyboardInput, protocol: &mut Protocol, client_id: u8,
+    input: KeyboardInput,
+    protocol: &mut Protocol,
+    client_id: u8,
 ) {
     // change state
     //let mut functional_key= Some(..);
@@ -45,17 +46,30 @@ pub fn handle_keyboard_input(
         // map keyboard input to command
         let key_command: Option<(GameKey, Command)> = match input.virtual_keycode {
             // match heldable keys
-            Some(VirtualKeyCode::W) => Some((GameKey::Heldable(HeldableKey::W), Command::Move(MoveDirection::Forward))),
-            Some(VirtualKeyCode::A) => Some((GameKey::Heldable(HeldableKey::A), Command::Move(MoveDirection::Left))),
-            Some(VirtualKeyCode::S) => Some((GameKey::Heldable(HeldableKey::S), Command::Move(MoveDirection::Backward))),
-            Some(VirtualKeyCode::D) => Some((GameKey::Heldable(HeldableKey::D), Command::Move(MoveDirection::Right))),
+            Some(VirtualKeyCode::W) => Some((
+                GameKey::Heldable(HeldableKey::W),
+                Command::Move(MoveDirection::Forward),
+            )),
+            Some(VirtualKeyCode::A) => Some((
+                GameKey::Heldable(HeldableKey::A),
+                Command::Move(MoveDirection::Left),
+            )),
+            Some(VirtualKeyCode::S) => Some((
+                GameKey::Heldable(HeldableKey::S),
+                Command::Move(MoveDirection::Backward),
+            )),
+            Some(VirtualKeyCode::D) => Some((
+                GameKey::Heldable(HeldableKey::D),
+                Command::Move(MoveDirection::Right),
+            )),
             // match Pressable keys
             Some(VirtualKeyCode::Space) => Some((GameKey::Pressable(PressableKey::SPACE), Spawn)),
             // match PressRelease keys
-            Some(VirtualKeyCode::F) => Some(((GameKey::PressRelease(PressReleaseKey::F)), Action(Attack))),
+            Some(VirtualKeyCode::F) => {
+                Some(((GameKey::PressRelease(PressReleaseKey::F)), Action(Attack)))
+            }
             _ => None,
         };
-
 
         if let Some((game_key, command)) = key_command {
             handle_game_key_input(game_key, command, keycode, held_map, protocol, client_id);
@@ -67,26 +81,31 @@ pub fn handle_keyboard_input(
 
 pub fn update_held_map(
     held_map: &mut HashMap<winit::event::VirtualKeyCode, ButtonState>,
-    keycode: VirtualKeyCode, ele_state: ElementState,
+    keycode: VirtualKeyCode,
+    ele_state: ElementState,
 ) {
     use winit::event::ElementState as es;
     use ButtonState as bs;
     let next_state = if let Some(state) = held_map.get(&keycode) {
         match (state, ele_state) {
             (bs::Pressed, es::Pressed) => ButtonState::Held, // pressed -> (pressed) -> held
-            (bs::Pressed, es::Released) => ButtonState::Released, // pressed -> (released) -> released
-            (bs::Held, es::Released) => ButtonState::Released, // held -> (released) -> released
             (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
-            (bs, _) => bs.clone(), // same state
+            (_, es::Released) => ButtonState::Released,      // some -> (released) -> released
+            (bs, _) => bs.clone(),                           // same state
         }
-    } else { ButtonState::Pressed };
+    } else {
+        ButtonState::Pressed
+    };
     held_map.insert(keycode, next_state);
 }
 
 pub fn handle_game_key_input(
-    game_key: GameKey, command: Command, keycode: VirtualKeyCode,
+    game_key: GameKey,
+    command: Command,
+    keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    protocol: &mut Protocol, client_id: u8,
+    protocol: &mut Protocol,
+    client_id: u8,
 ) {
     match game_key {
         GameKey::Pressable(_) => {
@@ -102,9 +121,11 @@ pub fn handle_game_key_input(
 }
 
 fn handle_pressable_key(
-    command: Command, keycode: VirtualKeyCode,
+    command: Command,
+    keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    protocol: &mut Protocol, client_id: u8,
+    protocol: &mut Protocol,
+    client_id: u8,
 ) {
     info!("Received game key: {:?}", command);
     match held_map.get(&keycode) {
@@ -124,13 +145,14 @@ fn handle_pressable_key(
         // if held or others, don't do nothing
         _ => {}
     }
-
 }
 
 fn handle_heldable_key(
-    command: Command, keycode: VirtualKeyCode,
+    command: Command,
+    keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    protocol: &mut Protocol, client_id: u8,
+    protocol: &mut Protocol,
+    client_id: u8,
 ) {
     info!("Received game key: {:?}", command);
     match held_map.get(&keycode) {
@@ -160,9 +182,11 @@ fn handle_heldable_key(
 }
 
 fn handle_press_release_key(
-    command: Command, keycode: VirtualKeyCode,
+    command: Command,
+    keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    protocol: &mut Protocol, client_id: u8,
+    protocol: &mut Protocol,
+    client_id: u8,
 ) {
     info!("Received game key: {:?}", command);
     match held_map.get(&keycode) {

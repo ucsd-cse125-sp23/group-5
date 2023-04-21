@@ -1,10 +1,12 @@
+use crate::{CLIENT_ID_ASSIGNER, SESSION_ID};
 use bus::{Bus, BusReader};
 use common::communication::commons::Protocol;
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::states::GameState;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use server::game_loop::{ClientCommand, ServerEvent};
 use std::net::TcpStream;
+use std::sync::atomic::Ordering;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
@@ -39,19 +41,45 @@ impl ClientHandler {
     pub fn run(self) {
         let read_protocol = self.protocol.try_clone().unwrap();
         let write_protocol = self.protocol.try_clone().unwrap();
+        let client_id;
 
         // TODO: First listen Initial Request from Client
         // if the client doesn't send a valid client_id then it is a new client, else we init
 
-        self.protocol
-            .try_clone()
-            .unwrap()
-            .send_message(&Message::new(
-                HostRole::Server,
-                Payload::Init(HostRole::Client(1).into()),
-            ))
-            .expect("send message fails");
-        info!("New client connected");
+        // connect with client
+        match self.protocol.try_clone().unwrap().read_message::<Message>() {
+            Ok(msg) => {
+                if let Message {
+                    host_role: HostRole::Client(_),
+                    payload: Payload::Init(incoming_ids),
+                    ..
+                } = msg
+                {
+                    info!("Received connection init request: {:?}", incoming_ids);
+                    if !SESSION_ID.cmp(&(incoming_ids.1)).is_eq() {
+                        client_id = CLIENT_ID_ASSIGNER.fetch_add(1, Ordering::SeqCst);
+                        debug!("New client connected");
+                    } else {
+                        client_id = incoming_ids.0;
+                        debug!("Old client reconnected");
+                    }
+                    self.protocol
+                        .try_clone()
+                        .unwrap()
+                        .send_message(&Message::new(
+                            HostRole::Server,
+                            Payload::Init((
+                                HostRole::Client(client_id).into(),
+                                SESSION_ID.to_owned(),
+                            )),
+                        ))
+                        .expect("send message fails");
+                } else {
+                    error!("Unexpected message before connection init: {:?}", msg);
+                }
+            }
+            _ => {}
+        }
 
         let read_handler = thread::spawn(move || {
             let mut read_resources = (read_protocol, self.tx);
