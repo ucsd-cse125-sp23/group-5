@@ -43,27 +43,26 @@ pub fn handle_keyboard_input(
     //let mut functional_key= Some(..);
     if let Some(keycode) = input.virtual_keycode{
         update_held_map(held_map, keycode, input.state);
-    }
-
-    // map keyboard input to command
-    let key_command: Option<(GameKey, Command)> = match input.virtual_keycode {
-        // match heldable keys
-        Some(VirtualKeyCode::W) => Some((GameKey::Heldable(HeldableKey::W), Command::Move(MoveDirection::Forward))),
-        Some(VirtualKeyCode::A) => Some((GameKey::Heldable(HeldableKey::A), Command::Move(MoveDirection::Left))),
-        Some(VirtualKeyCode::S) => Some((GameKey::Heldable(HeldableKey::S), Command::Move(MoveDirection::Backward))),
-        Some(VirtualKeyCode::D) => Some((GameKey::Heldable(HeldableKey::D), Command::Move(MoveDirection::Right))),
-        // match Pressable keys
-        Some(VirtualKeyCode::Space) => Some((GameKey::Pressable(PressableKey::SPACE), Spawn)),
-        // match PressRelease keys
-        Some(VirtualKeyCode::F) => Some(((GameKey::PressRelease(PressReleaseKey::F)), Action(Attack))),
-        _ => None,
-    };
+        // map keyboard input to command
+        let key_command: Option<(GameKey, Command)> = match input.virtual_keycode {
+            // match heldable keys
+            Some(VirtualKeyCode::W) => Some((GameKey::Heldable(HeldableKey::W), Command::Move(MoveDirection::Forward))),
+            Some(VirtualKeyCode::A) => Some((GameKey::Heldable(HeldableKey::A), Command::Move(MoveDirection::Left))),
+            Some(VirtualKeyCode::S) => Some((GameKey::Heldable(HeldableKey::S), Command::Move(MoveDirection::Backward))),
+            Some(VirtualKeyCode::D) => Some((GameKey::Heldable(HeldableKey::D), Command::Move(MoveDirection::Right))),
+            // match Pressable keys
+            Some(VirtualKeyCode::Space) => Some((GameKey::Pressable(PressableKey::SPACE), Spawn)),
+            // match PressRelease keys
+            Some(VirtualKeyCode::F) => Some(((GameKey::PressRelease(PressReleaseKey::F)), Action(Attack))),
+            _ => None,
+        };
 
 
-    if let Some((game_key, command)) = key_command {
-        handle_game_key_input(game_key, command, held_map, protocol, client_id);
-    } else {
-        info!("No game key or action to handle");
+        if let Some((game_key, command)) = key_command {
+            handle_game_key_input(game_key, command, keycode, held_map, protocol, client_id);
+        } else {
+            info!("No game key or action to handle");
+        }
     }
 }
 
@@ -100,66 +99,120 @@ pub fn update_held_map(
 }
 
 pub fn handle_game_key_input(
-    game_key: GameKey, command: Command,
+    game_key: GameKey, command: Command, keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
     protocol: &mut Protocol, client_id: u8,
 ) {
     match game_key {
-        GameKey::Pressable(key) => {
-            handle_pressable_key(command, key, held_map, protocol, client_id);
+        GameKey::Pressable(_) => {
+            handle_pressable_key(command, keycode, held_map, protocol, client_id);
         }
-        GameKey::Heldable(key) => {
-            handle_heldable_key(command, key, held_map, protocol, client_id);
+        GameKey::Heldable(_) => {
+            handle_heldable_key(command, keycode, held_map, protocol, client_id);
         }
-        GameKey::PressRelease(key) => {
-            handle_press_release_key(command, key, held_map, protocol, client_id);
+        GameKey::PressRelease(_) => {
+            handle_press_release_key(command, keycode, held_map, protocol, client_id);
         }
     }
 }
 
 fn handle_pressable_key(
-    command: Command, key: PressableKey,
+    command: Command, keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
     protocol: &mut Protocol, client_id: u8,
 ) {
     info!("Received game key: {:?}", command);
-    let message: Message = Message::new(
-        HostRole::Client(client_id),
-        Payload::Command(command.clone()),
-    );
-    protocol.send_message(&message).expect("send message fails");
-    info!("Sent command: {:?}", command);
+    match held_map.get(&keycode) {
+        // if pressed, send command
+        Some(ButtonState::Pressed) => {
+            let message: Message = Message::new(
+                HostRole::Client(client_id),
+                Payload::Command(command.clone()),
+            );
+            protocol.send_message(&message).expect("send message fails");
+            info!("Sent command: {:?}", command);
+        }
+        // if released, remove from the held map
+        Some(ButtonState::Released) => {
+            held_map.remove(&keycode);
+        }
+        // if held or others, don't do nothing
+        _ => {}
+    }
+
 }
 
 fn handle_heldable_key(
-    command: Command, key: HeldableKey,
+    command: Command, keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
     protocol: &mut Protocol, client_id: u8,
 ) {
     info!("Received game key: {:?}", command);
-    let message: Message = Message::new(
-        HostRole::Client(client_id),
-        Payload::Command(command.clone()),
-    );
-    protocol.send_message(&message).expect("send message fails");
-    info!("Sent command: {:?}", command);
+    match held_map.get(&keycode) {
+        // if pressed or held, keep sending command
+        Some(ButtonState::Pressed) => {
+            let message: Message = Message::new(
+                HostRole::Client(client_id),
+                Payload::Command(command.clone()),
+            );
+            protocol.send_message(&message).expect("send message fails");
+            info!("Sent command: {:?}", command);
+        }
+        Some(ButtonState::Held) => {
+            let message: Message = Message::new(
+                HostRole::Client(client_id),
+                Payload::Command(command.clone()),
+            );
+            protocol.send_message(&message).expect("send message fails");
+            info!("Sent command: {:?}", command);
+        }
+        // if released, remove from the held map
+        Some(ButtonState::Released) => {
+            held_map.remove(&keycode);
+        }
+        _ => {}
+    }
 }
 
 fn handle_press_release_key(
-    command: Command, key: PressReleaseKey,
+    command: Command, keycode: VirtualKeyCode,
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
     protocol: &mut Protocol, client_id: u8,
 ) {
     info!("Received game key: {:?}", command);
-    let message: Message = Message::new(
-        HostRole::Client(client_id),
-        Payload::Command(command.clone()),
-    );
-    protocol.send_message(&message).expect("send message fails");
-    info!("Sent command: {:?}", command);
+    match held_map.get(&keycode) {
+        // if pressed or held, keep sending command
+        Some(ButtonState::Pressed) => {
+            let message: Message = Message::new(
+                HostRole::Client(client_id),
+                Payload::Command(command.clone()),
+            );
+            protocol.send_message(&message).expect("send message fails");
+            info!("Sent command: {:?}", command);
+        }
+        Some(ButtonState::Held) => {
+            let message: Message = Message::new(
+                HostRole::Client(client_id),
+                Payload::Command(command.clone()),
+            );
+            protocol.send_message(&message).expect("send message fails");
+            info!("Sent command: {:?}", command);
+        }
+        // if released, do the corresponding action and then remove from the held map
+        Some(ButtonState::Released) => {
+            let message: Message = Message::new(
+                HostRole::Client(client_id),
+                Payload::Command(command.clone()),
+            );
+            protocol.send_message(&message).expect("send message fails");
+            info!("Sent command: {:?}", command);
+            held_map.remove(&keycode);
+        }
+        _ => {}
+    }
 }
 
-/// ***********************************************Mouse********************************************
+/// ***************************************** Mouse *********************************************///
 
 // mw for mouse wheel, mm for mouse motion
 pub fn handle_mouse_input(
