@@ -73,10 +73,10 @@ pub fn update_held_map(
     use ButtonState as bs;
     let next_state = if let Some(state) = held_map.get(&keycode) {
         match (state, ele_state) {
-            (bs::Pressed, es::Released) => ButtonState::Released, // pressed -> (released) -> released
             (bs::Pressed, es::Pressed) => ButtonState::Held, // pressed -> (pressed) -> held
-            (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
+            (bs::Pressed, es::Released) => ButtonState::Released, // pressed -> (released) -> released
             (bs::Held, es::Released) => ButtonState::Released, // held -> (released) -> released
+            (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
             (bs, _) => bs.clone(), // same state
         }
     } else { ButtonState::Pressed };
