@@ -240,8 +240,6 @@ impl PlayerController {
         self.camera_forward = glm::normalize(&glm::vec3(direction.x, 0.0, direction.z));
         self.camera_right = glm::cross::<f32, glm::U3>(&self.camera_forward, &player.up);
         
-        println!("{}", self.camera_forward);
-        println!("{}", self.camera_right);
         let delta_forward = &self.camera_forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
         let delta_right = &self.camera_right * (self.amount_right - self.amount_left) * self.speed * dt;
 
