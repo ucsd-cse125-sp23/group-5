@@ -130,13 +130,8 @@ impl ClientHandler {
                 HostRole::Server,
                 Payload::StateSync(game_state.clone()),
             )) {
-                match e.kind() {
-                    std::io::ErrorKind::BrokenPipe
-                    | std::io::ErrorKind::ConnectionAborted
-                    | std::io::ErrorKind::ConnectionReset => break,
-                    _ => {
-                        warn!("Error while sending message to client: {:?}", e);
-                    }
+                if matches!(e.kind(), std::io::ErrorKind::BrokenPipe) {
+                    break;
                 }
             }
         }
