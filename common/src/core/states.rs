@@ -7,7 +7,7 @@ pub struct PlayerState {
     pub id: u32,
     pub transform: Transform,
     pub physics: Physics,
-    pub camera_facing: Vec3,
+    pub camera_forward: Vec3,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

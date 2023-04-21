@@ -13,9 +13,10 @@ pub fn handle_keyboard_input(input: KeyboardInput, protocol: &mut Protocol, clie
         Some(VirtualKeyCode::A) => Some(Command::Move(MoveDirection::Left)),
         Some(VirtualKeyCode::S) => Some(Command::Move(MoveDirection::Backward)),
         Some(VirtualKeyCode::D) => Some(Command::Move(MoveDirection::Right)),
-        Some(VirtualKeyCode::Space) => {
-            Some(Command::Spawn) // TODO: Place it somewhere else
+        Some(VirtualKeyCode::LShift) => {
+            Some(Command::Spawn) // TODO: Do this in setup phase
         }
+        Some(VirtualKeyCode::Space) => Some(Command::Jump),
         _ => None,
     };
 

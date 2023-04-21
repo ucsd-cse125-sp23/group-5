@@ -10,6 +10,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use common::core::states::GameState;
+use std::default::Default;
 
 #[derive(Debug)]
 pub struct UserInput {
@@ -127,13 +128,12 @@ impl PlayerLoop {
                 let now = instant::Instant::now();
                 let dt = now - last_render_time;
                 last_render_time = now;
-                state.load_game_state(self.game_state.clone());
-                state.update(dt);
+
+                state.update(self.game_state.clone(), dt);
                 
                 // send camera position to input processor
                 self.inputs.send(UserInput::new(self.client_id, Input::Camera {
-                    position: *state.camera_state.camera.position(),
-                    spherical_coords: *state.camera_state.camera.spherical_coords()
+                    forward: state.camera_state.camera.forward()
                 })).unwrap();
                 
                 match state.render() {

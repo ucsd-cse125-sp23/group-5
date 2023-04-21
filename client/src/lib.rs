@@ -1,4 +1,4 @@
-
+use std::sync::{Arc, Mutex};
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
@@ -38,7 +38,7 @@ struct State {
     render_pipeline: wgpu::RenderPipeline,
     player: player::Player,
     player_controller: player::PlayerController,
-    scene : scene::Scene,
+    scene: scene::Scene,
     light_state: lights::LightState,
     camera_state: camera::CameraState,
 }
@@ -173,10 +173,10 @@ impl State {
 
         let camera_state = camera::CameraState::new(
             &device,
-        player.position + glm::vec3(-2.0, 2.0, 0.0),
-        player.position,
-        glm::vec3(0.0, 1.0, 0.0),
-        config.width, config.height, 45.0, 0.1, 100.0,
+            player.position + glm::vec3(-2.0, 2.0, 0.0),
+            player.position,
+            glm::vec3(0.0, 1.0, 0.0),
+            config.width, config.height, 45.0, 0.1, 100.0,
         );
 
         // Scene
@@ -208,22 +208,24 @@ impl State {
                 .await
                 .unwrap();
         let cube_instance_vec = vec![
-            instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 1.0
-            )},
+            instance::Instance {
+                transform: glm::mat4(
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0,
+                )
+            },
         ];
-        let scene = scene::Scene{objects: vec![obj_model, cube_model], instance_vectors: vec![instance_vec, cube_instance_vec]};
+        let scene = scene::Scene { objects: vec![obj_model, cube_model], instance_vectors: vec![instance_vec, cube_instance_vec] };
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         #[rustfmt::skip]
-        let TEST_LIGHTING : Vec<lights::Light> = Vec::from([
-            lights::Light{ position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0)},
-            lights::Light{ position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2)},
+            let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
+            lights::Light { position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0) },
+            lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
@@ -308,14 +310,14 @@ impl State {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            
+
             self.camera_state.camera_uniform.update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
             self.queue.write_buffer(
                 &self.camera_state.camera_buffer,
                 0,
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
-            
+
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
@@ -323,15 +325,15 @@ impl State {
 
     fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        virtual_keycode: Some(key),
-                        state,
-                        ..
-                    },
-                ..
-            } => self.player_controller.process_keyboard(*key, &mut self.player, *state),
+            //     WindowEvent::KeyboardInput {
+            //         input:
+            //             KeyboardInput {
+            //                 virtual_keycode: Some(key),
+            //                 state,
+            //                 ..
+            //             },
+            //         ..
+            //     } => self.player_controller.process_keyboard(*key, &mut self.player, *state),
             WindowEvent::MouseWheel { delta, .. } => {
                 self.player_controller.process_scroll(delta);
                 true
@@ -347,29 +349,19 @@ impl State {
         }
     }
 
-    fn load_game_state(&mut self, game_state: Arc<Mutex<GameState>>) {
-        let mut game_state = game_state.lock().unwrap();
+
+    fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
+        let game_state = game_state.lock().unwrap();
         // TODO: game state to scene graph conversion should be done in the scene graph itself
         // like `scene_graph.load_game_state(game_state)`
 
         // just for testing
         // update the camera target
         if !game_state.players.is_empty() {
-            let player = &game_state.players[0];
-            self.camera_state.camera.target = player.transform.translation;
-            let translation = glm::translation(&player.transform.translation);
-            let rotation = glm::quat_to_mat4(&player.transform.rotation);
-            self.scene.instance_vectors
-                .get_mut(1)
-                .unwrap()
-                .get_mut(0)
-                .unwrap().transform = translation * rotation;
-
+            let player_state = &game_state.players[0];
+            // update player controller (player, camera, etc) with the latest player state
+            self.player_controller.update(&mut self.player, &mut self.camera_state.camera, player_state, dt);
         }
-    }
-
-    fn update(&mut self, dt: instant::Duration) {
-        self.player_controller.update_player(&mut self.player, &mut self.camera_state.camera, dt);
 
         // hard code updating player instance for now
         self.scene.instance_vectors[1][0].transform = self.player.calc_transf_matrix();

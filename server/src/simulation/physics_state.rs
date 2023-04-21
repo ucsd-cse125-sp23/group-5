@@ -36,6 +36,10 @@ impl PhysicsState {
         self.integration_parameters.dt = time_step;
     }
 
+    pub fn dt(&self) -> f32 {
+        self.integration_parameters.dt
+    }
+
     pub fn step(&mut self) {
         self.physics_pipeline.step(
             &self.gravity,
@@ -150,7 +154,7 @@ impl PhysicsState {
         let dt = self.integration_parameters.dt;
         // Calculate the possible movement.
         let corrected_movement = self.character_controller.move_shape(
-            dt.clone(),                 // The timestep length
+            dt,                 // The timestep length
             &self.bodies,                                   // The RigidBodySet.
             &self.colliders,                                // The ColliderSet.
             &self.query_pipeline,                   // The QueryPipeline.

@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 use std::sync::mpsc::Receiver;
-use glm::TVec3;
+use glm::{TVec3, Vec3};
 use log::{error, info};
 use queues::{IsQueue, Queue};
 use winit::event::{DeviceEvent, KeyboardInput, MouseScrollDelta};
@@ -15,7 +15,7 @@ pub mod handlers;
 pub enum Input {
     Keyboard(KeyboardInput),
     Mouse(DeviceEvent),
-    Camera {position: TVec3<f32>, spherical_coords: TVec3<f32>},
+    Camera {forward: Vec3}
 }
 
 pub struct InputProcessor {
@@ -103,14 +103,13 @@ impl InputProcessor {
                     info!("Sent command: {:?}", "Turn");
                 },
                 // receive camera update and it is past the interval since last update
-                Input::Camera { position, spherical_coords }
+                Input::Camera { forward }
                 if last_camera_update_time.elapsed() >= Duration::from_millis(100) => {
                     self.protocol
                         .send_message(&Message::new(
                             HostRole::Client(self.client_id),
                             Payload::Command(Command::UpdateCamera {
-                                position,
-                                spherical_coords,
+                                forward
                             }),
                         ))
                         .expect("send message fails");

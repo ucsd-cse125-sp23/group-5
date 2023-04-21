@@ -27,13 +27,13 @@ impl Camera {
             &self.up,
         )
     }
-    
-    pub fn spherical_coords(&self) -> &glm::TVec3<f32> {
-        &self.spherical_coords
-    }
-    
+
     pub fn position(&self) -> &glm::TVec3<f32> {
         &self.position
+    }
+
+    pub fn forward(&self) -> glm::TVec3<f32> {
+        glm::normalize(&(self.target - self.position))
     }
 }
 

@@ -4,6 +4,8 @@ use instant::Duration;
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
 use std::collections::HashMap;
+use common::core::states::PlayerState;
+
 extern crate nalgebra_glm as glm;
 
 use crate::camera::Camera;
@@ -36,28 +38,24 @@ fn spherical_to_cartesian(spherical: &glm::Vec3) -> glm::Vec3 {
 #[derive(Debug)]
 pub struct Player {
     pub position: glm::TVec3<f32>,
-    pub forward: glm:: TVec3<f32>, 
+    pub rotation: glm:: Quat,
     up: glm::TVec3<f32>,
-    default_forward: glm::TVec3<f32>,
 }
 
 impl Player {
     pub fn new(
         position: glm::TVec3<f32>,
     ) -> Self {
-        let forward = glm::vec3(1.0, 0.0, 0.0);
         let up = glm::vec3(0.0, 1.0, 0.0);
         Self {
             position,
-            forward,  
+            rotation: glm::quat_identity(),
             up,
-            default_forward: forward,
         }
     }
 
     pub fn calc_transf_matrix(&self) -> glm::TMat4<f32> {
-        let angle = glm::dot(&glm::cross::<f32,glm::U3>(&self.default_forward, &self.forward), &self.up).atan2(glm::dot(&self.default_forward, &self.forward));
-        return glm::translation(&self.position) * glm::rotation(angle, &self.up);
+        return glm::translation(&self.position) * glm::quat_to_mat4(&self.rotation);
     }
 }
 
@@ -110,111 +108,112 @@ impl PlayerController {
         }
     }
 
-    pub fn process_keyboard(&mut self, key: VirtualKeyCode, player: &mut Player, state: ElementState) -> bool{
-        let amount = if state == ElementState::Pressed { 1.0 } else { 0.0 };
-        if state == ElementState::Pressed {
-            self.key_map.entry(key).and_modify(|e| {*e = true});
-            match key {
-                VirtualKeyCode::W => {
-                    self.amount_forward = amount;
-
-                    // diagonal movement
-                    if self.key_map.get(&VirtualKeyCode::A) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, PI/4.0, &player.up)
-                    } else if self.key_map.get(&VirtualKeyCode::D) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, -PI/4.0, &player.up)
-                    } else {
-                        player.forward = self.camera_forward; 
-                    }
-
-                    true
-                }
-                VirtualKeyCode::S => {
-                    self.amount_backward = amount;
-                    
-                    // diagonal movement
-                    if self.key_map.get(&VirtualKeyCode::A) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, 3.0 * PI/4.0, &player.up)
-                    } else if self.key_map.get(&VirtualKeyCode::D) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, -3.0 * PI/4.0, &player.up)
-                    } else {
-                        player.forward = -&self.camera_forward; 
-                    }
-
-                    true
-                }
-                VirtualKeyCode::A => {
-                    self.amount_left = amount;
-
-                    // diagonal movement
-                    if self.key_map.get(&VirtualKeyCode::W) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, PI/4.0, &player.up)
-                    } else if self.key_map.get(&VirtualKeyCode::S) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, 3.0 * PI/4.0, &player.up)
-                    } else {
-                        player.forward = -&self.camera_right; 
-                    }
-
-                    true
-                }
-                VirtualKeyCode::D => {
-                    self.amount_right = amount;
-
-                    // diagonal movement
-                    if self.key_map.get(&VirtualKeyCode::W) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, -PI/4.0, &player.up)
-                    } else if self.key_map.get(&VirtualKeyCode::S) == Some(&true) {
-                        player.forward = glm::rotate_vec3(&self.camera_forward, -3.0 * PI/4.0, &player.up)
-                    } else {
-                        player.forward = self.camera_right; 
-                    }
-                    true
-                }
-                VirtualKeyCode::Space => {
-                    self.amount_up = amount;
-                    true
-                }
-                VirtualKeyCode::LShift => {
-                    self.amount_down = amount;
-                    true
-                }
-                _ => false,
-            }
-        } else if state == ElementState::Released {
-            self.key_map.entry(key).and_modify(|e| {*e = false});
-            match key {
-                VirtualKeyCode::W => {
-                    self.amount_forward = amount; 
-                    true
-                }
-                VirtualKeyCode::S => {
-                    self.amount_backward = amount;
-                    true
-                }
-                VirtualKeyCode::A => {
-                    self.amount_left = amount;
-                    true
-                }
-                VirtualKeyCode::D => {
-                    self.amount_right = amount;
-                    true
-                }
-                VirtualKeyCode::Space => {
-                    self.amount_up = amount;
-                    true
-                }
-                VirtualKeyCode::LShift => {
-                    self.amount_down = amount;
-                    true
-                }
-                _ => false,
-            }
-        } else {
-            false 
-        }
-        
-
-    }
+    // TODO: moved this function to server side
+    // pub fn process_keyboard(&mut self, key: VirtualKeyCode, player: &mut Player, state: ElementState) -> bool{
+    //     let amount = if state == ElementState::Pressed { 1.0 } else { 0.0 };
+    //     if state == ElementState::Pressed {
+    //         self.key_map.entry(key).and_modify(|e| {*e = true});
+    //         match key {
+    //             VirtualKeyCode::W => {
+    //                 self.amount_forward = amount;
+    //
+    //                 // diagonal movement
+    //                 if self.key_map.get(&VirtualKeyCode::A) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, PI/4.0, &player.up)
+    //                 } else if self.key_map.get(&VirtualKeyCode::D) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, -PI/4.0, &player.up)
+    //                 } else {
+    //                     player.rotation = self.camera_forward;
+    //                 }
+    //
+    //                 true
+    //             }
+    //             VirtualKeyCode::S => {
+    //                 self.amount_backward = amount;
+    //
+    //                 // diagonal movement
+    //                 if self.key_map.get(&VirtualKeyCode::A) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, 3.0 * PI/4.0, &player.up)
+    //                 } else if self.key_map.get(&VirtualKeyCode::D) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, -3.0 * PI/4.0, &player.up)
+    //                 } else {
+    //                     player.rotation = -&self.camera_forward;
+    //                 }
+    //
+    //                 true
+    //             }
+    //             VirtualKeyCode::A => {
+    //                 self.amount_left = amount;
+    //
+    //                 // diagonal movement
+    //                 if self.key_map.get(&VirtualKeyCode::W) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, PI/4.0, &player.up)
+    //                 } else if self.key_map.get(&VirtualKeyCode::S) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, 3.0 * PI/4.0, &player.up)
+    //                 } else {
+    //                     player.rotation = -&self.camera_right;
+    //                 }
+    //
+    //                 true
+    //             }
+    //             VirtualKeyCode::D => {
+    //                 self.amount_right = amount;
+    //
+    //                 // diagonal movement
+    //                 if self.key_map.get(&VirtualKeyCode::W) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, -PI/4.0, &player.up)
+    //                 } else if self.key_map.get(&VirtualKeyCode::S) == Some(&true) {
+    //                     player.rotation = glm::rotate_vec3(&self.camera_forward, -3.0 * PI/4.0, &player.up)
+    //                 } else {
+    //                     player.rotation = self.camera_right;
+    //                 }
+    //                 true
+    //             }
+    //             VirtualKeyCode::Space => {
+    //                 self.amount_up = amount;
+    //                 true
+    //             }
+    //             VirtualKeyCode::LShift => {
+    //                 self.amount_down = amount;
+    //                 true
+    //             }
+    //             _ => false,
+    //         }
+    //     } else if state == ElementState::Released {
+    //         self.key_map.entry(key).and_modify(|e| {*e = false});
+    //         match key {
+    //             VirtualKeyCode::W => {
+    //                 self.amount_forward = amount;
+    //                 true
+    //             }
+    //             VirtualKeyCode::S => {
+    //                 self.amount_backward = amount;
+    //                 true
+    //             }
+    //             VirtualKeyCode::A => {
+    //                 self.amount_left = amount;
+    //                 true
+    //             }
+    //             VirtualKeyCode::D => {
+    //                 self.amount_right = amount;
+    //                 true
+    //             }
+    //             VirtualKeyCode::Space => {
+    //                 self.amount_up = amount;
+    //                 true
+    //             }
+    //             VirtualKeyCode::LShift => {
+    //                 self.amount_down = amount;
+    //                 true
+    //             }
+    //             _ => false,
+    //         }
+    //     } else {
+    //         false
+    //     }
+    //
+    //
+    // }
 
     pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64) {
         self.rotate_horizontal = mouse_dx as f32;
@@ -238,10 +237,10 @@ impl PlayerController {
         
         // Move forward/backward and left/right
         self.camera_forward = glm::normalize(&glm::vec3(direction.x, 0.0, direction.z));
-        self.camera_right = glm::cross::<f32, glm::U3>(&self.camera_forward, &player.up);
+        self.camera_right = glm::cross::<f32>(&self.camera_forward, &player.up);
         
-        let delta_forward = &self.camera_forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
-        let delta_right = &self.camera_right * (self.amount_right - self.amount_left) * self.speed * dt;
+        let delta_forward = self.camera_forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
+        let delta_right = self.camera_right * (self.amount_right - self.amount_left) * self.speed * dt;
 
         // Move in/out (aka. "zoom")
         // Note: this isn't an actual zoom. The camera's position
@@ -287,7 +286,42 @@ impl PlayerController {
         // not sure about this with movement, might need fix later
         camera.position = player.position + spherical_to_cartesian(&spherical_coords);
         
-    } 
+    }
+
+    /// update the player's position and camera's position and target based on incoming player state
+    pub fn update(&mut self, player: &mut Player, camera: &mut Camera, incoming_player_state: &PlayerState, dt: Duration) {
+        let translation = incoming_player_state.transform.translation;
+        let rotation = incoming_player_state.transform.rotation;
+
+        camera.target = translation;
+
+        let pos_delta= translation - player.position;
+
+        player.position = translation;
+        player.rotation = rotation;
+
+        camera.position += pos_delta;
+
+        let mut spherical_coords = cartesian_to_spherical(&(camera.position - player.position));
+
+        // update camera
+        let dt = dt.as_secs_f32();
+        let delta_yaw = self.rotate_horizontal * self.x_sensitivity * dt;
+        let delta_pitch = self.rotate_vertical * self.y_sensitivity * dt;
+
+        spherical_coords.x = 10.0; // keep the camera at a fixed distance from the player
+        spherical_coords.y = (spherical_coords.y + delta_yaw) % (2.0 * PI);
+        // keep the camera's angle from going too high/low
+        spherical_coords.z = (spherical_coords.z + delta_pitch).clamp(-SAFE_FRAC_PI_2, SAFE_FRAC_PI_2);
+
+        // If process_mouse isn't called every frame, these values
+        // will not get set to zero, and the camera will rotate
+        // when moving in a non cardinal direction.
+        self.rotate_horizontal = 0.0;
+        self.rotate_vertical = 0.0;
+
+        camera.position = translation + spherical_to_cartesian(&spherical_coords);
+    }
 
 
 }
