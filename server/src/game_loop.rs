@@ -23,7 +23,7 @@ impl ClientCommand {
     }
 }
 
-/// Server events that are broadcasted to the consumer threads.
+/// Server events that are broadcast to the consumer threads.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ServerEvent {
     Sync, // ask for a sync of game state
@@ -116,15 +116,16 @@ mod tests {
     use std::sync::mpsc;
     use std::time::Duration;
     use nalgebra_glm::Vec3;
+    use common::core::command::Command::UpdateCamera;
 
     #[test]
     fn test_game_loop() {
         let (tx, rx) = mpsc::channel();
         let game_state = Arc::new(Mutex::new(GameState::default()));
-        let ext = Executor::new(game_state.clone());
+        let ext = Executor::new(game_state);
         let running = Arc::new(AtomicBool::new(true));
 
-        let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
+        let broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
 
         let mut game_loop = GameLoop::new(rx, &ext, broadcast.clone(), running.clone());
 
@@ -138,6 +139,7 @@ mod tests {
             tx_clone
                 .send(ClientCommand::new(1, Command::Spawn))
                 .unwrap();
+            tx_clone.send(ClientCommand::new(1, UpdateCamera {forward: nalgebra_glm::vec3(2., 0., 1.)})).unwrap();
             sleep(Duration::from_millis(500));
 
             assert_eq!(rx1.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced
