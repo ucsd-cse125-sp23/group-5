@@ -59,13 +59,6 @@ impl PlayerLoop {
         let mut last_render_time = instant::Instant::now();
 
         event_loop.run_return(move |event, _, control_flow| match event {
-            // event
-            Event::DeviceEvent {
-                event: DeviceEvent::MouseMotion{ delta, },
-                .. // We're not using device_id currently
-            } => {
-                state.camera_state.camera_controller.process_mouse(delta.0, delta.1)
-            }
             Event::WindowEvent {
                 ref event,
                 window_id,
@@ -105,9 +98,15 @@ impl PlayerLoop {
                     }
                 }
             }
+            // event
+            Event::DeviceEvent {
+                event: DeviceEvent::MouseMotion{ delta, },
+                .. // We're not using device_id currently
+            } => {
+                state.player_controller.process_mouse(delta.0, delta.1)
+            }
             Event::DeviceEvent { ref event, .. } => match event {
-                DeviceEvent::MouseMotion { .. }
-                | DeviceEvent::MouseWheel { .. }
+                DeviceEvent::MouseWheel { .. }
                 | DeviceEvent::Button { .. } => {
                     let output_event = event.clone();
                     match self
