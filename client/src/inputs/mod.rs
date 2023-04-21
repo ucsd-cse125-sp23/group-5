@@ -17,7 +17,7 @@ pub enum Input {
     Mouse(DeviceEvent),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ButtonState {
     Pressed,
     Held,

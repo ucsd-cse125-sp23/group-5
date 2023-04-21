@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
 use common::core::command::Command::{Action, Spawn};
 use common::core::command::GameAction::Attack;
-use crate::inputs::ButtonState::Pressed;
 
 pub enum GameKey {
     Pressable(PressableKey),
@@ -37,11 +36,11 @@ pub enum PressReleaseKey {
 
 pub fn handle_keyboard_input(
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    input: KeyboardInput, protocol: &mut Protocol, client_id: u8
+    input: KeyboardInput, protocol: &mut Protocol, client_id: u8,
 ) {
     // change state
     //let mut functional_key= Some(..);
-    if let Some(keycode) = input.virtual_keycode{
+    if let Some(keycode) = input.virtual_keycode {
         update_held_map(held_map, keycode, input.state);
     }
 
@@ -69,34 +68,20 @@ pub fn handle_keyboard_input(
 
 pub fn update_held_map(
     held_map: &mut HashMap<winit::event::VirtualKeyCode, ButtonState>,
-    keycode: VirtualKeyCode, ele_state: ElementState
+    keycode: VirtualKeyCode, ele_state: ElementState,
 ) {
-    if held_map.contains_key(&keycode) {
-        match held_map.get(&keycode) {
-            Some(ButtonState::Pressed) => {
-                if ele_state == ElementState::Pressed {
-                    held_map.insert(keycode, ButtonState::Held);
-                }
-                else {
-                    held_map.insert(keycode, ButtonState::Released);
-                }
-            }
-            Some(ButtonState::Held) => {
-                if ele_state == ElementState::Released {
-                    held_map.insert(keycode, ButtonState::Released);
-                }
-            }
-            Some(ButtonState::Released) => {
-                if ele_state == ElementState::Pressed {
-                    held_map.insert(keycode, ButtonState::Pressed);
-                }
-            }
-            None => {}
+    use winit::event::ElementState as es;
+    use ButtonState as bs;
+    let next_state = if let Some(state) = held_map.get(&keycode) {
+        match (state, ele_state) {
+            (bs::Pressed, es::Released) => ButtonState::Released, // pressed -> (released) -> released
+            (bs::Pressed, es::Pressed) => ButtonState::Held, // pressed -> (pressed) -> held
+            (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
+            (bs::Held, es::Released) => ButtonState::Released, // held -> (released) -> released
+            (bs, _) => bs.clone(), // same state
         }
-    }
-    else {
-        held_map.insert(keycode, ButtonState::Pressed);
-    }
+    } else { ButtonState::Pressed };
+    held_map.insert(keycode, next_state);
 }
 
 pub fn handle_game_key_input(
