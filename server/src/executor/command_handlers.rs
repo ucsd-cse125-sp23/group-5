@@ -1,3 +1,4 @@
+use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
 use common::core::states::{GameState, PlayerState};
@@ -6,7 +7,6 @@ use rapier3d::parry::transformation::utils::transform;
 use rapier3d::prelude as rapier;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use crate::simulation::obj_collider::FromObject;
 
 #[derive(Error, Debug, Display)]
 pub struct HandlerError {
@@ -46,7 +46,6 @@ impl CommandHandler for StartupCommandHandler {
         Ok(())
     }
 }
-
 
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {

@@ -1,10 +1,13 @@
 use bus::Bus;
 use common::core::states::GameState;
+use rand;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use server::game_loop::GameLoop;
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{net::TcpListener, thread};
+use clap::__derive_refs::once_cell::sync::Lazy;
 
 use common::communication::commons::DEFAULT_SERVER_ADDR;
 
@@ -14,6 +17,9 @@ use threadpool::ThreadPool;
 mod client_handler;
 
 use client_handler::ClientHandler;
+
+pub static CLIENT_ID_ASSIGNER: AtomicU8 = AtomicU8::new(1);
+pub static SESSION_ID: Lazy<u64> = Lazy::new(|| {rand::random::<u64>()});
 
 fn main() {
     env_logger::init();
@@ -49,7 +55,7 @@ fn main() {
         let game_state = game_state.clone();
 
         pool.execute(move || {
-            ClientHandler::new(stream, tx, broadcast_clone, game_state).run(); // run client handler
+            ClientHandler::new(stream, tx, broadcast_clone, game_state).run();
         });
     }
 }

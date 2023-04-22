@@ -1,4 +1,6 @@
-use crate::executor::command_handlers::{CommandHandler, MoveCommandHandler, SpawnCommandHandler, StartupCommandHandler};
+use crate::executor::command_handlers::{
+    CommandHandler, MoveCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};

@@ -1,5 +1,5 @@
+use crate::inputs::{ButtonState, Input};
 use crate::State;
-use crate::inputs::Input;
 use log::{debug, info, warn};
 use std::sync::mpsc::Sender;
 use winit::platform::run_return::EventLoopExtRunReturn;
@@ -64,11 +64,11 @@ impl PlayerLoop {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
                             input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput { input, .. } => {
@@ -113,7 +113,7 @@ impl PlayerLoop {
             },
             // graphics
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-                // To check 
+                // To check
                 let now = instant::Instant::now();
                 let dt = now - last_render_time;
                 last_render_time = now;
