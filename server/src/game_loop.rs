@@ -149,7 +149,7 @@ mod tests {
         });
 
         // client 0 (from another thread) moves the player at 50ms
-        let broadcast_clone = broadcast.clone();
+        let broadcast_clone = broadcast;
         std::thread::spawn(move || {
             let mut rx2 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the second client
 

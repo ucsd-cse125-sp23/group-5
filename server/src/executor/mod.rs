@@ -1,8 +1,8 @@
 use crate::executor::command_handlers::{CommandHandler, JumpCommandHandler, MoveCommandHandler, SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::{Command, MoveDirection};
-use common::core::states::{GameState, PlayerState};
+use common::core::command::{Command};
+use common::core::states::{GameState};
 use log::{debug, error, warn};
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};

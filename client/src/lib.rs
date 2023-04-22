@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
-use wgpu::util::DeviceExt;
+
 use winit::{
     event::*,
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
 };
 
 mod model;
@@ -95,9 +93,7 @@ impl State {
         let surface_format = surface_caps
             .formats
             .iter()
-            .copied()
-            .filter(|f| f.describe().srgb)
-            .next()
+            .copied().find(|f| f.describe().srgb)
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -340,7 +336,7 @@ impl State {
             }
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
-                state,
+                state: _,
                 ..
             } => {
                 true
@@ -429,7 +425,7 @@ impl State {
 
             //let count = self.scene.instance_vectors[0].len();
             for instanced_obj in instanced_objs.iter() {
-                render_pass.draw_model_instanced(&instanced_obj, 0..instanced_obj.num_instances as u32, &self.camera_state.camera_bind_group);
+                render_pass.draw_model_instanced(instanced_obj, 0..instanced_obj.num_instances as u32, &self.camera_state.camera_bind_group);
             }
         }
 

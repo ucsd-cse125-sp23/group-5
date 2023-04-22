@@ -1,7 +1,7 @@
 use bus::Bus;
 use common::core::states::GameState;
-use rand;
-use std::sync::atomic::{AtomicU8, Ordering};
+
+use std::sync::atomic::{AtomicU8};
 
 use server::game_loop::GameLoop;
 use std::sync::atomic::AtomicBool;

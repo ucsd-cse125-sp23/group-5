@@ -3,7 +3,7 @@ use std::io::{BufReader, Cursor};
 use cfg_if::cfg_if;
 use wgpu::util::DeviceExt;
 
-use crate::{model::{self, ShaderFlags}, texture};
+use crate::{model::{self}, texture};
 
 // #[cfg(target_arch = "wasm32")]
 // fn format_url(file_name: &str) -> reqwest::Url {
@@ -34,7 +34,7 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
             //     // .join("assets")
             //     .join(file_name);
             let path = std::path::Path::new(file_name);
-            print!("path: {path:?}\n");
+            println!("path: {path:?}");
             let txt = std::fs::read_to_string(path)?;
         }
     }
@@ -77,7 +77,7 @@ pub async fn load_model(
     queue: &wgpu::Queue,
     layout: &wgpu::BindGroupLayout,
 ) -> anyhow::Result<model::Model> {
-    print!("loading {file_name}\n");
+    println!("loading {file_name}");
     let obj_text = load_string(file_name).await?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
@@ -106,7 +106,7 @@ pub async fn load_model(
 
     let mut materials = Vec::new();
     for m in obj_materials? {
-        print!("Material: {m:?}\n");
+        println!("Material: {m:?}");
         let phong_mtl = model::Phong::new(&m);
         let phong_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -143,7 +143,7 @@ pub async fn load_model(
                     })
                 };
                 (t, model::ShaderFlags::new(0))},
-            d => (load_texture(&d, device, queue).await?, model::ShaderFlags::new(model::ShaderFlags::HAS_DIFFUSE_TEXTURE)),
+            d => (load_texture(d, device, queue).await?, model::ShaderFlags::new(model::ShaderFlags::HAS_DIFFUSE_TEXTURE)),
         };
         let flags_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -178,7 +178,7 @@ pub async fn load_model(
 
         materials.push(model::Material {
             name: m.name,
-            diffuse_texture: diffuse_texture,
+            diffuse_texture,
             phong_mtl,
             flags,
             bind_group,

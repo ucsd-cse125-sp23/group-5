@@ -13,7 +13,7 @@ use crate::camera::Camera;
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.001;
 
 fn cartesian_to_spherical(cartesian: &glm::Vec3) -> glm::Vec3 {
-    let r = glm::length(&cartesian);
+    let r = glm::length(cartesian);
 
     if cartesian.x == 0.0 && cartesian.z == 0.0{
         return glm::vec3(r, 0.0, 0.0);
@@ -55,7 +55,7 @@ impl Player {
     }
 
     pub fn calc_transf_matrix(&self) -> glm::TMat4<f32> {
-        return glm::translation(&self.position) * glm::quat_to_mat4(&self.rotation);
+        glm::translation(&self.position) * glm::quat_to_mat4(&self.rotation)
     }
 }
 

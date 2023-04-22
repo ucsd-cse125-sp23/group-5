@@ -7,10 +7,10 @@ use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
-    window::{Window, WindowBuilder},
+    window::{WindowBuilder},
 };
 use common::core::states::GameState;
-use std::default::Default;
+
 
 #[derive(Debug)]
 pub struct UserInput {

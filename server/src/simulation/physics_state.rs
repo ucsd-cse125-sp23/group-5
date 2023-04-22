@@ -1,8 +1,8 @@
 use crate::simulation::entity::{Entity, EntityHandles};
-use rapier3d::data::Index;
+
 use rapier3d::parry::utils::hashmap::HashMap;
 use rapier3d::prelude::*;
-use std::collections::BTreeMap;
+
 use nalgebra_glm::Vec3;
 use rapier3d::control::KinematicCharacterController;
 
