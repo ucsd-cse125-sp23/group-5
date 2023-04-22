@@ -69,11 +69,11 @@ impl PlayerLoop {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
                             input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            },
                             ..
                         } => *control_flow = ControlFlow::Exit,
                         WindowEvent::KeyboardInput { input, .. } => {
@@ -130,12 +130,12 @@ impl PlayerLoop {
                 last_render_time = now;
 
                 state.update(self.game_state.clone(), dt);
-                
+
                 // send camera position to input processor
                 self.inputs.send(UserInput::new(self.client_id, Input::Camera {
                     forward: state.camera_state.camera.forward()
                 })).unwrap();
-                
+
                 match state.render() {
                     Ok(_) => {}
                     // Reconfigure the surface if lost

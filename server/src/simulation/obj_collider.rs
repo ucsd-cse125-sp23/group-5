@@ -19,16 +19,12 @@ impl FromObject for ColliderBuilder {
         for model in models {
             debug!("Model: {:?}", model.name);
             let mesh = &model.mesh;
-            vertices.extend(mesh
-                .positions
-                .chunks(3)
-                .map(Point3::<Real>::from_slice)
-            );
+            vertices.extend(mesh.positions.chunks(3).map(Point3::<Real>::from_slice));
 
-            indices.extend(mesh
-                .indices
-                .chunks(3)
-                .map(|i| [i[0], i[1], i[2]].map(|i| i + vertex_offset))
+            indices.extend(
+                mesh.indices
+                    .chunks(3)
+                    .map(|i| [i[0], i[1], i[2]].map(|i| i + vertex_offset)),
             );
             vertex_offset += vertices.len() as u32;
         }
@@ -39,10 +35,10 @@ impl FromObject for ColliderBuilder {
 
 #[cfg(test)]
 mod tests {
+    use crate::simulation::obj_collider::FromObject;
     use approx::relative_eq;
     use rapier3d::geometry::ColliderBuilder;
     use rapier3d::prelude::Isometry;
-    use crate::simulation::obj_collider::{FromObject};
 
     #[test]
     fn test_loading_simple_model() {

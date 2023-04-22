@@ -3,10 +3,10 @@ use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{MoveDirection};
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
-use nalgebra::UnitQuaternion;
-use nalgebra_glm::Vec3;
 use rapier3d::prelude as rapier;
 use std::fmt::Debug;
+use nalgebra::UnitQuaternion;
+use nalgebra_glm::Vec3;
 
 #[derive(Error, Debug, Display)]
 pub struct HandlerError {
@@ -40,6 +40,7 @@ impl CommandHandler for StartupCommandHandler {
         Ok(())
     }
 }
+
 
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
