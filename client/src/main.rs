@@ -73,7 +73,7 @@ fn restore_ids(session_data_path: &PathBuf) -> (u8, u64) {
             info!("No session data file found");
             (114, 514)
         }
-        Ok(file) => serde_json::from_reader(&file).unwrap()
+        Ok(file) => serde_json::from_reader(&file).unwrap(),
     }
 }
 

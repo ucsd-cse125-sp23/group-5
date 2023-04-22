@@ -1,14 +1,14 @@
-use std::time::{Duration, Instant};
-use std::sync::mpsc::Receiver;
-use log::{error, info};
-use queues::{IsQueue, Queue};
-use winit::event::{DeviceEvent, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
-use common::communication::commons::{DEFAULT_MOUSE_MOVEMENT_INTERVAL, Protocol};
+use crate::event_loop::UserInput;
+use common::communication::commons::{Protocol, DEFAULT_MOUSE_MOVEMENT_INTERVAL};
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::command::Command;
-use std::collections::HashMap;
 use glm::Vec3;
-use crate::event_loop::UserInput;
+use log::{error, info};
+use queues::{IsQueue, Queue};
+use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
+use std::time::{Duration, Instant};
+use winit::event::{DeviceEvent, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
 
 pub mod handlers;
 
@@ -16,7 +16,7 @@ pub mod handlers;
 pub enum Input {
     Keyboard(KeyboardInput),
     Mouse(DeviceEvent),
-    Camera {forward: Vec3}
+    Camera { forward: Vec3 },
 }
 
 #[derive(Debug, Clone)]
@@ -69,13 +69,13 @@ impl InputProcessor {
                     );
                 }
                 // receive camera update and it is past the interval since last update
-                Input::Camera { forward } if last_camera_update_time.elapsed() >= Duration::from_millis(100) => {
+                Input::Camera { forward }
+                    if last_camera_update_time.elapsed() >= Duration::from_millis(100) =>
+                {
                     self.protocol
                         .send_message(&Message::new(
                             HostRole::Client(self.client_id),
-                            Payload::Command(Command::UpdateCamera {
-                                forward
-                            }),
+                            Payload::Command(Command::UpdateCamera { forward }),
                         ))
                         .expect("send message fails");
                     last_camera_update_time = Instant::now();
@@ -85,7 +85,10 @@ impl InputProcessor {
 
             // Should always check? buffered mouse inputs cannot be good right?
             // ideally runs in a always checking thread
-            if !(mouse_motion_buf.size() == 0 && mouse_wheel_buf.size() == 0) && sample_start_time.elapsed() >= Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
+            if !(mouse_motion_buf.size() == 0 && mouse_wheel_buf.size() == 0)
+                && sample_start_time.elapsed()
+                    >= Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL)
+            {
                 handlers::send_mouse_input(
                     &mut mouse_motion_buf,
                     &mut mouse_wheel_buf,
@@ -94,7 +97,9 @@ impl InputProcessor {
                     self.client_id,
                 );
 
-                if sample_start_time.elapsed() < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL) {
+                if sample_start_time.elapsed()
+                    < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL)
+                {
                     continue;
                 }
 
@@ -142,7 +147,6 @@ impl InputProcessor {
                     .expect("send message fails");
                 info!("Sent command: {:?}", "Turn");
             }
-
         }
     }
 }

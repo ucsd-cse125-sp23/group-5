@@ -1,8 +1,11 @@
-use crate::executor::command_handlers::{CommandHandler, JumpCommandHandler, MoveCommandHandler, SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler};
+use crate::executor::command_handlers::{
+    CommandHandler, JumpCommandHandler, MoveCommandHandler, SpawnCommandHandler,
+    StartupCommandHandler, UpdateCameraFacingCommandHandler,
+};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::{Command};
-use common::core::states::{GameState};
+use common::core::command::Command;
+use common::core::states::GameState;
 use log::{debug, error, warn};
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
@@ -54,7 +57,10 @@ impl Executor {
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
-            Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(client_command.client_id, forward)),
+            Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
+                client_command.client_id,
+                forward,
+            )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);

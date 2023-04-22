@@ -145,7 +145,6 @@ impl PhysicsState {
             .get_mut(self.get_entity_handles(entity)?.collider?)
     }
 
-
     pub fn move_character_with_velocity(&mut self, entity: Entity, desired_translation: Vec3) {
         let character_shape = self.get_entity_collider(entity).unwrap().shape();
         let character_handle = self.get_entity_handles(entity).unwrap().rigid_body.unwrap();
@@ -154,12 +153,12 @@ impl PhysicsState {
         let dt = self.integration_parameters.dt;
         // Calculate the possible movement.
         let corrected_movement = self.character_controller.move_shape(
-            dt,                 // The timestep length
-            &self.bodies,                                   // The RigidBodySet.
-            &self.colliders,                                // The ColliderSet.
-            &self.query_pipeline,                   // The QueryPipeline.
-            character_shape,                                // The character’s shape.
-            character_pos,                                  // The character’s initial position.
+            dt,                   // The timestep length
+            &self.bodies,         // The RigidBodySet.
+            &self.colliders,      // The ColliderSet.
+            &self.query_pipeline, // The QueryPipeline.
+            character_shape,      // The character’s shape.
+            character_pos,        // The character’s initial position.
             desired_translation,
             QueryFilter::default()
                 // Make sure the the character we are trying to move isn’t considered an obstacle.

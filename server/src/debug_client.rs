@@ -5,8 +5,6 @@ use common::core::command::{Command, MoveDirection};
 
 use std::io::Write;
 
-
-
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(Parser)]
 struct Cli {

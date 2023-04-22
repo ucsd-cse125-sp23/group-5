@@ -61,10 +61,7 @@ impl ClientHandler {
                 self.protocol
                     .send_message(&Message::new(
                         HostRole::Server,
-                        Payload::Init((
-                            HostRole::Client(client_id).into(),
-                            SESSION_ID.to_owned(),
-                        )),
+                        Payload::Init((HostRole::Client(client_id).into(), SESSION_ID.to_owned())),
                     ))
                     .expect("send message fails");
             } else {

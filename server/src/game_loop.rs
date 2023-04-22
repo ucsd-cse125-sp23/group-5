@@ -111,12 +111,12 @@ impl GameLoop<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common::core::command::Command::UpdateCamera;
     use common::core::command::MoveDirection;
     use common::core::states::GameState;
+    use nalgebra_glm::Vec3;
     use std::sync::mpsc;
     use std::time::Duration;
-    use nalgebra_glm::Vec3;
-    use common::core::command::Command::UpdateCamera;
 
     #[test]
     fn test_game_loop() {
@@ -139,7 +139,14 @@ mod tests {
             tx_clone
                 .send(ClientCommand::new(1, Command::Spawn))
                 .unwrap();
-            tx_clone.send(ClientCommand::new(1, UpdateCamera {forward: nalgebra_glm::vec3(2., 0., 1.)})).unwrap();
+            tx_clone
+                .send(ClientCommand::new(
+                    1,
+                    UpdateCamera {
+                        forward: nalgebra_glm::vec3(2., 0., 1.),
+                    },
+                ))
+                .unwrap();
             sleep(Duration::from_millis(500));
 
             assert_eq!(rx1.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced

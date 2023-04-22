@@ -1,7 +1,7 @@
 use log::debug;
 use nalgebra::Point3;
 use rapier3d::geometry::ColliderBuilder;
-use rapier3d::math::{Real};
+use rapier3d::math::Real;
 
 use tobj;
 

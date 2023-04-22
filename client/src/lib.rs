@@ -1,29 +1,27 @@
 use std::sync::{Arc, Mutex};
 
-use winit::{
-    event::*,
-};
+use winit::event::*;
 
 mod model;
 
-use model::Vertex;
 use crate::model::DrawModel;
+use model::Vertex;
 
 mod camera;
-mod player;
-mod texture;
-mod resources;
-mod lights;
 mod instance;
+mod lights;
+mod player;
+mod resources;
 mod scene;
+mod texture;
 
 extern crate nalgebra_glm as glm;
 
 pub mod event_loop;
 pub mod inputs;
 
-use winit::window::Window;
 use common::core::states::GameState;
+use winit::window::Window;
 
 struct State {
     surface: wgpu::Surface,
@@ -93,7 +91,8 @@ impl State {
         let surface_format = surface_caps
             .formats
             .iter()
-            .copied().find(|f| f.describe().srgb)
+            .copied()
+            .find(|f| f.describe().srgb)
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -144,7 +143,7 @@ impl State {
                             min_binding_size: None,
                         },
                         count: None,
-                    }
+                    },
                 ],
                 label: Some("texture_bind_group_layout"),
             });
@@ -152,68 +151,72 @@ impl State {
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        // let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Vertex Buffer"),
-        //     contents: bytemuck::cast_slice(VERTICES),
-        //     usage: wgpu::BufferUsages::VERTEX,
-        // });
-        // let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Index Buffer"),
-        //     contents: bytemuck::cast_slice(INDICES),
-        //     usage: wgpu::BufferUsages::INDEX,
-        // });
-        // let num_indices = INDICES.len() as u32;
-
         let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
-        let player_controller = player::PlayerController::new(4.0, 1.0, 0.7);
+        let player_controller = player::PlayerController::new(4.0, 0.7);
 
         let camera_state = camera::CameraState::new(
             &device,
             player.position + glm::vec3(-2.0, 2.0, 0.0),
             player.position,
             glm::vec3(0.0, 1.0, 0.0),
-            config.width, config.height, 45.0, 0.1, 100.0,
+            config.width,
+            config.height,
+            45.0,
+            0.1,
+            100.0,
         );
 
         // Scene
-        let obj_model =
-            resources::load_model("assets/island.obj", &device, &queue, &texture_bind_group_layout)
-                .await
-                .unwrap();
+        let obj_model = resources::load_model(
+            "assets/island.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
+            .await
+            .unwrap();
         let instance_vec = vec![
             instance::Instance {
+                #[rustfmt::skip]
                 transform: glm::mat4(
                     1.0, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0,
                     0.0, 0.0, 0.0, 1.0,
-                )
+                ),
             },
             instance::Instance {
+                #[rustfmt::skip]
                 transform: glm::mat4(
                     1.0, 0.0, 0.0, 10.0,
                     0.0, 1.0, 0.0, 2.0,
                     0.0, 0.0, 1.0, 2.0,
                     0.0, 0.0, 0.0, 1.0,
-                )
+                ),
             },
         ];
 
-        let cube_model =
-            resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
-                .await
-                .unwrap();
-        let cube_instance_vec = vec![
-            instance::Instance {
-                transform: glm::mat4(
-                    1.0, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.0, 0.0, 1.0,
-                )
-            },
-        ];
-        let scene = scene::Scene { objects: vec![obj_model, cube_model], instance_vectors: vec![instance_vec, cube_instance_vec] };
+        let cube_model = resources::load_model(
+            "assets/cube.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
+            .await
+            .unwrap();
+        let cube_instance_vec = vec![instance::Instance {
+            #[rustfmt::skip]
+            transform: glm::mat4(
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            ),
+        }];
+        let scene = scene::Scene {
+            objects: vec![obj_model, cube_model],
+            instance_vectors: vec![instance_vec, cube_instance_vec],
+        };
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -228,7 +231,11 @@ impl State {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_state.camera_bind_group_layout, &light_state.light_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &camera_state.camera_bind_group_layout,
+                    &light_state.light_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -286,7 +293,6 @@ impl State {
             size,
             render_pipeline,
             scene,
-
             player,
             player_controller,
             camera_state,
@@ -301,13 +307,17 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.camera_state.projection.resize(new_size.width, new_size.height);
+            self.camera_state
+                .projection
+                .resize(new_size.width, new_size.height);
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
 
-            self.camera_state.camera_uniform.update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+            self.camera_state
+                .camera_uniform
+                .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
             self.queue.write_buffer(
                 &self.camera_state.camera_buffer,
                 0,
@@ -321,15 +331,6 @@ impl State {
 
     fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            //     WindowEvent::KeyboardInput {
-            //         input:
-            //             KeyboardInput {
-            //                 virtual_keycode: Some(key),
-            //                 state,
-            //                 ..
-            //             },
-            //         ..
-            //     } => self.player_controller.process_keyboard(*key, &mut self.player, *state),
             WindowEvent::MouseWheel { delta, .. } => {
                 self.player_controller.process_scroll(delta);
                 true
@@ -338,13 +339,10 @@ impl State {
                 button: MouseButton::Left,
                 state: _,
                 ..
-            } => {
-                true
-            }
+            } => true,
             _ => false,
         }
     }
-
 
     fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
@@ -356,13 +354,19 @@ impl State {
         if !game_state.players.is_empty() {
             let player_state = &game_state.players[0];
             // update player controller (player, camera, etc) with the latest player state
-            self.player_controller.update(&mut self.player, &mut self.camera_state.camera, player_state, dt);
+            self.player_controller.update(
+                &mut self.player,
+                &mut self.camera_state.camera,
+                player_state,
+                dt,
+            );
         }
 
         // hard code updating player instance for now
         self.scene.instance_vectors[1][0].transform = self.player.calc_transf_matrix();
 
-        self.camera_state.camera_uniform
+        self.camera_state
+            .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
         self.queue.write_buffer(
             &self.camera_state.camera_buffer,
@@ -391,7 +395,11 @@ impl State {
             let mut instanced_objs = Vec::new();
 
             for i in 0..self.scene.objects.len() {
-                let instanced_model = model::InstancedModel::new(&self.scene.objects[i], &self.scene.instance_vectors[i], &self.device);
+                let instanced_model = model::InstancedModel::new(
+                    &self.scene.objects[i],
+                    &self.scene.instance_vectors[i],
+                    &self.device,
+                );
                 instanced_objs.push(instanced_model);
             }
 
@@ -423,9 +431,12 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
-            //let count = self.scene.instance_vectors[0].len();
             for instanced_obj in instanced_objs.iter() {
-                render_pass.draw_model_instanced(instanced_obj, 0..instanced_obj.num_instances as u32, &self.camera_state.camera_bind_group);
+                render_pass.draw_model_instanced(
+                    instanced_obj,
+                    0..instanced_obj.num_instances as u32,
+                    &self.camera_state.camera_bind_group,
+                );
             }
         }
 

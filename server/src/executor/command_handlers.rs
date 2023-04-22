@@ -1,12 +1,12 @@
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::{MoveDirection};
+use common::core::command::MoveDirection;
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
-use rapier3d::prelude as rapier;
-use std::fmt::Debug;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
+use rapier3d::prelude as rapier;
+use std::fmt::Debug;
 
 #[derive(Error, Debug, Display)]
 pub struct HandlerError {
@@ -40,7 +40,6 @@ impl CommandHandler for StartupCommandHandler {
         Ok(())
     }
 }
-
 
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
@@ -147,7 +146,6 @@ impl CommandHandler for MoveCommandHandler {
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
-
 
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         let dir_rotation = UnitQuaternion::face_towards(&dir_vec, &Vec3::y());

@@ -1,5 +1,5 @@
-use nalgebra_glm::Vec3;
 use crate::core::components::{Physics, Transform};
+use nalgebra_glm::Vec3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

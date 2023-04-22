@@ -3,7 +3,10 @@ use std::io::{BufReader, Cursor};
 use cfg_if::cfg_if;
 use wgpu::util::DeviceExt;
 
-use crate::{model::{self}, texture};
+use crate::{
+    model::{self},
+    texture,
+};
 
 // #[cfg(target_arch = "wasm32")]
 // fn format_url(file_name: &str) -> reqwest::Url {
@@ -108,28 +111,30 @@ pub async fn load_model(
     for m in obj_materials? {
         println!("Material: {m:?}");
         let phong_mtl = model::Phong::new(&m);
-        let phong_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Phong VB"),
-                contents: bytemuck::cast_slice(&[phong_mtl]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
-        let (diffuse_texture, flags) = match m.diffuse_texture.as_str(){
+        let phong_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Phong VB"),
+            contents: bytemuck::cast_slice(&[phong_mtl]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let (diffuse_texture, flags) = match m.diffuse_texture.as_str() {
             "" => {
                 //Create dummy texture
-                let wgpu_t = device.create_texture(&wgpu::TextureDescriptor{
+                let wgpu_t = device.create_texture(&wgpu::TextureDescriptor {
                     label: Some("1x1 white"),
-                    size: wgpu::Extent3d { width:1, height: 1, depth_or_array_layers: 1 },
+                    size: wgpu::Extent3d {
+                        width: 1,
+                        height: 1,
+                        depth_or_array_layers: 1,
+                    },
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
                     format: wgpu::TextureFormat::R8Unorm,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                    view_formats: &[], 
+                    view_formats: &[],
                 });
                 let view = wgpu_t.create_view(&wgpu::TextureViewDescriptor::default());
-                let t = texture::Texture{
+                let t = texture::Texture {
                     texture: wgpu_t,
                     view,
                     sampler: device.create_sampler(&wgpu::SamplerDescriptor {
@@ -140,18 +145,20 @@ pub async fn load_model(
                         min_filter: wgpu::FilterMode::Nearest,
                         mipmap_filter: wgpu::FilterMode::Nearest,
                         ..Default::default()
-                    })
+                    }),
                 };
-                (t, model::ShaderFlags::new(0))},
-            d => (load_texture(d, device, queue).await?, model::ShaderFlags::new(model::ShaderFlags::HAS_DIFFUSE_TEXTURE)),
-        };
-        let flags_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Shader Flags VB"),
-                contents: bytemuck::cast_slice(&[flags]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                (t, model::ShaderFlags::new(0))
             }
-        );
+            d => (
+                load_texture(d, device, queue).await?,
+                model::ShaderFlags::new(model::ShaderFlags::HAS_DIFFUSE_TEXTURE),
+            ),
+        };
+        let flags_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Shader Flags VB"),
+            contents: bytemuck::cast_slice(&[flags]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,

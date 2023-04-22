@@ -16,7 +16,6 @@ pub enum GameKey {
     PressRelease,
 }
 
-
 pub fn handle_keyboard_input(
     held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
     input: KeyboardInput,
@@ -24,35 +23,28 @@ pub fn handle_keyboard_input(
     client_id: u8,
 ) {
     // change state
-    //let mut functional_key= Some(..);
     if let Some(keycode) = input.virtual_keycode {
         update_held_map(held_map, keycode, input.state);
         // map keyboard input to command
         let key_command: Option<(GameKey, Command)> = match input.virtual_keycode {
             // match Holdable keys
-            Some(VirtualKeyCode::W) => Some((
-                GameKey::Holdable,
-                Command::Move(MoveDirection::Forward),
-            )),
-            Some(VirtualKeyCode::A) => Some((
-                GameKey::Holdable,
-                Command::Move(MoveDirection::Left),
-            )),
-            Some(VirtualKeyCode::S) => Some((
-                GameKey::Holdable,
-                Command::Move(MoveDirection::Backward),
-            )),
-            Some(VirtualKeyCode::D) => Some((
-                GameKey::Holdable,
-                Command::Move(MoveDirection::Right),
-            )),
+            Some(VirtualKeyCode::W) => {
+                Some((GameKey::Holdable, Command::Move(MoveDirection::Forward)))
+            }
+            Some(VirtualKeyCode::A) => {
+                Some((GameKey::Holdable, Command::Move(MoveDirection::Left)))
+            }
+            Some(VirtualKeyCode::S) => {
+                Some((GameKey::Holdable, Command::Move(MoveDirection::Backward)))
+            }
+            Some(VirtualKeyCode::D) => {
+                Some((GameKey::Holdable, Command::Move(MoveDirection::Right)))
+            }
             // match Pressable keys
             Some(VirtualKeyCode::Space) => Some((GameKey::Pressable, Jump)),
             // match PressRelease keys
             Some(VirtualKeyCode::LShift) => Some((GameKey::PressRelease, Spawn)),
-            Some(VirtualKeyCode::F) => {
-                Some((GameKey::PressRelease, Action(Attack)))
-            }
+            Some(VirtualKeyCode::F) => Some((GameKey::PressRelease, Action(Attack))),
             _ => None,
         };
 
@@ -75,8 +67,8 @@ pub fn update_held_map(
         match (state, ele_state) {
             (bs::Pressed, es::Pressed) => ButtonState::Held, // pressed -> (pressed) -> held
             (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
-            (_, es::Released) => ButtonState::Released,      // some -> (released) -> released
-            (bs, _) => bs.clone(),                           // same state
+            (_, es::Released) => ButtonState::Released, // some -> (released) -> released
+            (bs, _) => bs.clone(), // same state
         }
     } else {
         ButtonState::Pressed
