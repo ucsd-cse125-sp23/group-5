@@ -4,7 +4,7 @@ use std::env;
 
 use log::{error, info};
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{mpsc, Arc, Mutex};
@@ -52,7 +52,7 @@ fn main() {
     // write the client_id, session_id to file
     dump_ids(session_data_path, client_id, session_id);
 
-    let mut player_loop = PlayerLoop::new(tx, client_id);
+    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
@@ -73,7 +73,7 @@ fn restore_ids(session_data_path: &PathBuf) -> (u8, u64) {
             info!("No session data file found");
             (114, 514)
         }
-        Ok(file) => serde_json::from_reader(&file).unwrap()
+        Ok(file) => serde_json::from_reader(&file).unwrap(),
     }
 }
 

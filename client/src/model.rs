@@ -1,24 +1,33 @@
 use std::ops::Range;
 
-use crate::texture;
 use crate::instance;
+use crate::texture;
 
 pub struct Model {
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
 
-pub struct InstancedModel<'a>{
+pub struct InstancedModel<'a> {
     // want instances and instanceState to always be synced
     // can only be created, cannot be edited
     // TODO: enforce that somehow?
-    model : &'a Model,
-    instance_state: instance::InstanceState,
+    pub model: &'a Model,
+    pub num_instances: usize,
+    pub instance_state: instance::InstanceState,
 }
 
-impl<'a> InstancedModel<'a>{
-    pub fn new(model : &'a Model, instances : &Vec<instance::Instance>, device: &wgpu::Device) -> Self{
-        Self { model, instance_state: instance::Instance::make_buffer(instances, device)}
+impl<'a> InstancedModel<'a> {
+    pub fn new(
+        model: &'a Model,
+        instances: &Vec<instance::Instance>,
+        device: &wgpu::Device,
+    ) -> Self {
+        Self {
+            model,
+            num_instances: instances.len(),
+            instance_state: instance::Instance::make_buffer(instances, device),
+        }
     }
 }
 
@@ -26,23 +35,28 @@ impl<'a> InstancedModel<'a>{
 #[repr(C)]
 // This is so we can store this in a buffer
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Phong{
+pub struct Phong {
     pub ambient: [f32; 4],
     pub diffuse: [f32; 4],
     pub specular: [f32; 4],
     pub shininess: [f32; 4],
 }
 
-impl Phong{
-    pub fn default() -> Self{
-        Self { ambient: [0.0; 4], diffuse: [0.0; 4], specular: [0.0; 4], shininess: [0.0; 4] }
+impl Phong {
+    pub fn default() -> Self {
+        Self {
+            ambient: [0.0; 4],
+            diffuse: [0.0; 4],
+            specular: [0.0; 4],
+            shininess: [0.0; 4],
+        }
     }
 
-    pub fn new(m : &tobj::Material) -> Self{
-        Self { 
-            ambient: [m.ambient[0], m.ambient[1], m.ambient[2], 1.0], 
-            diffuse: [m.diffuse[0], m.diffuse[1], m.diffuse[2], 1.0], 
-            specular: [m.specular[0], m.specular[1], m.specular[2], 1.0], 
+    pub fn new(m: &tobj::Material) -> Self {
+        Self {
+            ambient: [m.ambient[0], m.ambient[1], m.ambient[2], 1.0],
+            diffuse: [m.diffuse[0], m.diffuse[1], m.diffuse[2], 1.0],
+            specular: [m.specular[0], m.specular[1], m.specular[2], 1.0],
             shininess: [m.shininess, 0.0, 0.0, 0.0],
         }
     }
@@ -52,15 +66,15 @@ impl Phong{
 #[repr(C)]
 // This is so we can store this in a buffer
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ShaderFlags{
+pub struct ShaderFlags {
     flags: u32,
 }
 
 impl ShaderFlags {
-    pub const HAS_DIFFUSE_TEXTURE :u32 = 1;
-    pub fn new(flags: u32) -> Self{
+    pub const HAS_DIFFUSE_TEXTURE: u32 = 1;
+    pub fn new(flags: u32) -> Self {
         Self { flags }
-    }  
+    }
 }
 
 #[derive(Debug)]
@@ -120,39 +134,46 @@ impl Vertex for ModelVertex {
 }
 
 pub trait DrawModel<'a> {
-    fn draw_model(&mut self, instanced_model : &'a InstancedModel, camera_bind_group: &'a wgpu::BindGroup);
+    fn draw_model(
+        &mut self,
+        instanced_model: &'a InstancedModel,
+        camera_bind_group: &'a wgpu::BindGroup,
+    );
     fn draw_model_instanced(
         &mut self,
-        instanced_model : &'a InstancedModel,
+        instanced_model: &'a InstancedModel,
         instances: Range<u32>,
         camera_bind_group: &'a wgpu::BindGroup,
     );
-
 }
 
 impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {
-    fn draw_model(&mut self, instanced_model : &'a InstancedModel, camera_bind_group: &'b wgpu::BindGroup) {
+    fn draw_model(
+        &mut self,
+        instanced_model: &'a InstancedModel,
+        camera_bind_group: &'b wgpu::BindGroup,
+    ) {
         self.draw_model_instanced(instanced_model, 0..1, camera_bind_group);
     }
 
     fn draw_model_instanced(
         &mut self,
-        instanced_model : &'a InstancedModel,
+        instanced_model: &'a InstancedModel,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup,
     ) {
-        self.set_vertex_buffer(1, instanced_model.instance_state.buffer.slice(..)); 
-        for mesh in &instanced_model.model.meshes{
+        self.set_vertex_buffer(1, instanced_model.instance_state.buffer.slice(..));
+        for mesh in &instanced_model.model.meshes {
             // assume each mesh has a material
             let mat_id = mesh.material;
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             self.set_bind_group(0, &instanced_model.model.materials[mat_id].bind_group, &[]);
             // print!("model:154 {:?}\n", &instanced_model.model.materials[mat_id]);
-            self.set_bind_group(1, &camera_bind_group, &[]);
+            self.set_bind_group(1, camera_bind_group, &[]);
             self.draw_indexed(0..mesh.num_elements, 0, instances.clone());
         }
     }

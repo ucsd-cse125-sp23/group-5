@@ -23,7 +23,7 @@ impl ClientCommand {
     }
 }
 
-/// Server events that are broadcasted to the consumer threads.
+/// Server events that are broadcast to the consumer threads.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ServerEvent {
     Sync, // ask for a sync of game state
@@ -111,9 +111,10 @@ impl GameLoop<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common::core::command::Command::UpdateCamera;
     use common::core::command::MoveDirection;
     use common::core::states::GameState;
-    use glam::Vec3;
+    use nalgebra_glm::Vec3;
     use std::sync::mpsc;
     use std::time::Duration;
 
@@ -121,10 +122,10 @@ mod tests {
     fn test_game_loop() {
         let (tx, rx) = mpsc::channel();
         let game_state = Arc::new(Mutex::new(GameState::default()));
-        let ext = Executor::new(game_state.clone());
+        let ext = Executor::new(game_state);
         let running = Arc::new(AtomicBool::new(true));
 
-        let mut broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
+        let broadcast = Arc::new(Mutex::new(Bus::new(1))); // one event at a time
 
         let mut game_loop = GameLoop::new(rx, &ext, broadcast.clone(), running.clone());
 
@@ -138,6 +139,14 @@ mod tests {
             tx_clone
                 .send(ClientCommand::new(1, Command::Spawn))
                 .unwrap();
+            tx_clone
+                .send(ClientCommand::new(
+                    1,
+                    UpdateCamera {
+                        forward: nalgebra_glm::vec3(2., 0., 1.),
+                    },
+                ))
+                .unwrap();
             sleep(Duration::from_millis(500));
 
             assert_eq!(rx1.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced
@@ -147,7 +156,7 @@ mod tests {
         });
 
         // client 0 (from another thread) moves the player at 50ms
-        let broadcast_clone = broadcast.clone();
+        let broadcast_clone = broadcast;
         std::thread::spawn(move || {
             let mut rx2 = broadcast_clone.lock().unwrap().add_rx(); // add a receiver for the second client
 
@@ -164,7 +173,7 @@ mod tests {
         assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned
         assert_ne!(
             ext.game_state().players[0].transform.translation,
-            Vec3::ZERO
+            Vec3::new(0.0, 0.0, 0.0)
         ); // the player should have moved
     }
 }

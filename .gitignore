@@ -33,3 +33,4 @@ target/
 # Cargo lock
 Cargo.lock
 
+session_data.json

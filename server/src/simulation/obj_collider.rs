@@ -1,6 +1,8 @@
+use log::debug;
 use nalgebra::Point3;
 use rapier3d::geometry::ColliderBuilder;
 use rapier3d::math::Real;
+
 use tobj;
 
 pub trait FromObject {
@@ -13,7 +15,9 @@ impl FromObject for ColliderBuilder {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let mut vertex_offset = 0;
+        debug!("Loading {} models", models.len());
         for model in models {
+            debug!("Model: {:?}", model.name);
             let mesh = &model.mesh;
             vertices.extend(mesh.positions.chunks(3).map(Point3::<Real>::from_slice));
 
@@ -43,7 +47,7 @@ mod tests {
         let path = std::path::Path::new(&path).parent().unwrap();
         let island = tobj::load_obj(path.join("assets/island.obj"), &tobj::GPU_LOAD_OPTIONS);
 
-        let (models, materials) = island.unwrap();
+        let (models, _materials) = island.unwrap();
 
         let collider = ColliderBuilder::from_object_models(models);
         let aabb = collider.shape.0.compute_aabb(&Isometry::identity());

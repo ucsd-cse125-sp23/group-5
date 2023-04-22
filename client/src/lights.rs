@@ -2,32 +2,32 @@ use wgpu::util::DeviceExt;
 extern crate nalgebra_glm as glm;
 
 #[derive(Debug)]
-pub struct Light{
+pub struct Light {
     pub position: glm::TVec4<f32>,
     pub color: glm::TVec3<f32>,
 }
 
-const MAX_LIGHT : usize = 16;
+const MAX_LIGHT: usize = 16;
 
 // We need this for Rust to store our data correctly for the shaders
 #[repr(C)]
 // This is so we can store this in a buffer
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct LightsUniform{
-    positions: [[f32; 4];MAX_LIGHT] ,
-    colors: [[f32; 4];MAX_LIGHT] ,
+pub struct LightsUniform {
+    positions: [[f32; 4]; MAX_LIGHT],
+    colors: [[f32; 4]; MAX_LIGHT],
     num_lights: u32,
     _padding: [f32; 3],
 }
 
-impl LightsUniform{
-    pub fn new(arr: &Vec<Light>) -> Self{
-        let mut positions :[[f32; 4];MAX_LIGHT] = [[0.0; 4]; MAX_LIGHT];
-        let mut colors = [[0.0; 4];MAX_LIGHT];
+impl LightsUniform {
+    pub fn new(arr: &Vec<Light>) -> Self {
+        let mut positions: [[f32; 4]; MAX_LIGHT] = [[0.0; 4]; MAX_LIGHT];
+        let mut colors = [[0.0; 4]; MAX_LIGHT];
         let num_lights = std::cmp::min(MAX_LIGHT, arr.len());
         // print!("num lights: {}\n", num_lights);
 
-        for ind in 0..num_lights{
+        for ind in 0..num_lights {
             // there's gotta be a better way...
             positions[ind][0] = arr[ind].position[0];
             positions[ind][1] = arr[ind].position[1];
@@ -38,7 +38,7 @@ impl LightsUniform{
             colors[ind][2] = arr[ind].color[2];
         }
 
-        Self{
+        Self {
             positions,
             colors,
             num_lights: num_lights as u32,
@@ -47,24 +47,22 @@ impl LightsUniform{
     }
 }
 
-pub struct LightState{
+pub struct LightState {
     pub lighting: Vec<Light>,
-    pub light_uniform:LightsUniform,
+    pub light_uniform: LightsUniform,
     pub light_buffer: wgpu::Buffer,
     pub light_bind_group_layout: wgpu::BindGroupLayout,
     pub light_bind_group: wgpu::BindGroup,
 }
 
-impl LightState{
-    pub fn new(lights: Vec<Light>, device : &wgpu::Device) -> Self{
+impl LightState {
+    pub fn new(lights: Vec<Light>, device: &wgpu::Device) -> Self {
         let light_uniform = LightsUniform::new(&lights);
-        let light_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Light VB"),
-                contents: bytemuck::cast_slice(&[light_uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Light VB"),
+            contents: bytemuck::cast_slice(&[light_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
         let light_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
@@ -89,7 +87,7 @@ impl LightState{
             label: None,
         });
 
-        Self { 
+        Self {
             lighting: lights,
             light_uniform,
             light_buffer,

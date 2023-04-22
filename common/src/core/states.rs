@@ -1,4 +1,5 @@
 use crate::core::components::{Physics, Transform};
+use nalgebra_glm::Vec3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -6,6 +7,7 @@ pub struct PlayerState {
     pub id: u32,
     pub transform: Transform,
     pub physics: Physics,
+    pub camera_forward: Vec3,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
