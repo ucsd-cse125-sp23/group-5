@@ -142,7 +142,7 @@ impl Scene{
         // TODO: MAKE SCENE GRAPH DYNAMIC
         // let mut player_node = Node::new();
         // player_node.models.push(ModelIndex{index: ModelIndices::PLAYER as usize});
-        // let player_instance: Instance = FUNCTION_THAT_RETURNS_PLAYER_TRANSFORM() or pass it in as an argument;
+        // let player_instance: Instance = FUNCTION_THAT_RETURNS_PLAYER_TRANSFORM() or pass in transform as an argument;
         // player_node.modeltransforms.push(player_instance);
         // player nodes are children of world nodes --> lines 179-180
 
