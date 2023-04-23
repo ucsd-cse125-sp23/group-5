@@ -65,6 +65,7 @@ impl Scene{
     }
 
     pub fn draw_scene_dfs(&mut self, camera: &Camera){ // get the view matrix from the camera
+        self.objects_and_instances.clear();
         let mat4_identity = glm::mat4(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
@@ -124,7 +125,7 @@ impl Scene{
         }
     }
 
-    pub fn build_scene_graph(&mut self) {
+    pub fn init_scene_graph(&mut self) {
         let mat4_identity = glm::mat4(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
@@ -186,4 +187,23 @@ impl Scene{
         // println!("scene graph: {:?}", self.scene_graph);
         
     }
+
+/* 
+    // TODO: ADD PLAYERS TO SCENE GRAPH DYNAMICALLY
+    pub fn add_player_to_world_node(&mut self){
+        // delete existing player child node from the world node's childnodes and childtransforms Vec
+            // another option would be to modify existing player nodes
+
+        // let mut player_node = Node::new();
+        // player_node.models.push(ModelIndex{index: ModelIndices::PLAYER as usize});
+        // let player_instance: Instance = FUNCTION_THAT_RETURNS_PLAYER_TRANSFORM() or pass in transform as an argument;
+        // player_node.modeltransforms.push(player_instance);
+
+        // let mut world_node = self.scene_graph[0];
+        // world_node.childnodes.push(player_node);
+        // world_node.childtransforms.push(Instance{transform: mat4_identity});
+
+        // call draw_scene_dfs() to update the objects_and_instances hashmap
+    }
+*/
 }

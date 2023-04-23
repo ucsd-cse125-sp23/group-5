@@ -200,7 +200,7 @@ impl State {
         // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
         let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
-        scene.build_scene_graph();
+        scene.init_scene_graph();
 
         // placeholder position, will get overriden by server
         let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
