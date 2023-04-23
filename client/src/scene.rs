@@ -8,6 +8,11 @@ use std::cell::Cell;
 
 use nalgebra_glm as glm;
 
+enum ModelIndices{
+    ISLAND = 0,
+    CUBE = 1,
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ModelIndex{
     pub index: usize,
@@ -133,10 +138,10 @@ impl Scene{
         let mut world_node = Node::new();
 
 
-        table_top_node.models.push(ModelIndex{index: 1});
+        table_top_node.models.push(ModelIndex{index: ModelIndices::CUBE as usize});
         table_top_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,-0.1,0.0))* glm::scale( &mat4_identity, &glm::vec3(2.0,0.2,1.0))});
 
-        table_leg_node.models.push(ModelIndex{index: 1});
+        table_leg_node.models.push(ModelIndex{index: ModelIndices::CUBE as usize});
         table_leg_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,0.5,0.0))* glm::scale( &mat4_identity, &glm::vec3(0.2,1.0,0.2))});
 
         table_node.childnodes.push(table_top_node.clone());
@@ -152,7 +157,7 @@ impl Scene{
 
         island_node.childnodes.push(table_node.clone());
         island_node.childtransforms.push(Instance{transform: glm::rotate(&mat4_identity,-120.0*glm::pi::<f32>()/180.0, &glm::vec3(0.0, 1.0, 0.0) ) * glm::translate( &mat4_identity, &glm::vec3(2.0,0.0,0.0)) * glm::scale( &mat4_identity, &glm::vec3(1.5,1.5,1.5))});
-        island_node.models.push(ModelIndex{index: 0});
+        island_node.models.push(ModelIndex{index: ModelIndices::ISLAND as usize});
         island_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,-9.7,0.0)) * glm::scale( &mat4_identity, &glm::vec3(2.5,2.5,2.5))});
 
         world_node.childnodes.push(island_node);
