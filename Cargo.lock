@@ -71,7 +71,7 @@ version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2cc836ad7a40dc9d8049574e2a29979f5dc77deeea4d7ebcd29773452f0e9694"
 dependencies = [
- "approx",
+ "approx 0.3.2",
  "libm",
  "num-complex",
  "num-traits",
@@ -143,6 +143,15 @@ name = "approx"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0e60b75072ecd4168020818c0107f2857bb6c4e64252d8d3983f6263b40a5c3"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
+name = "approx"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f2a05fd1bd10b2527e20a2cd32d8873d115b8b39fe219ee25f42a8aca6ba278"
 dependencies = [
  "num-traits",
 ]
@@ -358,6 +367,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
+name = "cgmath"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a98d30140e3296250832bbaaff83b27dcd6fa3cc70fb6f1f3e5c9c0023b5317"
+dependencies = [
+ "approx 0.4.0",
+ "num-traits",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -381,10 +400,12 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "cfg-if",
+ "cgmath",
  "common",
  "env_logger",
  "fs_extra",
  "glob",
+ "hashbrown 0.13.2",
  "image",
  "instant",
  "log",
@@ -826,7 +847,7 @@ checksum = "0b0c02e1ba0bdb14e965058ca34e09c020f8e507a760df1121728e0aef68d57a"
 dependencies = [
  "bitflags",
  "gpu-descriptor-types",
- "hashbrown",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -864,6 +885,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
  "ahash 0.7.6",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
+dependencies = [
+ "ahash 0.8.3",
 ]
 
 [[package]]
@@ -1008,7 +1038,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg 1.1.0",
- "hashbrown",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -1332,7 +1362,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be539bb5e751c248d25c21c850b69105809306f367c35bf1daa8724f0cb786df"
 dependencies = [
  "alga",
- "approx",
+ "approx 0.3.2",
  "generic-array",
  "matrixmultiply",
  "num-complex",
@@ -1348,7 +1378,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07a3be33aa9aa21ad8959e80cd7435c23c6fe0cc39d0af98bda9a4e486962df2"
 dependencies = [
  "alga",
- "approx",
+ "approx 0.3.2",
  "nalgebra",
  "num-traits",
 ]
