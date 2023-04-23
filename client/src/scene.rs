@@ -177,9 +177,8 @@ impl Scene{
 
     // TODO: ADD PLAYERS TO SCENE GRAPH DYNAMICALLY
     pub fn add_player_to_world_node(&mut self){
-        // delete existing player child node from the world node's childnodes Vec
-            // another option would be to modify existing player nodes, 
-            // but we would need Node references for which I couldn't figure out lifetimes for the State struct
+        // delete existing player child node from the world node's childnodes and childtransforms Vec
+            // another option would be to modify existing player nodes
 
         // let mut player_node = Node::new();
         // player_node.models.push(ModelIndex{index: ModelIndices::PLAYER as usize});
