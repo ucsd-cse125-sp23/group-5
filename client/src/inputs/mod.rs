@@ -1,5 +1,5 @@
-use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKey};
-use common::communication::commons::{Protocol};
+use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
+use common::communication::commons::Protocol;
 use common::core::command::Command::{Action, Jump, Spawn};
 use common::core::command::GameAction::Attack;
 use common::core::command::{Command, MoveDirection};
@@ -54,18 +54,18 @@ impl InputEventProcessor {
     }
 
     // TODO: make this more maintainable
-    pub fn map_key(virtual_keycode: VirtualKeyCode) -> Option<(GameKey, Command)> {
+    pub fn map_key(virtual_keycode: VirtualKeyCode) -> Option<(GameKeyKind, Command)> {
         match virtual_keycode {
             // match Holdable keys
-            VirtualKeyCode::W => Some((GameKey::Holdable, Command::Move(MoveDirection::Forward))),
-            VirtualKeyCode::A => Some((GameKey::Holdable, Command::Move(MoveDirection::Left))),
-            VirtualKeyCode::S => Some((GameKey::Holdable, Command::Move(MoveDirection::Backward))),
-            VirtualKeyCode::D => Some((GameKey::Holdable, Command::Move(MoveDirection::Right))),
+            VirtualKeyCode::W => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Forward))),
+            VirtualKeyCode::A => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Left))),
+            VirtualKeyCode::S => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Backward))),
+            VirtualKeyCode::D => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Right))),
             // match Pressable keys
-            VirtualKeyCode::Space => Some((GameKey::Pressable, Jump)),
+            VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             // match PressRelease keys
-            VirtualKeyCode::LShift => Some((GameKey::PressRelease, Spawn)),
-            VirtualKeyCode::F => Some((GameKey::PressRelease, Action(Attack))),
+            VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
+            VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Action(Attack))),
             _ => None,
         }
     }
@@ -99,7 +99,6 @@ impl InputEventProcessor {
                         let retain = handle_game_key_input(
                             key_type,
                             command,
-                            key,
                             state,
                             &mut protocol,
                             client_id,
@@ -141,7 +140,7 @@ impl InputEventProcessor {
                     // Signal the poller to send data as soon as possible
                     // Should be only for "Pressable" keys since otherwise the sampling rate will be inconsistent
                     // This optimization will be significant if we decide to use a longer polling interval (e.g. > 100ms) to save bandwidth
-                    if let Some((GameKey::Pressable, _)) = Self::map_key(key_code) {
+                    if let Some((GameKeyKind::Pressable, _)) = Self::map_key(key_code) {
                         let (lock, cvar) = &*self.poller_signal;
                         let mut signal = lock.lock().unwrap();
                         *signal = true;

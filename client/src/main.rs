@@ -5,7 +5,7 @@ use std::env;
 use log::{debug, error, info};
 use std::fs::File;
 
-use env_logger::{Builder};
+use env_logger::Builder;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{mpsc, Arc, Mutex};
