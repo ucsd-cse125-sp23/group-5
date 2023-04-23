@@ -37,7 +37,7 @@ impl Node{
 // #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scene{
     pub objects: Vec<model::Model>,
-    pub instance_vectors : Vec<Vec<Instance>>,
+    // pub instance_vectors : Vec<Vec<Instance>>,
 
     // pub root: Node,
     // pub scene_graph: HashMap<String, Node>,
@@ -49,7 +49,7 @@ impl Scene{
     pub fn new(objs: Vec<model::Model>) -> Self {
         Scene {
             objects: objs,
-            instance_vectors: Vec::new(),
+            // instance_vectors: Vec::new(),
 
             //root: Node::new(),
             //scene_graph: HashMap::new(),

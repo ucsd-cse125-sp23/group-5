@@ -242,32 +242,32 @@ impl State {
         resources::load_model("island.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
-        let instance_vec = vec![
-            instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0, 
-                0.0, 0.0, 0.0, 1.0
-            )},
-            instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 10.0,
-                0.0, 1.0, 0.0, 2.0,
-                0.0, 0.0, 1.0, 2.0, 
-                0.0, 0.0, 0.0, 1.0
-            )},
-        ];
+        // let instance_vec = vec![
+        //     instance::Instance{transform: glm::mat4(
+        //         1.0, 0.0, 0.0, 0.0,
+        //         0.0, 1.0, 0.0, 0.0,
+        //         0.0, 0.0, 1.0, 0.0, 
+        //         0.0, 0.0, 0.0, 1.0
+        //     )},
+        //     instance::Instance{transform: glm::mat4(
+        //         1.0, 0.0, 0.0, 10.0,
+        //         0.0, 1.0, 0.0, 2.0,
+        //         0.0, 0.0, 1.0, 2.0, 
+        //         0.0, 0.0, 0.0, 1.0
+        //     )},
+        // ];
         let cube_obj =
         resources::load_model("cube.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
-        let cube_instance_vec = vec![
-            instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 5.0,
-                0.0, 1.0, 0.0, 10.0,
-                0.0, 0.0, 1.0, 5.0, 
-                0.0, 0.0, 0.0, 1.0
-            )},
-        ];
+        // let cube_instance_vec = vec![
+        //     instance::Instance{transform: glm::mat4(
+        //         1.0, 0.0, 0.0, 5.0,
+        //         0.0, 1.0, 0.0, 10.0,
+        //         0.0, 0.0, 1.0, 5.0, 
+        //         0.0, 0.0, 0.0, 1.0
+        //     )},
+        // ];
         // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
         let mut scene = scene::Scene::new(vec![obj_model, cube_obj]);
