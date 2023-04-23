@@ -2,24 +2,27 @@ extern crate queues;
 
 use std::env;
 
-use log::{error, info};
+use log::{debug, error, info};
 use std::fs::File;
 
+use env_logger::{Builder};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
-use client::event_loop::{PlayerLoop, UserInput};
-use client::inputs::InputProcessor;
+use client::event_loop::PlayerLoop;
+use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
 
 use common::core::states::GameState;
 
 fn main() {
-    env_logger::init();
-    let (tx, rx) = mpsc::channel::<UserInput>();
+    Builder::from_default_env().format_timestamp_micros().init();
+
+    // input channel for communicating between event loop and input processor
+    let (tx, rx) = mpsc::channel::<Input>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
     let dest: SocketAddr = DEFAULT_SERVER_ADDR
@@ -56,7 +59,11 @@ fn main() {
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
-        InputProcessor::new(protocol_clone, client_id, rx).run();
+        let mut input_processor = InputEventProcessor::new(protocol_clone, client_id, rx);
+
+        input_processor.start_poller();
+
+        input_processor.listen();
     });
 
     // spawn a thread to handle game state updates
@@ -114,7 +121,7 @@ fn game_state_update_loop(mut protocol: Protocol, game_state: Arc<Mutex<GameStat
                 let mut game_state = game_state.lock().unwrap();
                 *game_state = update_game_state;
                 // according to the state, render world
-                info!("Received game state: {:?}", game_state);
+                debug!("Received game state: {:?}", game_state);
                 break;
             };
         }

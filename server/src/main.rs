@@ -19,7 +19,7 @@ mod client_handler;
 use client_handler::ClientHandler;
 
 pub static CLIENT_ID_ASSIGNER: AtomicU8 = AtomicU8::new(1);
-pub static SESSION_ID: Lazy<u64> = Lazy::new(|| rand::random::<u64>());
+pub static SESSION_ID: Lazy<u64> = Lazy::new(rand::random::<u64>);
 
 fn main() {
     env_logger::init();

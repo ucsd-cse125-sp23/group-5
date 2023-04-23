@@ -1,6 +1,6 @@
 use common::core::states::PlayerState;
 use instant::Duration;
-use std::collections::HashMap;
+
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
 use winit::dpi::PhysicalPosition;
@@ -68,7 +68,6 @@ pub struct PlayerController {
 
 impl PlayerController {
     pub fn new(x_sensitivity: f32, y_sensitivity: f32) -> Self {
-
         Self {
             rotate_horizontal: 0.0,
             rotate_vertical: 0.0,

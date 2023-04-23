@@ -1,14 +1,17 @@
-use crate::event_loop::UserInput;
-use common::communication::commons::{Protocol, DEFAULT_MOUSE_MOVEMENT_INTERVAL};
-use common::communication::message::{HostRole, Message, Payload};
-use common::core::command::Command;
+use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKey};
+use common::communication::commons::{Protocol};
+use common::core::command::Command::{Action, Jump, Spawn};
+use common::core::command::GameAction::Attack;
+use common::core::command::{Command, MoveDirection};
 use glm::Vec3;
-use log::{error, info};
-use queues::{IsQueue, Queue};
+use log::debug;
+
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
-use std::time::{Duration, Instant};
-use winit::event::{DeviceEvent, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread;
+use std::time::Duration;
+use winit::event::{DeviceEvent, ElementState, KeyboardInput, VirtualKeyCode};
 
 pub mod handlers;
 
@@ -26,127 +29,167 @@ pub enum ButtonState {
     Released,
 }
 
-pub struct InputProcessor {
+/// Input polling interval
+pub const POLLER_INTERVAL: Duration = Duration::from_millis(60);
+
+pub struct InputEventProcessor {
     protocol: Protocol,
     client_id: u8,
-    rx: Receiver<UserInput>,
+    rx: Receiver<Input>,
+    button_states: Arc<Mutex<HashMap<VirtualKeyCode, ButtonState>>>,
+    camera_forward: Arc<Mutex<Vec3>>,
+    poller_signal: Arc<(Mutex<bool>, Condvar)>,
 }
 
-impl InputProcessor {
-    pub fn new(protocol: Protocol, client_id: u8, rx: Receiver<UserInput>) -> Self {
-        InputProcessor {
+impl InputEventProcessor {
+    pub fn new(protocol: Protocol, client_id: u8, rx: Receiver<Input>) -> Self {
+        InputEventProcessor {
             protocol,
             client_id,
             rx,
+            button_states: Arc::new(Mutex::new(HashMap::new())),
+            camera_forward: Arc::new(Mutex::new(Default::default())),
+            poller_signal: Arc::new((Mutex::new(true), Condvar::new())),
         }
     }
 
-    pub fn run(&mut self) {
-        let mut held_map: HashMap<VirtualKeyCode, ButtonState> = HashMap::new();
+    // TODO: make this more maintainable
+    pub fn map_key(virtual_keycode: VirtualKeyCode) -> Option<(GameKey, Command)> {
+        match virtual_keycode {
+            // match Holdable keys
+            VirtualKeyCode::W => Some((GameKey::Holdable, Command::Move(MoveDirection::Forward))),
+            VirtualKeyCode::A => Some((GameKey::Holdable, Command::Move(MoveDirection::Left))),
+            VirtualKeyCode::S => Some((GameKey::Holdable, Command::Move(MoveDirection::Backward))),
+            VirtualKeyCode::D => Some((GameKey::Holdable, Command::Move(MoveDirection::Right))),
+            // match Pressable keys
+            VirtualKeyCode::Space => Some((GameKey::Pressable, Jump)),
+            // match PressRelease keys
+            VirtualKeyCode::LShift => Some((GameKey::PressRelease, Spawn)),
+            VirtualKeyCode::F => Some((GameKey::PressRelease, Action(Attack))),
+            _ => None,
+        }
+    }
 
-        let mut mouse_motion_buf = Queue::new();
-        let mut mouse_wheel_buf = Queue::new();
-        let mut sample_start_time = Instant::now();
+    pub fn start_poller(&self) {
+        let mut protocol = self.protocol.try_clone().unwrap();
+        let client_id = self.client_id;
+        let button_states = Arc::clone(&self.button_states);
+        let camera_forward = Arc::clone(&self.camera_forward);
+        let poller_signal = Arc::clone(&self.poller_signal);
 
-        let mut last_camera_update_time = Instant::now();
+        thread::spawn(move || {
+            let (lock, cvar) = &*poller_signal;
+            loop {
+                // wait for signal (asap event) or timeout
+                let signal = lock.lock().unwrap();
+                let (mut signal, res) = cvar.wait_timeout(signal, POLLER_INTERVAL).unwrap();
 
-        while let Ok(user_input) = self.rx.recv() {
-            info!("Received input: {:?}", user_input);
-            match user_input.input {
-                Input::Keyboard(input) => {
-                    handlers::handle_keyboard_input(
-                        &mut held_map,
-                        input,
-                        &mut self.protocol,
-                        self.client_id,
-                    );
+                if res.timed_out() {
+                    debug!("poller timed out");
+                    *signal = false;
+                } else {
+                    debug!("poller received signal");
                 }
-                Input::Mouse(input) => {
-                    handlers::handle_mouse_input(
-                        input,
-                        &mut mouse_motion_buf,
-                        &mut mouse_wheel_buf,
+
+                let mut button_states = button_states.lock().unwrap();
+                let camera_forward = camera_forward.lock().unwrap();
+
+                button_states.retain(|key, state| {
+                    if let Some((key_type, command)) = Self::map_key(*key) {
+                        let retain = handle_game_key_input(
+                            key_type,
+                            command,
+                            key,
+                            state,
+                            &mut protocol,
+                            client_id,
+                        );
+
+                        // naturally progress the button state
+                        *state = Self::internal_next_state(state.clone());
+
+                        retain
+                    } else {
+                        false
+                    }
+                });
+
+                // send camera update
+                // TODO: send camera update only when the camera has moved
+                handle_camera_update(*camera_forward, &mut protocol, client_id);
+            }
+        });
+    }
+
+    /// listen to input events from the event loop and update the states when necessary
+    pub fn listen(&mut self) {
+        while let Ok(input) = self.rx.recv() {
+            match input {
+                Input::Keyboard(KeyboardInput {
+                    virtual_keycode: Some(key_code),
+                    state,
+                    ..
+                }) => {
+                    // on receiving keyboard input, update the button state
+                    self.update_button_state(key_code, state);
+                    debug!(
+                        "processed_keyboard_input: {:?}, button_states: {:?}",
+                        key_code,
+                        self.button_states.lock().unwrap()
                     );
+
+                    // Signal the poller to send data as soon as possible
+                    // Should be only for "Pressable" keys since otherwise the sampling rate will be inconsistent
+                    // This optimization will be significant if we decide to use a longer polling interval (e.g. > 100ms) to save bandwidth
+                    if let Some((GameKey::Pressable, _)) = Self::map_key(key_code) {
+                        let (lock, cvar) = &*self.poller_signal;
+                        let mut signal = lock.lock().unwrap();
+                        *signal = true;
+                        cvar.notify_one(); // notify the poller to send data immediately
+                    }
                 }
-                // receive camera update and it is past the interval since last update
-                Input::Camera { forward }
-                    if last_camera_update_time.elapsed() >= Duration::from_millis(100) =>
-                {
-                    self.protocol
-                        .send_message(&Message::new(
-                            HostRole::Client(self.client_id),
-                            Payload::Command(Command::UpdateCamera { forward }),
-                        ))
-                        .expect("send message fails");
-                    last_camera_update_time = Instant::now();
+
+                // receive camera update
+                Input::Camera { forward } => {
+                    let mut camera_forward = self.camera_forward.lock().unwrap();
+                    *camera_forward = forward;
                 }
                 _ => {}
             }
-
-            // Should always check? buffered mouse inputs cannot be good right?
-            // ideally runs in a always checking thread
-            if !(mouse_motion_buf.size() == 0 && mouse_wheel_buf.size() == 0)
-                && sample_start_time.elapsed()
-                    >= Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL)
-            {
-                handlers::send_mouse_input(
-                    &mut mouse_motion_buf,
-                    &mut mouse_wheel_buf,
-                    &mut sample_start_time,
-                    &mut self.protocol,
-                    self.client_id,
-                );
-
-                if sample_start_time.elapsed()
-                    < Duration::from_millis(DEFAULT_MOUSE_MOVEMENT_INTERVAL)
-                {
-                    continue;
-                }
-
-                let mut mm_tot_dx = 0.0;
-                let mut mm_tot_dy = 0.0;
-                let mut mw_tot_line_dx = 0.0;
-                let mut mw_tot_line_dy = 0.0;
-                let mut mw_tot_pixel_dx = 0.0;
-                let mut mw_tot_pixel_dy = 0.0;
-
-                let n = mouse_motion_buf.size();
-                for _ in 1..n {
-                    let mm_event = mouse_motion_buf.remove().unwrap();
-                    match mm_event {
-                        DeviceEvent::MouseMotion { delta } => {
-                            let (dx, dy) = delta;
-                            mm_tot_dx += dx;
-                            mm_tot_dy += dy;
-                        }
-                        _ => {
-                            error!("non-mouse-motion in mouse motion buffer \n")
-                        }
-                    }
-                    let mw_event = mouse_wheel_buf.remove().unwrap();
-                    if let DeviceEvent::MouseWheel { delta } = mw_event {
-                        match delta {
-                            MouseScrollDelta::LineDelta(dx, dy) => {
-                                mw_tot_line_dx += dx;
-                                mw_tot_line_dy += dy;
-                            }
-                            MouseScrollDelta::PixelDelta(pixel_delta) => {
-                                mw_tot_pixel_dx += pixel_delta.x;
-                                mw_tot_pixel_dy += pixel_delta.y;
-                            }
-                        }
-                    }
-                }
-                sample_start_time = Instant::now();
-
-                self.protocol
-                    .send_message(&Message::new(
-                        HostRole::Client(self.client_id),
-                        Payload::Command(Command::Turn(Default::default())),
-                    ))
-                    .expect("send message fails");
-                info!("Sent command: {:?}", "Turn");
-            }
         }
+    }
+
+    /// updates the button state based on the input state (`ele_state`)
+    fn next_state(es: ElementState, bs: ButtonState) -> ButtonState {
+        use winit::event::ElementState as es;
+        use ButtonState as bs;
+
+        match (bs, es) {
+            (bs::Pressed, es::Pressed) => ButtonState::Held, // pressed -> (pressed) -> held
+            (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
+            (_, es::Released) => ButtonState::Released,      // some -> (released) -> released
+            (bs, _) => bs,                                   // same state
+        }
+    }
+
+    /// models the natural progression of button states between sample ticks when there's no input
+    fn internal_next_state(bs: ButtonState) -> ButtonState {
+        use ButtonState as bs;
+
+        match bs {
+            bs::Pressed => bs::Held,
+            other => other,
+        }
+    }
+
+    pub fn update_button_state(&mut self, keycode: VirtualKeyCode, ele_state: ElementState) {
+        let mut button_states = self.button_states.lock().unwrap();
+
+        let next_state = if let Some(state) = button_states.get(&keycode) {
+            Self::next_state(ele_state, state.clone())
+        } else {
+            ButtonState::Pressed
+        };
+        button_states.insert(keycode, next_state);
     }
 }
