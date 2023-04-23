@@ -1,4 +1,3 @@
-// TODO: add enum for model_name -> model_index
 use crate::camera::Camera;
 use crate::{instance, resources};
 use crate::instance::Instance;
@@ -79,7 +78,7 @@ impl Scene{
         // state needed for DFS:
         let mut cur_node: &Node = &self.scene_graph[0]; // self.scene_graph.get("world").unwrap(); // should be the root of the tree to start --> "world"
         let mut cur_VM: glm::TMat4<f32> = mat4_identity; //camera.calc_matrix(); // should be the camera's view matrix to start --> "world"s modelview matrix is the camera's view matrix
-                                                                    // is camera.calc_matrix() the view matrix?
+                                                                    // currently it's just the identity matrix!
         dfs_stack.push(cur_node);
         matrix_stack.push(cur_VM);
 
@@ -139,6 +138,14 @@ impl Scene{
         let mut world_node = Node::new();
         let mut ferris_node = Node::new();
 
+
+        // TODO: MAKE SCENE GRAPH DYNAMIC
+        // let mut player_node = Node::new();
+        // player_node.models.push(ModelIndex{index: ModelIndices::PLAYER as usize});
+        // let player_instance: Instance = FUNCTION_THAT_RETURNS_PLAYER_TRANSFORM() or pass it in as an argument;
+        // player_node.modeltransforms.push(player_instance);
+        // player nodes are children of world nodes --> lines 179-180
+
         ferris_node.models.push(ModelIndex{index: ModelIndices::FERRIS as usize});
         ferris_node.modeltransforms.push(Instance{transform: glm::scale( &mat4_identity, &glm::vec3(1.0,1.0,1.0))});
 
@@ -168,7 +175,10 @@ impl Scene{
 
         world_node.childnodes.push(island_node);
         world_node.childtransforms.push(Instance{transform: mat4_identity});
-
+        
+        // world_node.childnodes.push(player_node);
+        // world_node.childtransforms.push(Instance{transform: mat4_identity});
+        
         self.scene_graph.push(world_node);// self.scene_graph.push(cube_node.clone());
 
         // println!("scene graph: {:?}", self.scene_graph);
