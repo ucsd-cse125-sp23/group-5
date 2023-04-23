@@ -276,7 +276,7 @@ impl State {
         // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
         let mut scene = scene::Scene::new(vec![obj_model, cube_obj, ferris_obj]);
-        scene.build_scene_graph();
+        scene.init_scene_graph();
         scene.draw_scene_dfs(&camera_state.camera);
 
         let depth_texture =
