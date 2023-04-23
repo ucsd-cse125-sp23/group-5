@@ -7,10 +7,11 @@ use std::cell::Cell;
 
 use nalgebra_glm as glm;
 
-enum ModelIndices{
+pub enum ModelIndices{
     ISLAND = 0,
-    CUBE = 1,
-    FERRIS = 2,
+    PLAYER = 1,
+    CUBE = 2,
+    FERRIS = 3,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -140,11 +141,12 @@ impl Scene{
 
 
         // TODO: MAKE SCENE GRAPH DYNAMIC
-        // let mut player_node = Node::new();
-        // player_node.models.push(ModelIndex{index: ModelIndices::PLAYER as usize});
-        // let player_instance: Instance = FUNCTION_THAT_RETURNS_PLAYER_TRANSFORM() or pass in transform as an argument;
-        // player_node.modeltransforms.push(player_instance);
         // player nodes are children of world nodes --> lines 179-180
+        let mut player_node = Node::new();
+        player_node.models.push(ModelIndex{index: ModelIndices::PLAYER as usize});
+        let player_instance = Instance{transform: glm::scale( &mat4_identity, &glm::vec3(0.0,0.0,0.0))};
+        player_node.modeltransforms.push(player_instance);
+
 
         ferris_node.models.push(ModelIndex{index: ModelIndices::FERRIS as usize});
         ferris_node.modeltransforms.push(Instance{transform: glm::scale( &mat4_identity, &glm::vec3(1.0,1.0,1.0))});
@@ -171,13 +173,13 @@ impl Scene{
         island_node.childnodes.push(table_node.clone());
         island_node.childtransforms.push(Instance{transform: glm::rotate(&mat4_identity,-120.0*glm::pi::<f32>()/180.0, &glm::vec3(0.0, 1.0, 0.0) ) * glm::translate( &mat4_identity, &glm::vec3(2.0,0.0,0.0)) * glm::scale( &mat4_identity, &glm::vec3(1.5,1.5,1.5))});
         island_node.models.push(ModelIndex{index: ModelIndices::ISLAND as usize});
-        island_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,-9.7,0.0)) * glm::scale( &mat4_identity, &glm::vec3(2.5,2.5,2.5))});
+        island_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,-9.7,0.0))});
 
         world_node.childnodes.push(island_node);
         world_node.childtransforms.push(Instance{transform: mat4_identity});
         
-        // world_node.childnodes.push(player_node);
-        // world_node.childtransforms.push(Instance{transform: mat4_identity});
+        world_node.childnodes.push(player_node);
+        world_node.childtransforms.push(Instance{transform: mat4_identity});
         
         self.scene_graph.push(world_node);// self.scene_graph.push(cube_node.clone());
 

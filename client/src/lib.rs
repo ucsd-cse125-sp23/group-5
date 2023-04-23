@@ -1,92 +1,26 @@
-use wgpu::util::DeviceExt;
-use winit::{
-    event::*,
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
+use std::sync::{Arc, Mutex};
+
+use winit::event::*;
+
 mod model;
-use model::Vertex;
+
 use crate::model::DrawModel;
+use model::Vertex;
+
 mod camera;
-mod texture;
-mod resources;
-mod lights;
 mod instance;
+mod lights;
+mod player;
+mod resources;
 mod scene;
+mod texture;
+
 extern crate nalgebra_glm as glm;
-// const NUM_INSTANCES_PER_ROW: u32 = 1;
 
-pub async fn run() {
-    env_logger::init();
-    let event_loop = EventLoop::new();
-    let window = WindowBuilder::new()
-        .with_title("test")
-        .with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
-        .build(&event_loop)
-        .unwrap();
+pub mod event_loop;
+pub mod inputs;
 
-    let mut state = State::new(window).await; 
-    let mut last_render_time = instant::Instant::now();
-
-    event_loop.run(move |event, _, control_flow| match event {
-        Event::DeviceEvent {
-            event: DeviceEvent::MouseMotion{ delta, },
-            .. // We're not using device_id currently
-        } => {
-            state.camera_state.camera_controller.process_mouse(delta.0, delta.1)
-        }
-        Event::WindowEvent {
-            ref event,
-            window_id,
-        } if window_id == state.window.id() => {
-            if !state.input(event) {
-                match event {
-                    #[cfg(not(target_arch="wasm32"))]
-                    WindowEvent::CloseRequested
-                    | WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => *control_flow = ControlFlow::Exit,
-                    WindowEvent::Resized(physical_size) => {
-                        state.resize(*physical_size);
-                    }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        // new_inner_size is &&mut so we have to dereference it twice
-                        state.resize(**new_inner_size);
-                    }
-                    _ => {}
-                }
-            }
-        }
-        Event::RedrawRequested(window_id) if window_id == state.window().id() => {
-            let now = instant::Instant::now();
-            let dt = now - last_render_time;
-            last_render_time = now;
-            state.update(dt);
-            match state.render() {
-                Ok(_) => {}
-                // Reconfigure the surface if lost
-                Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                // The system is out of memory, we should probably quit
-                Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                // All other errors (Outdated, Timeout) should be resolved by the next frame
-                Err(e) => eprintln!("{:?}", e),
-            }
-        }
-        Event::MainEventsCleared => {
-            // RedrawRequested will only trigger once, unless we manually
-            // request it.
-            state.window().request_redraw();
-        }
-        _ => {}
-    });
-}
-
+use common::core::states::GameState;
 use winit::window::Window;
 
 struct State {
@@ -98,7 +32,9 @@ struct State {
     window: Window,
     depth_texture: texture::Texture,
     render_pipeline: wgpu::RenderPipeline,
-    scene : scene::Scene,
+    player: player::Player,
+    player_controller: player::PlayerController,
+    scene: scene::Scene,
     light_state: lights::LightState,
     camera_state: camera::CameraState,
 }
@@ -156,8 +92,7 @@ impl State {
             .formats
             .iter()
             .copied()
-            .filter(|f| f.describe().srgb)
-            .next()
+            .find(|f| f.describe().srgb)
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -171,75 +106,58 @@ impl State {
         surface.configure(&device, &config);
 
         let texture_bind_group_layout =
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                }
-            ],
-            label: Some("texture_bind_group_layout"),
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
 
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        // let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Vertex Buffer"),
-        //     contents: bytemuck::cast_slice(VERTICES),
-        //     usage: wgpu::BufferUsages::VERTEX,
-        // });
-        // let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Index Buffer"),
-        //     contents: bytemuck::cast_slice(INDICES),
-        //     usage: wgpu::BufferUsages::INDEX,
-        // });
-        // let num_indices = INDICES.len() as u32;
-
-        let camera_state = camera::CameraState::new(
-            &device,
-        glm::vec3(5.0, 10.0, 15.0), 
-        glm::vec3(0.0, 0.0, 0.0), 
-        glm::vec3(0.0, 1.0, 0.0),
-        config.width, config.height, 45.0, 0.1, 100.0,
-        4.0, 1.0, 0.7,
-        );
-
         // Scene
-        let obj_model =
-        resources::load_model("island.obj", &device, &queue, &texture_bind_group_layout)
+        let obj_model = resources::load_model(
+            "assets/island.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
         .await
         .unwrap();
         // let instance_vec = vec![
@@ -256,13 +174,19 @@ impl State {
         //         0.0, 0.0, 0.0, 1.0
         //     )},
         // ];
+        // use cube as a placeholder player model for now
+        let player_obj =
+        resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
+        .await
+        .unwrap();
+
         let cube_obj =
-        resources::load_model("cube.obj", &device, &queue, &texture_bind_group_layout)
+        resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
 
         let ferris_obj =
-        resources::load_model("ferris.obj", &device, &queue, &texture_bind_group_layout)
+        resources::load_model("assets/ferris.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
         // let cube_instance_vec = vec![
@@ -275,24 +199,45 @@ impl State {
         // ];
         // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
-        let mut scene = scene::Scene::new(vec![obj_model, cube_obj, ferris_obj]);
+        let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
         scene.build_scene_graph();
+
+        // placeholder position, will get overriden by server
+        let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
+        let player_controller = player::PlayerController::new(4.0, 0.7);
+
+        let camera_state = camera::CameraState::new(
+            &device,
+            player.position + glm::vec3(-2.0, 2.0, 0.0),
+            player.position,
+            glm::vec3(0.0, 1.0, 0.0),
+            config.width,
+            config.height,
+            45.0,
+            0.1,
+            100.0,
+        );
+
         scene.draw_scene_dfs(&camera_state.camera);
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         #[rustfmt::skip]
-        let TEST_LIGHTING : Vec<lights::Light> = Vec::from([
-            lights::Light{ position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0)},
-            lights::Light{ position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2)},
+            let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
+            lights::Light { position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0) },
+            lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_state.camera_bind_group_layout, &light_state.light_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &camera_state.camera_bind_group_layout,
+                    &light_state.light_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -350,7 +295,8 @@ impl State {
             size,
             render_pipeline,
             scene,
-
+            player,
+            player_controller,
             camera_state,
             depth_texture,
             light_state,
@@ -363,19 +309,23 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.camera_state.projection.resize(new_size.width, new_size.height);
+            self.camera_state
+                .projection
+                .resize(new_size.width, new_size.height);
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            
-            self.camera_state.camera_uniform.update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+
+            self.camera_state
+                .camera_uniform
+                .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
             self.queue.write_buffer(
                 &self.camera_state.camera_buffer,
                 0,
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
-            
+
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
@@ -383,33 +333,45 @@ impl State {
 
     fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::KeyboardInput {
-                input:
-                    KeyboardInput {
-                        virtual_keycode: Some(key),
-                        state,
-                        ..
-                    },
-                ..
-            } => self.camera_state.camera_controller.process_keyboard(*key, *state),
             WindowEvent::MouseWheel { delta, .. } => {
-                self.camera_state.camera_controller.process_scroll(delta);
+                self.player_controller.process_scroll(delta);
                 true
             }
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
-                state,
+                state: _,
                 ..
-            } => {
-                true
-            }
+            } => true,
             _ => false,
         }
     }
 
-    fn update(&mut self, dt: instant::Duration) {
-        self.camera_state.camera_controller.update_camera(&mut self.camera_state.camera, dt);
-        self.camera_state.camera_uniform
+    fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
+        let game_state = game_state.lock().unwrap();
+        // TODO: game state to scene graph conversion should be done in the scene graph itself
+        // like `scene_graph.load_game_state(game_state)`
+
+        // just for testing
+        // update the camera target
+        if !game_state.players.is_empty() {
+            let player_state = &game_state.players[0];
+            // update player controller (player, camera, etc) with the latest player state
+            self.player_controller.update(
+                &mut self.player,
+                &mut self.camera_state.camera,
+                player_state,
+                dt,
+            );
+
+            // update player instance (replace 0 with player_id) (maybe move to scene graph later)
+            let player_instances = self.scene.objects_and_instances.get_mut(&scene::ModelIndex{index: scene::ModelIndices::PLAYER as usize}).unwrap();
+            player_instances[0].transform = self.player.calc_transf_matrix();
+        }
+
+
+
+        self.camera_state
+            .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
         self.queue.write_buffer(
             &self.camera_state.camera_buffer,

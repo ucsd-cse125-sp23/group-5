@@ -8,8 +8,8 @@ pub struct Instance {
     pub transform: nalgebra_glm::TMat4<f32>,
 }
 
-pub struct InstanceState{
-    pub data : Vec<InstanceRaw>,
+pub struct InstanceState {
+    pub data: Vec<InstanceRaw>,
     pub buffer: wgpu::Buffer,
 }
 
@@ -21,21 +21,21 @@ impl Instance {
             tmp[0], tmp[1], tmp[2],
             tmp[4], tmp[5], tmp[6],
             tmp[8], tmp[9], tmp[10],
-        ); 
+        );
         InstanceRaw {
             model: self.transform.into(),
             normal: normal.into(),
         }
     }
 
-    pub fn make_buffer(instances : &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
+    pub fn make_buffer(instances: &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
         let data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&data),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        InstanceState { data, buffer}
+        InstanceState { data, buffer }
     }
 }
 
