@@ -173,8 +173,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
         let instance_vec = vec![
             instance::Instance {
                 #[rustfmt::skip]
@@ -202,8 +202,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
         let cube_instance_vec = vec![instance::Instance {
             #[rustfmt::skip]
             transform: glm::mat4(

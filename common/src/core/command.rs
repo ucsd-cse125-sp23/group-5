@@ -38,7 +38,7 @@ mod tests {
     fn test_serialize_and_deserialize_json() {
         let command = Command::Move(MoveDirection::Forward);
         let serialized = serde_json::to_string(&command).unwrap();
-        let deserialized: Command = serde_json::from_str(&serialized).unwrap();
+        let _deserialized: Command = serde_json::from_str(&serialized).unwrap();
         // assert_eq!(command, deserialized);
     }
 }

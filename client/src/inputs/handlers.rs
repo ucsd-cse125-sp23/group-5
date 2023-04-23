@@ -1,185 +1,126 @@
 use crate::inputs::ButtonState;
 use common::communication::commons::*;
 use common::communication::message::*;
-use common::core::command::Command::{Action, Jump, Spawn};
-use common::core::command::GameAction::Attack;
-use common::core::command::{Command, MoveDirection};
-use log::{error, info};
-use queues::{IsQueue, Queue};
-use std::collections::HashMap;
-use std::time::Instant;
-use winit::event::{DeviceEvent, ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode};
 
-pub enum GameKey {
+use common::core::command::Command;
+use glm::Vec3;
+use log::{debug, error, info};
+use queues::{IsQueue, Queue};
+
+use std::time::Instant;
+use winit::event::{DeviceEvent, MouseScrollDelta, VirtualKeyCode};
+
+pub enum GameKeyKind {
     Pressable,
     Holdable,
     PressRelease,
 }
 
-pub fn handle_keyboard_input(
-    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    input: KeyboardInput,
-    protocol: &mut Protocol,
-    client_id: u8,
-) {
-    // change state
-    if let Some(keycode) = input.virtual_keycode {
-        update_held_map(held_map, keycode, input.state);
-        // map keyboard input to command
-        let key_command: Option<(GameKey, Command)> = match input.virtual_keycode {
-            // match Holdable keys
-            Some(VirtualKeyCode::W) => {
-                Some((GameKey::Holdable, Command::Move(MoveDirection::Forward)))
-            }
-            Some(VirtualKeyCode::A) => {
-                Some((GameKey::Holdable, Command::Move(MoveDirection::Left)))
-            }
-            Some(VirtualKeyCode::S) => {
-                Some((GameKey::Holdable, Command::Move(MoveDirection::Backward)))
-            }
-            Some(VirtualKeyCode::D) => {
-                Some((GameKey::Holdable, Command::Move(MoveDirection::Right)))
-            }
-            // match Pressable keys
-            Some(VirtualKeyCode::Space) => Some((GameKey::Pressable, Jump)),
-            // match PressRelease keys
-            Some(VirtualKeyCode::LShift) => Some((GameKey::PressRelease, Spawn)),
-            Some(VirtualKeyCode::F) => Some((GameKey::PressRelease, Action(Attack))),
-            _ => None,
-        };
-
-        if let Some((game_key, command)) = key_command {
-            handle_game_key_input(game_key, command, keycode, held_map, protocol, client_id);
-        } else {
-            info!("No game key or action to handle");
-        }
-    }
-}
-
-pub fn update_held_map(
-    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
-    keycode: VirtualKeyCode,
-    ele_state: ElementState,
-) {
-    use winit::event::ElementState as es;
-    use ButtonState as bs;
-    let next_state = if let Some(state) = held_map.get(&keycode) {
-        match (state, ele_state) {
-            (bs::Pressed, es::Pressed) => ButtonState::Held, // pressed -> (pressed) -> held
-            (bs::Released, es::Pressed) => ButtonState::Pressed, // released -> (pressed) -> pressed
-            (_, es::Released) => ButtonState::Released, // some -> (released) -> released
-            (bs, _) => bs.clone(), // same state
-        }
-    } else {
-        ButtonState::Pressed
-    };
-    held_map.insert(keycode, next_state);
+pub fn handle_camera_update(camera_forward: Vec3, protocol: &mut Protocol, client_id: u8) {
+    let message: Message = Message::new(
+        HostRole::Client(client_id),
+        Payload::Command(Command::UpdateCamera {
+            forward: camera_forward,
+        }),
+    );
+    protocol.send_message(&message).expect("send message fails");
+    // info!("Sent camera update");
 }
 
 pub fn handle_game_key_input(
-    game_key: GameKey,
+    game_key_kind: GameKeyKind,
     command: Command,
-    keycode: VirtualKeyCode,
-    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
+    button_state: &ButtonState,
     protocol: &mut Protocol,
     client_id: u8,
-) {
-    match game_key {
-        GameKey::Pressable => {
-            handle_pressable_key(command, keycode, held_map, protocol, client_id);
-        }
-        GameKey::Holdable => {
-            handle_holdable_key(command, keycode, held_map, protocol, client_id);
-        }
-        GameKey::PressRelease => {
-            handle_press_release_key(command, keycode, held_map, protocol, client_id);
+) -> bool {
+    match game_key_kind {
+        GameKeyKind::Pressable => handle_pressable_key(command, button_state, protocol, client_id),
+        GameKeyKind::Holdable => handle_holdable_key(command, button_state, protocol, client_id),
+        GameKeyKind::PressRelease => {
+            handle_press_release_key(command, button_state, protocol, client_id)
         }
     }
 }
 
 fn handle_pressable_key(
     command: Command,
-    keycode: VirtualKeyCode,
-    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
+    button_state: &ButtonState,
     protocol: &mut Protocol,
     client_id: u8,
-) {
-    info!("Received game key: {:?}", command);
-    match held_map.get(&keycode) {
+) -> bool {
+    match button_state {
         // if pressed, send command
-        Some(ButtonState::Pressed) => {
+        ButtonState::Pressed => {
             let message: Message = Message::new(
                 HostRole::Client(client_id),
                 Payload::Command(command.clone()),
             );
             protocol.send_message(&message).expect("send message fails");
-            info!("Sent command: {:?}", command);
+            debug!("Sent command: {:?}", command);
         }
         // if released, remove from the held map
-        Some(ButtonState::Released) => {
-            held_map.remove(&keycode);
-        }
+        ButtonState::Released => return false,
         // if held or others, don't do nothing
         _ => {}
-    }
+    };
+    true
 }
 
 fn handle_holdable_key(
     command: Command,
-    keycode: VirtualKeyCode,
-    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
+    button_state: &ButtonState,
     protocol: &mut Protocol,
     client_id: u8,
-) {
-    info!("Received game key: {:?}", command);
-    match held_map.get(&keycode) {
+) -> bool {
+    match button_state {
         // if pressed or held, keep sending command
-        Some(ButtonState::Pressed) | Some(ButtonState::Held) => {
+        ButtonState::Pressed | ButtonState::Held => {
             let message: Message = Message::new(
                 HostRole::Client(client_id),
                 Payload::Command(command.clone()),
             );
             protocol.send_message(&message).expect("send message fails");
-            info!("Sent command: {:?}", command);
+            debug!("Sent command: {:?}", command);
         }
         // if released, remove from the held map
-        Some(ButtonState::Released) => {
-            held_map.remove(&keycode);
+        ButtonState::Released => {
+            return false;
         }
         _ => {}
     }
+    true
 }
 
 fn handle_press_release_key(
     command: Command,
-    keycode: VirtualKeyCode,
-    held_map: &mut HashMap<VirtualKeyCode, ButtonState>,
+    button_state: &ButtonState,
     protocol: &mut Protocol,
     client_id: u8,
-) {
-    info!("Received game key: {:?}", command);
-    match held_map.get(&keycode) {
+) -> bool {
+    match button_state {
         // if pressed or held, keep sending command
-        Some(ButtonState::Pressed) | Some(ButtonState::Held) => {
+        ButtonState::Pressed | ButtonState::Held => {
             let message: Message = Message::new(
                 HostRole::Client(client_id),
                 Payload::Command(command.clone()),
             );
             protocol.send_message(&message).expect("send message fails");
-            info!("Sent command: {:?}", command);
+            debug!("Sent command: {:?}", command);
         }
         // if released, do the corresponding action and then remove from the held map
-        Some(ButtonState::Released) => {
+        ButtonState::Released => {
             let message: Message = Message::new(
                 HostRole::Client(client_id),
                 Payload::Command(command.clone()),
             );
             protocol.send_message(&message).expect("send message fails");
-            info!("Sent command: {:?}", command);
-            held_map.remove(&keycode);
+            debug!("Sent command: {:?}", command);
+            return false;
         }
         _ => {}
-    }
+    };
+    true
 }
 
 /// ***************************************** Mouse *********************************************///
