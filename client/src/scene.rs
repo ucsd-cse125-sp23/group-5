@@ -11,6 +11,7 @@ use nalgebra_glm as glm;
 enum ModelIndices{
     ISLAND = 0,
     CUBE = 1,
+    FERRIS = 2,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -136,10 +137,15 @@ impl Scene{
         let mut table_top_node = Node::new();
         let mut table_leg_node = Node::new();
         let mut world_node = Node::new();
+        let mut ferris_node = Node::new();
 
+        ferris_node.models.push(ModelIndex{index: ModelIndices::FERRIS as usize});
+        ferris_node.modeltransforms.push(Instance{transform: glm::scale( &mat4_identity, &glm::vec3(1.0,1.0,1.0))});
 
         table_top_node.models.push(ModelIndex{index: ModelIndices::CUBE as usize});
         table_top_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,-0.1,0.0))* glm::scale( &mat4_identity, &glm::vec3(2.0,0.2,1.0))});
+        table_top_node.childnodes.push(ferris_node.clone());
+        table_top_node.childtransforms.push(Instance{transform: mat4_identity}); //glm::translate( &mat4_identity, &glm::vec3(1.7,0.0,-0.7))});
 
         table_leg_node.models.push(ModelIndex{index: ModelIndices::CUBE as usize});
         table_leg_node.modeltransforms.push(Instance{transform: glm::translate( &mat4_identity, &glm::vec3(0.0,0.5,0.0))* glm::scale( &mat4_identity, &glm::vec3(0.2,1.0,0.2))});

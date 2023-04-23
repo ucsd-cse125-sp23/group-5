@@ -260,6 +260,11 @@ impl State {
         resources::load_model("cube.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
+
+        let ferris_obj =
+        resources::load_model("ferris.obj", &device, &queue, &texture_bind_group_layout)
+        .await
+        .unwrap();
         // let cube_instance_vec = vec![
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 5.0,
@@ -270,7 +275,7 @@ impl State {
         // ];
         // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
-        let mut scene = scene::Scene::new(vec![obj_model, cube_obj]);
+        let mut scene = scene::Scene::new(vec![obj_model, cube_obj, ferris_obj]);
         scene.build_scene_graph();
         scene.draw_scene_dfs(&camera_state.camera);
 
