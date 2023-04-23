@@ -3,6 +3,7 @@ extern crate nalgebra_glm as glm;
 
 // Instances
 // Lets us duplicate objects in a scene with less cost
+#[derive(Debug, Clone)]
 pub struct Instance {
     pub transform: nalgebra_glm::TMat4<f32>,
 }

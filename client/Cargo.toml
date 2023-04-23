@@ -25,6 +25,7 @@ tobj = { version = "3.2.1", features = [
 anyhow = "1.0"
 cfg-if = "1"
 cgmath = "0.18" #delete later
+hashbrown = "0.13.2"
 
 [build-dependencies]
 anyhow = "1.0"
