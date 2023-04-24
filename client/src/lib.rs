@@ -184,7 +184,7 @@ impl State {
 
         let camera_state = camera::CameraState::new(
             &device,
-        player.position + glm::vec3(-2.0, 2.0, 0.0), 
+        player.position + glm::vec3(-5.0, 15.0, 0.0), 
         player.position, 
         glm::vec3(0.0, 1.0, 0.0),
         config.width, config.height, 45.0, 0.1, 100.0,
@@ -192,7 +192,7 @@ impl State {
 
         // Scene
         let obj_model =
-        resources::load_model("island.obj", &device, &queue, &texture_bind_group_layout)
+        resources::load_model("islands_set_flat.obj", &device, &queue, &texture_bind_group_layout)
         .await
         .unwrap();
         let instance_vec = vec![
@@ -339,10 +339,10 @@ impl State {
 
         #[rustfmt::skip]
         let vertices : Vec<screen_objects::Vertex> = vec![
-            screen_objects::Vertex { position: [-0.90, 0.75], color: [1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
-            screen_objects::Vertex { position: [-0.90, 0.90], color: [1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
-            screen_objects::Vertex { position: [-0.23, 0.90], color: [1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
-            screen_objects::Vertex { position: [-0.23, 0.75], color: [1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
+            screen_objects::Vertex { position: [-0.90, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [0.0, 1.0] }, // A
+            screen_objects::Vertex { position: [-0.90, 0.90], color: [1.0, 1.0, 1.0, 0.9], texture: [0.0, 0.0] }, // B
+            screen_objects::Vertex { position: [-0.30, 0.90], color: [1.0, 1.0, 1.0, 0.9], texture: [1.0, 0.0] }, // C
+            screen_objects::Vertex { position: [-0.30, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [1.0, 1.0] }, // D
         ];
 
         #[rustfmt::skip]
@@ -473,9 +473,13 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            // r: 0.1,
+                            // g: 0.2,
+                            // b: 0.3,
+                            // a: 1.0,
+                            r: 0.274,
+                            g: 0.698,
+                            b: 0.875,
                             a: 1.0,
                         }),
                         store: true,

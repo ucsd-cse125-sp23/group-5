@@ -7,14 +7,14 @@ use crate::resources;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     pub position: [f32; 2],
-    pub color: [f32; 3],
+    pub color: [f32; 4],
     pub texture: [f32; 2],
 }
 
 
 impl Vertex {
     const ATTRIBS: [wgpu::VertexAttribute; 3] =
-        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x3, 2 => Float32x2];
+        wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4, 2 => Float32x2];
 
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
@@ -28,16 +28,17 @@ impl Vertex {
 }
 
 pub struct ScreenInstance{
-    transform:[[f32; 3] ; 3],
+    transform:[[f32; 4] ; 4],
 }
 
 impl ScreenInstance{
     pub fn default() -> Self{
         Self { 
             transform: [
-                [1.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0],
-                [0.0, 0.0, 1.0]
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
             ],
         }
     }
