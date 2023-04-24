@@ -70,18 +70,18 @@ impl Scene{
         dfs_stack.push(cur_node);
         matrix_stack.push(cur_VM);
 
-        // let mut total_number_of_edges: usize = 0;
-        // for n in self.scene_graph.iter() {
-        //    total_number_of_edges += n.1.childnodes.len();
-        // }
+        let mut total_number_of_edges: usize = 0;
+        for n in self.scene_graph.iter() {
+           total_number_of_edges += n.1.0.childnodes.len();
+        }
 
-        // println!("total number of nodes = {}", self.scene_graph.len());
-        // println!("total number of edges = {}", total_number_of_edges);
+        println!("total number of nodes = {}", self.scene_graph.len());
+        println!("total number of edges = {}", total_number_of_edges);
 
         while dfs_stack.len() > 0 {
-            // if dfs_stack.len() > total_number_of_edges {
-            //     panic!("ERROR: the scene graph has a cycle");
-            // }
+            if dfs_stack.len() > total_number_of_edges {
+                panic!("ERROR: the scene graph has a cycle");
+            }
             cur_node = dfs_stack.pop().unwrap();
             cur_VM = matrix_stack.pop().unwrap();
 
