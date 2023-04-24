@@ -1,6 +1,7 @@
 use wgpu::util::DeviceExt;
 use crate::texture;
 use crate::resources;
+use crate::model;
 
 // Vertex
 #[repr(C)]
@@ -27,8 +28,10 @@ impl Vertex {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ScreenInstance{
-    transform:[[f32; 4] ; 4],
+    pub transform:[[f32; 4] ; 4],
 }
 
 impl ScreenInstance{
@@ -44,17 +47,55 @@ impl ScreenInstance{
     }
 }
 
+impl crate::model::Vertex for ScreenInstance{
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<ScreenInstance>() as wgpu::BufferAddress,
+            // We need to switch from using a step mode of Vertex to Instance
+            // This means that our shaders will only change to use the next
+            // instance when the shader starts processing a new instance
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    shader_location: 4,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
+                    shader_location: 5,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+            ],
+        }
+    }
+}
+
 pub struct ScreenObject{
     pub vbuf : wgpu::Buffer,
     pub ibuf : wgpu::Buffer,
     pub num_indices : u32,
+    pub num_inst : u32,
     pub instances : Vec<ScreenInstance>,
+    pub inst_buf : wgpu::Buffer,
     pub diffuse_texture: texture::Texture,
     pub bind_group: wgpu::BindGroup,
 }
 
 impl ScreenObject{
-    pub async fn new(vtxs : &Vec<Vertex>, idxs : &Vec<u16>, tex_name: &str, 
+    pub async fn new(vtxs : &Vec<Vertex>, idxs : &Vec<u16>, instances : Vec<ScreenInstance>,
+        tex_name: &str, 
         layout : &wgpu::BindGroupLayout,
         device : &wgpu::Device, queue: &wgpu::Queue) -> Self{
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -66,6 +107,13 @@ impl ScreenObject{
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(idxs),
             usage: wgpu::BufferUsages::INDEX,
+        });
+
+        let num_inst = instances.len() as u32;
+        let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: bytemuck::cast_slice(&instances),
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
         //Assume there's always a texture
@@ -92,10 +140,13 @@ impl ScreenObject{
             vbuf,
             ibuf,
             num_indices: idxs.len() as u32,
+            num_inst,
             diffuse_texture,
             bind_group,
             // TODO!
-            instances: vec![ScreenInstance::default()],
+            instances,
+            inst_buf,
+
         }
     }
 }

@@ -40,6 +40,7 @@ struct State {
 
     // for testing purposes
     test_screen_obj : screen_objects::ScreenObject,
+    test_screen_obj_2 : screen_objects::ScreenObject,
 }
 
 impl State {
@@ -202,12 +203,6 @@ impl State {
                 0.0, 0.0, 1.0, 0.0, 
                 0.0, 0.0, 0.0, 1.0
             )},
-            instance::Instance{transform: glm::mat4(
-                1.0, 0.0, 0.0, 10.0,
-                0.0, 1.0, 0.0, 2.0,
-                0.0, 0.0, 1.0, 2.0, 
-                0.0, 0.0, 0.0, 1.0
-            )},
         ];
 
         let cube_model =
@@ -281,7 +276,7 @@ impl State {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
+                depth_compare: wgpu::CompareFunction::LessEqual, // 1.
                 stencil: wgpu::StencilState::default(),     // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -299,7 +294,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader_2d,
                 entry_point: "vs_main",
-                buffers: &[screen_objects::Vertex::desc()],
+                buffers: &[screen_objects::Vertex::desc(), screen_objects::ScreenInstance::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader_2d,
@@ -325,7 +320,7 @@ impl State {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
+                depth_compare: wgpu::CompareFunction::LessEqual, // 1.
                 stencil: wgpu::StencilState::default(),     // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -345,16 +340,85 @@ impl State {
             screen_objects::Vertex { position: [-0.30, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [1.0, 1.0] }, // D
         ];
 
+        let vertices2 : Vec<screen_objects::Vertex> = vec![
+            screen_objects::Vertex { position: [-0.88, 0.75], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
+            screen_objects::Vertex { position: [-0.88, 0.90], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
+            screen_objects::Vertex { position: [-0.78, 0.90], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
+            screen_objects::Vertex { position: [-0.78, 0.75], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
+        ];
+
         #[rustfmt::skip]
         let indices : Vec<u16> = vec![
             0, 2, 1,
             0, 3, 2,
         ];
 
+        let instances1 = vec![
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],]
+            },
+        ];
+        let instances2 = vec![
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.06, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.12, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.18, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.24, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.30, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.36, 0.0, 0.0, 1.0],]
+            },
+            screen_objects::ScreenInstance{
+                transform: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.42, 0.0, 0.0, 1.0],]
+            },
+        ];
+
         let test_screen_obj = screen_objects::ScreenObject::new(
-            &vertices, &indices, "back1.png", 
+            &vertices, &indices, instances1, "back1.png", 
             &texture_bind_group_layout_2d, &device, &queue).await;
 
+        let test_screen_obj_2 = screen_objects::ScreenObject::new(
+            &vertices2, &indices, instances2, "wind.png", 
+            &texture_bind_group_layout_2d, &device, &queue).await;
         Self {
             window,
             surface,
@@ -374,6 +438,7 @@ impl State {
 
             // to remove later
             test_screen_obj,
+            test_screen_obj_2,
         }
     }
 
@@ -504,10 +569,18 @@ impl State {
             }
 
             render_pass.set_pipeline(&self.render_pipeline_2d);
+
             render_pass.set_vertex_buffer(0, self.test_screen_obj.vbuf.slice(..));
+            render_pass.set_vertex_buffer(1, self.test_screen_obj.inst_buf.slice(..)); 
             render_pass.set_index_buffer(self.test_screen_obj.ibuf.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.set_bind_group(0, &self.test_screen_obj.bind_group, &[]);
-            render_pass.draw_indexed(0..self.test_screen_obj.num_indices, 0, 0..1);
+            render_pass.draw_indexed(0..self.test_screen_obj.num_indices, 0, 0..self.test_screen_obj.num_inst);
+            
+            render_pass.set_vertex_buffer(0, self.test_screen_obj_2.vbuf.slice(..));
+            render_pass.set_vertex_buffer(1, self.test_screen_obj_2.inst_buf.slice(..)); 
+            render_pass.set_index_buffer(self.test_screen_obj_2.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_bind_group(0, &self.test_screen_obj_2.bind_group, &[]);
+            render_pass.draw_indexed(0..self.test_screen_obj_2.num_indices, 0, 0..self.test_screen_obj_2.num_inst);
         }
 
         // submit will accept anything that implements IntoIter
