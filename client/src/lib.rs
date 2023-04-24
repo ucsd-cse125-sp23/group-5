@@ -152,6 +152,29 @@ impl State {
             label: Some("texture_bind_group_layout"),
         });
 
+        let texture_bind_group_layout_2d =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+            label: Some("2d_texture_bind_group_layout"),
+        });
+
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
@@ -221,7 +244,7 @@ impl State {
             let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&texture_bind_group_layout_2d],
                 push_constant_ranges: &[],
             });
 
@@ -283,7 +306,7 @@ impl State {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -316,10 +339,10 @@ impl State {
 
         #[rustfmt::skip]
         let vertices : Vec<screen_objects::Vertex> = vec![
-            screen_objects::Vertex { position: [-0.9, -0.9], color: [1.0, 1.0, 1.0] }, // A
-            screen_objects::Vertex { position: [-0.9, -0.8], color: [1.0, 1.0, 1.0] }, // B
-            screen_objects::Vertex { position: [-0.7, -0.8], color: [1.0, 1.0, 1.0] }, // C
-            screen_objects::Vertex { position: [-0.7, -0.9], color: [1.0, 1.0, 1.0] }, // D
+            screen_objects::Vertex { position: [-0.90, 0.75], color: [1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
+            screen_objects::Vertex { position: [-0.90, 0.90], color: [1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
+            screen_objects::Vertex { position: [-0.23, 0.90], color: [1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
+            screen_objects::Vertex { position: [-0.23, 0.75], color: [1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
         ];
 
         #[rustfmt::skip]
@@ -328,7 +351,9 @@ impl State {
             0, 3, 2,
         ];
 
-        let test_screen_obj = screen_objects::ScreenObject::new(&vertices, &indices, &device);
+        let test_screen_obj = screen_objects::ScreenObject::new(
+            &vertices, &indices, "back1.png", 
+            &texture_bind_group_layout_2d, &device, &queue).await;
 
         Self {
             window,
@@ -477,6 +502,7 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline_2d);
             render_pass.set_vertex_buffer(0, self.test_screen_obj.vbuf.slice(..));
             render_pass.set_index_buffer(self.test_screen_obj.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_bind_group(0, &self.test_screen_obj.bind_group, &[]);
             render_pass.draw_indexed(0..self.test_screen_obj.num_indices, 0, 0..1);
         }
 
