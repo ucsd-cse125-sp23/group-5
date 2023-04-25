@@ -77,9 +77,12 @@ impl Scene {
         let mut matrix_stack: Vec<glm::TMat4<f32>> = Vec::new();
 
         // state needed for DFS:
-        let mut cur_node: &Node = &self.scene_graph.get(&NodeID::WORLD_NODE).unwrap().0; // self.scene_graph.get("world").unwrap(); // should be the root of the tree to start --> "world"
-        let mut cur_VM: glm::TMat4<f32> = mat4_identity; //camera.calc_matrix(); // should be the camera's view matrix to start --> "world"s modelview matrix is the camera's view matrix
-                                                         // currently it's just the identity matrix!
+        // self.scene_graph.get("world").unwrap(); // should be the root of the tree to start --> "world"
+        let mut cur_node: &Node = &self.scene_graph.get(&NodeID::WORLD_NODE).unwrap().0;
+        // camera.calc_matrix(); // should be the camera's view matrix to start --> "world"s modelview matrix is the camera's view matrix
+        // currently it's just the identity matrix!
+        let mut cur_VM: glm::TMat4<f32> = mat4_identity;
+
         dfs_stack.push(cur_node);
         matrix_stack.push(cur_VM);
 
