@@ -85,15 +85,22 @@ impl Scene {
         client_id: u8,
     ) {
         // update the camera target
+
+        // need to be here for reconnection, shouldn't be too much overhead
+        self.index_to_id_map.insert(0, client_id as u32);
+
+        // only render when i'm there
         if game_state.players.contains_key(&(client_id as u32)) {
             // when a new player come in
-            if PREVIOUS_PLAYER_COUNT.fetch_add(0, Ordering::SeqCst) as usize
+            while PREVIOUS_PLAYER_COUNT.fetch_add(0, Ordering::SeqCst) as usize
                 != game_state.players.len()
             {
                 self.add_other_player();
                 self.draw_scene_dfs(camera);
                 PREVIOUS_PLAYER_COUNT.fetch_add(1, Ordering::SeqCst);
                 let mut new_mapped_id: u32 = 1;
+
+                // fill in all previously-inserted objects
                 while !(game_state.players.contains_key(&new_mapped_id)
                     && !self.index_to_id_map.values().any(|&x| x == new_mapped_id))
                 {
@@ -102,6 +109,7 @@ impl Scene {
                 self.index_to_id_map
                     .insert(self.index_to_id_map.len() as usize, new_mapped_id);
             }
+
             let player_index = (client_id) as usize;
             let player_state = &game_state.players.get(&(player_index as u32)).unwrap();
             if player_index != (player_state.id) as usize {
@@ -109,7 +117,8 @@ impl Scene {
             }
             // update player controller (player, camera, etc) with the latest player state
             player_controller.update(player, camera, player_state, dt);
-            // according to each player's instance, rendering their object
+
+            // according to each player's instance, rendering their object, rendering all
             let player_instances = self
                 .objects_and_instances
                 .get_mut(&ModelIndex {
@@ -126,8 +135,6 @@ impl Scene {
                     client_player_state.transform.rotation,
                 );
             }
-        } else {
-            self.index_to_id_map.insert(0, client_id as u32);
         }
     }
 
