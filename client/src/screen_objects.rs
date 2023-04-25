@@ -1,3 +1,5 @@
+use std::collections::btree_map::Range;
+
 use wgpu::util::DeviceExt;
 use crate::texture;
 use crate::resources;
@@ -154,6 +156,7 @@ impl ScreenObject{
 pub struct Screen{
     pub name : String,
     pub objects : Vec<ScreenObject>,
+    pub ranges: Vec<std::ops::Range<u32>>,
 }
 
 pub async fn get_screens(
@@ -182,6 +185,7 @@ pub async fn get_screens(
                         [0.0, 0.0, 0.0, 1.0],]
         },
     ];
+    let title_inst_num = title_inst.len() as u32;
     
     #[rustfmt::skip]
     let atk_bx_vert : Vec<Vertex> = vec![
@@ -207,6 +211,7 @@ pub async fn get_screens(
                         [0.0, 0.0, 0.0, 1.0],]
         },
     ];
+    let atk_bx_inst_num = atk_bx_inst.len() as u32;
     let atk_itm_inst = vec![
         ScreenInstance{
             transform: [[1.0, 0.0, 0.0, 0.0],
@@ -257,6 +262,7 @@ pub async fn get_screens(
                         [0.455, 0.0, 0.0, 1.0],]
         },
     ];
+    let atk_itm_inst_num = atk_itm_inst.len() as u32;
 
     let title_obj = ScreenObject::new(
         &title_vert, &rect_indices, title_inst, "title_screen.jpg", 
@@ -274,10 +280,12 @@ pub async fn get_screens(
         Screen{
             name: String::from("Title Screen"),
             objects: vec![title_obj],
+            ranges: vec![(0..title_inst_num)],
         },
         Screen{
             name: String::from("Playing Screen"),
             objects: vec![atk_box_obj, atk_itm_obj],
+            ranges: vec![(0..atk_bx_inst_num), (0..atk_itm_inst_num)],
         },
     ]
 }

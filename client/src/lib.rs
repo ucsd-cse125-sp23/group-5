@@ -352,7 +352,7 @@ impl State {
             light_state,
 
             screens,
-            screen_ind: 0,
+            screen_ind: 1,
         }
     }
 
@@ -483,22 +483,21 @@ impl State {
             }
 
             render_pass.set_pipeline(&self.render_pipeline_2d);
+
+            // TO REMOVE: for testing
+            if self.screen_ind == 1{
+                self.screens[self.screen_ind].ranges[1] = (0..2);
+            }
             
-            for obj in &self.screens[self.screen_ind].objects{
+            for i in 0..self.screens[self.screen_ind].objects.len(){
+                let obj = &self.screens[self.screen_ind].objects[i];
+                let range = &self.screens[self.screen_ind].ranges[i];
                 render_pass.set_vertex_buffer(0, obj.vbuf.slice(..));
                 render_pass.set_vertex_buffer(1, obj.inst_buf.slice(..)); 
                 render_pass.set_index_buffer(obj.ibuf.slice(..), wgpu::IndexFormat::Uint16);
                 render_pass.set_bind_group(0, &obj.bind_group, &[]);
-                render_pass.draw_indexed(0..obj.num_indices, 0, 0..obj.num_inst);
+                render_pass.draw_indexed(0..obj.num_indices, 0, range.clone());
             }
-
-            
-            
-            // render_pass.set_vertex_buffer(0, self.test_screen_obj_2.vbuf.slice(..));
-            // render_pass.set_vertex_buffer(1, self.test_screen_obj_2.inst_buf.slice(..)); 
-            // render_pass.set_index_buffer(self.test_screen_obj_2.ibuf.slice(..), wgpu::IndexFormat::Uint16);
-            // render_pass.set_bind_group(0, &self.test_screen_obj_2.bind_group, &[]);
-            // render_pass.draw_indexed(0..self.test_screen_obj_2.num_indices, 0, 0..self.test_screen_obj_2.num_inst);
         }
 
         // submit will accept anything that implements IntoIter
