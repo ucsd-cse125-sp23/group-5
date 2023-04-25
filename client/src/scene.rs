@@ -85,7 +85,6 @@ impl Scene {
         client_id: u8,
     ) {
         // update the camera target
-
         // need to be here for reconnection, shouldn't be too much overhead
         self.index_to_id_map.insert(0, client_id as u32);
 
