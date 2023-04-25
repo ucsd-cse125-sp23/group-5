@@ -65,10 +65,7 @@ impl PlayerLoop {
                                     ..
                                 },
                                 ..
-                            } => {
-                                // TODO: add player despawn here
-                                *control_flow = ControlFlow::Exit
-                            },
+                            } => { *control_flow = ControlFlow::Exit },
                             WindowEvent::KeyboardInput { input, .. } => {
                                 match self
                                     .inputs
