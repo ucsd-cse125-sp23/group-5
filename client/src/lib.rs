@@ -38,14 +38,14 @@ struct State {
     scene: scene::Scene,
     light_state: lights::LightState,
     camera_state: camera::CameraState,
-
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
+    client_id: u8,
 }
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: Window) -> Self {
+    async fn new(window: Window, client_id: u8) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -407,9 +407,9 @@ impl State {
             camera_state,
             depth_texture,
             light_state,
-
             screens,
             screen_ind: 0,
+            client_id,
         }
     }
 
@@ -464,11 +464,14 @@ impl State {
         // like `scene_graph.load_game_state(game_state)`
 
         // self.scene.load_game_state(game_state);
-        self.scene.load_game_state(game_state,
-                                   &mut self.player_controller,
-                                   &mut self.player,
-                                   &mut self.camera_state.camera,
-                                   dt,);
+        self.scene.load_game_state(
+            game_state,
+            &mut self.player_controller,
+            &mut self.player,
+            &mut self.camera_state.camera,
+            dt,
+            self.client_id,
+        );
 
         self.camera_state
             .camera_uniform
