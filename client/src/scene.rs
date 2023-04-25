@@ -62,6 +62,7 @@ pub struct Scene {
     pub objects: Vec<model::Model>,
     pub scene_graph: HashMap<i32, (Node, Instance)>,
     pub objects_and_instances: HashMap<ModelIndex, Vec<Instance>>,
+    pub index_to_id_map: HashMap<usize, u32>,
 }
 
 impl Scene {
@@ -70,6 +71,7 @@ impl Scene {
             objects: objs,
             scene_graph: HashMap::new(),
             objects_and_instances: HashMap::new(),
+            index_to_id_map: HashMap::new(),
         }
     }
 
@@ -83,17 +85,26 @@ impl Scene {
         client_id: u8,
     ) {
         // update the camera target
-        if !(game_state.players.len() < client_id as usize) {
+        if game_state.players.contains_key(&(client_id as u32)) {
             // when a new player come in
             if PREVIOUS_PLAYER_COUNT.fetch_add(0, Ordering::SeqCst) as usize
-                != game_state.players.len() {
+                != game_state.players.len()
+            {
                 self.add_other_player();
                 self.draw_scene_dfs(camera);
                 PREVIOUS_PLAYER_COUNT.fetch_add(1, Ordering::SeqCst);
+                let mut new_mapped_id: u32 = 1;
+                while !(game_state.players.contains_key(&new_mapped_id)
+                    && !self.index_to_id_map.values().any(|&x| x == new_mapped_id))
+                {
+                    new_mapped_id = new_mapped_id + 1;
+                }
+                self.index_to_id_map
+                    .insert(self.index_to_id_map.len() as usize, new_mapped_id);
             }
-            let player_index = (client_id - 1) as usize;
-            let player_state = &game_state.players[player_index];
-            if player_index != (player_state.id - 1) as usize {
+            let player_index = (client_id) as usize;
+            let player_state = &game_state.players.get(&(player_index as u32)).unwrap();
+            if player_index != (player_state.id) as usize {
                 error!("ids don't match");
             }
             // update player controller (player, camera, etc) with the latest player state
@@ -106,12 +117,17 @@ impl Scene {
                 })
                 .unwrap();
             for (index, client_player_instance) in player_instances.iter_mut().enumerate() {
-                let client_player_state = game_state.players.get(index).unwrap();
+                let client_player_state = game_state
+                    .players
+                    .get(self.index_to_id_map.get(&index).unwrap())
+                    .unwrap();
                 client_player_instance.transform = Player::calc_transf_matrix(
                     client_player_state.transform.translation,
                     client_player_state.transform.rotation,
                 );
             }
+        } else {
+            self.index_to_id_map.insert(0, client_id as u32);
         }
     }
 

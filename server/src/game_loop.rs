@@ -171,7 +171,12 @@ mod tests {
 
         assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned
         assert_ne!(
-            ext.game_state().players[0].transform.translation,
+            ext.game_state()
+                .players
+                .get(&(1 as u32))
+                .unwrap()
+                .transform
+                .translation,
             Vec3::new(0.0, 0.0, 0.0)
         ); // the player should have moved
     }

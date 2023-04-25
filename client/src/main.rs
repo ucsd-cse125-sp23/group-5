@@ -54,11 +54,11 @@ fn main() {
     let (client_id, session_id) = init_connection(&mut protocol_clone).unwrap();
 
     // TODO: Remove Debug For build
-    // dump_ids(session_data_path, client_id + 1, session_id);
+    dump_ids(session_data_path, client_id + 1, session_id);
 
     // Actual
     // write the client_id, session_id to file
-    dump_ids(session_data_path, client_id, session_id);
+    // dump_ids(session_data_path, client_id, session_id);
 
     let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
 

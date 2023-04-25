@@ -1,6 +1,7 @@
 use crate::core::components::{Physics, Transform};
 use nalgebra_glm::Vec3;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerState {
@@ -18,7 +19,7 @@ pub struct WorldState {}
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct GameState {
     pub world: WorldState,
-    pub players: Vec<PlayerState>,
+    pub players: HashMap<u32, PlayerState>,
 }
 
 impl GameState {
@@ -37,9 +38,9 @@ mod tests {
         use super::*;
         let state = GameState {
             world: WorldState::default(),
-            players: vec![PlayerState::default()],
+            players: HashMap::default(),
         };
-        assert_eq!(state.players.len(), 1);
+        assert_eq!(state.players.len(), 0);
     }
 
     #[test]
@@ -47,7 +48,7 @@ mod tests {
         use super::*;
         let state = GameState {
             world: WorldState::default(),
-            players: vec![PlayerState::default()],
+            players: HashMap::default(),
         };
         let serialized = bson::to_bson(&state).unwrap();
         let deserialized: GameState = bson::from_bson(serialized).unwrap();

@@ -116,7 +116,7 @@ impl Executor {
         let physics_state = self.physics_state.borrow();
 
         // update player positions
-        for player in game_state.players.iter_mut() {
+        for (id, player) in game_state.players.iter_mut() {
             let rigid_body = physics_state.get_entity_rigid_body(player.id).unwrap();
             player.transform.translation = rigid_body.position().translation.vector;
             player.transform.rotation = rigid_body.position().rotation.coords.into();
