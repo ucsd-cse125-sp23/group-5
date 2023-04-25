@@ -463,28 +463,12 @@ impl State {
         // TODO: game state to scene graph conversion should be done in the scene graph itself
         // like `scene_graph.load_game_state(game_state)`
 
-        // just for testing
-        // update the camera target
-        if !game_state.players.is_empty() {
-            let player_state = &game_state.players[0];
-            // update player controller (player, camera, etc) with the latest player state
-            self.player_controller.update(
-                &mut self.player,
-                &mut self.camera_state,
-                player_state,
-                dt,
-            );
-
-            // update player instance (replace 0 with player_id) (maybe move to scene graph later)
-            let player_instances = self
-                .scene
-                .objects_and_instances
-                .get_mut(&scene::ModelIndex {
-                    index: scene::ModelIndices::PLAYER as usize,
-                })
-                .unwrap();
-            player_instances[0].transform = self.player.calc_transf_matrix();
-        }
+        // self.scene.load_game_state(game_state);
+        self.scene.load_game_state(game_state,
+                                   &mut self.player_controller,
+                                   &mut self.player,
+                                   &mut self.camera_state.camera,
+                                   dt,);
 
         self.camera_state
             .camera_uniform

@@ -1,11 +1,15 @@
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraState};
 use crate::instance::Instance;
 use crate::model::{self, InstancedModel, Model};
 use crate::{instance, resources};
 use std::cell::Cell;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex, MutexGuard};
+use glm::TMat4;
 
 use nalgebra_glm as glm;
+use common::core::states::GameState;
+use crate::player::{Player, PlayerController};
 
 pub enum ModelIndices {
     ISLAND = 0,
@@ -64,6 +68,33 @@ impl Scene {
         }
     }
 
+    pub fn load_game_state(&mut self,
+                           game_state: MutexGuard<GameState>,
+                           player_controller: &mut PlayerController,
+                           player: &mut Player,
+                           camera: &mut Camera,
+                           dt: instant::Duration,) {
+        // update the camera target
+        if !game_state.players.is_empty() {
+            let player_id = 0;
+            let player_state = &game_state.players[player_id];
+            // update player controller (player, camera, etc) with the latest player state
+            player_controller.update(
+                player,
+                camera,
+                player_state,
+                dt,
+            );
+            // update player instance (replace 0 with player_id) (maybe move to scene graph later)
+            let player_instances = self
+                .objects_and_instances
+                .get_mut(&ModelIndex {
+                    index: ModelIndices::PLAYER as usize,
+                })
+                .unwrap();
+            player_instances[player_id].transform = player.calc_transf_matrix();
+        }
+    }
 
     pub fn draw_scene_dfs(&mut self, camera: &Camera) {
         // get the view matrix from the camera

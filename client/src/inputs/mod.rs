@@ -69,7 +69,7 @@ impl InputEventProcessor {
             // match Pressable keys
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             // match PressRelease keys
-            VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
+            VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),
             VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Action(Attack))),
             _ => None,
         }
