@@ -1,8 +1,10 @@
 use crate::simulation::entity::{Entity, EntityHandles};
-use rapier3d::data::Index;
+
 use rapier3d::parry::utils::hashmap::HashMap;
 use rapier3d::prelude::*;
-use std::collections::BTreeMap;
+
+use nalgebra_glm::Vec3;
+use rapier3d::control::KinematicCharacterController;
 
 #[derive(Default)]
 pub struct PhysicsState {
@@ -19,6 +21,7 @@ pub struct PhysicsState {
     pub integration_parameters: IntegrationParameters,
     pub gravity: Vector<f32>,
     pub entity_indices: HashMap<Entity, EntityHandles>,
+    pub character_controller: KinematicCharacterController,
 }
 
 impl PhysicsState {
@@ -31,6 +34,10 @@ impl PhysicsState {
 
     pub fn set_delta_time(&mut self, time_step: f32) {
         self.integration_parameters.dt = time_step;
+    }
+
+    pub fn dt(&self) -> f32 {
+        self.integration_parameters.dt
     }
 
     pub fn step(&mut self) {
@@ -136,6 +143,32 @@ impl PhysicsState {
     pub fn get_entity_collider_mut(&mut self, entity: Entity) -> Option<&mut Collider> {
         self.colliders
             .get_mut(self.get_entity_handles(entity)?.collider?)
+    }
+
+    pub fn move_character_with_velocity(&mut self, entity: Entity, desired_translation: Vec3) {
+        let character_shape = self.get_entity_collider(entity).unwrap().shape();
+        let character_handle = self.get_entity_handles(entity).unwrap().rigid_body.unwrap();
+        let character_pos = self.get_entity_rigid_body(entity).unwrap().position();
+
+        let dt = self.integration_parameters.dt;
+        // Calculate the possible movement.
+        let corrected_movement = self.character_controller.move_shape(
+            dt,                   // The timestep length
+            &self.bodies,         // The RigidBodySet.
+            &self.colliders,      // The ColliderSet.
+            &self.query_pipeline, // The QueryPipeline.
+            character_shape,      // The character’s shape.
+            character_pos,        // The character’s initial position.
+            desired_translation,
+            QueryFilter::default()
+                // Make sure the the character we are trying to move isn’t considered an obstacle.
+                .exclude_rigid_body(character_handle),
+            |_| {},
+        );
+
+        let character_body = self.get_entity_rigid_body_mut(entity).unwrap();
+        // set its velocity to the computed movement divided by the timestep length.
+        character_body.set_linvel(corrected_movement.translation / dt, true);
     }
 }
 

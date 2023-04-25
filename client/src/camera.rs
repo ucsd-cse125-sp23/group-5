@@ -9,23 +9,24 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(
-        position: glm::TVec3<f32>,
-        target: glm::TVec3<f32>,
-        up: glm::TVec3<f32>,
-    ) -> Self {
+    pub fn new(position: glm::TVec3<f32>, target: glm::TVec3<f32>, up: glm::TVec3<f32>) -> Self {
         Self {
             position,
             target,
-            up, 
+            up,
         }
     }
 
     pub fn calc_matrix(&self) -> glm::TMat4<f32> {
-        glm::look_at_rh(&self.position,
-            &self.target,
-            &self.up,
-        )
+        glm::look_at_rh(&self.position, &self.target, &self.up)
+    }
+
+    pub fn position(&self) -> &glm::TVec3<f32> {
+        &self.position
+    }
+
+    pub fn forward(&self) -> glm::TVec3<f32> {
+        glm::normalize(&(self.target - self.position))
     }
 }
 
@@ -37,13 +38,7 @@ pub struct Projection {
 }
 
 impl Projection {
-    pub fn new(
-        width: u32,
-        height: u32,
-        fovy: f32,
-        znear: f32,
-        zfar: f32,
-    ) -> Self {
+    pub fn new(width: u32, height: u32, fovy: f32, znear: f32, zfar: f32) -> Self {
         Self {
             aspect: width as f32 / height as f32,
             fovy: fovy.to_radians(),
@@ -106,14 +101,20 @@ impl CameraUniform {
     }
 
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
-        self.view_position = glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
+        self.view_position =
+            glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
         self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).into();
-        self.inv_view_proj = glm::inverse(&(projection.calc_matrix() * camera.calc_matrix())).into();
-        self.location = [camera.position[0], camera.position[1], camera.position[2], 1.0];
-        // print!("{:?}\n", self.location);
+        self.inv_view_proj =
+            glm::inverse(&(projection.calc_matrix() * camera.calc_matrix())).into();
+        self.location = [
+            camera.position[0],
+            camera.position[1],
+            camera.position[2],
+            1.0,
+        ];
     }
 }
-pub struct CameraState{
+pub struct CameraState {
     pub camera: Camera,
     pub projection: Projection,
     pub camera_uniform: CameraUniform,
@@ -122,12 +123,18 @@ pub struct CameraState{
     pub camera_bind_group: wgpu::BindGroup,
 }
 
-impl CameraState{
+impl CameraState {
     pub fn new(
         device: &wgpu::Device,
-        eye: glm::TVec3<f32>, target: glm::TVec3<f32>, up: glm::TVec3<f32>, //camera
-        w: u32, h: u32, fovy: f32, znear: f32, zfar: f32, //projection
-    ) -> Self{
+        eye: glm::TVec3<f32>,
+        target: glm::TVec3<f32>,
+        up: glm::TVec3<f32>, //camera
+        w: u32,
+        h: u32,
+        fovy: f32,
+        znear: f32,
+        zfar: f32, //projection
+    ) -> Self {
         let camera = Camera::new(eye, target, up);
         let projection = Projection::new(w, h, fovy, znear, zfar);
 
@@ -164,13 +171,13 @@ impl CameraState{
             label: Some("camera_bind_group"),
         });
 
-        CameraState { 
-            camera, 
+        CameraState {
+            camera,
             projection,
             camera_uniform,
             camera_buffer,
             camera_bind_group_layout,
             camera_bind_group,
-         }
+        }
     }
 }

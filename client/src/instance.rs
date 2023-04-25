@@ -3,12 +3,13 @@ extern crate nalgebra_glm as glm;
 
 // Instances
 // Lets us duplicate objects in a scene with less cost
+#[derive(Debug, Clone)]
 pub struct Instance {
     pub transform: nalgebra_glm::TMat4<f32>,
 }
 
-pub struct InstanceState{
-    pub data : Vec<InstanceRaw>,
+pub struct InstanceState {
+    pub data: Vec<InstanceRaw>,
     pub buffer: wgpu::Buffer,
 }
 
@@ -25,14 +26,14 @@ impl Instance {
         }
     }
 
-    pub fn make_buffer(instances : &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
+    pub fn make_buffer(instances: &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
         let data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&data),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        InstanceState { data, buffer}
+        InstanceState { data, buffer }
     }
 }
 

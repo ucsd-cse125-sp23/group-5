@@ -18,14 +18,17 @@ log = "0.4"
 wgpu = "0.15"
 pollster = "0.3.0"
 queues = "1.0.2"
-bytemuck = { version = "1.12", features = [ "derive" ] }
-nalgebra-glm = "0.3"
+bytemuck = { version = "1.12", features = ["derive"] }
+nalgebra-glm = { version = "0.18.0"}
 instant = "0.1.12"
 tobj = { version = "3.2.1", features = [
     "async",
-]}
+] }
 anyhow = "1.0"
 cfg-if = "1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hashbrown = "0.13.2"
 
 [build-dependencies]
 anyhow = "1.0"

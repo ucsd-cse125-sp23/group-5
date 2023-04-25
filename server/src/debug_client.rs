@@ -2,10 +2,8 @@ use clap::Parser;
 use common::communication::commons::{Protocol, DEFAULT_SERVER_ADDR};
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::command::{Command, MoveDirection};
-use log::debug;
+
 use std::io::Write;
-use std::net::TcpListener;
-use std::time::SystemTime;
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(Parser)]
@@ -58,8 +56,8 @@ fn main() {
 
     loop {
         let input = prompt("> ");
-        let mut tokens = Vec::from_iter(input.split_whitespace());
-        if let Some(&command) = tokens.get(0) {
+        let tokens = Vec::from_iter(input.split_whitespace());
+        if let Some(&command) = tokens.first() {
             if command == "quit" {
                 break;
             }
