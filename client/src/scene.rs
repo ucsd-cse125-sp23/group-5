@@ -84,9 +84,9 @@ impl Scene {
     ) {
         // update the camera target
         if !(game_state.players.len() < client_id as usize) {
+            // when a new player come in
             if PREVIOUS_PLAYER_COUNT.fetch_add(0, Ordering::SeqCst) as usize
-                != game_state.players.len()
-            {
+                != game_state.players.len() {
                 self.add_other_player();
                 self.draw_scene_dfs(camera);
                 PREVIOUS_PLAYER_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -98,7 +98,7 @@ impl Scene {
             }
             // update player controller (player, camera, etc) with the latest player state
             player_controller.update(player, camera, player_state, dt);
-
+            // according to each player's instance, rendering their object
             let player_instances = self
                 .objects_and_instances
                 .get_mut(&ModelIndex {
@@ -106,12 +106,11 @@ impl Scene {
                 })
                 .unwrap();
             for (index, client_player_instance) in player_instances.iter_mut().enumerate() {
-                let server_player_state = game_state.players.get(index).unwrap();
-                let transformation = Player::calc_transf_matrix(
-                    server_player_state.transform.translation,
-                    server_player_state.transform.rotation,
+                let client_player_state = game_state.players.get(index).unwrap();
+                client_player_instance.transform = Player::calc_transf_matrix(
+                    client_player_state.transform.translation,
+                    client_player_state.transform.rotation,
                 );
-                client_player_instance.transform = transformation;
             }
         }
     }
