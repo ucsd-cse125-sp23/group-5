@@ -150,3 +150,134 @@ impl ScreenObject{
         }
     }
 }
+
+pub struct Screen{
+    pub name : String,
+    pub objects : Vec<ScreenObject>,
+}
+
+pub async fn get_screens(
+    texture_bind_group_layout_2d: &wgpu::BindGroupLayout,
+    device: &wgpu::Device,
+    queue: &wgpu::Queue
+) -> Vec<Screen>{
+    #[rustfmt::skip]
+    let rect_indices : Vec<u16> = vec![
+        0, 2, 1,
+        0, 3, 2,
+    ];
+
+    let title_vert : Vec<Vertex> = vec![
+        Vertex { position: [-1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
+        Vertex { position: [-1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
+        Vertex { position: [ 1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
+        Vertex { position: [ 1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
+    ];
+    #[rustfmt::skip]
+    let title_inst = vec![
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],]
+        },
+    ];
+    
+    #[rustfmt::skip]
+    let atk_bx_vert : Vec<Vertex> = vec![
+        Vertex { position: [-0.90, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [0.0, 1.0] }, // A
+        Vertex { position: [-0.90, 0.90], color: [1.0, 1.0, 1.0, 0.9], texture: [0.0, 0.0] }, // B
+        Vertex { position: [-0.30, 0.90], color: [1.0, 1.0, 1.0, 0.9], texture: [1.0, 0.0] }, // C
+        Vertex { position: [-0.30, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [1.0, 1.0] }, // D
+    ];
+
+    let atk_itm_vert : Vec<Vertex> = vec![
+        Vertex { position: [-0.88, 0.75], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
+        Vertex { position: [-0.88, 0.90], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
+        Vertex { position: [-0.78, 0.90], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
+        Vertex { position: [-0.78, 0.75], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
+    ];
+
+    #[rustfmt::skip]
+    let atk_bx_inst = vec![
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],]
+        },
+    ];
+    let atk_itm_inst = vec![
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.065, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.130, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.195, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.260, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.325, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.390, 0.0, 0.0, 1.0],]
+        },
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.455, 0.0, 0.0, 1.0],]
+        },
+    ];
+
+    let title_obj = ScreenObject::new(
+        &title_vert, &rect_indices, title_inst, "title_screen.jpg", 
+        texture_bind_group_layout_2d, device, queue).await;
+
+    let atk_box_obj = ScreenObject::new(
+        &atk_bx_vert, &rect_indices, atk_bx_inst, "back1.png", 
+        texture_bind_group_layout_2d, device, queue).await;
+
+    let atk_itm_obj = ScreenObject::new(
+        &atk_itm_vert, &rect_indices, atk_itm_inst, "wind.png", 
+        texture_bind_group_layout_2d, device, queue).await;
+    
+    vec![
+        Screen{
+            name: String::from("Title Screen"),
+            objects: vec![title_obj],
+        },
+        Screen{
+            name: String::from("Playing Screen"),
+            objects: vec![atk_box_obj, atk_itm_obj],
+        },
+    ]
+}
