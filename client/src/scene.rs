@@ -105,11 +105,13 @@ impl Scene {
                     index: ModelIndices::PLAYER as usize,
                 })
                 .unwrap();
-            for (index, p_state) in player_instances.iter_mut().enumerate() {
-                let player_state = game_state.players.get(index).unwrap();
-                let transformation = glm::translation(&player_state.transform.translation)
-                    * glm::quat_to_mat4(&player_state.transform.rotation);
-                p_state.transform = transformation;
+            for (index, client_player_instance) in player_instances.iter_mut().enumerate() {
+                let server_player_state = game_state.players.get(index).unwrap();
+                let transformation = Player::calc_transf_matrix(
+                    server_player_state.transform.translation,
+                    server_player_state.transform.rotation,
+                );
+                client_player_instance.transform = transformation;
             }
         }
     }

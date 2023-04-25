@@ -52,8 +52,8 @@ impl Player {
         }
     }
 
-    pub fn calc_transf_matrix(&self) -> glm::TMat4<f32> {
-        glm::translation(&self.position) * glm::quat_to_mat4(&self.rotation)
+    pub fn calc_transf_matrix(position: glm::TVec3<f32>, rotation: glm::Quat) -> glm::TMat4<f32> {
+        glm::translation(&position) * glm::quat_to_mat4(&rotation)
     }
 }
 
