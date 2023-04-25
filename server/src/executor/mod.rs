@@ -7,7 +7,7 @@ use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
 use itertools::Itertools;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 
@@ -101,6 +101,7 @@ impl Executor {
         if let Err(e) = handler.handle(&mut game_state, &mut self.physics_state.borrow_mut()) {
             error!("Failed to execute command: {:?}", e);
         }
+        info!("GameState: {:?}", game_state);
     }
 
     pub(crate) fn step(&self, delta_time: f32) {

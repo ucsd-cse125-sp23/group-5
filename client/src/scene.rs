@@ -79,7 +79,7 @@ impl Scene {
         client_id: u8,
     ) {
         // update the camera target
-        if !game_state.players.is_empty() {
+        if !(game_state.players.len() < client_id as usize) {
             let player_index = (client_id - 1) as usize;
             let player_state = &game_state.players[player_index];
             if player_index != (player_state.id - 1) as usize {
@@ -94,7 +94,7 @@ impl Scene {
                     index: ModelIndices::PLAYER as usize,
                 })
                 .unwrap();
-            player_instances[player_index].transform = player.calc_transf_matrix();
+            player_instances[0].transform = player.calc_transf_matrix();
         }
     }
 
