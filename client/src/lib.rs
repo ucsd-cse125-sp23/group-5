@@ -518,7 +518,7 @@ impl State {
             for i in self.scene.objects_and_instances.iter() {
                 let count = i.1.len();
                 let instanced_obj =
-                    model::InstancedModel::new(&self.scene.objects[i.0.index], i.1, &self.device);
+                    model::InstancedModel::new(&self.scene.objects[i.0.index], &i.1, &self.device);
                 instanced_objs.push((instanced_obj, count));
             }
 

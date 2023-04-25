@@ -57,10 +57,15 @@ impl InputEventProcessor {
     pub fn map_key(virtual_keycode: VirtualKeyCode) -> Option<(GameKeyKind, Command)> {
         match virtual_keycode {
             // match Holdable keys
-            VirtualKeyCode::W => Some((GameKeyKind::Holdable, Command::Move(vec3(0., 0., 1.)))),
-            VirtualKeyCode::A => Some((GameKeyKind::Holdable, Command::Move(vec3(1., 0., 0.)))),
-            VirtualKeyCode::S => Some((GameKeyKind::Holdable, Command::Move(vec3(0., 0., -1.)))),
-            VirtualKeyCode::D => Some((GameKeyKind::Holdable, Command::Move(vec3(-1., 0., 0.)))),
+            VirtualKeyCode::W => {
+                Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Forward)))
+            }
+            VirtualKeyCode::A => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Left))),
+            VirtualKeyCode::S => Some((
+                GameKeyKind::Holdable,
+                Command::Move(MoveDirection::Backward),
+            )),
+            VirtualKeyCode::D => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Right))),
             // match Pressable keys
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             // match PressRelease keys

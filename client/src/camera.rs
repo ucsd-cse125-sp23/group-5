@@ -76,11 +76,11 @@ pub struct CameraUniform {
     pub location: [f32; 4],
 }
 
+#[rustfmt::skip]
 impl CameraUniform {
     pub fn new() -> Self {
         Self {
             view_position: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
-            #[rustfmt::skip]
             view_proj: glm::mat4(
                 1.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0,
@@ -88,7 +88,6 @@ impl CameraUniform {
                 0.0, 0.0, 0.0, 1.0,
             )
             .into(),
-            #[rustfmt::skip]
             inv_view_proj: glm::mat4(
                 1.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0,

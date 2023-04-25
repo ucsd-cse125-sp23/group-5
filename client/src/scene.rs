@@ -1,8 +1,8 @@
 use crate::camera::Camera;
 use crate::instance::Instance;
-use crate::model::{self};
-
-
+use crate::model::{self, InstancedModel, Model};
+use crate::{instance, resources};
+use std::cell::Cell;
 use std::collections::HashMap;
 
 use nalgebra_glm as glm;
@@ -64,7 +64,8 @@ impl Scene {
         }
     }
 
-    pub fn draw_scene_dfs(&mut self, _camera: &Camera) {
+
+    pub fn draw_scene_dfs(&mut self, camera: &Camera) {
         // get the view matrix from the camera
         self.objects_and_instances.clear();
         let mat4_identity = glm::mat4(
@@ -111,7 +112,7 @@ impl Scene {
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
-                            cur_node.models[i].0,
+                            cur_node.models[i].0.clone(),
                             vec![Instance {
                                 transform: modelview,
                             }],
