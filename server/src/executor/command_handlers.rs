@@ -34,7 +34,7 @@ impl CommandHandler for StartupCommandHandler {
         let (models, _) = map.unwrap();
 
         // Physics state
-        let collider = rapier::ColliderBuilder::from_object_models(models).build();
+        let collider = rapier::ColliderBuilder::from_object_models(models).translation(rapier::vector![0.0, -9.7, 0.0]).build();
 
         physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
         Ok(())

@@ -151,7 +151,59 @@ impl State {
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
+        // Scene
+        let obj_model = resources::load_model(
+            "assets/island.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
+        .await
+        .unwrap();
+        // let instance_vec = vec![
+        //     instance::Instance{transform: glm::mat4(
+        //         1.0, 0.0, 0.0, 0.0,
+        //         0.0, 1.0, 0.0, 0.0,
+        //         0.0, 0.0, 1.0, 0.0, 
+        //         0.0, 0.0, 0.0, 1.0
+        //     )},
+        //     instance::Instance{transform: glm::mat4(
+        //         1.0, 0.0, 0.0, 10.0,
+        //         0.0, 1.0, 0.0, 2.0,
+        //         0.0, 0.0, 1.0, 2.0, 
+        //         0.0, 0.0, 0.0, 1.0
+        //     )},
+        // ];
+        // use cube as a placeholder player model for now
+        let player_obj =
+        resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
+        .await
+        .unwrap();
+
+        let cube_obj =
+        resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
+        .await
+        .unwrap();
+
+        let ferris_obj =
+        resources::load_model("assets/ferris.obj", &device, &queue, &texture_bind_group_layout)
+        .await
+        .unwrap();
+        // let cube_instance_vec = vec![
+        //     instance::Instance{transform: glm::mat4(
+        //         1.0, 0.0, 0.0, 5.0,
+        //         0.0, 1.0, 0.0, 10.0,
+        //         0.0, 0.0, 1.0, 5.0, 
+        //         0.0, 0.0, 0.0, 1.0
+        //     )},
+        // ];
+        // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
+
+        let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
+        scene.init_scene_graph();
+
+        // placeholder position, will get overriden by server
+        let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
         let player_controller = player::PlayerController::new(4.0, 0.7);
 
         let camera_state = camera::CameraState::new(
@@ -166,57 +218,7 @@ impl State {
             100.0,
         );
 
-        // Scene
-        let obj_model = resources::load_model(
-            "assets/island.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
-        let instance_vec = vec![
-            instance::Instance {
-                #[rustfmt::skip]
-                transform: glm::mat4(
-                    1.0, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.0, 0.0, 1.0,
-                ),
-            },
-            instance::Instance {
-                #[rustfmt::skip]
-                transform: glm::mat4(
-                    1.0, 0.0, 0.0, 10.0,
-                    0.0, 1.0, 0.0, 2.0,
-                    0.0, 0.0, 1.0, 2.0,
-                    0.0, 0.0, 0.0, 1.0,
-                ),
-            },
-        ];
-
-        let cube_model = resources::load_model(
-            "assets/cube.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
-        let cube_instance_vec = vec![instance::Instance {
-            #[rustfmt::skip]
-            transform: glm::mat4(
-                1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 1.0,
-            ),
-        }];
-        let scene = scene::Scene {
-            objects: vec![obj_model, cube_model],
-            instance_vectors: vec![instance_vec, cube_instance_vec],
-        };
+        scene.draw_scene_dfs(&camera_state.camera);
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -360,10 +362,13 @@ impl State {
                 player_state,
                 dt,
             );
+
+            // update player instance (replace 0 with player_id) (maybe move to scene graph later)
+            let player_instances = self.scene.objects_and_instances.get_mut(&scene::ModelIndex{index: scene::ModelIndices::PLAYER as usize}).unwrap();
+            player_instances[0].transform = self.player.calc_transf_matrix();
         }
 
-        // hard code updating player instance for now
-        self.scene.instance_vectors[1][0].transform = self.player.calc_transf_matrix();
+
 
         self.camera_state
             .camera_uniform
@@ -394,13 +399,10 @@ impl State {
             //placed up here because it needs to be dropped after the render pass
             let mut instanced_objs = Vec::new();
 
-            for i in 0..self.scene.objects.len() {
-                let instanced_model = model::InstancedModel::new(
-                    &self.scene.objects[i],
-                    &self.scene.instance_vectors[i],
-                    &self.device,
-                );
-                instanced_objs.push(instanced_model);
+            for i in self.scene.objects_and_instances.iter() {
+                let count = i.1.len();
+                let instanced_obj = model::InstancedModel::new(&self.scene.objects[i.0.index], &i.1, &self.device);
+                instanced_objs.push((instanced_obj, count));
             }
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -431,12 +433,8 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
-            for instanced_obj in instanced_objs.iter() {
-                render_pass.draw_model_instanced(
-                    instanced_obj,
-                    0..instanced_obj.num_instances as u32,
-                    &self.camera_state.camera_bind_group,
-                );
+            for obj in instanced_objs.iter() {
+                render_pass.draw_model_instanced(&obj.0, 0..obj.1 as u32, &self.camera_state.camera_bind_group);
             }
         }
 
