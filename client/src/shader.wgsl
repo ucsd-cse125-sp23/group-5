@@ -68,7 +68,7 @@ fn vs_main(
         world_coords[1] / world_coords[3],
         world_coords[2] / world_coords[3],
     );
-    out.normal = normal_matrix * model.normal;
+    out.normal = normalize(normal_matrix * model.normal);
     return out;
 }
 
