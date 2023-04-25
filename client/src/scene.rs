@@ -124,6 +124,7 @@ impl Scene {
                     index: ModelIndices::PLAYER as usize,
                 })
                 .unwrap();
+
             for (index, client_player_instance) in player_instances.iter_mut().enumerate() {
                 let client_player_state = game_state
                     .players

@@ -6,6 +6,7 @@ use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
+
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::RefCell;
