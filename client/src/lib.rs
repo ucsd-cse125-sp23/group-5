@@ -460,10 +460,7 @@ impl State {
 
     fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
-        // TODO: game state to scene graph conversion should be done in the scene graph itself
-        // like `scene_graph.load_game_state(game_state)`
-
-        // self.scene.load_game_state(game_state);
+        // game state to scene graph conversion and update
         self.scene.load_game_state(
             game_state,
             &mut self.player_controller,
@@ -472,7 +469,7 @@ impl State {
             dt,
             self.client_id,
         );
-
+        // camera update
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
@@ -481,6 +478,7 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
         );
+        // light update
         self.queue.write_buffer(
             &self.light_state.light_buffer,
             0,
