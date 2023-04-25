@@ -53,6 +53,10 @@ fn main() {
     // init connection with server and get client id
     let (client_id, session_id) = init_connection(&mut protocol_clone).unwrap();
 
+    // TODO: Remove Debug For build
+    // dump_ids(session_data_path, client_id + 1, session_id);
+
+    // Actual
     // write the client_id, session_id to file
     dump_ids(session_data_path, client_id, session_id);
 
