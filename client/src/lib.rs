@@ -204,7 +204,7 @@ impl State {
 
         // placeholder position, will get overriden by server
         let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
-        let player_controller = player::PlayerController::new(4.0, 0.7);
+        let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
@@ -358,7 +358,7 @@ impl State {
             // update player controller (player, camera, etc) with the latest player state
             self.player_controller.update(
                 &mut self.player,
-                &mut self.camera_state.camera,
+                &mut self.camera_state,
                 player_state,
                 dt,
             );
