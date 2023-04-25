@@ -81,6 +81,9 @@ impl ClientHandler {
 
         read_handler.join().unwrap();
         write_handler.join().unwrap();
+
+        //TODO: add code to remove disconnected clients
+
         warn!("Client disconnected");
     }
 

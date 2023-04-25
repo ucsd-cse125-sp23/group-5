@@ -9,6 +9,7 @@ pub struct PlayerState {
     pub physics: Physics,
     pub jump_count: u32,
     pub camera_forward: Vec3,
+    pub connected: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

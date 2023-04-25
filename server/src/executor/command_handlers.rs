@@ -85,6 +85,7 @@ impl CommandHandler for SpawnCommandHandler {
         // Game state (needed because syncing is only for the physical properties of entities)
         game_state.players.push(PlayerState {
             id: self.player_id,
+            connected: true,
             ..Default::default()
         });
         Ok(())
