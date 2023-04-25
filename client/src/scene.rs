@@ -269,6 +269,7 @@ impl Scene {
         let table_top_instance_c = Instance {
             transform: glm::translate(&mat4_identity, &glm::vec3(0.0, 1.5, 0.0)),
         };
+
         table_node.childnodes.push(NodeID::TABLE_TOP_NODE as i32);
         let table_leg_instance_1c = Instance {
             transform: glm::translate(&mat4_identity, &glm::vec3(-1.7, 0.0, -0.7)),
