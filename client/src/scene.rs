@@ -2,7 +2,7 @@ use crate::camera::{Camera, CameraState};
 use crate::instance::Instance;
 use crate::model::{self, InstancedModel, Model};
 use crate::{instance, resources};
-use glm::TMat4;
+use glm::{Quat, TMat4, TVec3};
 use log::error;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -105,7 +105,12 @@ impl Scene {
                     index: ModelIndices::PLAYER as usize,
                 })
                 .unwrap();
-            player_instances[0].transform = player.calc_transf_matrix();
+            for (index, p_state) in player_instances.iter_mut().enumerate() {
+                let player_state = game_state.players.get(index).unwrap();
+                let transformation = glm::translation(&player_state.transform.translation)
+                    * glm::quat_to_mat4(&player_state.transform.rotation);
+                p_state.transform = transformation;
+            }
         }
     }
 

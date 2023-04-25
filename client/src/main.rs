@@ -34,6 +34,7 @@ fn main() {
     // need to clone the protocol to be able to receive events and game states from different threads
     let mut protocol_clone = protocol.try_clone().unwrap();
 
+    // TODO: make the string path a Const/Static, debug mode for reconnection
     let session_data_path = env::current_dir()
         .unwrap()
         .as_path()
