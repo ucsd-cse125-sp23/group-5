@@ -135,6 +135,8 @@ impl Scene {
                     client_player_state.transform.rotation,
                 );
             }
+        } else {
+            self.index_to_id_map.insert(0, client_id as u32);
         }
     }
 
