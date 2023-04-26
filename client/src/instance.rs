@@ -16,10 +16,16 @@ pub struct InstanceState {
 impl Instance {
     pub fn to_raw(&self) -> InstanceRaw {
         let normal = glm::mat3(
-            self.transform[0], self.transform[4], self.transform[8],
-            self.transform[1], self.transform[5], self.transform[9],
-            self.transform[2], self.transform[6], self.transform[10],
-        ); 
+            self.transform[0],
+            self.transform[4],
+            self.transform[8],
+            self.transform[1],
+            self.transform[5],
+            self.transform[9],
+            self.transform[2],
+            self.transform[6],
+            self.transform[10],
+        );
         InstanceRaw {
             model: self.transform.into(),
             normal: normal.into(),
