@@ -1,5 +1,5 @@
-use log::error;
 use crate::simulation::entity::{Entity, EntityHandles};
+
 
 use rapier3d::parry::utils::hashmap::HashMap;
 use rapier3d::prelude::*;
@@ -62,7 +62,7 @@ impl PhysicsState {
             &mut self.ccd_solver,
             None,
             &(),
-            &event_handler
+            &event_handler,
         );
         while let Ok(collision_event) = collision_recv.try_recv() {
             // Handle the collision event.
@@ -170,7 +170,7 @@ impl PhysicsState {
         let character_pos = self.get_entity_rigid_body(entity).unwrap().position();
 
         let dt = self.integration_parameters.dt;
-        let gravity = self.gravity;
+        let _gravity = self.gravity;
         // Calculate the possible movement.
         let corrected_movement = self.character_controller.move_shape(
             dt,                   // The timestep length

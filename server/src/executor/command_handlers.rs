@@ -5,9 +5,9 @@ use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
+use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
 use std::fmt::Debug;
-use rapier3d::geometry::InteractionGroups;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -18,7 +18,7 @@ type HandlerResult = Result<(), HandlerError>;
 
 pub trait CommandHandler {
     fn handle(&self, game_state: &mut GameState, physics_state: &mut PhysicsState)
-              -> HandlerResult;
+        -> HandlerResult;
 }
 
 #[derive(Constructor)]
@@ -35,7 +35,9 @@ impl CommandHandler for StartupCommandHandler {
         let (models, _) = map.unwrap();
 
         // Physics state
-        let collider = rapier::ColliderBuilder::from_object_models(models).translation(rapier::vector![0.0, -9.7, 0.0]).build();
+        let collider = rapier::ColliderBuilder::from_object_models(models)
+            .translation(rapier::vector![0.0, -9.7, 0.0])
+            .build();
 
         physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
         Ok(())
@@ -80,7 +82,6 @@ impl CommandHandler for SpawnCommandHandler {
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
-
         // Game state (needed because syncing is only for the physical properties of entities)
         game_state.players.push(PlayerState {
             id: self.player_id,
@@ -99,9 +100,9 @@ pub struct UpdateCameraFacingCommandHandler {
 impl CommandHandler for UpdateCameraFacingCommandHandler {
     fn handle(&self, game_state: &mut GameState, _: &mut PhysicsState) -> HandlerResult {
         // Game state
-        let player = game_state.player_mut(self.player_id).ok_or_else(|| {
-            HandlerError::new(format!("Player {} not found", self.player_id))
-        })?;
+        let player = game_state
+            .player_mut(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         player.camera_forward = self.forward;
         Ok(())
@@ -121,16 +122,16 @@ impl CommandHandler for MoveCommandHandler {
         physics_state: &mut PhysicsState,
     ) -> HandlerResult {
         // Physics state
-        let dir_vec = match self.direction {
-            MoveDirection::Forward => rapier::vector![0.0, 0.0, 1.0],
-            MoveDirection::Backward => rapier::vector![0.0, 0.0, -1.0],
-            MoveDirection::Left => rapier::vector![1.0, 0.0, 0.0],
-            MoveDirection::Right => rapier::vector![-1.0, 0.0, 0.0],
-        };
+        if self.direction.eq(&MoveDirection::zeros()) {
+            return Ok(());
+        }
 
-        let player_state = game_state.player(self.player_id).ok_or_else(|| {
-            HandlerError::new(format!("Player {} not found", self.player_id))
-        })?;
+        // normalize the direction vector
+        let dir_vec = self.direction.normalize();
+
+        let player_state = game_state
+            .player(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // rotate the direction vector to face the camera (only take the x and z components)
         let dt = physics_state.dt();
@@ -197,27 +198,39 @@ pub struct JumpCommandHandler {
 }
 
 impl CommandHandler for JumpCommandHandler {
-    fn handle(&self, game_state: &mut GameState, physics_state: &mut PhysicsState) -> HandlerResult {
-
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+    ) -> HandlerResult {
         // check if player is touching the ground
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
-            .ok_or(HandlerError::new( format!("Player {} not found", self.player_id)))?
+            .ok_or(HandlerError::new(format!(
+                "Player {} not found",
+                self.player_id
+            )))?
             .collider
-            .ok_or(HandlerError::new( format!("Player {} does not have a collider", self.player_id)))?;
+            .ok_or(HandlerError::new(format!(
+                "Player {} does not have a collider",
+                self.player_id
+            )))?;
 
         let ground_collider_handle = physics_state
             .get_entity_handles(0)
-            .ok_or(HandlerError::new( "Ground not found".to_string()))?
+            .ok_or(HandlerError::new("Ground not found".to_string()))?
             .collider
-            .ok_or(HandlerError::new( "Ground does not have a collider".to_string()))?;
+            .ok_or(HandlerError::new(
+                "Ground does not have a collider".to_string(),
+            ))?;
 
-        let pair = physics_state.narrow_phase.contact_pair(player_collider_handle, ground_collider_handle);
+        let pair = physics_state
+            .narrow_phase
+            .contact_pair(player_collider_handle, ground_collider_handle);
 
-
-        let mut player_state = game_state.player_mut(self.player_id).ok_or_else(|| {
-            HandlerError::new(format!("Player {} not found", self.player_id))
-        })?;
+        let mut player_state = game_state
+            .player_mut(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         if pair.is_some() {
             player_state.jump_count = 0;

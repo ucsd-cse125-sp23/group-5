@@ -4,8 +4,9 @@ use crate::executor::command_handlers::{
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::Command;
+use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
+use itertools::Itertools;
 use log::{debug, error, warn};
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
@@ -44,6 +45,35 @@ impl Executor {
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state) {
             panic!("Failed init executor game/physics states: {:?}", e);
         }
+    }
+
+    pub(crate) fn plan_and_execute(&self, commands: Vec<ClientCommand>) {
+        // aggregate concurrent movement commands from the same client into a single command
+        let movement_commands = commands
+            .iter()
+            .filter(|command| matches!(command.command, Command::Move(_)))
+            .into_grouping_map_by(|&command| command.client_id)
+            .aggregate(|acc, _key, val| {
+                Some(Command::Move(
+                    val.command.unwrap_move()
+                        + acc
+                            .unwrap_or(Command::Move(MoveDirection::zeros()))
+                            .unwrap_move(),
+                ))
+            })
+            .iter()
+            .map(|(key, val)| ClientCommand {
+                client_id: *key,
+                command: val.clone(),
+            })
+            .collect::<Vec<_>>();
+
+        // execute all commands
+        commands
+            .into_iter()
+            .filter(|command| !matches!(command.command, Command::Move(_)))
+            .chain(movement_commands.into_iter())
+            .for_each(|command| self.execute(command));
     }
 
     /// Executes a command issued by a client.
