@@ -9,7 +9,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{net::TcpListener, thread};
 
-use common::communication::commons::{DEFAULT_SERVER_ADDR, CSE125_SERVER_ADDR};
+use common::communication::commons::{DEFAULT_SERVER_ADDR, CSE125_SERVER_ADDR, CSE125_CLIENTS_ADDR};
 
 use server::executor::Executor;
 use threadpool::ThreadPool;
@@ -37,7 +37,7 @@ fn main() {
     executor.init();
 
     // start of server listening
-    let listener = TcpListener::bind(CSE125_SERVER_ADDR).unwrap();
+    let listener = TcpListener::bind(CSE125_CLIENTS_ADDR).unwrap();
     let pool = ThreadPool::new(4);
 
     // starting game loop
