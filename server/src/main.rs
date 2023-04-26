@@ -37,7 +37,7 @@ fn main() {
     executor.init();
 
     // start of server listening
-    let listener = TcpListener::bind(CSE125_CLIENTS_ADDR).unwrap();
+    let listener = TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap();
     let pool = ThreadPool::new(4);
 
     // starting game loop
