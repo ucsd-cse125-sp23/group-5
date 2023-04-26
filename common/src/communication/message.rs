@@ -134,7 +134,7 @@ impl Deserialize for Message {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::command::MoveDirection;
+    use nalgebra_glm::vec3;
 
     #[test]
     fn test_message_serialize_pin() {
@@ -168,7 +168,7 @@ mod tests {
     fn test_message_round_trip_command() {
         let msg = Message::new(
             HostRole::Server,
-            Payload::Command(Command::Move(MoveDirection::Left)),
+            Payload::Command(Command::Move(vec3(1.0, 2.0, 3.0))),
         );
         let mut buf = Vec::new();
         msg.serialize(&mut buf).unwrap();

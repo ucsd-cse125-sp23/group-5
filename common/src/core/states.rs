@@ -7,6 +7,7 @@ pub struct PlayerState {
     pub id: u32,
     pub transform: Transform,
     pub physics: Physics,
+    pub jump_count: u32,
     pub camera_forward: Vec3,
 }
 
@@ -17,6 +18,16 @@ pub struct WorldState {}
 pub struct GameState {
     pub world: WorldState,
     pub players: Vec<PlayerState>,
+}
+
+impl GameState {
+    pub fn player_mut(&mut self, id: u32) -> Option<&mut PlayerState> {
+        self.players.iter_mut().find(|p| p.id == id)
+    }
+
+    pub fn player(&self, id: u32) -> Option<&PlayerState> {
+        self.players.iter().find(|p| p.id == id)
+    }
 }
 
 mod tests {
