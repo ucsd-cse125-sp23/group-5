@@ -25,7 +25,7 @@ fn main() {
     let (tx, rx) = mpsc::channel::<Input>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
-    let dest: SocketAddr = DEFAULT_SERVER_ADDR
+    let dest: SocketAddr = CSE125_SERVER_ADDR
         .parse()
         .expect("server addr parse fails");
 
