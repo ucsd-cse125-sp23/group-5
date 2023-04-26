@@ -543,7 +543,7 @@ impl State {
 
             // TO REMOVE: for testing
             if self.screen_ind == 1{
-                self.screens[self.screen_ind].ranges[1] = (0..2);
+                self.screens[self.screen_ind].ranges[1] = 0..5;
             }
             
             for i in 0..self.screens[self.screen_ind].objects.len(){
