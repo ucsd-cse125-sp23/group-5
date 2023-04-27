@@ -124,6 +124,13 @@ pub async fn load_model(
                 load_texture(d, device, queue).await?
             },
         };
+        let normal_texture = match m.normal_texture.as_str() {
+            "" => texture::Texture::dummy(device),
+            d => {
+                flags |= model::ShaderFlags::HAS_NORMAL_TEXTURE;
+                load_texture(d, device, queue).await?
+            },
+        };
         let flags_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Shader Flags VB"),
             contents: bytemuck::cast_slice(&[flags]),
@@ -135,19 +142,27 @@ pub async fn load_model(
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
                     resource: phong_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 3,
+                    binding: 1,
                     resource: flags_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&normal_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Sampler(&normal_texture.sampler),
                 },
             ],
             label: None,
@@ -156,6 +171,7 @@ pub async fn load_model(
         materials.push(model::Material {
             name: m.name,
             diffuse_texture,
+            normal_texture,
             phong_mtl,
             flags: model::ShaderFlags::new(flags),
             bind_group,
@@ -183,17 +199,6 @@ pub async fn load_model(
                     bitangent: [0.0; 3],
                 })
                 .collect::<Vec<_>>();
-
-            let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{:?} Vertex Buffer", file_name)),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
-            let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{:?} Index Buffer", file_name)),
-                contents: bytemuck::cast_slice(&m.mesh.indices),
-                usage: wgpu::BufferUsages::INDEX,
-            });
 
             let indices = &m.mesh.indices;
             let mut triangles_included = vec![0; vertices.len()];
@@ -260,6 +265,17 @@ pub async fn load_model(
                 v.tangent = (glm::Vec3::from(v.tangent) * denom).into();
                 v.bitangent = (glm::Vec3::from(v.bitangent) * denom).into();
             }
+
+            let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{:?} Vertex Buffer", file_name)),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+            let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{:?} Index Buffer", file_name)),
+                contents: bytemuck::cast_slice(&m.mesh.indices),
+                usage: wgpu::BufferUsages::INDEX,
+            });
 
             model::Mesh {
                 name: file_name.to_string(),
