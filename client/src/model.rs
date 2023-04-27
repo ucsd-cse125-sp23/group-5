@@ -72,6 +72,11 @@ pub struct ShaderFlags {
 
 impl ShaderFlags {
     pub const HAS_DIFFUSE_TEXTURE: u32 = 1;
+    pub const HAS_AMBIENT_TEXTURE: u32 = 2;
+    pub const HAS_SPECULAR_TEXTURE: u32 = 4;
+    pub const HAS_NORMAL_TEXTURE: u32 = 8;
+    pub const HAS_SHININESS_TEXTURE: u32 = 16;
+
     pub fn new(flags: u32) -> Self {
         Self { flags }
     }
@@ -104,6 +109,8 @@ pub struct ModelVertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
+    pub tangent: [f32; 3],
+    pub bitangent: [f32; 3],
 }
 
 impl Vertex for ModelVertex {
@@ -126,6 +133,16 @@ impl Vertex for ModelVertex {
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
                     shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 11]>() as wgpu::BufferAddress,
+                    shader_location: 4,
                     format: wgpu::VertexFormat::Float32x3,
                 },
             ],

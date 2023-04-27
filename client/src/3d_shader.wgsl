@@ -25,6 +25,8 @@ struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec2<f32>,
     @location(2) normal: vec3<f32>,
+    @location(3) tangent: vec3<f32>,
+    @location(4) bitangent: vec3<f32>,
 }
 struct InstanceInput {
     @location(5) model_matrix_0: vec4<f32>,
@@ -95,6 +97,10 @@ var<uniform> phong_mtl : PhongUniform;
 @group(0) @binding(3)
 var<uniform> flags : u32;
 const HAS_DIFFUSE_TEXTURE :u32 = 1u;
+const HAS_AMBIENT_TEXTURE: u32 = 2u;
+const HAS_SPECULAR_TEXTURE: u32 = 4u;
+const HAS_NORMAL_TEXTURE: u32 = 8u;
+const HAS_SHININESS_TEXTURE: u32 = 16u;
 const EMPTY_FLAG :u32 = 0u;
 
 @fragment

@@ -132,4 +132,36 @@ impl Texture {
             sampler,
         })
     }
+
+    pub fn dummy(device: &wgpu::Device) -> Self{
+        //Create dummy texture
+        let wgpu_t = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("1x1 white"),
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::R8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let view = wgpu_t.create_view(&wgpu::TextureViewDescriptor::default());
+        Self {
+            texture: wgpu_t,
+            view,
+            sampler: device.create_sampler(&wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::FilterMode::Nearest,
+                ..Default::default()
+            }),
+        }
+    }
 }
