@@ -161,15 +161,26 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
         // diffuse
         var d_int = dot(normal, light_dir);
+        // if (d_int < 0.0){
+        //     color +=  light_col * diffuse * 0.0;
+        // } else if (d_int  < 0.25){
+        //     color +=  light_col * diffuse * 0.5;
+        // } else if (d_int  < 0.50){
+        //     color +=  light_col * diffuse * 0.7;
+        // } else {
+        //     color +=  light_col * diffuse;
+        // }
+
+        var tmp = light_col * diffuse;
         if (d_int < 0.0){
-            color +=  light_col * diffuse * 0.0;
+            color +=  vec3<f32>(pow(tmp[0], 10.0), pow(tmp[1], 10.0), pow(tmp[2], 10.0));
         } else if (d_int  < 0.25){
-            color +=  light_col * diffuse * 0.5;
+            color +=  vec3<f32>(pow(tmp[0], 6.0), pow(tmp[1], 6.0), pow(tmp[2], 6.0));
         } else if (d_int  < 0.50){
-            color +=  light_col * diffuse * 0.7;
+            color +=  vec3<f32>(pow(tmp[0], 2.2), pow(tmp[1], 2.2), pow(tmp[2], 2.2));
         } else {
-            color +=  light_col * diffuse;
-        }
+            color +=  tmp;
+        }    
         // color += light_col * diffuse * max(d_int, 0.0);
         
         // specular
