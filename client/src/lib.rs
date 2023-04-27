@@ -187,6 +187,22 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
+        let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
+        // let player_controller = player::PlayerController::new(4.0, 1.0, 0.7);
+        let player_controller = player::PlayerController::new(4.0, 1.0, 0.1);
+
+        let camera_state = camera::CameraState::new(
+            &device,
+            player.position + glm::vec3(-5.0, 15.0, 0.0),
+            player.position,
+            glm::vec3(0.0, 1.0, 0.0),
+            config.width,
+            config.height,
+            45.0,
+            0.1,
+            100.0,
+        );
+
         // Scene
         let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 

@@ -1,6 +1,6 @@
 use crate::executor::command_handlers::{
-    CommandHandler, JumpCommandHandler, MoveCommandHandler, SpawnCommandHandler,
-    StartupCommandHandler, UpdateCameraFacingCommandHandler,
+    CommandHandler, JumpCommandHandler, MoveCommandHandler, RespawnCommandHandler,
+    SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
@@ -16,6 +16,7 @@ use std::sync::{Arc, Mutex};
 
 mod command_handlers;
 
+pub const DEFAULT_RESPAWN_LIMIT: f32 = -20.0; // 5ms
 /// Executor is a struct that is used to execute a command issued by a client.
 /// It maintains the state of the game and is responsible for updating it.
 pub struct Executor {
@@ -89,6 +90,7 @@ impl Executor {
         // TODO: client id should not be passed to the constructor here, it should be passed to the handle method waiting other handlers to be completed before fixing this
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
+            Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
@@ -130,8 +132,19 @@ impl Executor {
         }
     }
 
+
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
         self.game_events.replace(Vec::new())
+    }
+
+    pub(crate) fn check_respawn_players(&self) -> Vec<u32> {
+        self.game_state()
+            .players
+            .iter()
+            .filter(|(_, player)| player.transform.translation.y < DEFAULT_RESPAWN_LIMIT)
+            .map(|(&id, _)| id)
+            .collect::<Vec<_>>()
+
     }
 
     /// get a clone of the game state

@@ -91,7 +91,7 @@ impl CommandHandler for SpawnCommandHandler {
             .build();
 
         let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-            .translation(rapier::vector![0.0, 4.0, 0.0])
+            .translation(rapier::vector![0.0, 3.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
@@ -104,6 +104,30 @@ impl CommandHandler for SpawnCommandHandler {
                 ..Default::default()
             },
         );
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
+pub struct RespawnCommandHandler {
+    player_id: u32,
+}
+
+impl CommandHandler for RespawnCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+    ) -> HandlerResult {
+        let ground_groups = InteractionGroups::new(1.into(), 1.into());
+        let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
+            .collision_groups(ground_groups)
+            .build();
+
+        let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
+            .translation(rapier::vector![0.0, 3.0, 0.0])
+            .build();
+        physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
         Ok(())
     }
 }
