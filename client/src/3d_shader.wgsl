@@ -224,5 +224,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         // color += light_col * specular * pow (max(nDotH, 0.0), s) * gloss; 
     }
 
+    // color = vec3<f32>(in.tex_coords, 0.0);
     return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;
 }

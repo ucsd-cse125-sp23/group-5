@@ -25,7 +25,7 @@ d 1.000000
 illum 3
 map_Kd mat1_c.jpg
 map_Ks mat1_s.jpg
-map_Bump -bm 1.000000 mat1_n.jpg
+# map_Bump -bm 1.000000 mat1_n.jpg
 
 newmtl flower
 Ns 360.000000

@@ -257,7 +257,7 @@ impl State {
 
         // Scene
         let obj_model = resources::load_model(
-            "assets/island.obj",
+            "assets/islands_set_landscape.obj",
             &device,
             &queue,
             &texture_bind_group_layout,
