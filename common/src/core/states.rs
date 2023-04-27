@@ -24,11 +24,11 @@ pub struct GameState {
 
 impl GameState {
     pub fn player_mut(&mut self, id: u32) -> Option<&mut PlayerState> {
-        self.players.iter_mut().find(|p| p.id == id)
+        self.players.get_mut(&id)
     }
 
     pub fn player(&self, id: u32) -> Option<&PlayerState> {
-        self.players.iter().find(|p| p.id == id)
+        self.players.get(&id)
     }
 }
 

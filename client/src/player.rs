@@ -68,7 +68,7 @@ pub struct PlayerController {
 }
 
 impl PlayerController {
-    pub fn new(x_sensitivity: f32, y_sensitivity: f32, scroll_sensitivity:f32) -> Self {
+    pub fn new(x_sensitivity: f32, y_sensitivity: f32, scroll_sensitivity: f32) -> Self {
         Self {
             rotate_horizontal: 0.0,
             rotate_vertical: 0.0,
@@ -112,7 +112,8 @@ impl PlayerController {
 
         camera_state.camera.position += pos_delta;
 
-        let mut spherical_coords = cartesian_to_spherical(&(camera_state.camera.position - player.position));
+        let mut spherical_coords =
+            cartesian_to_spherical(&(camera_state.camera.position - player.position));
 
         // update camera
         let dt = dt.as_secs_f32();
@@ -134,7 +135,9 @@ impl PlayerController {
         camera_state.camera.position = translation + spherical_to_cartesian(&spherical_coords);
 
         // update camera zoom (can tune parameters later)
-        camera_state.projection.fovy = (camera_state.projection.fovy + self.scroll * self.scroll_sensitivity * dt).clamp(PI/6.0, PI/3.0);
-        self.scroll = 0.0; 
+        camera_state.projection.fovy = (camera_state.projection.fovy
+            + self.scroll * self.scroll_sensitivity * dt)
+            .clamp(PI / 6.0, PI / 3.0);
+        self.scroll = 0.0;
     }
 }

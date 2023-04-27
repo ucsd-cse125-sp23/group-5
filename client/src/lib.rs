@@ -465,7 +465,7 @@ impl State {
             game_state,
             &mut self.player_controller,
             &mut self.player,
-            &mut self.camera_state.camera,
+            &mut self.camera_state,
             dt,
             self.client_id,
         );

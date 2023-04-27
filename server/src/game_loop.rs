@@ -112,9 +112,9 @@ impl GameLoop<'_> {
 mod tests {
     use super::*;
     use common::core::command::Command::UpdateCamera;
-    
+
     use common::core::states::GameState;
-    use nalgebra_glm::{Vec3, vec3};
+    use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
 
@@ -164,7 +164,8 @@ mod tests {
 
             assert_eq!(rx2.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced by now
 
-            tx.send(ClientCommand::new(1, Command::Move(vec3(1., 0., 0.)))).unwrap();
+            tx.send(ClientCommand::new(1, Command::Move(vec3(1., 0., 0.))))
+                .unwrap();
         });
 
         game_loop.run(); // this should block until the game loop is stopped at 500ms

@@ -80,7 +80,7 @@ impl Scene {
         game_state: MutexGuard<GameState>,
         player_controller: &mut PlayerController,
         player: &mut Player,
-        camera: &mut Camera,
+        camera_state: &mut CameraState,
         dt: instant::Duration,
         client_id: u8,
     ) {
@@ -95,7 +95,7 @@ impl Scene {
                 != game_state.players.len()
             {
                 self.add_other_player();
-                self.draw_scene_dfs(camera);
+                self.draw_scene_dfs(&camera_state.camera);
                 PREVIOUS_PLAYER_COUNT.fetch_add(1, Ordering::SeqCst);
                 let mut new_mapped_id: u32 = 1;
 
@@ -115,7 +115,7 @@ impl Scene {
                 error!("ids don't match");
             }
             // update player controller (player, camera, etc) with the latest player state
-            player_controller.update(player, camera, player_state, dt);
+            player_controller.update(player, camera_state, player_state, dt);
 
             // according to each player's instance, rendering their object, rendering all
             let player_instances = self
