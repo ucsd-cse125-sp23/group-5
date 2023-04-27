@@ -186,6 +186,15 @@ pub async fn get_screens(
         },
     ];
     let title_inst_num = title_inst.len() as u32;
+    let title_hover_inst = vec![
+        ScreenInstance{
+            transform: [[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],]
+        },
+    ];
+    let title_hover_inst_num = title_inst.len() as u32;
     
     #[rustfmt::skip]
     let atk_bx_vert : Vec<Vertex> = vec![
@@ -265,7 +274,11 @@ pub async fn get_screens(
     let atk_itm_inst_num = atk_itm_inst.len() as u32;
 
     let title_obj = ScreenObject::new(
-        &title_vert, &rect_indices, title_inst, "title_screen.jpg", 
+        &title_vert, &rect_indices, title_inst, "start_screen_default.jpg", 
+        texture_bind_group_layout_2d, device, queue).await;
+
+    let title_hover_obj = ScreenObject::new(
+        &title_vert, &rect_indices, title_hover_inst, "start_screen_hover.jpg", 
         texture_bind_group_layout_2d, device, queue).await;
 
     let atk_box_obj = ScreenObject::new(
@@ -279,8 +292,8 @@ pub async fn get_screens(
     vec![
         Screen{
             name: String::from("Title Screen"),
-            objects: vec![title_obj],
-            ranges: vec![(0..title_inst_num)],
+            objects: vec![title_obj, title_hover_obj],
+            ranges: vec![(0..title_inst_num), (0..0)],
         },
         Screen{
             name: String::from("Playing Screen"),
@@ -288,4 +301,23 @@ pub async fn get_screens(
             ranges: vec![(0..atk_bx_inst_num), (0..atk_itm_inst_num)],
         },
     ]
+}
+
+// only for title screen right now
+pub fn update_screen(width: u32, height: u32, device: &wgpu::Device, screen: &mut ScreenObject){
+    let aspect: f32 = (width as f32)/(height as f32);
+    const title_ar : f32 = 16.0/9.0;
+    let title_x_span_half = (glm::clamp_scalar(aspect / title_ar,0.0, 1.0)) / 2.0;
+    let title_vert : Vec<Vertex> = vec![
+        Vertex { position: [-1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 - title_x_span_half, 1.0] }, // A
+        Vertex { position: [-1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 - title_x_span_half, 0.0] }, // B
+        Vertex { position: [ 1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 + title_x_span_half, 0.0] }, // C
+        Vertex { position: [ 1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 + title_x_span_half, 1.0] }, // D
+    ];
+    let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Screen Obj Vertex Buffer"),
+        contents: bytemuck::cast_slice(&title_vert),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+    screen.vbuf = vbuf;
 }
