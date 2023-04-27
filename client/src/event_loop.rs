@@ -42,7 +42,7 @@ impl PlayerLoop {
             .build(&event_loop)
             .unwrap();
 
-        let mut state = State::new(window).await;
+        let mut state = State::new(window, self.client_id).await;
 
         //To check
         let mut last_render_time = instant::Instant::now();

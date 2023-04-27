@@ -25,6 +25,10 @@ fn main() {
     let (tx, rx) = mpsc::channel::<Input>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
+    #[cfg(not(feature = "debug-addr"))]
+    let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
+
+    #[cfg(feature = "debug-addr")]
     let dest: SocketAddr = DEFAULT_SERVER_ADDR
         .parse()
         .expect("server addr parse fails");
@@ -34,6 +38,7 @@ fn main() {
     // need to clone the protocol to be able to receive events and game states from different threads
     let mut protocol_clone = protocol.try_clone().unwrap();
 
+    // TODO: make the string path a Const/Static, debug mode for reconnection
     let session_data_path = env::current_dir()
         .unwrap()
         .as_path()
@@ -52,8 +57,14 @@ fn main() {
     // init connection with server and get client id
     let (client_id, session_id) = init_connection(&mut protocol_clone).unwrap();
 
+    // prod
     // write the client_id, session_id to file
-    dump_ids(session_data_path, client_id, session_id);
+    #[cfg(not(feature = "debug-recon"))]
+    dump_ids(session_data_path.clone(), client_id, session_id);
+
+    // for debug
+    #[cfg(feature = "debug-recon")]
+    dump_ids(session_data_path.clone(), client_id + 1, session_id);
 
     let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
 

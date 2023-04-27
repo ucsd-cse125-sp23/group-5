@@ -13,6 +13,14 @@ pub enum GameAction {
     Jump,
 }
 
+/// Spawn type that can be issued by the client
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SpawnType {
+    NewSpawn,
+    Respawn,
+    Dead,
+}
+
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {

@@ -24,3 +24,8 @@ itertools = "0.10.5"
 
 [dev-dependencies]
 approx = "0.5.1"
+
+[features]
+prod = []
+debug = ["debug-addr"]
+debug-addr = []
