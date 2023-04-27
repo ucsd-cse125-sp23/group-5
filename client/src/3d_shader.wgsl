@@ -120,12 +120,18 @@ var s_specular: sampler;
 var t_ambient: texture_2d<f32>;
 @group(0) @binding(9)
 var s_ambient: sampler;
+@group(0) @binding(10)
+var t_shininess: texture_2d<f32>;
+@group(0) @binding(11)
+var s_shininess: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var ambient = phong_mtl.ambient;
     var diffuse = phong_mtl.diffuse;
     var specular = phong_mtl.specular;
+    var s = phong_mtl.shininess;
+    var gloss = 1.0;
     if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
         var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
         diffuse = vec3<f32>(t[0], t[1], t[2]);
@@ -137,6 +143,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     if ((HAS_SPECULAR_TEXTURE & flags) != EMPTY_FLAG){
         var t = textureSample(t_specular, s_specular, in.tex_coords);
         specular = vec3<f32>(t[0], t[1], t[2]);
+    }
+    if ((HAS_SHININESS_TEXTURE & flags) != EMPTY_FLAG){
+        var t = textureSample(t_specular, s_specular, in.tex_coords);
+        // should be grayscale
+        // TODO: not sure if this is something to multiply later 
+        //       or if it represents Ns
+        gloss = t[0];
     }
 
     var color : vec3<f32> = 0.1 * ambient;
@@ -190,7 +203,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         //     color +=  light_col * diffuse;
         // }
 
-        var tmp = light_col * diffuse;
+        var tmp = light_col * diffuse * attenuation;
         if (d_int < 0.0){
             color +=  vec3<f32>(pow(tmp[0], 10.0), pow(tmp[1], 10.0), pow(tmp[2], 10.0));
         } else if (d_int  < 0.25){
@@ -205,9 +218,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         // specular
         var half_vec : vec3<f32> = normalize(eye_dirn + light_dir);
         var nDotH : f32 = dot(normal, half_vec);
-        if (pow (max(nDotH, 0.0), phong_mtl.shininess) * attenuation > 0.7){
-            color += light_col * specular; 
+        if (pow (max(nDotH, 0.0), s) > 0.7){
+            color += light_col * specular * gloss * attenuation; 
         }
+        // color += light_col * specular * pow (max(nDotH, 0.0), s) * gloss; 
     }
 
     return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;

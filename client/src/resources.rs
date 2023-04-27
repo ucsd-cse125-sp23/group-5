@@ -145,6 +145,13 @@ pub async fn load_model(
                 load_texture(d, device, queue).await?
             },
         };
+        let shininess_texture = match m.shininess_texture.as_str() {
+            "" => texture::Texture::dummy(device),
+            d => {
+                flags |= model::ShaderFlags::HAS_SHININESS_TEXTURE;
+                load_texture(d, device, queue).await?
+            },
+        };
         let flags_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Shader Flags VB"),
             contents: bytemuck::cast_slice(&[flags]),
@@ -194,6 +201,14 @@ pub async fn load_model(
                     binding: 9,
                     resource: wgpu::BindingResource::Sampler(&ambient_texture.sampler),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 10,
+                    resource: wgpu::BindingResource::TextureView(&shininess_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 11,
+                    resource: wgpu::BindingResource::Sampler(&shininess_texture.sampler),
+                },
             ],
             label: None,
         });
@@ -204,6 +219,7 @@ pub async fn load_model(
             normal_texture,
             specular_texture,
             ambient_texture,
+            shininess_texture,
             phong_mtl,
             flags: model::ShaderFlags::new(flags),
             bind_group,
