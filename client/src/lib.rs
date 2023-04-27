@@ -474,7 +474,7 @@ impl State {
             light_state,
 
             screens,
-            screen_ind: 1,
+            screen_ind: 0,
         }
     }
 
@@ -500,6 +500,8 @@ impl State {
                 0,
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
+
+            screen_objects::update_screen(new_size.width, new_size.height, &self.device, &mut self.screens[0].objects[0]);
 
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
