@@ -45,6 +45,7 @@ features = ["png", "jpeg"]
 
 [features]
 prod = []
-debug = ["debug-addr", "debug-recon"]
+debug = ["debug-addr", "debug-recon", "debug-lobby"]
 debug-addr = []
 debug-recon = []
+debug-lobby = []

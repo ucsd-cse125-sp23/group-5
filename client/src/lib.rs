@@ -408,7 +408,10 @@ impl State {
             depth_texture,
             light_state,
             screens,
+            #[cfg(not(feature = "debug-lobby"))]
             screen_ind: 0,
+            #[cfg(feature = "debug-lobby")]
+            screen_ind: 1,
             client_id,
         }
     }
