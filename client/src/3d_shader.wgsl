@@ -173,43 +173,45 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color += diffuse;
 
-    // for (var ind: u32 = 0u; ind < lights.num_lights; ind = ind + 1u) {
-    //     var light_dir : vec3<f32>;
-    //     var attenuation: f32 = 1.0;
-    //     var light_col  = vec3<f32>(lights.colors[ind][0], lights.colors[ind][1], lights.colors[ind][2]);
-    //     if (lights.positions[ind][3] == 0.0){ // directional light
-    //         light_dir = normalize(vec3<f32>(
-    //             lights.positions[ind][0], 
-    //             lights.positions[ind][1], 
-    //             lights.positions[ind][2]
-    //         ));
-    //     } else { // point light
-    //         var disp = vec3<f32>(
-    //             lights.positions[ind][0] / lights.positions[ind][3], 
-    //             lights.positions[ind][1] / lights.positions[ind][3], 
-    //             lights.positions[ind][2] / lights.positions[ind][3],
-    //         ) - in.world_coords;
-    //         attenuation = 1.0 / (0.01 * dot(disp, disp) + 1.0);
-    //         light_dir = normalize(disp);
-    //     }
+    for (var ind: u32 = 0u; ind < lights.num_lights; ind = ind + 1u) {
+        var light_dir : vec3<f32>;
+        var attenuation: f32 = 1.0;
+        var light_col  = vec3<f32>(lights.colors[ind][0], lights.colors[ind][1], lights.colors[ind][2]);
+        if (lights.positions[ind][3] == 0.0){ // directional light
+            light_dir = normalize(vec3<f32>(
+                lights.positions[ind][0], 
+                lights.positions[ind][1], 
+                lights.positions[ind][2]
+            ));
+        } else { // point light
+            var disp = vec3<f32>(
+                lights.positions[ind][0] / lights.positions[ind][3], 
+                lights.positions[ind][1] / lights.positions[ind][3], 
+                lights.positions[ind][2] / lights.positions[ind][3],
+            ) - in.world_coords;
+            attenuation = 1.0 / (0.01 * dot(disp, disp) + 1.0);
+            light_dir = normalize(disp);
+        }
 
-    //     // diffuse
-    //     var d_int = clamp(dot(normal, light_dir), 0.0, 1.0);
-    //     if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
-    //         var t = textureSample(t_diffuse, s_diffuse, vec2<f32>(0.0, d_int));
-    //         diffuse = vec3<f32>(t[0], t[1], t[2]);
-    //     }
+        // diffuse
+        // var d_int = clamp(dot(normal, light_dir), 0.0, 1.0);
+        // if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
+        //     var t = textureSample(t_diffuse, s_diffuse, vec2<f32>(0.0, d_int));
+        //     diffuse = vec3<f32>(t[0], t[1], t[2]);
+        // }
  
-    //     color += light_col * diffuse; //* max(d_int, 0.0);
+        // color += light_col * diffuse; //* max(d_int, 0.0);
         
-    //     // specular
-    //     var half_vec : vec3<f32> = normalize(eye_dirn + light_dir);
-    //     var nDotH : f32 = dot(normal, half_vec);
-    //     // if (pow (max(nDotH, 0.0), s) > 0.7){
-    //     //     color += light_col * specular * gloss * attenuation; 
-    //     // }
-    //     // color += light_col * specular * pow (max(nDotH, 0.0), s) * gloss; 
-    // }
+        // specular
+        var half_vec : vec3<f32> = normalize(eye_dirn + light_dir);
+        var nDotH : f32 = dot(normal, half_vec);
+        if (s > 0.0 && pow (max(nDotH, 0.0), s) > 0.8){
+            color += light_col * specular * gloss; 
+        }
+        // if (s > 0.0){
+        //     color += light_col * specular * pow(max(nDotH, 0.0), s) * gloss; 
+        // }
+    }
 
     // color = vec3<f32>(in.tex_coords, 0.0);
     return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;
