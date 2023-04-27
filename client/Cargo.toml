@@ -45,6 +45,7 @@ features = ["png", "jpeg"]
 
 [features]
 default = ["debug"]
+prod = []
 debug = ["debug-addr", "debug-recon"]
 debug-addr = []
 debug-recon = []

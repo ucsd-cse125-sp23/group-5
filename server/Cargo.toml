@@ -27,5 +27,6 @@ approx = "0.5.1"
 
 [features]
 default = ["debug"]
+prod = []
 debug = ["debug-addr"]
 debug-addr = []
