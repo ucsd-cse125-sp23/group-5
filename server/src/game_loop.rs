@@ -72,11 +72,11 @@ impl GameLoop<'_> {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
 
-            // consume all messages in the channel
-            while let Ok(command) = self.commands.try_recv() {
-                // execute the command
-                self.executor.execute(command);
-            }
+            // consume and collect all messages in the channel
+            let commands = self.commands.try_iter().collect::<Vec<_>>();
+
+            // send commands to the executor
+            self.executor.plan_and_execute(commands);
 
             // calculate the delta time
             let delta_time = Instant::now().duration_since(last_instant);
@@ -112,9 +112,9 @@ impl GameLoop<'_> {
 mod tests {
     use super::*;
     use common::core::command::Command::UpdateCamera;
-    use common::core::command::MoveDirection;
+    
     use common::core::states::GameState;
-    use nalgebra_glm::Vec3;
+    use nalgebra_glm::{Vec3, vec3};
     use std::sync::mpsc;
     use std::time::Duration;
 
@@ -164,8 +164,7 @@ mod tests {
 
             assert_eq!(rx2.try_recv(), Ok(ServerEvent::Sync)); // the game state should have been synced by now
 
-            tx.send(ClientCommand::new(1, Command::Move(MoveDirection::Forward)))
-                .unwrap();
+            tx.send(ClientCommand::new(1, Command::Move(vec3(1., 0., 0.)))).unwrap();
         });
 
         game_loop.run(); // this should block until the game loop is stopped at 500ms

@@ -1,10 +1,12 @@
 use crate::simulation::entity::{Entity, EntityHandles};
 
+
 use rapier3d::parry::utils::hashmap::HashMap;
 use rapier3d::prelude::*;
 
 use nalgebra_glm::Vec3;
 use rapier3d::control::KinematicCharacterController;
+use rapier3d::crossbeam;
 
 #[derive(Default)]
 pub struct PhysicsState {
@@ -28,6 +30,7 @@ impl PhysicsState {
     pub fn new() -> Self {
         Self {
             gravity: Vector::y() * -9.81,
+
             ..Default::default()
         }
     }
@@ -41,6 +44,11 @@ impl PhysicsState {
     }
 
     pub fn step(&mut self) {
+        // Initialize the event collector.
+        let (collision_send, collision_recv) = crossbeam::channel::unbounded();
+        let (contact_force_send, contact_force_recv) = crossbeam::channel::unbounded();
+        let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
+
         self.physics_pipeline.step(
             &self.gravity,
             &self.integration_parameters,
@@ -54,8 +62,19 @@ impl PhysicsState {
             &mut self.ccd_solver,
             None,
             &(),
-            &(),
-        )
+            &event_handler,
+        );
+        while let Ok(collision_event) = collision_recv.try_recv() {
+            // Handle the collision event.
+            println!("Received collision event: {:?}", collision_event);
+            panic!("Collision event received")
+        }
+
+        while let Ok(contact_force_event) = contact_force_recv.try_recv() {
+            // Handle the contact force event.
+            println!("Received contact force event: {:?}", contact_force_event);
+            panic!("Contact force event received")
+        }
     }
 
     pub fn insert_entity(
@@ -151,6 +170,7 @@ impl PhysicsState {
         let character_pos = self.get_entity_rigid_body(entity).unwrap().position();
 
         let dt = self.integration_parameters.dt;
+        let _gravity = self.gravity;
         // Calculate the possible movement.
         let corrected_movement = self.character_controller.move_shape(
             dt,                   // The timestep length
@@ -168,7 +188,13 @@ impl PhysicsState {
 
         let character_body = self.get_entity_rigid_body_mut(entity).unwrap();
         // set its velocity to the computed movement divided by the timestep length.
-        character_body.set_linvel(corrected_movement.translation / dt, true);
+
+        let mut velocity = corrected_movement.translation / dt;
+
+        // add back y component of velocity
+        velocity.y = character_body.linvel().y;
+
+        character_body.set_linvel(velocity, true);
     }
 }
 

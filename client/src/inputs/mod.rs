@@ -2,8 +2,8 @@ use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameK
 use common::communication::commons::Protocol;
 use common::core::command::Command::{Action, Jump, Spawn};
 use common::core::command::GameAction::Attack;
-use common::core::command::{Command, MoveDirection};
-use glm::Vec3;
+use common::core::command::{Command};
+use glm::{vec3, Vec3};
 use log::debug;
 
 use std::collections::HashMap;
@@ -57,10 +57,10 @@ impl InputEventProcessor {
     pub fn map_key(virtual_keycode: VirtualKeyCode) -> Option<(GameKeyKind, Command)> {
         match virtual_keycode {
             // match Holdable keys
-            VirtualKeyCode::W => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Forward))),
-            VirtualKeyCode::A => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Left))),
-            VirtualKeyCode::S => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Backward))),
-            VirtualKeyCode::D => Some((GameKeyKind::Holdable, Command::Move(MoveDirection::Right))),
+            VirtualKeyCode::W => Some((GameKeyKind::Holdable, Command::Move(vec3(0., 0., 1.)))),
+            VirtualKeyCode::A => Some((GameKeyKind::Holdable, Command::Move(vec3(1., 0., 0.)))),
+            VirtualKeyCode::S => Some((GameKeyKind::Holdable, Command::Move(vec3(0., 0., -1.)))),
+            VirtualKeyCode::D => Some((GameKeyKind::Holdable, Command::Move(vec3(-1., 0., 0.)))),
             // match Pressable keys
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             // match PressRelease keys

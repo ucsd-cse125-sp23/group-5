@@ -8,7 +8,7 @@ use log::{debug, error, info};
 use queues::{IsQueue, Queue};
 
 use std::time::Instant;
-use winit::event::{DeviceEvent, MouseScrollDelta, VirtualKeyCode};
+use winit::event::{DeviceEvent, MouseScrollDelta};
 
 pub enum GameKeyKind {
     Pressable,
