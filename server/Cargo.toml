@@ -26,7 +26,6 @@ itertools = "0.10.5"
 approx = "0.5.1"
 
 [features]
-default = ["debug"]
 prod = []
 debug = ["debug-addr"]
 debug-addr = []
