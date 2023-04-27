@@ -6,12 +6,15 @@ use serde::{Deserialize, Serialize};
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
 
+/*
 /// Game actions that can be performed by the player
 #[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub enum GameAction {
     Attack,
     Jump,
 }
+*/
 
 /// Spawn type that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +32,7 @@ pub enum Command {
     Turn(Quat),
     Jump,
     UpdateCamera { forward: glm::Vec3 },
-    Action(GameAction),
+    Attack,
 }
 
 impl Command {

@@ -1,5 +1,5 @@
 use crate::executor::command_handlers::{
-    CommandHandler, JumpCommandHandler, MoveCommandHandler, SpawnCommandHandler,
+    CommandHandler, AttackCommandHandler, JumpCommandHandler, MoveCommandHandler, SpawnCommandHandler,
     StartupCommandHandler, UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
@@ -93,6 +93,7 @@ impl Executor {
                 forward,
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
+            Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
                 return;
