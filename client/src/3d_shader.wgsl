@@ -139,7 +139,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         specular = vec3<f32>(t[0], t[1], t[2]);
     }
 
-    var color : vec3<f32> = ambient;
+    var color : vec3<f32> = 0.1 * ambient;
 
     // construct coordinate system
     var normal = normalize(in.normal);
