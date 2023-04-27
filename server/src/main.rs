@@ -37,7 +37,12 @@ fn main() {
     executor.init();
 
     // start of server listening
+    #[cfg(not(feature = "debug-addr"))]
+    let listener = TcpListener::bind(CSE125_SERVER_ADDR).unwrap();
+
+    #[cfg(feature = "debug-addr")]
     let listener = TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap();
+
     let pool = ThreadPool::new(4);
 
     // starting game loop

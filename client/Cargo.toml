@@ -43,3 +43,8 @@ version = "0.24"
 default-features = false
 features = ["png", "jpeg"]
 
+[features]
+default = ["debug"]
+debug = ["debug-addr", "debug-recon"]
+debug-addr = []
+debug-recon = []
