@@ -1,9 +1,10 @@
 use crate::camera::Camera;
 use crate::instance::Instance;
-use crate::model::{self};
+use crate::model::{self, Model};
 
 
 use std::collections::HashMap;
+use log::debug;
 
 use nalgebra_glm as glm;
 
@@ -28,10 +29,7 @@ pub enum NodeID {
     FERRIS_NODE = 9,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ModelIndex {
-    pub index: usize,
-}
+type ModelIndex = usize;
 
 #[derive(Clone, Debug)]
 pub struct Node {
@@ -50,13 +48,13 @@ impl Node {
 
 // #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scene {
-    pub objects: Vec<model::Model>,
+    pub objects: HashMap<ModelIndex, model::Model>,
     pub scene_graph: HashMap<NodeID, (Node, Instance)>,
     pub objects_and_instances: HashMap<ModelIndex, Vec<Instance>>,
 }
 
 impl Scene {
-    pub fn new(objs: Vec<model::Model>) -> Self {
+    pub fn new(objs: HashMap<ModelIndex, model::Model>) -> Self {
         Scene {
             objects: objs,
             scene_graph: HashMap::new(),
@@ -78,17 +76,17 @@ impl Scene {
         // state needed for DFS:
         let mut cur_node: &Node = &self.scene_graph.get(&NodeID::WORLD_NODE).unwrap().0; // self.scene_graph.get("world").unwrap(); // should be the root of the tree to start --> "world"
         let mut cur_VM: glm::TMat4<f32> = mat4_identity; //camera.calc_matrix(); // should be the camera's view matrix to start --> "world"s modelview matrix is the camera's view matrix
-                                                         // currently it's just the identity matrix!
+        // currently it's just the identity matrix!
         dfs_stack.push(cur_node);
         matrix_stack.push(cur_VM);
 
         let mut total_number_of_edges: usize = 0;
         for n in self.scene_graph.iter() {
-            total_number_of_edges += n.1 .0.childnodes.len();
+            total_number_of_edges += n.1.0.childnodes.len();
         }
 
-        println!("total number of nodes = {}", self.scene_graph.len());
-        println!("total number of edges = {}", total_number_of_edges);
+        debug!("total number of nodes = {}", self.scene_graph.len());
+        debug!("total number of edges = {}", total_number_of_edges);
 
         while !dfs_stack.is_empty() {
             if dfs_stack.len() > total_number_of_edges {
@@ -146,9 +144,7 @@ impl Scene {
             transform: glm::scale(&mat4_identity, &glm::vec3(0.0, 0.0, 0.0)),
         };
         player_node.models.push((
-            ModelIndex {
-                index: ModelIndices::PLAYER as usize,
-            },
+            ModelIndices::PLAYER as usize,
             player_instance_m,
         ));
 
@@ -156,9 +152,7 @@ impl Scene {
             transform: glm::scale(&mat4_identity, &glm::vec3(1.0, 1.0, 1.0)),
         };
         ferris_node.models.push((
-            ModelIndex {
-                index: ModelIndices::FERRIS as usize,
-            },
+            ModelIndices::FERRIS as usize,
             ferris_instance_m,
         ));
 
@@ -167,9 +161,7 @@ impl Scene {
                 * glm::scale(&mat4_identity, &glm::vec3(2.0, 0.2, 1.0)),
         };
         table_top_node.models.push((
-            ModelIndex {
-                index: ModelIndices::CUBE as usize,
-            },
+            ModelIndices::CUBE as usize,
             table_top_instance_m,
         ));
         table_top_node.childnodes.push(NodeID::FERRIS_NODE);
@@ -179,9 +171,7 @@ impl Scene {
                 * glm::scale(&mat4_identity, &glm::vec3(0.2, 1.0, 0.2)),
         };
         table_leg_node.models.push((
-            ModelIndex {
-                index: ModelIndices::CUBE as usize,
-            },
+            ModelIndices::CUBE as usize,
             table_leg_instance_m,
         ));
 
@@ -207,9 +197,7 @@ impl Scene {
         table_node.childnodes.push(NodeID::TABLE_LEG4_NODE);
 
         island_node.models.push((
-            ModelIndex {
-                index: ModelIndices::ISLAND as usize,
-            },
+            ModelIndices::ISLAND as usize,
             Instance {
                 transform: mat4_identity,
             },

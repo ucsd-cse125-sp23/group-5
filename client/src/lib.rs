@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use winit::event::*;
@@ -158,8 +159,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         // let instance_vec = vec![
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 0.0,
@@ -181,8 +182,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         let cube_obj = resources::load_model(
             "assets/cube.obj",
@@ -190,8 +191,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         let ferris_obj = resources::load_model(
             "assets/ferris.obj",
@@ -199,8 +200,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         // let cube_instance_vec = vec![
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 5.0,
@@ -211,7 +212,9 @@ impl State {
         // ];
         // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
 
-        let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
+        // let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
+        let mut scene = scene::Scene::new(HashMap::from([(0, obj_model), (1, player_obj), (2, cube_obj), (3, ferris_obj)]));
+        
         scene.init_scene_graph();
 
         // placeholder position, will get overriden by server
@@ -379,9 +382,9 @@ impl State {
             let player_instances = self
                 .scene
                 .objects_and_instances
-                .get_mut(&scene::ModelIndex {
-                    index: scene::ModelIndices::PLAYER as usize,
-                })
+                .get_mut(
+                    &(scene::ModelIndices::PLAYER as usize)
+                )
                 .unwrap();
             player_instances[0].transform = self.player.calc_transf_matrix();
         }
@@ -415,10 +418,10 @@ impl State {
             //placed up here because it needs to be dropped after the render pass
             let mut instanced_objs = Vec::new();
 
-            for i in self.scene.objects_and_instances.iter() {
-                let count = i.1.len();
+            for (index, instances) in self.scene.objects_and_instances.iter() {
+                let count = instances.len();
                 let instanced_obj =
-                    model::InstancedModel::new(&self.scene.objects[i.0.index], i.1, &self.device);
+                    model::InstancedModel::new(&self.scene.objects.get(index).unwrap(), instances, &self.device);
                 instanced_objs.push((instanced_obj, count));
             }
 
