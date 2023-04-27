@@ -32,7 +32,7 @@ impl Camera {
 
 pub struct Projection {
     aspect: f32,
-    fovy: f32,
+    pub fovy: f32,
     znear: f32,
     zfar: f32,
 }

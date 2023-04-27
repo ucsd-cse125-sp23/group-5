@@ -181,7 +181,7 @@ impl State {
         
         let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
         // let player_controller = player::PlayerController::new(4.0, 1.0, 0.7); 
-        let player_controller = player::PlayerController::new(4.0, 1.0); 
+        let player_controller = player::PlayerController::new(4.0, 1.0, 0.1); 
 
         let camera_state = camera::CameraState::new(
             &device,
@@ -204,36 +204,48 @@ impl State {
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 0.0,
         //         0.0, 1.0, 0.0, 0.0,
-        //         0.0, 0.0, 1.0, 0.0, 
+        //         0.0, 0.0, 1.0, 0.0,
         //         0.0, 0.0, 0.0, 1.0
         //     )},
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 10.0,
         //         0.0, 1.0, 0.0, 2.0,
-        //         0.0, 0.0, 1.0, 2.0, 
+        //         0.0, 0.0, 1.0, 2.0,
         //         0.0, 0.0, 0.0, 1.0
         //     )},
         // ];
         // use cube as a placeholder player model for now
-        let player_obj =
-        resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
+        let player_obj = resources::load_model(
+            "assets/cube.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
         .await
         .unwrap();
 
-        let cube_obj =
-        resources::load_model("assets/cube.obj", &device, &queue, &texture_bind_group_layout)
+        let cube_obj = resources::load_model(
+            "assets/cube.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
         .await
         .unwrap();
 
-        let ferris_obj =
-        resources::load_model("assets/ferris.obj", &device, &queue, &texture_bind_group_layout)
+        let ferris_obj = resources::load_model(
+            "assets/ferris.obj",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        )
         .await
         .unwrap();
         // let cube_instance_vec = vec![
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 5.0,
         //         0.0, 1.0, 0.0, 10.0,
-        //         0.0, 0.0, 1.0, 5.0, 
+        //         0.0, 0.0, 1.0, 5.0,
         //         0.0, 0.0, 0.0, 1.0
         //     )},
         // ];
@@ -244,7 +256,7 @@ impl State {
 
         // placeholder position, will get overriden by server
         let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
-        let player_controller = player::PlayerController::new(4.0, 0.7);
+        let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
@@ -456,17 +468,21 @@ impl State {
             // update player controller (player, camera, etc) with the latest player state
             self.player_controller.update(
                 &mut self.player,
-                &mut self.camera_state.camera,
+                &mut self.camera_state,
                 player_state,
                 dt,
             );
 
             // update player instance (replace 0 with player_id) (maybe move to scene graph later)
-            let player_instances = self.scene.objects_and_instances.get_mut(&scene::ModelIndex{index: scene::ModelIndices::PLAYER as usize}).unwrap();
+            let player_instances = self
+                .scene
+                .objects_and_instances
+                .get_mut(&scene::ModelIndex {
+                    index: scene::ModelIndices::PLAYER as usize,
+                })
+                .unwrap();
             player_instances[0].transform = self.player.calc_transf_matrix();
         }
-
-
 
         self.camera_state
             .camera_uniform
@@ -499,7 +515,8 @@ impl State {
 
             for i in self.scene.objects_and_instances.iter() {
                 let count = i.1.len();
-                let instanced_obj = model::InstancedModel::new(&self.scene.objects[i.0.index], &i.1, &self.device);
+                let instanced_obj =
+                    model::InstancedModel::new(&self.scene.objects[i.0.index], i.1, &self.device);
                 instanced_objs.push((instanced_obj, count));
             }
 
@@ -536,7 +553,11 @@ impl State {
             render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
             for obj in instanced_objs.iter() {
-                render_pass.draw_model_instanced(&obj.0, 0..obj.1 as u32, &self.camera_state.camera_bind_group);
+                render_pass.draw_model_instanced(
+                    &obj.0,
+                    0..obj.1 as u32,
+                    &self.camera_state.camera_bind_group,
+                );
             }
 
             render_pass.set_pipeline(&self.render_pipeline_2d);
