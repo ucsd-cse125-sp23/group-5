@@ -87,6 +87,8 @@ pub struct Material {
     pub name: String,
     pub diffuse_texture: texture::Texture,
     pub normal_texture: texture::Texture,
+    pub specular_texture: texture::Texture,
+    pub ambient_texture: texture::Texture,
     pub phong_mtl: Phong,
     pub flags: ShaderFlags,
     pub bind_group: wgpu::BindGroup,

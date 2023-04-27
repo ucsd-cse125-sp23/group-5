@@ -131,6 +131,20 @@ pub async fn load_model(
                 load_texture(d, device, queue).await?
             },
         };
+        let specular_texture = match m.specular_texture.as_str() {
+            "" => texture::Texture::dummy(device),
+            d => {
+                flags |= model::ShaderFlags::HAS_SPECULAR_TEXTURE;
+                load_texture(d, device, queue).await?
+            },
+        };
+        let ambient_texture = match m.ambient_texture.as_str() {
+            "" => texture::Texture::dummy(device),
+            d => {
+                flags |= model::ShaderFlags::HAS_AMBIENT_TEXTURE;
+                load_texture(d, device, queue).await?
+            },
+        };
         let flags_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Shader Flags VB"),
             contents: bytemuck::cast_slice(&[flags]),
@@ -164,6 +178,22 @@ pub async fn load_model(
                     binding: 5,
                     resource: wgpu::BindingResource::Sampler(&normal_texture.sampler),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: wgpu::BindingResource::TextureView(&specular_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: wgpu::BindingResource::Sampler(&specular_texture.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: wgpu::BindingResource::TextureView(&ambient_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 9,
+                    resource: wgpu::BindingResource::Sampler(&ambient_texture.sampler),
+                },
             ],
             label: None,
         });
@@ -172,6 +202,8 @@ pub async fn load_model(
             name: m.name,
             diffuse_texture,
             normal_texture,
+            specular_texture,
+            ambient_texture,
             phong_mtl,
             flags: model::ShaderFlags::new(flags),
             bind_group,

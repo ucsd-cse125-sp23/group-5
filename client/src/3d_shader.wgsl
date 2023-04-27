@@ -112,15 +112,34 @@ var s_diffuse: sampler;
 var t_normal: texture_2d<f32>;
 @group(0) @binding(5)
 var s_normal: sampler;
+@group(0) @binding(6)
+var t_specular: texture_2d<f32>;
+@group(0) @binding(7)
+var s_specular: sampler;
+@group(0) @binding(8)
+var t_ambient: texture_2d<f32>;
+@group(0) @binding(9)
+var s_ambient: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var color : vec3<f32> = 0.1 * phong_mtl.ambient;
+    var ambient = phong_mtl.ambient;
     var diffuse = phong_mtl.diffuse;
+    var specular = phong_mtl.specular;
     if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
         var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
         diffuse = vec3<f32>(t[0], t[1], t[2]);
     }
+    if ((HAS_AMBIENT_TEXTURE & flags) != EMPTY_FLAG){
+        var t = textureSample(t_ambient, s_ambient, in.tex_coords);
+        ambient = vec3<f32>(t[0], t[1], t[2]);
+    }
+    if ((HAS_SPECULAR_TEXTURE & flags) != EMPTY_FLAG){
+        var t = textureSample(t_specular, s_specular, in.tex_coords);
+        specular = vec3<f32>(t[0], t[1], t[2]);
+    }
+
+    var color : vec3<f32> = ambient;
 
     // construct coordinate system
     var normal = normalize(in.normal);
@@ -187,7 +206,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         var half_vec : vec3<f32> = normalize(eye_dirn + light_dir);
         var nDotH : f32 = dot(normal, half_vec);
         if (pow (max(nDotH, 0.0), phong_mtl.shininess) * attenuation > 0.7){
-            color += light_col * phong_mtl.specular; 
+            color += light_col * specular; 
         }
     }
 
