@@ -1,7 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::Path;
 use nalgebra_glm::{Quat, TVec3};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -13,11 +10,9 @@ pub struct ConfigTransform {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigNode {
     pub id: String,
-    #[serde(rename = "type")]
-    pub node_type: String,
     pub transform: ConfigTransform,
     pub children: Option<Vec<ConfigNode>>,
-    pub model: Option<usize>,
+    pub model: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -9,7 +9,8 @@ use std::sync::{MutexGuard};
 use crate::player::{Player, PlayerController};
 use common::core::states::GameState;
 use nalgebra_glm as glm;
-use common::configs::map_config::{ConfigNode, ConfigSceneGraph};
+use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
+use common::configs::model_config::ModelIndex;
 
 
 pub enum ModelIndices {
@@ -21,7 +22,6 @@ pub enum ModelIndices {
 
 pub type NodeId = String;
 
-type ModelIndex = usize;
 
 #[derive(Clone, Debug)]
 pub struct Node {
@@ -208,7 +208,7 @@ impl Scene {
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
-                            cur_node.models[i].0,
+                            cur_node.models[i].0.clone(),
                             vec![Instance {
                                 transform: model_view,
                             }],
@@ -226,42 +226,42 @@ impl Scene {
     }
 
     pub fn init_scene_graph(&mut self) {
-        self.add_player_node(NodeKind::Player.base_id());
-
-        self.add_world_child_node(NodeKind::Object.node_id("island"),
-                                  glm::translate(&glm::identity(), &glm::vec3(0.0, -9.7, 0.0)),
-        )
-            .add_model(ModelIndices::ISLAND as usize);
-
-        self.add_child_node(NodeKind::Player.base_id(),
-                            NodeKind::Object.node_id("ferris"),
-                            glm::translate(&glm::identity(), &glm::vec3(0.0, 1.0, 0.0)),
-        )
-            .add_model(ModelIndices::FERRIS as usize);
+        // self.add_player_node(NodeKind::Player.base_id());
+        //
+        // self.add_world_child_node(NodeKind::Object.node_id("island"),
+        //                           glm::translate(&glm::identity(), &glm::vec3(0.0, -9.7, 0.0)),
+        // )
+        //     .add_model('island'.to_string());
+        //
+        // self.add_child_node(NodeKind::Player.base_id(),
+        //                     NodeKind::Object.node_id("ferris"),
+        //                     glm::translate(&glm::identity(), &glm::vec3(0.0, 1.0, 0.0)),
+        // )
+        //     .add_model(ModelIndices::FERRIS as usize);
     }
 
     pub fn add_player_node(&mut self, node_id: NodeId) {
         self.add_world_child_node(node_id,
                                   glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-            .add_model(ModelIndices::PLAYER as usize);
+            .add_model("player".to_string());
     }
 }
 
 
 impl Scene {
-    pub fn from_json_scene_graph(
+    pub fn from_config(
         json_scene_graph: &ConfigSceneGraph,
     ) -> Self {
         let mut scene = Self::new(HashMap::new());
 
         for node in &json_scene_graph.nodes {
-            Scene::add_node_from_json(&mut scene, node, None);
+            Scene::add_node_from_config(&mut scene, node, None);
         }
         scene
     }
 
-    fn add_node_from_json(
+    fn add_node_from_config(
         scene: &mut Scene,
         json_node: &ConfigNode,
         parent_id: Option<NodeId>,
@@ -274,13 +274,13 @@ impl Scene {
             None => scene.add_world_child_node(json_node.id.clone(), node_transform),
         };
 
-        if let Some(model_index) = json_node.model {
+        if let Some(model_index) = json_node.model.clone() {
             node.add_model(model_index);
         }
 
         if let Some(ref children) = json_node.children {
             for child in children {
-                Scene::add_node_from_json(scene, child, Some(json_node.id.clone()));
+                Scene::add_node_from_config(scene, child, Some(json_node.id.clone()));
             }
         }
     }
@@ -288,7 +288,7 @@ impl Scene {
 
 #[cfg(test)]
 mod test {
-    use common::configs::map_config::ConfigSceneGraph;
+    use common::configs::scene_config::ConfigSceneGraph;
     use super::Scene;
 
     // Test reading a scene graph from an inline JSON string
@@ -299,21 +299,20 @@ mod test {
         {
           "nodes": [
             {
-              "id": "object:123",
-              "type": "Object",
+              "id": "object:island",
+              "model": "island",
               "transform": {
-                "position": [1, 1, 1],
+                "position": [0, -9.7, 0],
                 "rotation": [0, 0, 0, 1]
               },
               "children": [
                 {
-                  "id": "object:456",
-                  "type": "Object",
+                  "id": "object:ferris",
                   "transform": {
-                    "position": [2, 2, 2],
-                    "rotation": [0, 0, 0, 1]
+                    "position": [0, 5, 0],
+                    "rotation": [0, 0.2, 0, 1]
                   },
-                  "model": 2
+                  "model": "ferris"
                 }
               ]
             }
@@ -325,11 +324,10 @@ mod test {
         let json_scene_graph: ConfigSceneGraph = serde_json::from_str(json_scene_graph_str).unwrap();
 
         // Create a Scene from the ConfigSceneGraph
-        let scene = Scene::from_json_scene_graph(&json_scene_graph);
+        let scene = Scene::from_config(&json_scene_graph);
 
         // Test if the scene was created successfully
-        assert!(scene.scene_graph.contains_key("world"));
-        assert!(scene.scene_graph.contains_key("object:123"));
-        assert!(scene.scene_graph.contains_key("object:456"));
+        assert!(scene.scene_graph.contains_key("object:island"));
+        assert!(scene.scene_graph.contains_key("object:ferris"));
     }
 }

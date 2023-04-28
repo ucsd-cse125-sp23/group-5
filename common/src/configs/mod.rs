@@ -4,7 +4,7 @@ use std::path::Path;
 use serde::{Serialize};
 
 
-pub mod map_config;
+pub mod scene_config;
 pub mod model_config;
 
 

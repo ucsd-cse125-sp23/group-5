@@ -1,19 +1,19 @@
 {
   "models": [
     {
-      "index": 0,
+      "name": "island",
       "path": "assets/island.obj"
     },
     {
-      "index": 1,
+      "name": "player",
       "path": "assets/cube.obj"
     },
     {
-      "index": 2,
+      "name": "cube",
       "path": "assets/cube.obj"
     },
     {
-      "index": 3,
+      "name": "ferris",
       "path": "assets/ferris.obj"
     }
   ]

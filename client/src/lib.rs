@@ -27,6 +27,10 @@ pub mod inputs;
 
 use common::core::states::GameState;
 use winit::window::Window;
+use common::configs::scene_config::ConfigSceneGraph;
+
+const MODELS_CONFIG_PATH: &str = "models.json";
+const SCENE_CONFIG_PATH: &str = "scene.json";
 
 struct State {
     surface: wgpu::Surface,
@@ -186,7 +190,7 @@ impl State {
 
 
         // Scene
-        let model_configs = from_file::<_, ConfigModels>("models.json").unwrap();
+        let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 
         let mut models = HashMap::new();
 
@@ -199,31 +203,23 @@ impl State {
             )
             .await
             .unwrap();
-            models.insert(model_config.index, model);
+            models.insert(model_config.name, model);
         }
 
-        let obj_model = resources::load_model(
-            "assets/island.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
+        let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
 
-        let mut scene = scene::Scene::new(models);
-
-        scene.init_scene_graph();
+        let mut scene = scene::Scene::from_config(&scene_config);
+        scene.objects = models;
 
         // placeholder position, will get overriden by server
-        let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
+        let player = player::Player::new(vec3(0.0, 0.0, 0.0));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
-            player.position + glm::vec3(-2.0, 2.0, 0.0),
+            player.position + vec3(-2.0, 2.0, 0.0),
             player.position,
-            glm::vec3(0.0, 1.0, 0.0),
+            vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
             45.0,

@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+
+pub type ModelIndex = String;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigModel {
-    pub index: usize,
+    pub name: ModelIndex,
     pub path: String,
 }
 
