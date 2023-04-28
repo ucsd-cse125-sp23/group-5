@@ -10,12 +10,6 @@ pub struct Model {
     pub materials: Vec<Material>,
 }
 
-impl Model {
-    pub async fn load(&self) {
-        load_model(&self.path).await;
-    }
-}
-
 pub struct InstancedModel<'a> {
     // want instances and instanceState to always be synced
     // can only be created, cannot be edited

@@ -75,13 +75,13 @@ pub async fn load_texture(
 }
 
 pub async fn load_model(
-    file_name: &str,
+    file_path: &str,
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     layout: &wgpu::BindGroupLayout,
 ) -> anyhow::Result<model::Model> {
-    println!("loading {file_name}");
-    let obj_text = load_string(file_name).await?;
+    println!("loading {file_path:?}");
+    let obj_text = load_string(file_path).await?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
 
@@ -94,7 +94,7 @@ pub async fn load_model(
         },
         |p: String| async move {
             // p is relative to the obj file folder
-            let p = std::path::Path::new(file_name)
+            let p = std::path::Path::new(file_path)
                 .parent()
                 .unwrap()
                 .join(p)
@@ -212,18 +212,18 @@ pub async fn load_model(
                 .collect::<Vec<_>>();
 
             let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{:?} Vertex Buffer", file_name)),
+                label: Some(&format!("{:?} Vertex Buffer", file_path)),
                 contents: bytemuck::cast_slice(&vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             });
             let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{:?} Index Buffer", file_name)),
+                label: Some(&format!("{:?} Index Buffer", file_path)),
                 contents: bytemuck::cast_slice(&m.mesh.indices),
                 usage: wgpu::BufferUsages::INDEX,
             });
 
             model::Mesh {
-                name: file_name.to_string(),
+                name: file_path.to_string(),
                 vertex_buffer,
                 index_buffer,
                 num_elements: m.mesh.indices.len() as u32,
@@ -232,5 +232,5 @@ pub async fn load_model(
         })
         .collect::<Vec<_>>();
 
-    Ok(model::Model { meshes, materials })
+    Ok(model::Model { meshes, materials, path: file_path.to_string() })
 }

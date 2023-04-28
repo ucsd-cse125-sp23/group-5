@@ -1,0 +1,20 @@
+{
+  "models": [
+    {
+      "index": 0,
+      "path": "assets/island.obj"
+    },
+    {
+      "index": 1,
+      "path": "assets/cube.obj"
+    },
+    {
+      "index": 2,
+      "path": "assets/cube.obj"
+    },
+    {
+      "index": 3,
+      "path": "assets/ferris.obj"
+    }
+  ]
+}

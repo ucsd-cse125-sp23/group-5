@@ -20,6 +20,8 @@ mod texture;
 mod screen_objects;
 extern crate nalgebra_glm as glm;
 
+use common::configs::{from_file, model_config::ConfigModels};
+
 pub mod event_loop;
 pub mod inputs;
 
@@ -182,19 +184,24 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
-        let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
-        // let player_controller = player::PlayerController::new(4.0, 1.0, 0.7);
-        let player_controller = player::PlayerController::new(4.0, 1.0, 0.1);
-
-        let camera_state = camera::CameraState::new(
-            &device,
-        player.position + glm::vec3(-5.0, 15.0, 0.0),
-        player.position,
-        glm::vec3(0.0, 1.0, 0.0),
-        config.width, config.height, 45.0, 0.1, 100.0,
-        );
 
         // Scene
+        let model_configs = from_file::<_, ConfigModels>("models.json").unwrap();
+
+        let mut models = HashMap::new();
+
+        for model_config in model_configs.models {
+            let model = resources::load_model(
+                &model_config.path,
+                &device,
+                &queue,
+                &texture_bind_group_layout,
+            )
+            .await
+            .unwrap();
+            models.insert(model_config.index, model);
+        }
+
         let obj_model = resources::load_model(
             "assets/island.obj",
             &device,
@@ -203,59 +210,8 @@ impl State {
         )
         .await
         .unwrap();
-        // let instance_vec = vec![
-        //     instance::Instance{transform: glm::mat4(
-        //         1.0, 0.0, 0.0, 0.0,
-        //         0.0, 1.0, 0.0, 0.0,
-        //         0.0, 0.0, 1.0, 0.0,
-        //         0.0, 0.0, 0.0, 1.0
-        //     )},
-        //     instance::Instance{transform: glm::mat4(
-        //         1.0, 0.0, 0.0, 10.0,
-        //         0.0, 1.0, 0.0, 2.0,
-        //         0.0, 0.0, 1.0, 2.0,
-        //         0.0, 0.0, 0.0, 1.0
-        //     )},
-        // ];
-        // use cube as a placeholder player model for now
-        let player_obj = resources::load_model(
-            "assets/cube.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
 
-        let cube_obj = resources::load_model(
-            "assets/cube.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
-
-        let ferris_obj = resources::load_model(
-            "assets/ferris.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
-        // let cube_instance_vec = vec![
-        //     instance::Instance{transform: glm::mat4(
-        //         1.0, 0.0, 0.0, 5.0,
-        //         0.0, 1.0, 0.0, 10.0,
-        //         0.0, 0.0, 1.0, 5.0,
-        //         0.0, 0.0, 0.0, 1.0
-        //     )},
-        // ];
-        // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
-
-        // let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
-        let mut scene = scene::Scene::new(HashMap::from([(0, obj_model), (1, player_obj), (2, cube_obj), (3, ferris_obj)]));
+        let mut scene = scene::Scene::new(models);
 
         scene.init_scene_graph();
 

@@ -9,6 +9,7 @@ use std::sync::{MutexGuard};
 use crate::player::{Player, PlayerController};
 use common::core::states::GameState;
 use nalgebra_glm as glm;
+use common::configs::map_config::{ConfigNode, ConfigSceneGraph};
 
 
 pub enum ModelIndices {
@@ -247,21 +248,18 @@ impl Scene {
     }
 }
 
-use common::map_config::*;
 
 impl Scene {
-    pub fn from_json_scene_graph(json_scene_graph: &ConfigSceneGraph) -> Self {
+    pub fn from_json_scene_graph(
+        json_scene_graph: &ConfigSceneGraph,
+    ) -> Self {
         let mut scene = Self::new(HashMap::new());
-
-        //TODO: handle model loading
 
         for node in &json_scene_graph.nodes {
             Scene::add_node_from_json(&mut scene, node, None);
         }
-
         scene
     }
-
 
     fn add_node_from_json(
         scene: &mut Scene,
@@ -273,7 +271,7 @@ impl Scene {
 
         let node = match parent_id {
             Some(parent_id) => scene.add_child_node(parent_id, json_node.id.clone(), node_transform),
-            None => scene.add_node(json_node.id.clone(), node_transform),
+            None => scene.add_world_child_node(json_node.id.clone(), node_transform),
         };
 
         if let Some(model_index) = json_node.model {
@@ -288,13 +286,10 @@ impl Scene {
     }
 }
 
-
 #[cfg(test)]
 mod test {
+    use common::configs::map_config::ConfigSceneGraph;
     use super::Scene;
-    use serde_json::json;
-    use nalgebra_glm as glm;
-    use common::map_config::ConfigSceneGraph;
 
     // Test reading a scene graph from an inline JSON string
     #[test]
@@ -303,15 +298,6 @@ mod test {
         let json_scene_graph_str = r#"
         {
           "nodes": [
-            {
-              "id": "world",
-              "type": "World",
-              "transform": {
-                "position": [0, 0, 0],
-                "rotation": [0, 0, 0, 1]
-              },
-              "model": 1
-            },
             {
               "id": "object:123",
               "type": "Object",
@@ -330,16 +316,6 @@ mod test {
                   "model": 2
                 }
               ]
-            }
-          ],
-            "models": [
-            {
-              "index": 1,
-              "path": "models/island.obj"
-            },
-            {
-              "index": 2,
-              "path": "models/ferris.obj"
             }
           ]
         }
