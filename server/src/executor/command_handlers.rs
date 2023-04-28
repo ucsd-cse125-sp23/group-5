@@ -30,7 +30,7 @@ pub struct StartupCommandHandler {
 impl CommandHandler for StartupCommandHandler {
     fn handle(&self, _: &mut GameState, physics_state: &mut PhysicsState) -> HandlerResult {
         // loading the object model
-        let map = tobj::load_obj("assets/island.obj", &tobj::GPU_LOAD_OPTIONS);
+        let map = tobj::load_obj("assets/islands_set_remade.obj", &tobj::GPU_LOAD_OPTIONS);
 
         let (models, _) = map.unwrap();
 
@@ -83,10 +83,14 @@ impl CommandHandler for SpawnCommandHandler {
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
         // Game state (needed because syncing is only for the physical properties of entities)
-        game_state.players.push(PlayerState {
-            id: self.player_id,
-            ..Default::default()
-        });
+        game_state.players.insert(
+            self.player_id,
+            PlayerState {
+                id: self.player_id,
+                connected: true,
+                ..Default::default()
+            },
+        );
         Ok(())
     }
 }
@@ -105,6 +109,7 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         player.camera_forward = self.forward;
+
         Ok(())
     }
 }

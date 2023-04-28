@@ -38,14 +38,14 @@ struct State {
     scene: scene::Scene,
     light_state: lights::LightState,
     camera_state: camera::CameraState,
-
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
+    client_id: u8,
 }
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: Window) -> Self {
+    async fn new(window: Window, client_id: u8) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -472,9 +472,12 @@ impl State {
             camera_state,
             depth_texture,
             light_state,
-
             screens,
+            #[cfg(not(feature = "debug-lobby"))]
+            screen_ind: 0,
+            #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
+            client_id,
         }
     }
 
@@ -525,32 +528,16 @@ impl State {
 
     fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
-        // TODO: game state to scene graph conversion should be done in the scene graph itself
-        // like `scene_graph.load_game_state(game_state)`
-
-        // just for testing
-        // update the camera target
-        if !game_state.players.is_empty() {
-            let player_state = &game_state.players[0];
-            // update player controller (player, camera, etc) with the latest player state
-            self.player_controller.update(
-                &mut self.player,
-                &mut self.camera_state,
-                player_state,
-                dt,
-            );
-
-            // update player instance (replace 0 with player_id) (maybe move to scene graph later)
-            let player_instances = self
-                .scene
-                .objects_and_instances
-                .get_mut(&scene::ModelIndex {
-                    index: scene::ModelIndices::PLAYER as usize,
-                })
-                .unwrap();
-            player_instances[0].transform = self.player.calc_transf_matrix();
-        }
-
+        // game state to scene graph conversion and update
+        self.scene.load_game_state(
+            game_state,
+            &mut self.player_controller,
+            &mut self.player,
+            &mut self.camera_state,
+            dt,
+            self.client_id,
+        );
+        // camera update
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
@@ -559,6 +546,7 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
         );
+        // light update
         self.queue.write_buffer(
             &self.light_state.light_buffer,
             0,
@@ -583,7 +571,7 @@ impl State {
             for i in self.scene.objects_and_instances.iter() {
                 let count = i.1.len();
                 let instanced_obj =
-                    model::InstancedModel::new(&self.scene.objects[i.0.index], i.1, &self.device);
+                    model::InstancedModel::new(&self.scene.objects[i.0.index], &i.1, &self.device);
                 instanced_objs.push((instanced_obj, count));
             }
 

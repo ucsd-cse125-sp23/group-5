@@ -26,7 +26,7 @@ impl FromObject for ColliderBuilder {
                     .chunks(3)
                     .map(|i| [i[0], i[1], i[2]].map(|i| i + vertex_offset)),
             );
-            vertex_offset += vertices.len() as u32;
+            vertex_offset = vertices.len() as u32;
         }
 
         ColliderBuilder::trimesh(vertices, indices)
