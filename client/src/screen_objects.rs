@@ -216,7 +216,7 @@ pub async fn get_screens(
         ],
     }];
 
-    let title_hover_inst_num = title_inst.len() as u32;
+    let _title_hover_inst_num = title_inst.len() as u32;
 
     #[rustfmt::skip]
     let atk_bx_vert : Vec<Vertex> = vec![
