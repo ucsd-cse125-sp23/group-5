@@ -37,12 +37,12 @@ impl PlayerLoop {
     pub async fn run(&mut self) {
         let mut event_loop = EventLoop::new();
         let window = WindowBuilder::new()
-            .with_title("test")
+            .with_title("As The Wind Blows")
             .with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
             .build(&event_loop)
             .unwrap();
 
-        let mut state = State::new(window).await;
+        let mut state = State::new(window, self.client_id).await;
 
         //To check
         let mut last_render_time = instant::Instant::now();

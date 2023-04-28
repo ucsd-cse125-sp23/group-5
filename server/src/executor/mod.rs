@@ -6,8 +6,9 @@ use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
+
 use itertools::Itertools;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 
@@ -101,6 +102,7 @@ impl Executor {
         if let Err(e) = handler.handle(&mut game_state, &mut self.physics_state.borrow_mut()) {
             error!("Failed to execute command: {:?}", e);
         }
+        info!("GameState: {:?}", game_state);
     }
 
     pub(crate) fn step(&self, delta_time: f32) {
@@ -115,7 +117,7 @@ impl Executor {
         let physics_state = self.physics_state.borrow();
 
         // update player positions
-        for player in game_state.players.iter_mut() {
+        for (id, player) in game_state.players.iter_mut() {
             let rigid_body = physics_state.get_entity_rigid_body(player.id).unwrap();
             player.transform.translation = rigid_body.position().translation.vector;
             player.transform.rotation = rigid_body.position().rotation.coords.into();

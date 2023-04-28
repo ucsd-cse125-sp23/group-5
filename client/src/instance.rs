@@ -1,11 +1,14 @@
 use wgpu::util::DeviceExt;
 extern crate nalgebra_glm as glm;
 
+
+pub type Transform = nalgebra_glm::TMat4<f32>;
+
 // Instances
 // Lets us duplicate objects in a scene with less cost
 #[derive(Debug, Clone)]
 pub struct Instance {
-    pub transform: nalgebra_glm::TMat4<f32>,
+    pub transform: Transform,
 }
 
 pub struct InstanceState {
@@ -13,22 +16,31 @@ pub struct InstanceState {
     pub buffer: wgpu::Buffer,
 }
 
+impl Default for Instance {
+    fn default() -> Self {
+        Self {
+            transform: glm::identity(),
+        }
+    }
+}
+
 impl Instance {
     pub fn to_raw(&self) -> InstanceRaw {
+        let tmp = glm::inverse_transpose(self.transform);
         let normal = glm::mat3(
-            self.transform[0],
-            self.transform[4],
-            self.transform[8],
-            self.transform[1],
-            self.transform[5],
-            self.transform[9],
-            self.transform[2],
-            self.transform[6],
-            self.transform[10],
+            tmp[0], tmp[4], tmp[8],
+            tmp[1], tmp[5], tmp[9],
+            tmp[2], tmp[6], tmp[10],
         );
         InstanceRaw {
             model: self.transform.into(),
             normal: normal.into(),
+        }
+    }
+
+    pub fn from_transform(transform: &nalgebra_glm::TMat4<f32>) -> Self {
+        Self {
+            transform: *transform,
         }
     }
 

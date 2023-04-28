@@ -50,9 +50,15 @@ To get a local copy up and running follow these simple example steps.
     cargo build
     ```
 3. Run the server and client(s)
+   1) In debug mode(running locally)
     ```sh
-    cargo run --bin server # start the server
-    cargo run --bin client # start a client
+    cargo run --features debug --bin server # start the server
+    cargo run --features debug --bin client # start a client
+    ```
+   2) In production mode
+   ```sh
+    cargo run --features prod --bin server # start the server
+    cargo run --features prod --bin client # start a client
     ```
 
 <!-- Testing -->

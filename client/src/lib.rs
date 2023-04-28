@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use glm::vec3;
+use log::info;
 
 use winit::event::*;
 
@@ -15,7 +17,7 @@ mod player;
 mod resources;
 mod scene;
 mod texture;
-
+mod screen_objects;
 extern crate nalgebra_glm as glm;
 
 pub mod event_loop;
@@ -33,16 +35,20 @@ struct State {
     window: Window,
     depth_texture: texture::Texture,
     render_pipeline: wgpu::RenderPipeline,
+    render_pipeline_2d: wgpu::RenderPipeline,
     player: player::Player,
     player_controller: player::PlayerController,
     scene: scene::Scene,
     light_state: lights::LightState,
     camera_state: camera::CameraState,
+    screens: Vec<screen_objects::Screen>,
+    screen_ind: usize,
+    client_id: u8,
 }
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: Window) -> Self {
+    async fn new(window: Window, client_id: u8) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -149,8 +155,44 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
+        let texture_bind_group_layout_2d =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+            label: Some("2d_texture_bind_group_layout"),
+        });
+
         //Render pipeline
-        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+        let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
+        let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
+
+        let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
+        // let player_controller = player::PlayerController::new(4.0, 1.0, 0.7);
+        let player_controller = player::PlayerController::new(4.0, 1.0, 0.1);
+
+        let camera_state = camera::CameraState::new(
+            &device,
+        player.position + glm::vec3(-5.0, 15.0, 0.0),
+        player.position,
+        glm::vec3(0.0, 1.0, 0.0),
+        config.width, config.height, 45.0, 0.1, 100.0,
+        );
 
         // Scene
         let obj_model = resources::load_model(
@@ -159,8 +201,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
         // let instance_vec = vec![
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 0.0,
@@ -182,8 +224,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         let cube_obj = resources::load_model(
             "assets/cube.obj",
@@ -191,8 +233,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         let ferris_obj = resources::load_model(
             "assets/ferris.obj",
@@ -200,8 +242,8 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
         // let cube_instance_vec = vec![
         //     instance::Instance{transform: glm::mat4(
         //         1.0, 0.0, 0.0, 5.0,
@@ -214,7 +256,7 @@ impl State {
 
         // let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
         let mut scene = scene::Scene::new(HashMap::from([(0, obj_model), (1, player_obj), (2, cube_obj), (3, ferris_obj)]));
-        
+
         scene.init_scene_graph();
 
         // placeholder position, will get overriden by server
@@ -233,7 +275,7 @@ impl State {
             100.0,
         );
 
-        scene.draw_scene_dfs(&camera_state.camera);
+        scene.draw_scene_dfs();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -247,12 +289,19 @@ impl State {
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
+                label: Some("3D Render Pipeline Layout"),
                 bind_group_layouts: &[
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
                 ],
+                push_constant_ranges: &[],
+            });
+
+            let render_pipeline_layout_2d =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("2D Render Pipeline Layout"),
+                bind_group_layouts: &[&texture_bind_group_layout_2d],
                 push_constant_ranges: &[],
             });
 
@@ -289,7 +338,7 @@ impl State {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
+                depth_compare: wgpu::CompareFunction::LessEqual, // 1.
                 stencil: wgpu::StencilState::default(),     // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -301,6 +350,53 @@ impl State {
             multiview: None,
         });
 
+        let render_pipeline_2d = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("2d Render Pipeline"),
+            layout: Some(&render_pipeline_layout_2d),
+            vertex: wgpu::VertexState {
+                module: &shader_2d,
+                entry_point: "vs_main",
+                buffers: &[screen_objects::Vertex::desc(), screen_objects::ScreenInstance::desc()],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader_2d,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: texture::Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::LessEqual, // 1.
+                stencil: wgpu::StencilState::default(),     // 2.
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+        });
+
+        let screens =
+            screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
+
         Self {
             window,
             surface,
@@ -309,12 +405,19 @@ impl State {
             config,
             size,
             render_pipeline,
+            render_pipeline_2d,
             scene,
             player,
             player_controller,
             camera_state,
             depth_texture,
             light_state,
+            screens,
+            #[cfg(not(feature = "debug-lobby"))]
+            screen_ind: 0,
+            #[cfg(feature = "debug-lobby")]
+            screen_ind: 1,
+            client_id,
         }
     }
 
@@ -341,6 +444,8 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
+            screen_objects::update_screen(new_size.width, new_size.height, &self.device, &mut self.screens[0].objects[0]);
+
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
@@ -363,32 +468,19 @@ impl State {
 
     fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
-        // TODO: game state to scene graph conversion should be done in the scene graph itself
-        // like `scene_graph.load_game_state(game_state)`
+        // game state to scene graph conversion and update
+        self.scene.load_game_state(
+            game_state,
+            &mut self.player_controller,
+            &mut self.player,
+            &mut self.camera_state,
+            dt,
+            self.client_id,
+        );
 
-        // just for testing
-        // update the camera target
-        if !game_state.players.is_empty() {
-            let player_state = &game_state.players[0];
-            // update player controller (player, camera, etc) with the latest player state
-            self.player_controller.update(
-                &mut self.player,
-                &mut self.camera_state,
-                player_state,
-                dt,
-            );
+        self.scene.draw_scene_dfs();
 
-            // update player instance (replace 0 with player_id) (maybe move to scene graph later)
-            let player_instances = self
-                .scene
-                .objects_and_instances
-                .get_mut(
-                    &(scene::ModelIndices::PLAYER as usize)
-                )
-                .unwrap();
-            player_instances[0].transform = self.player.calc_transf_matrix();
-        }
-
+        // camera update
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
@@ -397,6 +489,7 @@ impl State {
             0,
             bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
         );
+        // light update
         self.queue.write_buffer(
             &self.light_state.light_buffer,
             0,
@@ -421,7 +514,7 @@ impl State {
             for (index, instances) in self.scene.objects_and_instances.iter() {
                 let count = instances.len();
                 let instanced_obj =
-                    model::InstancedModel::new(&self.scene.objects.get(index).unwrap(), instances, &self.device);
+                    model::InstancedModel::new(self.scene.objects.get(index).unwrap(), instances, &self.device);
                 instanced_objs.push((instanced_obj, count));
             }
 
@@ -432,9 +525,9 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            r: 0.274,
+                            g: 0.698,
+                            b: 0.875,
                             a: 1.0,
                         }),
                         store: true,
@@ -459,6 +552,23 @@ impl State {
                     0..obj.1 as u32,
                     &self.camera_state.camera_bind_group,
                 );
+            }
+
+            render_pass.set_pipeline(&self.render_pipeline_2d);
+
+            // TO REMOVE: for testing
+            if self.screen_ind == 1{
+                self.screens[self.screen_ind].ranges[1] = 0..5;
+            }
+
+            for i in 0..self.screens[self.screen_ind].objects.len(){
+                let obj = &self.screens[self.screen_ind].objects[i];
+                let range = &self.screens[self.screen_ind].ranges[i];
+                render_pass.set_vertex_buffer(0, obj.vbuf.slice(..));
+                render_pass.set_vertex_buffer(1, obj.inst_buf.slice(..));
+                render_pass.set_index_buffer(obj.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.set_bind_group(0, &obj.bind_group, &[]);
+                render_pass.draw_indexed(0..obj.num_indices, 0, range.clone());
             }
         }
 
