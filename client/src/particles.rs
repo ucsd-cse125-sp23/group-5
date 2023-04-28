@@ -1,8 +1,9 @@
 use instant::Duration;
+use crate::texture;
 extern crate nalgebra_glm as glm;
 
 #[rustfmt::skip]
-const PVertex : [[f32; 2];4] = [
+pub const PVertex : [[f32; 2];4] = [
     [0.0, 1.0],
     [0.0, 0.0],
     [1.0, 0.0],
@@ -10,7 +11,7 @@ const PVertex : [[f32; 2];4] = [
 ];
 
 #[rustfmt::skip]
-const Pind : [u16; 6] =[
+pub const Pind : [u16; 6] =[
     0, 2, 1,
     0, 3, 2,
 ];
@@ -33,55 +34,36 @@ pub struct Particle{
     _pad0: u32,
 }
 
+impl Particle{
+    const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
+        1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
+        4 => Float32,   5 => Float32,   6 => Uint32,
+        7 => Uint32,
+    ];
+}
+
 impl crate::model::Vertex for Particle{
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
-                    shader_location: 2,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
-                    shader_location: 3,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
-                    shader_location: 4,
-                    format: wgpu::VertexFormat::Float32,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 13]>() as wgpu::BufferAddress,
-                    shader_location: 5,
-                    format: wgpu::VertexFormat::Float32,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 14]>() as wgpu::BufferAddress,
-                    shader_location: 6,
-                    format: wgpu::VertexFormat::Uint32,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 15]>() as wgpu::BufferAddress,
-                    shader_location: 7,
-                    format: wgpu::VertexFormat::Uint32,
-                },
-            ],
+            attributes: &Self::ATTRIBS,
         }
     }
 }
 
 pub trait ParticleGenerator{
-    fn generate(list: &mut Vec<Particle>, n: u32);
+    //// 
+    /// list: vector to place generated particles in
+    /// spawning time: amount of time to keep spawning
+    /// spawn rate: average rate of spawning in particles per second
+    pub fn generate(
+        list: &mut Vec<Particle>,
+        spawning_time: std::time::Duration,
+        spawn_rate: u32,
+        num_textures: u32,
+    );
 }
 
 pub struct ConeGenerator{
@@ -104,15 +86,18 @@ impl ConeGenerator{
 }
 
 impl ParticleGenerator for ConeGenerator{
-    fn generate(list: &mut Vec<Particle>, n: u32){
+    fn generate(
+        list: &mut Vec<Particle>,
+        spawning_time: std::time::Duration,
+        spawn_rate: u32,
+        num_textures: u32,
+    ){
         todo!();
     }
 }
 
 pub struct ParticleSystem{
-    // start time, end time, lifetime, generation speed
-    // current time
-    // textures
+    // textures - texture, bind group, number of particle types
     start_time: std::time::Instant,
     generation_time: std::time::Duration,
     last_particle_death: std::time::Duration,
@@ -121,6 +106,8 @@ pub struct ParticleSystem{
     generation_speed: u32, // measured per second
     gen: impl ParticleGenerator,
     particles: Vec<Particle>,
+    texture: texture::Texture,
+    num_textures: u32,
     bufs: Vec<wgpu::Buffer>,
     bind_groups: Vec<wgpu::BindGroup>,
 }
@@ -133,8 +120,12 @@ impl ParticleSystem{
         particle_lifetime: std::time::Duration,
         generation_speed: u32, // measured per second
         gen: impl ParticleGenerator,
+        texture: texture::Texture,
+        num_textures: u32,
     ) -> Self{
-        todo!();
+        particles = vec![];
+        gen::generate(particles, generation_time, generation_speed);
+
     }
 
     pub fn done(&self) -> bool{
