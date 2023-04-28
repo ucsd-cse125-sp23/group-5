@@ -174,7 +174,7 @@ mod tests {
         assert_ne!(
             ext.game_state()
                 .players
-                .get(&(1 as u32))
+                .get(&1_u32)
                 .unwrap()
                 .transform
                 .translation,

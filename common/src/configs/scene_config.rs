@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use nalgebra_glm::{Quat, TVec3};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigTransform {

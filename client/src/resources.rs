@@ -232,5 +232,9 @@ pub async fn load_model(
         })
         .collect::<Vec<_>>();
 
-    Ok(model::Model { meshes, materials, path: file_path.to_string() })
+    Ok(model::Model {
+        meshes,
+        materials,
+        path: file_path.to_string(),
+    })
 }

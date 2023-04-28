@@ -60,7 +60,7 @@ fn main() {
     // prod
     // write the client_id, session_id to file
     #[cfg(not(feature = "debug-recon"))]
-    dump_ids(session_data_path.clone(), client_id, session_id);
+    dump_ids(session_data_path, client_id, session_id);
 
     // for debug
     #[cfg(feature = "debug-recon")]

@@ -1,7 +1,6 @@
+use glm::vec3;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use glm::vec3;
-use log::info;
 
 use winit::event::*;
 
@@ -16,8 +15,8 @@ mod lights;
 mod player;
 mod resources;
 mod scene;
-mod texture;
 mod screen_objects;
+mod texture;
 extern crate nalgebra_glm as glm;
 
 use common::configs::{from_file, model_config::ConfigModels};
@@ -25,9 +24,9 @@ use common::configs::{from_file, model_config::ConfigModels};
 pub mod event_loop;
 pub mod inputs;
 
+use common::configs::scene_config::ConfigSceneGraph;
 use common::core::states::GameState;
 use winit::window::Window;
-use common::configs::scene_config::ConfigSceneGraph;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -162,32 +161,31 @@ impl State {
             });
 
         let texture_bind_group_layout_2d =
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-            label: Some("2d_texture_bind_group_layout"),
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("2d_texture_bind_group_layout"),
+            });
 
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
-
 
         // Scene
         let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
@@ -250,7 +248,7 @@ impl State {
                 push_constant_ranges: &[],
             });
 
-            let render_pipeline_layout_2d =
+        let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[&texture_bind_group_layout_2d],
@@ -291,7 +289,7 @@ impl State {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::LessEqual, // 1.
-                stencil: wgpu::StencilState::default(),     // 2.
+                stencil: wgpu::StencilState::default(),          // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState {
@@ -308,7 +306,10 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader_2d,
                 entry_point: "vs_main",
-                buffers: &[screen_objects::Vertex::desc(), screen_objects::ScreenInstance::desc()],
+                buffers: &[
+                    screen_objects::Vertex::desc(),
+                    screen_objects::ScreenInstance::desc(),
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader_2d,
@@ -335,7 +336,7 @@ impl State {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::LessEqual, // 1.
-                stencil: wgpu::StencilState::default(),     // 2.
+                stencil: wgpu::StencilState::default(),          // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState {
@@ -396,7 +397,12 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
-            screen_objects::update_screen(new_size.width, new_size.height, &self.device, &mut self.screens[0].objects[0]);
+            screen_objects::update_screen(
+                new_size.width,
+                new_size.height,
+                &self.device,
+                &mut self.screens[0].objects[0],
+            );
 
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
@@ -465,8 +471,11 @@ impl State {
 
             for (index, instances) in self.scene.objects_and_instances.iter() {
                 let count = instances.len();
-                let instanced_obj =
-                    model::InstancedModel::new(self.scene.objects.get(index).unwrap(), instances, &self.device);
+                let instanced_obj = model::InstancedModel::new(
+                    self.scene.objects.get(index).unwrap(),
+                    instances,
+                    &self.device,
+                );
                 instanced_objs.push((instanced_obj, count));
             }
 
@@ -509,11 +518,11 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline_2d);
 
             // TO REMOVE: for testing
-            if self.screen_ind == 1{
+            if self.screen_ind == 1 {
                 self.screens[self.screen_ind].ranges[1] = 0..5;
             }
 
-            for i in 0..self.screens[self.screen_ind].objects.len(){
+            for i in 0..self.screens[self.screen_ind].objects.len() {
                 let obj = &self.screens[self.screen_ind].objects[i];
                 let range = &self.screens[self.screen_ind].ranges[i];
                 render_pass.set_vertex_buffer(0, obj.vbuf.slice(..));

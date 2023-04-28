@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use crate::instance;
-use crate::resources::load_model;
+
 use crate::texture;
 
 pub struct Model {

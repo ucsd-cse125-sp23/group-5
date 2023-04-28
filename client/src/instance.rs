@@ -1,7 +1,6 @@
 use wgpu::util::DeviceExt;
 extern crate nalgebra_glm as glm;
 
-
 pub type Transform = nalgebra_glm::TMat4<f32>;
 
 // Instances
@@ -28,9 +27,7 @@ impl Instance {
     pub fn to_raw(&self) -> InstanceRaw {
         let tmp = glm::inverse_transpose(self.transform);
         let normal = glm::mat3(
-            tmp[0], tmp[4], tmp[8],
-            tmp[1], tmp[5], tmp[9],
-            tmp[2], tmp[6], tmp[10],
+            tmp[0], tmp[4], tmp[8], tmp[1], tmp[5], tmp[9], tmp[2], tmp[6], tmp[10],
         );
         InstanceRaw {
             model: self.transform.into(),
