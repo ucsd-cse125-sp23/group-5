@@ -1,17 +1,15 @@
 use crate::camera::{Camera, CameraState};
 use crate::instance::{Instance, Transform};
 use crate::model::{self, InstancedModel, Model};
-use crate::{instance, resources};
-use glm::{Quat, TMat4, TVec3};
+use glm::{identity, Mat4, Quat, TMat3, TMat4, TVec3};
 use log::{debug, error, info};
-use std::cell::Cell;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{MutexGuard};
 
 use crate::player::{Player, PlayerController};
 use common::core::states::GameState;
 use nalgebra_glm as glm;
+
 
 pub enum ModelIndices {
     ISLAND = 0,
@@ -20,24 +18,7 @@ pub enum ModelIndices {
     FERRIS = 3,
 }
 
-pub type NodeId = u32;
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum NodeInstanceID {
-    WORLD_NODE = 0,
-    PLAYER_NODE = 1,
-    ISLAND_NODE = 2,
-    TABLE_NODE = 3,
-    TABLE_TOP_NODE = 4,
-    TABLE_LEG1_NODE = 5,
-    TABLE_LEG2_NODE = 6,
-    TABLE_LEG3_NODE = 7,
-    TABLE_LEG4_NODE = 8,
-    FERRIS_NODE = 9,
-}
-
-static OTHER_PLAYER_NODE_ID_START: u32 = 256;
-static PREVIOUS_PLAYER_COUNT: u32 = 256;
+pub type NodeId = String;
 
 type ModelIndex = usize;
 
@@ -55,12 +36,12 @@ impl Node {
         }
     }
 
-    pub fn add_model(&mut self, model_index: ModelIndex, transform: Transform) {
-        self.models.push((model_index, transform));
+    pub fn add_model(&mut self, model_index: ModelIndex) {
+        self.models.push((model_index, glm::identity()));
     }
 
-    pub fn add_child_id(&mut self, node_id: NodeId) {
-        self.child_ids.push(node_id);
+    pub fn add_model_at(&mut self, model_index: ModelIndex, transform: Transform, index: usize) {
+        self.models.insert(index, (model_index, transform));
     }
 }
 
@@ -72,31 +53,37 @@ pub struct Scene {
 }
 
 pub enum NodeKind {
-    Player = 1 << 0,
-    Object = 1 << 8,
-    World = 1 << 16,
+    Player,
+    Object,
+    World,
 }
 
 impl NodeKind {
-    pub fn base_id(&self) -> u32 {
+    pub fn base_id(&self) -> NodeId {
         match self {
-            NodeKind::Player => 0,
-            NodeKind::Object => 256,
-            NodeKind::World => 512,
+            NodeKind::Player => "player",
+            NodeKind::Object => "object",
+            NodeKind::World => "world"
+        }.to_string()
+    }
+
+    // anything that can be displayed
+    pub fn node_id(&self, tag: impl Into<NodeId>) -> NodeId {
+        format!("{}:{}", self.base_id(), tag.into())
+    }
+
+    pub fn from_node_id(id: &NodeId) -> Option<Self> {
+        match id.split(":").next().unwrap() {
+            "player" => Some(NodeKind::Player),
+            "object" => Some(NodeKind::Object),
+            "world" => Some(NodeKind::World),
+            _ => None
         }
-    }
-
-    pub fn node_id(&self, offset: u8) -> u32 {
-        self.base_id() + offset as u32
-    }
-
-    pub fn offset_from_base(&self, node_id: u32) -> u8 {
-        (node_id - self.base_id()) as u8
     }
 }
 
 impl Scene {
-    pub fn new(objs: HashMap<ModelIndex, model::Model>) -> Self {
+    pub fn new(objs: HashMap<ModelIndex, Model>) -> Self {
         Scene {
             objects: objs,
             scene_graph: HashMap::from([(NodeKind::World.base_id(), (Node::new(), glm::identity()))]),
@@ -106,7 +93,7 @@ impl Scene {
 
     pub fn add_node(&mut self, node_id: NodeId, transform: Transform) -> &mut Node {
         let node = Node::new();
-        self.scene_graph.insert(node_id, (node, transform));
+        self.scene_graph.insert(node_id.clone(), (node, transform));
         let (node, _) = self.scene_graph.get_mut(&node_id).unwrap();
         node
     }
@@ -118,10 +105,10 @@ impl Scene {
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
         let (parent_node, _) = self.scene_graph.get_mut(&parent_node_id).unwrap();
-        parent_node.child_ids.push(child_node_id);
+        parent_node.child_ids.push(child_node_id.clone());
 
         // add the child node to the scene graph
-        self.add_node(child_node_id, transform);
+        self.add_node(child_node_id.clone(), transform);
         let (child_node, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
         child_node
     }
@@ -132,10 +119,10 @@ impl Scene {
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
         let (parent_node, _) = self.scene_graph.get_mut(&NodeKind::World.base_id()).unwrap();
-        parent_node.child_ids.push(child_node_id);
+        parent_node.child_ids.push(child_node_id.clone());
 
         // add the child node to the scene graph
-        self.add_node(child_node_id, transform);
+        self.add_node(child_node_id.clone(), transform);
         let (child_node, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
         child_node
     }
@@ -155,7 +142,7 @@ impl Scene {
         if game_state.players.contains_key(&player_id) {
             game_state.players.iter().for_each(
                 |(id, _player_state)| {
-                    let node_id = NodeKind::Player.node_id((*id - 1) as u8);
+                    let node_id = NodeKind::Player.node_id(id.to_string());
                     if !self.scene_graph.contains_key(&node_id) {
                         self.add_player_node(node_id);
                     }
@@ -167,7 +154,7 @@ impl Scene {
             player_controller.update(player, camera_state, player_state, dt);
 
             for (id, player_state) in game_state.players.iter() {
-                let node_id = NodeKind::Player.node_id((*id - 1) as u8);
+                let node_id = NodeKind::Player.node_id(id.to_string());
                 self.scene_graph.get_mut(&node_id).unwrap().1 = Player::calc_transf_matrix(
                     player_state.transform.translation,
                     player_state.transform.rotation,
@@ -238,24 +225,135 @@ impl Scene {
     }
 
     pub fn init_scene_graph(&mut self) {
-        self.add_player_node(NodeKind::Player.node_id(1));
+        self.add_player_node(NodeKind::Player.base_id());
 
-        self.add_world_child_node(NodeKind::Object.node_id(1),
+        self.add_world_child_node(NodeKind::Object.node_id("island"),
                                   glm::translate(&glm::identity(), &glm::vec3(0.0, -9.7, 0.0)),
         )
-            .add_model(ModelIndices::ISLAND as usize, glm::identity());
+            .add_model(ModelIndices::ISLAND as usize);
 
-        self.add_child_node(NodeKind::Player.node_id(1),
-                            NodeKind::Object.node_id(2),
+        self.add_child_node(NodeKind::Player.base_id(),
+                            NodeKind::Object.node_id("ferris"),
                             glm::translate(&glm::identity(), &glm::vec3(0.0, 1.0, 0.0)),
         )
-            .add_model(ModelIndices::FERRIS as usize, glm::identity());
+            .add_model(ModelIndices::FERRIS as usize);
     }
 
     pub fn add_player_node(&mut self, node_id: NodeId) {
         self.add_world_child_node(node_id,
                                   glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-            .add_model(ModelIndices::PLAYER as usize, glm::identity());
+            .add_model(ModelIndices::PLAYER as usize);
+    }
+}
+
+use common::map_config::*;
+
+impl Scene {
+    pub fn from_json_scene_graph(json_scene_graph: &ConfigSceneGraph) -> Self {
+        let mut scene = Self::new(HashMap::new());
+
+        //TODO: handle model loading
+
+        for node in &json_scene_graph.nodes {
+            Scene::add_node_from_json(&mut scene, node, None);
+        }
+
+        scene
+    }
+
+
+    fn add_node_from_json(
+        scene: &mut Scene,
+        json_node: &ConfigNode,
+        parent_id: Option<NodeId>,
+    ) {
+        let node_transform = Transform::new_translation(&json_node.transform.position)
+            * glm::quat_to_mat4(&json_node.transform.rotation);
+
+        let node = match parent_id {
+            Some(parent_id) => scene.add_child_node(parent_id, json_node.id.clone(), node_transform),
+            None => scene.add_node(json_node.id.clone(), node_transform),
+        };
+
+        if let Some(model_index) = json_node.model {
+            node.add_model(model_index);
+        }
+
+        if let Some(ref children) = json_node.children {
+            for child in children {
+                Scene::add_node_from_json(scene, child, Some(json_node.id.clone()));
+            }
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::Scene;
+    use serde_json::json;
+    use nalgebra_glm as glm;
+    use common::map_config::ConfigSceneGraph;
+
+    // Test reading a scene graph from an inline JSON string
+    #[test]
+    fn test_from_json_scene_graph() {
+        // Define the JSON string
+        let json_scene_graph_str = r#"
+        {
+          "nodes": [
+            {
+              "id": "world",
+              "type": "World",
+              "transform": {
+                "position": [0, 0, 0],
+                "rotation": [0, 0, 0, 1]
+              },
+              "model": 1
+            },
+            {
+              "id": "object:123",
+              "type": "Object",
+              "transform": {
+                "position": [1, 1, 1],
+                "rotation": [0, 0, 0, 1]
+              },
+              "children": [
+                {
+                  "id": "object:456",
+                  "type": "Object",
+                  "transform": {
+                    "position": [2, 2, 2],
+                    "rotation": [0, 0, 0, 1]
+                  },
+                  "model": 2
+                }
+              ]
+            }
+          ],
+            "models": [
+            {
+              "index": 1,
+              "path": "models/island.obj"
+            },
+            {
+              "index": 2,
+              "path": "models/ferris.obj"
+            }
+          ]
+        }
+        "#;
+
+        // Deserialize the JSON string into a ConfigSceneGraph
+        let json_scene_graph: ConfigSceneGraph = serde_json::from_str(json_scene_graph_str).unwrap();
+
+        // Create a Scene from the ConfigSceneGraph
+        let scene = Scene::from_json_scene_graph(&json_scene_graph);
+
+        // Test if the scene was created successfully
+        assert!(scene.scene_graph.contains_key("world"));
+        assert!(scene.scene_graph.contains_key("object:123"));
+        assert!(scene.scene_graph.contains_key("object:456"));
     }
 }

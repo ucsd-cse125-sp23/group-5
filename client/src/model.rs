@@ -1,11 +1,19 @@
 use std::ops::Range;
 
 use crate::instance;
+use crate::resources::load_model;
 use crate::texture;
 
 pub struct Model {
+    pub path: String,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
+}
+
+impl Model {
+    pub async fn load(&self) {
+        load_model(&self.path).await;
+    }
 }
 
 pub struct InstancedModel<'a> {
