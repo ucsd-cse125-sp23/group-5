@@ -229,6 +229,11 @@ impl CommandHandler for MoveCommandHandler {
         // Step 4: Calculate the required torque using the gain factor
         let required_torque = angular_velocity_difference * GAIN;
 
+        // TODO: remove debug code
+        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
+        //     return Ok(());
+        // }
+
         // Step 5: Apply the torque to the player's rigid body
         player_rigid_body.apply_torque_impulse(required_torque, true);
 
@@ -263,6 +268,10 @@ impl CommandHandler for JumpCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        if command_on_cooldown(game_state, self.player_id, Command::Jump) {
+            return Ok(());
+        }
+
         // check if player is touching the ground
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
@@ -312,18 +321,17 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
+        // TODO: remove debuge code
+        game_state.insert_cooldown(self.player_id, Command::Jump, 5);
+
         Ok(())
     }
 }
 
-fn set_cooldown(
-    game_state: &mut GameState,
-    client_id: u32,
-    ability: Command,
-    cooldown_in_sec: usize,
-) {
-}
-
-fn abilities_on_cooldown(game_state: &mut GameState, client_id: u32, ability: Command) -> bool {
-    true
+fn command_on_cooldown(game_state: &mut GameState, client_id: u32, command: Command) -> bool {
+    game_state
+        .player(client_id)
+        .unwrap()
+        .on_cooldown
+        .contains_key(&command)
 }
