@@ -321,7 +321,7 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
-        // TODO: remove debuge code
+        // TODO: remove debug code
         game_state.insert_cooldown(self.player_id, Command::Jump, 5);
 
         Ok(())
