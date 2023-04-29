@@ -2,7 +2,7 @@ use wgpu::util::DeviceExt;
 use crate::texture;
 use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
-use std::f32::consts::FRAC_PI_2;
+use std::f32::consts::{FRAC_PI_2, PI};
 // use rand_distr::Distribution;
 // use rand::Rng;
 
@@ -39,14 +39,14 @@ pub const PInd : &[u16; 6] = &[
 /// start_pos[3]: angle at the start
 /// velocity[3]: angular velocity
 /// color: color to tint the particle
-/// spawn_time: relative to the time which the system was created
+/// spawn_time: relative to the time which the system was created in seconds
 /// size: diameter in cm
 pub struct Particle{ 
     // use last f32 as angluar position/velocity
     start_pos: [f32; 4],
     velocity: [f32; 4],
     color: [f32; 4],
-    spawn_time: u32,
+    spawn_time: f32,
     size: f32,
     tex_id: f32,
     _pad0: u32,
@@ -55,7 +55,7 @@ pub struct Particle{
 impl Particle{
     const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
-        4 => Uint32 ,   5 => Float32,   6 => Float32,
+        4 => Float32 ,  5 => Float32,   6 => Float32,
         7 => Uint32,
     ];
 }
@@ -140,7 +140,7 @@ impl ParticleGenerator for LineGenerator{
             spawn_rate: f32,
             num_textures: u32,
         ) -> u32 {
-        let n : u32 = ((spawning_time.as_millis() / 1000) as f32 * spawn_rate).floor() as u32;
+        let n : u32 = (spawning_time.as_secs_f32() * spawn_rate).floor() as u32;
         // let dist = rand_distr::Normal::new(1.0, 0.2).unwrap();
         // let mut rng = rand::thread_rng();
         for i in 0..n{
@@ -149,8 +149,8 @@ impl ParticleGenerator for LineGenerator{
                 Particle {
                     start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                     color: [1.0, 1.0, 1.0, 1.0], //TODO
-                    velocity:  [v[0], v[1], v[2], 0.0],
-                    spawn_time: (i * ((1000.0 / (spawn_rate as f32)).floor() as u32)),
+                    velocity:  [v[0], v[1], v[2], PI],
+                    spawn_time: (i as f32) * 1.0 / spawn_rate,
                     size: 50.0,
                     tex_id: 0.0,
                     _pad0: 0,
@@ -164,7 +164,7 @@ impl ParticleGenerator for LineGenerator{
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct PSRaw{
-    lifetime: u32, // in ms
+    lifetime: f32, // in seconds
     num_textures: f32,
 }
 
@@ -188,7 +188,7 @@ pub struct ParticleSystem{
 impl ParticleSystem{
     pub fn new(
         generation_time: std::time::Duration,
-        particle_lifetime: u32, // in milliseconds
+        particle_lifetime: f32, // in seconds
         generation_speed: f32, // measured per second
         gen: impl ParticleGenerator,
         texture: &texture::Texture,
@@ -234,9 +234,9 @@ impl ParticleSystem{
             label: None,
         });
         // Time
-        let last_particle_death = std::time::Duration::from_millis((particles[particles.len() - 1].spawn_time + particle_lifetime) as u64);
+        let last_particle_death = std::time::Duration::from_secs_f32((particles[particles.len() - 1].spawn_time + particle_lifetime));
         println!("number of particles: {}", num_instances);
-        println!("last particle death: {:?}", last_particle_death.as_millis());
+        println!("last particle death: {:?}", last_particle_death.as_secs_f32());
         Self{
             // generation_time,
             // generation_speed,
@@ -293,7 +293,7 @@ impl ParticleDrawer{
             contents: bytemuck::cast_slice(PInd),
             usage: wgpu::BufferUsages::INDEX,
         });
-        let elapsed = 0;
+        let elapsed: f32  = 0.0;
         let tbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Time Elapsed Buffer"),
             contents: bytemuck::cast_slice(&[elapsed]),
@@ -435,7 +435,7 @@ impl ParticleDrawer{
             render_pass.set_bind_group(0, &camera_bind_group, &[]);
             render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
 
-            let elapsed = ps.start_time.elapsed().as_millis() as u32;
+            let elapsed = ps.start_time.elapsed().as_secs_f32();
             queue.write_buffer(&self.tbuf, 0, bytemuck::cast_slice(&[elapsed]));
             render_pass.set_bind_group(2, &self.t_bind_group, &[]);
 

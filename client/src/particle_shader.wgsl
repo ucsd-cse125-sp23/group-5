@@ -5,7 +5,7 @@ struct InstanceInput {
     @location(1) start_pos: vec4<f32>,
     @location(2) velocity: vec4<f32>,
     @location(3) color: vec4<f32>,
-    @location(4) spawn_time: u32,
+    @location(4) spawn_time: f32,
     @location(5) size: f32,
     @location(6) tex_id: f32,
     @location(7) _pad0: u32,
@@ -26,14 +26,14 @@ struct CameraUniform {
 var<uniform> camera: CameraUniform;
 
 struct InfoUniform{
-    lifetime: u32, // in ms
+    lifetime: f32, // in sec
     num_textures: f32,
 }
 @group(1) @binding(2)
 var<uniform> info: InfoUniform;
 
 @group(2) @binding(0)
-var<uniform> time_elapsed: u32;
+var<uniform> time_elapsed: f32;
 
 @vertex
 fn vs_main(
@@ -48,6 +48,8 @@ fn vs_main(
         // TODO
         var start_disp = vec3<f32>(instance.start_pos[0], instance.start_pos[1], instance.start_pos[2]);
         var start_angle = instance.start_pos[3];
+        var linear_v = vec3<f32>(instance.velocity[0], instance.velocity[1], instance.velocity[2]);
+        var angular_v = instance.velocity[3];
         // assuming camera homogenous coord is always 1.0
         var cpos = vec3<f32>(camera.view_pos[0], camera.view_pos[1], camera.view_pos[2]);
         var z_prime = normalize(cpos - start_disp);
@@ -72,6 +74,8 @@ fn vs_main(
         // then move to start position
         position += start_disp;
         // then move according to velocity
+        var time_alive = time_elapsed - instance.spawn_time;
+        position += time_alive * linear_v;
         // then project
         out.clip_position = camera.view_proj * vec4<f32>(position, 1.0);
         // TODO: remove
