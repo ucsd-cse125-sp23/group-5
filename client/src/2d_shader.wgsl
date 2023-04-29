@@ -31,7 +31,7 @@ fn vs_main(
     );
     var out: VertexOutput;
     out.color = model.color;
-    out.clip_position = vec4(model.position, DEPTH, 1.0);
+    out.clip_position = model_matrix * vec4(model.position, DEPTH, 1.0);
     out.tex_coords = model.texture;
     return out;
 }
