@@ -169,13 +169,6 @@ struct PSRaw{
 }
 
 pub struct ParticleSystem{
-    // for repeated generation
-    // generation_time: std::time::Duration,
-    // particle_lifetime: u32, // in milliseconds
-    // generation_speed: f32, // measured per second
-    // gen: Box<dyn ParticleGenerator +'a>,
-    // num_textures: u32,
-    // end repeated generation
     start_time: std::time::Instant,
     last_particle_death: std::time::Duration,
     // TODO: poisson process?
@@ -238,11 +231,6 @@ impl ParticleSystem{
         println!("number of particles: {}", num_instances);
         println!("last particle death: {:?}", last_particle_death.as_secs_f32());
         Self{
-            // generation_time,
-            // generation_speed,
-            // particle_lifetime,
-            // gen: Box::new(gen),
-            // num_textures,
             start_time: std::time::Instant::now(),
             last_particle_death,
             particles,

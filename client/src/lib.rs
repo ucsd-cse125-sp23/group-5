@@ -455,8 +455,8 @@ impl State {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual, // 1.
-                stencil: wgpu::StencilState::default(),     // 2.
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState {
@@ -473,7 +473,7 @@ impl State {
         let test_particle = particles::ParticleSystem::new(
             std::time::Duration::from_secs(60),
             2.0,
-            1.0,
+            5.0,
             test_particle_gen,
             &particle_tex,
             &particle_renderer.tex_bind_group_layout,
