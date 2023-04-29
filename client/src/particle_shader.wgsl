@@ -64,6 +64,14 @@ fn vs_main(
         // scale first
         var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * instance.size * 0.01;
         // TODO: then rotate + angular velocity rotation
+        var time_alive = time_elapsed - instance.spawn_time;
+        var theta = start_angle + time_alive * angular_v;
+        var rot_mat = mat3x3<f32>(
+             cos(theta), sin(theta), 0.0,
+            -sin(theta), cos(theta), 0.0,
+            0.0, 0.0, 1.0,
+        );
+        position = rot_mat * position;
         // then move to alternate coordinates 
         let coord_matrix = mat3x3<f32>(
             x_prime,
@@ -74,12 +82,11 @@ fn vs_main(
         // then move to start position
         position += start_disp;
         // then move according to velocity
-        var time_alive = time_elapsed - instance.spawn_time;
         position += time_alive * linear_v;
         // then project
         out.clip_position = camera.view_proj * vec4<f32>(position, 1.0);
         // TODO: remove
-        out.clip_position[2] = 0.0; // set z to 0 so we can see it
+        // out.clip_position[2] = 0.0; // set z to 0 so we can see it
     }
     return out;
 }
