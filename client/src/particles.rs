@@ -1,10 +1,11 @@
-use instant::Duration;
 use wgpu::util::DeviceExt;
 use crate::texture;
 use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
 use std::f32::consts::FRAC_PI_2;
-use std::num;
+use std::ops::Not;
+// use rand_distr::Distribution;
+// use rand::Rng;
 
 #[rustfmt::skip]
 pub const PVertex : &[[f32; 2];4] = &[
@@ -40,6 +41,7 @@ pub const PInd : &[u16; 6] = &[
 /// velocity[3]: angular velocity
 /// color: color to tint the particle
 /// spawn_time: relative to the time which the system was created
+/// size: radius in cm
 pub struct Particle{ 
     // use last f32 as angluar position/velocity
     start_pos: [f32; 4],
@@ -116,6 +118,49 @@ impl ParticleGenerator for ConeGenerator{
         todo!();
     }
 }
+pub struct LineGenerator{
+    source: glm::Vec3,
+    dir: glm::Vec3,
+}
+
+impl LineGenerator{
+    //// Line particle generator
+    pub fn new(source: glm::Vec3, dir: glm::Vec3) -> Self{
+        Self{
+            source,
+            dir,
+        }
+    }
+}
+
+impl ParticleGenerator for LineGenerator{
+    fn generate(
+            &self,
+            list: &mut Vec<Particle>,
+            spawning_time: std::time::Duration,
+            spawn_rate: u32,
+            num_textures: u32,
+        ) -> u32 {
+        let n : u32 = (spawning_time.as_millis() * (spawn_rate as u128) / 1000) as u32;
+        // let dist = rand_distr::Normal::new(1.0, 0.2).unwrap();
+        // let mut rng = rand::thread_rng();
+        for i in 0..n{
+            let v = self.dir; //* dist.sample(&mut rng);
+            list.push(
+                Particle {
+                    start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
+                    color: [1.0, 1.0, 1.0, 1.0], //TODO
+                    velocity:  [v[0], v[1], v[2], 0.0],
+                    spawn_time: (i * spawn_rate / 1000),
+                    size: 3.0,
+                    tex_id: 0,
+                    _pad0: 0,
+                }
+            );
+        }
+        return n;
+    }
+}
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -177,7 +222,7 @@ impl ParticleSystem{
                     resource: wgpu::BindingResource::Sampler(&texture.sampler),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 0,
+                    binding: 2,
                     resource: meta_buffer.as_entire_binding(),
                 },
             ],
@@ -204,11 +249,13 @@ impl ParticleSystem{
 /// Should only have one in the entire client
 /// This struct stores the buffers and layouts 
 /// to prevent (more) clutter in State::new()
+/// systems: should always
 pub struct ParticleDrawer{
     vbuf: wgpu::Buffer,
     ibuf: wgpu::Buffer,
     pub tex_bind_group_layout: wgpu::BindGroupLayout,
     render_pipeline: wgpu::RenderPipeline,
+    pub systems: Vec<ParticleSystem>,
 }
 
 impl ParticleDrawer{
@@ -311,10 +358,22 @@ impl ParticleDrawer{
             ibuf,
             tex_bind_group_layout,
             render_pipeline,
+            systems: vec![],
         }
     }
 
-    pub fn draw(ps: &ParticleSystem){
-        todo!();
+    pub fn draw<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>, camera_bind_group: &'a wgpu::BindGroup){
+        // remove dead systems
+        self.systems = self.systems.drain(..).filter(|x| x.done().not()).collect();
+
+        for ps in &self.systems{
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
+            render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
+            render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_bind_group(0, &camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
+            render_pass.draw_indexed(0..6, 0, 0..ps.num_instances);
+        }
     }
 }
