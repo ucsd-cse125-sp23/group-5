@@ -40,7 +40,7 @@ pub const PInd : &[u16; 6] = &[
 /// velocity[3]: angular velocity
 /// color: color to tint the particle
 /// spawn_time: relative to the time which the system was created
-/// size: radius in cm
+/// size: diameter in cm
 pub struct Particle{ 
     // use last f32 as angluar position/velocity
     start_pos: [f32; 4],
@@ -151,7 +151,7 @@ impl ParticleGenerator for LineGenerator{
                     color: [1.0, 1.0, 1.0, 1.0], //TODO
                     velocity:  [v[0], v[1], v[2], 0.0],
                     spawn_time: (i * ((1000.0 / (spawn_rate as f32)).floor() as u32)),
-                    size: 3.0,
+                    size: 50.0,
                     tex_id: 0.0,
                     _pad0: 0,
                 }

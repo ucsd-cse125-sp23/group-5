@@ -469,7 +469,7 @@ impl State {
 
         let mut particle_renderer = particles::ParticleDrawer::new(&device, &config, &camera_state.camera_bind_group_layout);
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
-        let test_particle_gen = particles::LineGenerator::new(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+        let test_particle_gen = particles::LineGenerator::new(glm::vec3(0.0, -5.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
         let test_particle = particles::ParticleSystem::new(
             std::time::Duration::from_secs(30),
             1000,

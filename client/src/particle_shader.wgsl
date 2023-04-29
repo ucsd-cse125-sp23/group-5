@@ -45,8 +45,37 @@ fn vs_main(
     if (instance.spawn_time > time_elapsed || instance.spawn_time + info.lifetime < time_elapsed){
         out.clip_position = vec4(2.0, 2.0, 2.0, 1.0);
     } else {
-    // TODO
-        out.clip_position = vec4(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0, 1.0);
+        // TODO
+        var start_disp = vec3<f32>(instance.start_pos[0], instance.start_pos[1], instance.start_pos[2]);
+        var start_angle = instance.start_pos[3];
+        // assuming camera homogenous coord is always 1.0
+        var cpos = vec3<f32>(camera.view_pos[0], camera.view_pos[1], camera.view_pos[2]);
+        var z_prime = normalize(cpos - start_disp);
+        var up = vec3<f32>(0.0, 1.0, 0.0);
+        var x_prime = normalize(cross(up, z_prime));
+        // exact orientation of axes is not super important
+        if (dot(x_prime, x_prime) == 0.0){
+            up = vec3<f32>(1.0, 0.0, 0.0);
+            x_prime = normalize(cross(up, z_prime));
+        }
+        var y_prime = cross(z_prime, x_prime);
+        // scale first
+        var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * instance.size * 0.01;
+        // TODO: then rotate + angular velocity rotation
+        // then move to alternate coordinates 
+        let coord_matrix = mat3x3<f32>(
+            x_prime,
+            y_prime,
+            z_prime,
+        );
+        position = coord_matrix * position;
+        // then move to start position
+        position += start_disp;
+        // then move according to velocity
+        // then project
+        out.clip_position = camera.view_proj * vec4<f32>(position, 1.0);
+        // TODO: remove
+        out.clip_position[2] = 0.0; // set z to 0 so we can see it
     }
     return out;
 }
