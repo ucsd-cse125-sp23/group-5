@@ -5,7 +5,7 @@ struct InstanceInput {
     @location(1) start_pos: vec4<f32>,
     @location(2) velocity: vec4<f32>,
     @location(3) color: vec4<f32>,
-    @location(4) spawn_time: f32,
+    @location(4) spawn_time: u32,
     @location(5) size: f32,
     @location(6) tex_id: u32,
     @location(7) _pad0: u32,
@@ -13,7 +13,7 @@ struct InstanceInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(1) tex_coords: vec2<f32>,
+    @location(0) tex_coords: vec2<f32>,
 };
 
 struct CameraUniform {
@@ -25,17 +25,18 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
+struct InfoUniform{
+    lifetime: u32, // in ms
+    num_textures: u32,
+}
+@group(1) @binding(2)
+var<uniform> info: InfoUniform;
+
 @vertex
 fn vs_main(
     model: VertexInput,
     instance: InstanceInput,
 ) -> VertexOutput {
-    let model_matrix = mat4x4<f32>(
-        instance.inst_matrix_0,
-        instance.inst_matrix_1,
-        instance.inst_matrix_2,
-        instance.inst_matrix_3,
-    );
     var out: VertexOutput;
     // TODO
     out.clip_position = vec4(model.tex, 0.0, 1.0);
@@ -48,13 +49,6 @@ fn vs_main(
 var t_diffuse: texture_2d<f32>;
 @group(1) @binding(1)
 var s_diffuse: sampler;
-
-struct MetaUniform{
-    lifetime: u32, // in ms
-    num_textures: u32,
-}
-@group(1) @binding(2)
-var<uniform> meta: MetaUniform;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {

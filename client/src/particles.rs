@@ -1,17 +1,34 @@
 use instant::Duration;
+use wgpu::util::DeviceExt;
 use crate::texture;
+use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
+use std::f32::consts::FRAC_PI_2;
+use std::num;
 
 #[rustfmt::skip]
-pub const PVertex : [[f32; 2];4] = [
+pub const PVertex : &[[f32; 2];4] = &[
     [0.0, 1.0],
     [0.0, 0.0],
     [1.0, 0.0],
     [1.0, 1.0],
 ];
 
+const PV_ATTRIBS : [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
+    0 => Float32x2,
+];
+
+fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a>{
+    use std::mem;
+    wgpu::VertexBufferLayout {
+        array_stride: mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &PV_ATTRIBS,
+    }
+}
+
 #[rustfmt::skip]
-pub const PInd : [u16; 6] =[
+pub const PInd : &[u16; 6] = &[
     0, 2, 1,
     0, 3, 2,
 ];
@@ -28,7 +45,7 @@ pub struct Particle{
     start_pos: [f32; 4],
     velocity: [f32; 4],
     color: [f32; 4],
-    spawn_time: f32,
+    spawn_time: u32,
     size: f32,
     tex_id: u32,
     _pad0: u32,
@@ -37,7 +54,7 @@ pub struct Particle{
 impl Particle{
     const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
-        4 => Float32,   5 => Float32,   6 => Uint32,
+        4 => Uint32 ,   5 => Float32,   6 => Uint32,
         7 => Uint32,
     ];
 }
@@ -46,7 +63,7 @@ impl crate::model::Vertex for Particle{
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &Self::ATTRIBS,
         }
@@ -60,7 +77,8 @@ pub trait ParticleGenerator{
     /// spawn rate: average rate of spawning in particles per second
     /// num_textures: number of possible particle textures in one file (arranged vertically)
     /// returns: number of particles generated
-    pub fn generate(
+    fn generate(
+        &self,
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: u32,
@@ -82,13 +100,14 @@ impl ConeGenerator{
         Self{
             source,
             dir,
-            angle: glm::radians(angle),
+            angle: angle * FRAC_PI_2 / 180.0,
         }
     }
 }
 
 impl ParticleGenerator for ConeGenerator{
     fn generate(
+        &self,
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: u32, // per second
@@ -127,12 +146,12 @@ impl ParticleSystem{
         num_textures: u32,
         device: &wgpu::Device,
     ) -> Self{
-        particles = vec![];
-        let num_instances = gen::generate(particles, generation_time, generation_speed);
+        let mut particles = vec![];
+        let num_instances = gen.generate(&mut particles, generation_time, generation_speed, num_textures);
         // instances don't change over time
         let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instances),
+            contents: bytemuck::cast_slice(&particles),
             usage: wgpu::BufferUsages::VERTEX,
         });
         // Uniform
@@ -165,7 +184,7 @@ impl ParticleSystem{
             label: None,
         });
         // Time
-        let last_particle_death = std::time::Duration::from_millis(particles[particles.len() - 1].spawn_time + particle_lifetime);
+        let last_particle_death = std::time::Duration::from_millis((particles[particles.len() - 1].spawn_time + particle_lifetime) as u64);
         Self{
             start_time: std::time::Instant::now(),
             last_particle_death,
@@ -188,20 +207,20 @@ impl ParticleSystem{
 pub struct ParticleDrawer{
     vbuf: wgpu::Buffer,
     ibuf: wgpu::Buffer,
-    tex_bind_group_layout: wgpu::BindGroupLayout,
+    pub tex_bind_group_layout: wgpu::BindGroupLayout,
     render_pipeline: wgpu::RenderPipeline,
 }
 
 impl ParticleDrawer{
-    pub fn new(device: &wgpu::Device, &config: wgpu::SurfaceConfiguration, camera_layout: &wgpu::BindGroupLayout) -> Self{
+    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, camera_layout: &wgpu::BindGroupLayout) -> Self{
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Vertex Buffer"),
-            contents: &PVertex,
+            contents: bytemuck::cast_slice(PVertex),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: &PInd,
+            contents: bytemuck::cast_slice(PInd),
             usage: wgpu::BufferUsages::INDEX,
         });
         let tex_bind_group_layout = 
@@ -253,7 +272,7 @@ impl ParticleDrawer{
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[PVertex::desc(), Particle::desc()],
+                buffers: &[PV_desc(), Particle::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
