@@ -7,7 +7,7 @@ struct InstanceInput {
     @location(3) color: vec4<f32>,
     @location(4) spawn_time: u32,
     @location(5) size: f32,
-    @location(6) tex_id: u32,
+    @location(6) tex_id: f32,
     @location(7) _pad0: u32,
 }
 
@@ -27,7 +27,7 @@ var<uniform> camera: CameraUniform;
 
 struct InfoUniform{
     lifetime: u32, // in ms
-    num_textures: u32,
+    num_textures: f32,
 }
 @group(1) @binding(2)
 var<uniform> info: InfoUniform;
@@ -39,8 +39,8 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     // TODO
-    out.clip_position = vec4(model.tex, 0.0, 1.0);
-    out.tex_coords = model.tex;
+    out.clip_position = vec4(model.tex[0], 1.0 - model.tex[1], 0.0, 1.0);
+    out.tex_coords = model.tex / (info.num_textures) + (instance.tex_id / info.num_textures);
     return out;
 }
 
@@ -52,6 +52,7 @@ var s_diffuse: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    // var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    var t = vec4<f32>(in.clip_position[0], in.clip_position[0], 0.0, 1.0);
     return t;
 }

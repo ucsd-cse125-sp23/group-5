@@ -30,8 +30,8 @@ fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a>{
 
 #[rustfmt::skip]
 pub const PInd : &[u16; 6] = &[
-    0, 2, 1,
-    0, 3, 2,
+    0, 1, 2,
+    0, 2, 3,
 ];
 
 #[repr(C)]
@@ -49,14 +49,14 @@ pub struct Particle{
     color: [f32; 4],
     spawn_time: u32,
     size: f32,
-    tex_id: u32,
+    tex_id: f32,
     _pad0: u32,
 }
 
 impl Particle{
     const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
-        4 => Uint32 ,   5 => Float32,   6 => Uint32,
+        4 => Uint32 ,   5 => Float32,   6 => Float32,
         7 => Uint32,
     ];
 }
@@ -151,9 +151,9 @@ impl ParticleGenerator for LineGenerator{
                     start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                     color: [1.0, 1.0, 1.0, 1.0], //TODO
                     velocity:  [v[0], v[1], v[2], 0.0],
-                    spawn_time: (i * spawn_rate / 1000),
+                    spawn_time: (i * ((1000.0 / (spawn_rate as f32)).floor() as u32)),
                     size: 3.0,
-                    tex_id: 0,
+                    tex_id: 0.0,
                     _pad0: 0,
                 }
             );
@@ -166,7 +166,7 @@ impl ParticleGenerator for LineGenerator{
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct PSRaw{
     lifetime: u32, // in ms
-    num_textures: u32,
+    num_textures: f32,
 }
 
 pub struct ParticleSystem{
@@ -202,7 +202,7 @@ impl ParticleSystem{
         // Uniform
         let meta = PSRaw{
             lifetime: particle_lifetime,
-            num_textures,
+            num_textures: num_textures as f32,
         };
         let meta_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Meta Buffer"),
@@ -334,7 +334,7 @@ impl ParticleDrawer{
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,

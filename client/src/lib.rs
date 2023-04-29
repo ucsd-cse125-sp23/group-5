@@ -467,7 +467,7 @@ impl State {
             multiview: None,
         });
 
-        let particle_renderer = particles::ParticleDrawer::new(&device, &config, &camera_state.camera_bind_group_layout);
+        let mut particle_renderer = particles::ParticleDrawer::new(&device, &config, &camera_state.camera_bind_group_layout);
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
         let test_particle_gen = particles::LineGenerator::new(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
         let test_particle = particles::ParticleSystem::new(
@@ -480,6 +480,7 @@ impl State {
             4,
             &device,
         );
+        particle_renderer.systems.push(test_particle);
 
         let screens = 
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
@@ -643,6 +644,10 @@ impl State {
                 );
             }
 
+            // Particle Drawing
+            self.particle_renderer.draw(&mut render_pass, &self.camera_state.camera_bind_group);
+
+            // GUI drawing
             render_pass.set_pipeline(&self.render_pipeline_2d);
 
             // TO REMOVE: for testing
