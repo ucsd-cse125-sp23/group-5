@@ -87,7 +87,12 @@ impl Executor {
     /// Executes a command issued by a client.
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
-        // TODO: client id should not be passed to the constructor here, it should be passed to the handle method waiting other handlers to be completed before fixing this
+
+        // this is a very simple example of how to update the game state
+        // based on the command received from the client; maybe we can do something fancier such as
+        // dispatch the command to worker threads
+        let mut game_state = self.game_state.lock().unwrap();
+        game_state.update_cooldowns();
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
             Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
@@ -151,8 +156,6 @@ impl Executor {
     pub fn game_state(&self) -> GameState {
         self.game_state.lock().unwrap().clone()
     }
-
-    fn update_cooldowns(&mut self) {}
 }
 
 type GameEventWithRecipients = (GameEvent, Recipients);
