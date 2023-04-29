@@ -58,12 +58,14 @@ pub trait ParticleGenerator{
     /// list: vector to place generated particles in
     /// spawning time: amount of time to keep spawning
     /// spawn rate: average rate of spawning in particles per second
+    /// num_textures: number of possible particle textures in one file (arranged vertically)
+    /// returns: number of particles generated
     pub fn generate(
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: u32,
         num_textures: u32,
-    );
+    ) -> u32;
 }
 
 pub struct ConeGenerator{
@@ -89,47 +91,93 @@ impl ParticleGenerator for ConeGenerator{
     fn generate(
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
-        spawn_rate: u32,
+        spawn_rate: u32, // per second
         num_textures: u32,
-    ){
+    ) -> u32{
         todo!();
     }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct PSRaw{
+    lifetime: u32, // in ms
+    num_textures: u32,
 }
 
 pub struct ParticleSystem{
     // textures - texture, bind group, number of particle types
     start_time: std::time::Instant,
-    generation_time: std::time::Duration,
     last_particle_death: std::time::Duration,
-    particle_lifetime: std::time::Duration,
     // TODO: poisson process?
-    generation_speed: u32, // measured per second
-    gen: impl ParticleGenerator,
     particles: Vec<Particle>,
-    texture: texture::Texture,
-    num_textures: u32,
-    bufs: Vec<wgpu::Buffer>,
-    bind_groups: Vec<wgpu::BindGroup>,
+    num_instances: u32,
+    inst_buf: wgpu::Buffer,
+    tex_bind_group: wgpu::BindGroup,
 }
 
 impl ParticleSystem{
     pub fn new(
-        start_time: std::time::Instant,
         generation_time: std::time::Duration,
-        last_particle_death: std::time::Duration,
-        particle_lifetime: std::time::Duration,
+        particle_lifetime: u32, // in milliseconds
         generation_speed: u32, // measured per second
         gen: impl ParticleGenerator,
-        texture: texture::Texture,
+        texture: &texture::Texture,
+        tex_layout: &wgpu::BindGroupLayout,
         num_textures: u32,
+        device: &wgpu::Device,
     ) -> Self{
         particles = vec![];
-        gen::generate(particles, generation_time, generation_speed);
-
+        let num_instances = gen::generate(particles, generation_time, generation_speed);
+        // instances don't change over time
+        let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: bytemuck::cast_slice(&instances),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        // Uniform
+        let meta = PSRaw{
+            lifetime: particle_lifetime,
+            num_textures,
+        };
+        let meta_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Particle Meta Buffer"),
+            contents: bytemuck::cast_slice(&[meta]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        // texture bind group
+        let tex_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: tex_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: meta_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
+        // Time
+        let last_particle_death = std::time::Duration::from_millis(particles[particles.len() - 1].spawn_time + particle_lifetime);
+        Self{
+            start_time: std::time::Instant::now(),
+            last_particle_death,
+            particles,
+            num_instances,
+            inst_buf,
+            tex_bind_group,
+        }
     }
 
     pub fn done(&self) -> bool{
-        todo!();
+        return self.start_time.elapsed() >= self.last_particle_death;
     }
 
     pub fn draw(){

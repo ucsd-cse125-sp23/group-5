@@ -15,6 +15,7 @@ mod resources;
 mod scene;
 mod texture;
 mod screen_objects;
+mod particles;
 extern crate nalgebra_glm as glm;
 
 pub mod event_loop;
