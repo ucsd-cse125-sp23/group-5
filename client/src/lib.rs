@@ -41,6 +41,7 @@ struct State {
     camera_state: camera::CameraState,
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
+    particle_renderer: particles::ParticleDrawer,
     client_id: u8,
 }
 
@@ -359,10 +360,21 @@ impl State {
                 push_constant_ranges: &[],
             });
 
-            let render_pipeline_layout_2d =
+        let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[&texture_bind_group_layout_2d],
+                push_constant_ranges: &[],
+            });
+        
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("3D Render Pipeline Layout"),
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &camera_state.camera_bind_group_layout,
+                    &light_state.light_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -455,6 +467,8 @@ impl State {
             multiview: None,
         });
 
+        let particle_renderer = particles::ParticleDrawer::new(&device, &config, &camera_state.camera_bind_group_layout);
+
         let screens = 
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
@@ -478,6 +492,7 @@ impl State {
             screen_ind: 0,
             #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
+            particle_renderer,
             client_id,
         }
     }
