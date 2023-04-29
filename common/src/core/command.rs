@@ -22,7 +22,7 @@ pub enum GameAction {
 // }
 
 /// Commands that can be issued by the client
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq)]
 pub enum Command {
     Spawn,
     Respawn,
