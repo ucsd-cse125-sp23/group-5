@@ -46,8 +46,6 @@ impl GameState {
     pub fn update_cooldowns(&mut self) {
         let now = SystemTime::now();
         for (_, player_state) in self.players.iter_mut() {
-            // TODO: Remove debug code
-            println!("{:?}", player_state);
             player_state
                 .on_cooldown
                 .retain(|_, cd_until| now.lt(cd_until))
