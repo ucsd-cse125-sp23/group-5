@@ -195,7 +195,7 @@ impl ParticleSystem{
         let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&particles),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
         // Uniform
         let meta = PSRaw{
@@ -227,7 +227,7 @@ impl ParticleSystem{
             label: None,
         });
         // Time
-        let last_particle_death = std::time::Duration::from_secs_f32((particles[particles.len() - 1].spawn_time + particle_lifetime));
+        let last_particle_death = generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
         println!("number of particles: {}", num_instances);
         println!("last particle death: {:?}", last_particle_death.as_secs_f32());
         Self{
@@ -386,6 +386,7 @@ impl ParticleDrawer{
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
+            // depth_stencil: None,
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -409,23 +410,43 @@ impl ParticleDrawer{
         &'a mut self,
         render_pass: &mut wgpu::RenderPass<'a>,
         camera_bind_group: &'a wgpu::BindGroup,
+        camera: &crate::camera::Camera,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ){
         // remove dead systems
         self.systems = self.systems.drain(..).filter_map(|x| x.regen()).collect();
         render_pass.set_pipeline(&self.render_pipeline);
+        let cam_dir: glm::Vec3 = glm::normalize(&(camera.position - camera.target));
+        let cpos = &camera.position;
 
-        for ps in &self.systems{
+        for ps in &mut self.systems{
             render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
-            render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
-            render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.set_bind_group(0, &camera_bind_group, &[]);
-            render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
-
+            // set elapsed time uniform
             let elapsed = ps.start_time.elapsed().as_secs_f32();
             queue.write_buffer(&self.tbuf, 0, bytemuck::cast_slice(&[elapsed]));
             render_pass.set_bind_group(2, &self.t_bind_group, &[]);
+
+            // order instances first, then set instance buffer
+            let mut tmp = ps.particles.clone();
+            tmp.sort_by(|a, b | {
+                let a_pos: glm::Vec3 = glm::make_vec3(&a.start_pos[0..3]) 
+                    + (elapsed - a.spawn_time) * glm::make_vec3(&a.velocity[0..3]);
+                let b_pos: glm::Vec3 = glm::make_vec3(&b.start_pos[0..3]) 
+                    + (elapsed - b.spawn_time) * glm::make_vec3(&b.velocity[0..3]);
+                (glm::dot(&(a_pos - cpos), &cam_dir) as f32)
+                        .partial_cmp(&glm::dot(&(b_pos - cpos), &cam_dir))
+                    .unwrap()
+                    // .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            // println!("before: {:?}", ps.particles);
+            // println!("after: {:?}", tmp);
+            queue.write_buffer(&ps.inst_buf, 0, bytemuck::cast_slice(&tmp));
+            render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
+            // set rest of the buffers 
+            render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_bind_group(0, &camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
 
             render_pass.draw_indexed(0..6, 0, 0..ps.num_instances);
         }

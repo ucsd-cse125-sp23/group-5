@@ -645,7 +645,13 @@ impl State {
             }
 
             // Particle Drawing
-            self.particle_renderer.draw(&mut render_pass, &self.camera_state.camera_bind_group, &self.device, &self.queue);
+            self.particle_renderer.draw(
+                &mut render_pass,
+                &self.camera_state.camera_bind_group,
+                &self.camera_state.camera,
+                &self.device,
+                &self.queue
+            );
 
             // GUI drawing
             render_pass.set_pipeline(&self.render_pipeline_2d);
