@@ -109,7 +109,7 @@ pub async fn load_model(
 
     let mut materials = Vec::new();
     for m in obj_materials? {
-        println!("Material: {m:?}");
+        // println!("Material: {m:?}");
         let phong_mtl = model::Phong::new(&m);
         let phong_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Phong VB"),

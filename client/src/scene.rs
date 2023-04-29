@@ -168,8 +168,8 @@ impl Scene {
             total_number_of_edges += n.1 .0.childnodes.len();
         }
 
-        println!("total number of nodes = {}", self.scene_graph.len());
-        println!("total number of edges = {}", total_number_of_edges);
+        // println!("total number of nodes = {}", self.scene_graph.len());
+        // println!("total number of edges = {}", total_number_of_edges);
 
         while !dfs_stack.is_empty() {
             if dfs_stack.len() > total_number_of_edges {

@@ -471,9 +471,9 @@ impl State {
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
         let test_particle_gen = particles::LineGenerator::new(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
         let test_particle = particles::ParticleSystem::new(
-            std::time::Duration::from_secs(15),
-            50,
+            std::time::Duration::from_secs(30),
             10,
+            5,
             test_particle_gen,
             &particle_tex,
             &particle_renderer.tex_bind_group_layout,
@@ -645,7 +645,7 @@ impl State {
             }
 
             // Particle Drawing
-            self.particle_renderer.draw(&mut render_pass, &self.camera_state.camera_bind_group);
+            self.particle_renderer.draw(&mut render_pass, &self.camera_state.camera_bind_group, &self.device, &self.queue);
 
             // GUI drawing
             render_pass.set_pipeline(&self.render_pipeline_2d);

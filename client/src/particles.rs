@@ -230,6 +230,8 @@ impl ParticleSystem{
         });
         // Time
         let last_particle_death = std::time::Duration::from_millis((particles[particles.len() - 1].spawn_time + particle_lifetime) as u64);
+        println!("number of particles: {}", num_instances);
+        println!("last particle death: {:?}", last_particle_death.as_millis());
         Self{
             start_time: std::time::Instant::now(),
             last_particle_death,
@@ -253,6 +255,9 @@ impl ParticleSystem{
 pub struct ParticleDrawer{
     vbuf: wgpu::Buffer,
     ibuf: wgpu::Buffer,
+    tbuf: wgpu::Buffer,
+    t_bind_group_layout: wgpu::BindGroupLayout,
+    t_bind_group: wgpu::BindGroup,
     pub tex_bind_group_layout: wgpu::BindGroupLayout,
     render_pipeline: wgpu::RenderPipeline,
     pub systems: Vec<ParticleSystem>,
@@ -270,6 +275,34 @@ impl ParticleDrawer{
             contents: bytemuck::cast_slice(PInd),
             usage: wgpu::BufferUsages::INDEX,
         });
+        let elapsed = 0;
+        let tbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Time Elapsed Buffer"),
+            contents: bytemuck::cast_slice(&[elapsed]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let t_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("time_elapsed_bind_group_layout"),
+            });
+        let t_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &t_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: tbuf.as_entire_binding(),
+                }],
+                label: Some("time_elapsed_bind_group"),
+            });
         let tex_bind_group_layout = 
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -310,6 +343,7 @@ impl ParticleDrawer{
                 bind_group_layouts: &[
                     camera_layout,
                     &tex_bind_group_layout,
+                    &t_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -356,23 +390,37 @@ impl ParticleDrawer{
         Self { 
             vbuf,
             ibuf,
+            tbuf,
+            t_bind_group_layout,
+            t_bind_group,
             tex_bind_group_layout,
             render_pipeline,
             systems: vec![],
         }
     }
 
-    pub fn draw<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>, camera_bind_group: &'a wgpu::BindGroup){
+    pub fn draw<'a>(
+        &'a mut self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        camera_bind_group: &'a wgpu::BindGroup,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ){
         // remove dead systems
         self.systems = self.systems.drain(..).filter(|x| x.done().not()).collect();
+        render_pass.set_pipeline(&self.render_pipeline);
 
         for ps in &self.systems{
-            render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
             render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
             render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.set_bind_group(0, &camera_bind_group, &[]);
             render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
+
+            let elapsed = ps.start_time.elapsed().as_millis() as u32;
+            queue.write_buffer(&self.tbuf, 0, bytemuck::cast_slice(&[elapsed]));
+            render_pass.set_bind_group(2, &self.t_bind_group, &[]);
+
             render_pass.draw_indexed(0..6, 0, 0..ps.num_instances);
         }
     }

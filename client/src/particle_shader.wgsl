@@ -32,15 +32,22 @@ struct InfoUniform{
 @group(1) @binding(2)
 var<uniform> info: InfoUniform;
 
+@group(2) @binding(0)
+var<uniform> time_elapsed: u32;
+
 @vertex
 fn vs_main(
     model: VertexInput,
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
+    out.tex_coords = vec2(model.tex[0], (model.tex[1] / (info.num_textures) + (instance.tex_id / info.num_textures)));
+    if (instance.spawn_time > time_elapsed || instance.spawn_time + info.lifetime < time_elapsed){
+        out.clip_position = vec4(2.0, 2.0, 2.0, 1.0);
+    } else {
     // TODO
-    out.clip_position = vec4(model.tex[0], 1.0 - model.tex[1], 0.0, 1.0);
-    out.tex_coords = model.tex / (info.num_textures) + (instance.tex_id / info.num_textures);
+        out.clip_position = vec4(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0, 1.0);
+    }
     return out;
 }
 
@@ -52,7 +59,7 @@ var s_diffuse: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    var t = vec4<f32>(in.clip_position[0], in.clip_position[0], 0.0, 1.0);
+    var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    // var t = vec4<f32>(in.clip_position[0], in.clip_position[0], 0.0, 0.1);
     return t;
 }
