@@ -472,8 +472,8 @@ impl State {
         let test_particle_gen = particles::LineGenerator::new(glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
         let test_particle = particles::ParticleSystem::new(
             std::time::Duration::from_secs(30),
-            10,
-            5,
+            1000,
+            0.5,
             test_particle_gen,
             &particle_tex,
             &particle_renderer.tex_bind_group_layout,

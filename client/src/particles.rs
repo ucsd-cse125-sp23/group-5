@@ -3,7 +3,6 @@ use crate::texture;
 use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
 use std::f32::consts::FRAC_PI_2;
-use std::ops::Not;
 // use rand_distr::Distribution;
 // use rand::Rng;
 
@@ -83,7 +82,7 @@ pub trait ParticleGenerator{
         &self,
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
-        spawn_rate: u32,
+        spawn_rate: f32,
         num_textures: u32,
     ) -> u32;
 }
@@ -112,7 +111,7 @@ impl ParticleGenerator for ConeGenerator{
         &self,
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
-        spawn_rate: u32, // per second
+        spawn_rate: f32, // per second
         num_textures: u32,
     ) -> u32{
         todo!();
@@ -138,10 +137,10 @@ impl ParticleGenerator for LineGenerator{
             &self,
             list: &mut Vec<Particle>,
             spawning_time: std::time::Duration,
-            spawn_rate: u32,
+            spawn_rate: f32,
             num_textures: u32,
         ) -> u32 {
-        let n : u32 = (spawning_time.as_millis() * (spawn_rate as u128) / 1000) as u32;
+        let n : u32 = ((spawning_time.as_millis() / 1000) as f32 * spawn_rate).floor() as u32;
         // let dist = rand_distr::Normal::new(1.0, 0.2).unwrap();
         // let mut rng = rand::thread_rng();
         for i in 0..n{
@@ -170,7 +169,13 @@ struct PSRaw{
 }
 
 pub struct ParticleSystem{
-    // textures - texture, bind group, number of particle types
+    // for repeated generation
+    // generation_time: std::time::Duration,
+    // particle_lifetime: u32, // in milliseconds
+    // generation_speed: f32, // measured per second
+    // gen: Box<dyn ParticleGenerator +'a>,
+    // num_textures: u32,
+    // end repeated generation
     start_time: std::time::Instant,
     last_particle_death: std::time::Duration,
     // TODO: poisson process?
@@ -184,7 +189,7 @@ impl ParticleSystem{
     pub fn new(
         generation_time: std::time::Duration,
         particle_lifetime: u32, // in milliseconds
-        generation_speed: u32, // measured per second
+        generation_speed: f32, // measured per second
         gen: impl ParticleGenerator,
         texture: &texture::Texture,
         tex_layout: &wgpu::BindGroupLayout,
@@ -233,6 +238,11 @@ impl ParticleSystem{
         println!("number of particles: {}", num_instances);
         println!("last particle death: {:?}", last_particle_death.as_millis());
         Self{
+            // generation_time,
+            // generation_speed,
+            // particle_lifetime,
+            // gen: Box::new(gen),
+            // num_textures,
             start_time: std::time::Instant::now(),
             last_particle_death,
             particles,
@@ -242,8 +252,16 @@ impl ParticleSystem{
         }
     }
 
-    pub fn done(&self) -> bool{
-        return self.start_time.elapsed() >= self.last_particle_death;
+    pub fn regen(mut self) -> Option<Self>{
+        if self.start_time.elapsed() < self.last_particle_death {
+            return Some(self);
+        }
+        //TODO: comtinued generation
+        return None;
+    }
+
+    pub fn not_done(&self) -> bool{
+        return self.start_time.elapsed() < self.last_particle_death;
     }
 }
 
@@ -407,7 +425,7 @@ impl ParticleDrawer{
         queue: &wgpu::Queue,
     ){
         // remove dead systems
-        self.systems = self.systems.drain(..).filter(|x| x.done().not()).collect();
+        self.systems = self.systems.drain(..).filter_map(|x| x.regen()).collect();
         render_pass.set_pipeline(&self.render_pipeline);
 
         for ps in &self.systems{
