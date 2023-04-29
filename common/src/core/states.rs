@@ -1,7 +1,9 @@
+use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use nalgebra_glm::Vec3;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerState {
@@ -11,6 +13,7 @@ pub struct PlayerState {
     pub jump_count: u32,
     pub camera_forward: Vec3,
     pub connected: bool,
+    pub on_cooldown: HashMap<Command, SystemTime>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

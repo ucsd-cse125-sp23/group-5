@@ -151,6 +151,8 @@ impl Executor {
     pub fn game_state(&self) -> GameState {
         self.game_state.lock().unwrap().clone()
     }
+
+    fn update_cooldowns(&mut self) {}
 }
 
 type GameEventWithRecipients = (GameEvent, Recipients);

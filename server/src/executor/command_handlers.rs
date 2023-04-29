@@ -1,9 +1,11 @@
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
+
 use crate::Recipients;
-use common::core::command::MoveDirection;
 use common::core::events::{GameEvent, SoundSpec};
+use common::core::command::{Command, MoveDirection};
+
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use nalgebra::UnitQuaternion;
@@ -312,4 +314,16 @@ impl CommandHandler for JumpCommandHandler {
 
         Ok(())
     }
+}
+
+fn set_cooldown(
+    game_state: &mut GameState,
+    client_id: u32,
+    ability: Command,
+    cooldown_in_sec: usize,
+) {
+}
+
+fn abilities_on_cooldown(game_state: &mut GameState, client_id: u32, ability: Command) -> bool {
+    true
 }
