@@ -1,10 +1,13 @@
+use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 use common::core::command::MoveDirection;
+use common::core::events::{GameEvent, SoundSpec};
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use nalgebra::UnitQuaternion;
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Vec3};
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
 use std::fmt::Debug;
@@ -17,8 +20,12 @@ pub struct HandlerError {
 type HandlerResult = Result<(), HandlerError>;
 
 pub trait CommandHandler {
-    fn handle(&self, game_state: &mut GameState, physics_state: &mut PhysicsState)
-        -> HandlerResult;
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult;
 }
 
 #[derive(Constructor)]
@@ -28,7 +35,12 @@ pub struct StartupCommandHandler {
 }
 
 impl CommandHandler for StartupCommandHandler {
-    fn handle(&self, _: &mut GameState, physics_state: &mut PhysicsState) -> HandlerResult {
+    fn handle(
+        &self,
+        _: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _game_events: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         // loading the object model
         let map = tobj::load_obj("assets/island.obj", &tobj::GPU_LOAD_OPTIONS);
 
@@ -38,8 +50,8 @@ impl CommandHandler for StartupCommandHandler {
         let collider = rapier::ColliderBuilder::from_object_models(models)
             .translation(rapier::vector![0.0, -9.7, 0.0])
             .build();
-
         physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
+
         Ok(())
     }
 }
@@ -54,6 +66,7 @@ impl CommandHandler for SpawnCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Physics state
 
@@ -102,7 +115,12 @@ pub struct UpdateCameraFacingCommandHandler {
 }
 
 impl CommandHandler for UpdateCameraFacingCommandHandler {
-    fn handle(&self, game_state: &mut GameState, _: &mut PhysicsState) -> HandlerResult {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        _: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         // Game state
         let player = game_state
             .player_mut(self.player_id)
@@ -125,6 +143,7 @@ impl CommandHandler for MoveCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Physics state
         if self.direction.eq(&MoveDirection::zeros()) {
@@ -192,7 +211,16 @@ impl CommandHandler for MoveCommandHandler {
 
         let dir_vec = rotation * dir_vec;
         physics_state.move_character_with_velocity(self.player_id, dir_vec * STEP_SIZE);
-        // Game state (not needed since the physics state is synced at the end of the tick)
+
+        // TODO: replace this example with actual implementation
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                player_state.transform.translation,
+                "foot_step".to_string(),
+            )),
+            Recipients::One(self.player_id as u8),
+        );
+
         Ok(())
     }
 }
@@ -207,6 +235,7 @@ impl CommandHandler for JumpCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // check if player is touching the ground
         let player_collider_handle = physics_state

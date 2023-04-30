@@ -5,6 +5,7 @@ use std::env;
 use log::{debug, error, info};
 use std::fs::File;
 
+use bus::Bus;
 use env_logger::Builder;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -15,6 +16,7 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
+use common::core::events::GameEvent;
 
 use common::core::states::GameState;
 
@@ -24,6 +26,8 @@ fn main() {
     // input channel for communicating between event loop and input processor
     let (tx, rx) = mpsc::channel::<Input>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
+
+    let game_events_bus = Bus::new(1);
 
     #[cfg(not(feature = "debug-addr"))]
     let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
@@ -64,7 +68,7 @@ fn main() {
 
     // for debug
     #[cfg(feature = "debug-recon")]
-    dump_ids(session_data_path.clone(), client_id + 1, session_id);
+    dump_ids(session_data_path, client_id + 1, session_id);
 
     let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
 
@@ -77,9 +81,9 @@ fn main() {
         input_processor.listen();
     });
 
-    // spawn a thread to handle game state updates
+    // spawn a thread to handle game state updates and events
     thread::spawn(move || {
-        game_state_update_loop(protocol.try_clone().unwrap(), game_state);
+        recv_server_updates(protocol.try_clone().unwrap(), game_state, game_events_bus);
     });
 
     pollster::block_on(player_loop.run());
@@ -118,23 +122,41 @@ fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
     Err(())
 }
 
-fn game_state_update_loop(mut protocol: Protocol, game_state: Arc<Mutex<GameState>>) {
-    loop {
-        // check for new state & update local game state
-        while let Ok(msg) = protocol.read_message::<Message>() {
-            if let Message {
+fn recv_server_updates(
+    mut protocol: Protocol,
+    game_state: Arc<Mutex<GameState>>,
+    mut game_events: Bus<GameEvent>,
+) {
+    // check for new state & update local game state
+    while let Ok(msg) = protocol.read_message::<Message>() {
+        match msg {
+            Message {
                 host_role: HostRole::Server,
                 payload: Payload::StateSync(update_game_state),
                 ..
-            } = msg
-            {
+            } => {
                 // update state
                 let mut game_state = game_state.lock().unwrap();
                 *game_state = update_game_state;
                 // according to the state, render world
                 debug!("Received game state: {:?}", game_state);
-                break;
-            };
+            }
+            Message {
+                host_role: HostRole::Server,
+                payload: Payload::ServerEvent(update_game_event),
+                ..
+            } => {
+                println!("Received game events: {:?}", update_game_event);
+
+                // update state
+                game_events
+                    .try_broadcast(update_game_event)
+                    .map_err(|e| {
+                        error!("Failed to broadcast game event: {:?}", e);
+                    })
+                    .unwrap();
+            }
+            _ => {}
         }
     }
 }

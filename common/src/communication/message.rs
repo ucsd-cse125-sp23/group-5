@@ -1,5 +1,6 @@
 use crate::communication::commons::*;
 use crate::core::command::Command;
+use crate::core::events::GameEvent;
 use crate::core::states::GameState;
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::convert::From;
@@ -41,6 +42,7 @@ pub enum Payload {
     StateSync(GameState),
     Command(Command),
     Init((u8, u64)),
+    ServerEvent(GameEvent),
 }
 
 /// message kind to u8
@@ -51,6 +53,7 @@ impl From<&Payload> for u8 {
             Payload::StateSync(_) => 1,
             Payload::Command(_) => 2,
             Payload::Init(_) => 3,
+            Payload::ServerEvent(_) => 4,
         }
     }
 }
@@ -99,6 +102,9 @@ impl Serialize for Message {
             Payload::Init(info) => {
                 prefix_len::write_json(buf, info)?;
             }
+            Payload::ServerEvent(event) => {
+                prefix_len::write_json(buf, event)?;
+            }
         }
         Ok(())
     }
@@ -117,6 +123,7 @@ impl Deserialize for Message {
             1 => Payload::StateSync(prefix_len::extract_json(&mut buf)?),
             2 => Payload::Command(prefix_len::extract_json(&mut buf)?),
             3 => Payload::Init(prefix_len::extract_json(&mut buf)?),
+            4 => Payload::ServerEvent(prefix_len::extract_json(&mut buf)?),
             _ => panic!("Invalid payload kind {}", payload_kind),
         };
 
