@@ -1,13 +1,13 @@
-use derive_more::Constructor;
+use crate::Recipients;
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::events::GameEvent;
 use common::core::states::GameState;
-use crate::Recipients;
+use derive_more::Constructor;
 
 /// Outgoing events that are broadcast to the consumer threads.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RequestKind {
-    SyncGameState, // ask for a sync of game state
+    SyncGameState,            // ask for a sync of game state
     SendGameEvent(GameEvent), // send a game event to the clients
 }
 
@@ -28,17 +28,11 @@ impl OutgoingRequest {
     pub fn make_message(&self, game_state: &GameState) -> Message {
         match &self.kind {
             RequestKind::SyncGameState => {
-                Message::new(
-                    HostRole::Server,
-                    Payload::StateSync(game_state.clone()),
-                )
-            },
+                Message::new(HostRole::Server, Payload::StateSync(game_state.clone()))
+            }
             RequestKind::SendGameEvent(event) => {
-                Message::new(
-                    HostRole::Server,
-                    Payload::ServerEvent(event.clone()),
-                )
-            },
+                Message::new(HostRole::Server, Payload::ServerEvent(event.clone()))
+            }
         }
     }
 }

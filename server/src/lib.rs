@@ -1,7 +1,7 @@
 pub mod executor;
 pub mod game_loop;
-pub mod simulation;
 pub mod outgoing_request;
+pub mod simulation;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Recipients {

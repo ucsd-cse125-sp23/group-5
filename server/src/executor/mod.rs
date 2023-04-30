@@ -7,12 +7,12 @@ use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
 
+use crate::Recipients;
+use common::core::events::GameEvent;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
-use common::core::events::GameEvent;
-use crate::Recipients;
 
 mod command_handlers;
 
@@ -64,8 +64,8 @@ impl Executor {
                 Some(Command::Move(
                     val.command.unwrap_move()
                         + acc
-                        .unwrap_or(Command::Move(MoveDirection::zeros()))
-                        .unwrap_move(),
+                            .unwrap_or(Command::Move(MoveDirection::zeros()))
+                            .unwrap_move(),
                 ))
             })
             .iter()

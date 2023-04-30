@@ -5,12 +5,12 @@ use std::env;
 use log::{debug, error, info};
 use std::fs::File;
 
+use bus::Bus;
 use env_logger::Builder;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-use bus::Bus;
 
 use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
@@ -30,10 +30,10 @@ fn main() {
     let game_events_bus = Bus::new(1);
 
     #[cfg(not(feature = "debug-addr"))]
-        let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
+    let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
 
     #[cfg(feature = "debug-addr")]
-        let dest: SocketAddr = DEFAULT_SERVER_ADDR
+    let dest: SocketAddr = DEFAULT_SERVER_ADDR
         .parse()
         .expect("server addr parse fails");
 
@@ -122,7 +122,11 @@ fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
     Err(())
 }
 
-fn recv_server_updates(mut protocol: Protocol, game_state: Arc<Mutex<GameState>>, mut game_events: Bus<GameEvent>) {
+fn recv_server_updates(
+    mut protocol: Protocol,
+    game_state: Arc<Mutex<GameState>>,
+    mut game_events: Bus<GameEvent>,
+) {
     // check for new state & update local game state
     while let Ok(msg) = protocol.read_message::<Message>() {
         match msg {
@@ -145,9 +149,12 @@ fn recv_server_updates(mut protocol: Protocol, game_state: Arc<Mutex<GameState>>
                 println!("Received game events: {:?}", update_game_event);
 
                 // update state
-                game_events.try_broadcast(update_game_event).map_err(|e| {
-                    error!("Failed to broadcast game event: {:?}", e);
-                }).unwrap();
+                game_events
+                    .try_broadcast(update_game_event)
+                    .map_err(|e| {
+                        error!("Failed to broadcast game event: {:?}", e);
+                    })
+                    .unwrap();
             }
             _ => {}
         }

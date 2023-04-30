@@ -9,7 +9,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{net::TcpListener, thread};
 
-use common::communication::commons::{CSE125_SERVER_ADDR, DEFAULT_SERVER_ADDR};
+use common::communication::commons::{CSE125_SERVER_ADDR};
 
 use server::executor::Executor;
 use threadpool::ThreadPool;

@@ -4,10 +4,10 @@ use common::communication::commons::Protocol;
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::states::GameState;
 use log::{debug, error, info, warn};
-use server::game_loop::{ClientCommand};
+use server::game_loop::ClientCommand;
 use server::outgoing_request::OutgoingRequest;
 use std::net::TcpStream;
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref};
 use std::sync::atomic::Ordering;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -65,7 +65,10 @@ impl ClientHandler {
                     .send_message(&Message::new(
                         HostRole::Server,
                         // by this point client id is assigned by the server
-                        Payload::Init((HostRole::Client(self.client_id.unwrap()).into(), SESSION_ID.to_owned())),
+                        Payload::Init((
+                            HostRole::Client(self.client_id.unwrap()).into(),
+                            SESSION_ID.to_owned(),
+                        )),
                     ))
                     .expect("send message fails");
             } else {
@@ -79,7 +82,12 @@ impl ClientHandler {
         });
 
         let write_handler = thread::spawn(move || {
-            let mut write_resources = (self.client_id.unwrap(), write_protocol, self.rx, self.game_state);
+            let mut write_resources = (
+                self.client_id.unwrap(),
+                write_protocol,
+                self.rx,
+                self.game_state,
+            );
             Self::write_messages(&mut write_resources);
         });
 
@@ -92,7 +100,7 @@ impl ClientHandler {
     }
 
     fn read_messages(resources: &mut (Protocol, mpsc::Sender<ClientCommand>)) {
-        let ( protocol, tx) = resources;
+        let (protocol, tx) = resources;
         while let Ok(msg) = protocol.read_message::<Message>() {
             if let Message {
                 host_role: HostRole::Client(client_id),
@@ -116,10 +124,16 @@ impl ClientHandler {
         }
     }
 
-    fn write_messages(resources: &mut (u8, Protocol, BusReader<OutgoingRequest>, Arc<Mutex<GameState>>)) {
+    fn write_messages(
+        resources: &mut (
+            u8,
+            Protocol,
+            BusReader<OutgoingRequest>,
+            Arc<Mutex<GameState>>,
+        ),
+    ) {
         let (client_id, protocol, rx, game_state) = resources;
         while let Ok(outgoing_request) = rx.recv() {
-
             if !outgoing_request.recipients().matches(*client_id) {
                 // this message is not for this client
                 continue;
@@ -127,7 +141,9 @@ impl ClientHandler {
 
             debug!("Updating game state to client");
             let game_state = game_state.lock().unwrap();
-            if let Err(e) = protocol.send_message(&outgoing_request.make_message(game_state.deref())) {
+            if let Err(e) =
+                protocol.send_message(&outgoing_request.make_message(game_state.deref()))
+            {
                 match e.kind() {
                     std::io::ErrorKind::BrokenPipe
                     | std::io::ErrorKind::ConnectionAborted
