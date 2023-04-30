@@ -35,6 +35,9 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
+      - name: install alsa
+        run: sudo apt install libasound2-dev
+
       - name: Checkout sources
         uses: actions/checkout@v2
 
