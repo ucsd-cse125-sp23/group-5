@@ -22,6 +22,7 @@ pub mod inputs;
 
 use common::core::states::GameState;
 use winit::window::Window;
+use wgpu_glyph::{ab_glyph, GlyphBrushBuilder, Section, Text, GlyphBrush};
 
 struct State {
     surface: wgpu::Surface,
@@ -41,6 +42,8 @@ struct State {
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
     client_id: u8,
+    staging_belt: wgpu::util::StagingBelt,
+    glyph_brush: GlyphBrush<()>
 }
 
 impl State {
@@ -389,6 +392,15 @@ impl State {
             multiview: None,
         });
 
+        // text 
+        let staging_belt = wgpu::util::StagingBelt::new(1024);
+        let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
+            "../../assets/Inconsolata-Regular.ttf"
+        )).unwrap();
+
+        let glyph_brush = GlyphBrushBuilder::using_font(inconsolata)
+        .build(&device, surface_format);
+
         let screens = 
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
@@ -413,6 +425,8 @@ impl State {
             #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
             client_id,
+            staging_belt,
+            glyph_brush,
         }
     }
 
@@ -568,10 +582,46 @@ impl State {
             }
         }
 
+        let size = &self.window.inner_size();
+        self.glyph_brush.queue(Section {
+            screen_position: (30.0, 30.0),
+            bounds: (size.width as f32, size.height as f32),
+            text: vec![Text::new("Hello wgpu_glyph!")
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+            ..Section::default()
+        });
+
+        self.glyph_brush.queue(Section {
+            screen_position: (30.0, 90.0),
+            bounds: (size.width as f32, size.height as f32),
+            text: vec![Text::new("Hello wgpu_glyph!")
+                .with_color([1.0, 1.0, 1.0, 1.0])
+                .with_scale(40.0)],
+            ..Section::default()
+        });
+
+        // Draw the text!
+        self.glyph_brush
+        .draw_queued(
+            &self.device,
+            &mut self.staging_belt,
+            &mut encoder,
+            &view,
+            size.width,
+            size.height,
+        )
+        .expect("Draw queued");
+
+        // Submit the work!
+        self.staging_belt.finish();
+
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
+        // Recall unused staging buffers
+        self.staging_belt.recall();
         Ok(())
     }
 }
