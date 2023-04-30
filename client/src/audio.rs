@@ -74,9 +74,10 @@ impl Audio {
                 if sound_instances[i].start.elapsed().unwrap_or(Duration::new(1,0)) >= sound_duration {
                     to_remove.push(i);
                 }
-                let pos = relative_position(sound_instances[i].position, player_pos, dir);
-                sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
-
+                else{
+                    let pos = relative_position(sound_instances[i].position, player_pos, dir);
+                    sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
+                }
             }
             for i in 0..to_remove.len() {
                 sound_instances.remove(to_remove[i]);
