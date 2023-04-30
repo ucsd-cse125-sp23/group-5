@@ -1,3 +1,4 @@
+use crate::audio::{AudioAsset, SoundSpec};
 use crate::inputs::Input;
 use crate::State;
 use common::core::states::GameState;
@@ -38,11 +39,14 @@ impl PlayerLoop {
         let mut event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_title("As The Wind Blows")
-            .with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
+            // TODO: uncomment this line
+            //.with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
             .build(&event_loop)
             .unwrap();
 
         let mut state = State::new(window, self.client_id).await;
+
+        state.audio.play_background_track(AudioAsset::BACKGROUND);
 
         //To check
         let mut last_render_time = instant::Instant::now();
@@ -67,6 +71,24 @@ impl PlayerLoop {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::KeyboardInput { input, .. } => {
+                                match input {
+                                    KeyboardInput {virtual_keycode: Some(VirtualKeyCode::M), ..} => {
+                                        // to toggle on/off the background track because it got annoying
+                                        state.audio.toggle_background_track();
+                                    },
+                                    // TODO: for testing, remove later
+                                    KeyboardInput {virtual_keycode: Some(VirtualKeyCode::N), ..} => {
+                                        let sound  = SoundSpec{position: glm::Vec3::new(5.0,-3.0,0.0), sound_id: "wind".to_string()};
+                                        state.audio.handle_sfx_event(sound);
+                                    },
+                                    KeyboardInput {virtual_keycode: Some(VirtualKeyCode::B), ..} => {
+                                        let sound  = SoundSpec{position: glm::Vec3::new(-5.0,-3.0,0.0), sound_id: "wind".to_string()};
+                                        state.audio.handle_sfx_event(sound);
+                                    },
+
+                                     _ => {},
+                                }
+                                
                                 match self
                                     .inputs
                                     .send(Input::Keyboard(*input))
@@ -139,6 +161,18 @@ impl PlayerLoop {
                     // RedrawRequested will only trigger once, unless we manually
                     // request it.
                     state.window().request_redraw();
+                }
+                _ => {}
+            }
+
+            let gs = self.game_state.lock().unwrap().clone();
+            let player_curr = gs.player(self.client_id as u32)
+                .ok_or_else(|| println!("Player {} not found", self.client_id));
+
+            match player_curr{
+                Ok(_) => {
+                    let cf = player_curr.unwrap().camera_forward;
+                    state.audio.update_sound_positions(state.player.position, cf); 
                 }
                 _ => {}
             }

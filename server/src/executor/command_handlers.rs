@@ -30,7 +30,7 @@ pub struct StartupCommandHandler {
 impl CommandHandler for StartupCommandHandler {
     fn handle(&self, _: &mut GameState, physics_state: &mut PhysicsState) -> HandlerResult {
         // loading the object model
-        let map = tobj::load_obj("assets/island.obj", &tobj::GPU_LOAD_OPTIONS);
+        let map = tobj::load_obj("assets/islands_set_remade.obj", &tobj::GPU_LOAD_OPTIONS);
 
         let (models, _) = map.unwrap();
 

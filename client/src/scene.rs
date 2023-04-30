@@ -314,6 +314,10 @@ impl Scene {
 
         // println!("scene graph: {:?}", self.scene_graph);
 
+        // TODO: Remove these two lines after testing
+        world_node.childnodes.push(10); // floating crab representing sound source
+        self.scene_graph.insert(10, (ferris_node.clone(), Instance {transform: glm::translate(&mat4_identity, &glm::vec3(5.0, -3.0, 0.0)),},),);
+
         self.scene_graph.insert(
             NodeID::WORLD_NODE as i32,
             (

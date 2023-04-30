@@ -15,6 +15,7 @@ mod resources;
 mod scene;
 mod texture;
 mod screen_objects;
+mod audio;
 extern crate nalgebra_glm as glm;
 
 pub mod event_loop;
@@ -41,6 +42,7 @@ struct State {
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
     client_id: u8,
+    audio: audio::Audio,
 }
 
 impl State {
@@ -193,7 +195,7 @@ impl State {
 
         // Scene
         let obj_model = resources::load_model(
-            "assets/island.obj",
+            "client/res/islands_set_remade.obj", // TODO: change back after done testing: "assets/island.obj",
             &device,
             &queue,
             &texture_bind_group_layout,
@@ -392,6 +394,8 @@ impl State {
         let screens = 
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
+        let audio = audio::Audio::new();
+
         Self {
             window,
             surface,
@@ -413,6 +417,7 @@ impl State {
             #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
             client_id,
+            audio,
         }
     }
 
