@@ -49,14 +49,14 @@ pub struct Particle{
     spawn_time: f32,
     size: f32,
     tex_id: f32,
-    _pad0: u32,
+    z_pos: f32,
 }
 
 impl Particle{
     const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
         4 => Float32 ,  5 => Float32,   6 => Float32,
-        7 => Uint32,
+        7 => Float32,
     ];
 }
 
@@ -153,7 +153,7 @@ impl ParticleGenerator for LineGenerator{
                     spawn_time: (i as f32) * 1.0 / spawn_rate,
                     size: 50.0,
                     tex_id: 0.0,
-                    _pad0: 0,
+                    z_pos: 0.0,
                 }
             );
         }
@@ -428,16 +428,21 @@ impl ParticleDrawer{
             render_pass.set_bind_group(2, &self.t_bind_group, &[]);
 
             // order instances first, then set instance buffer
+            for p in &mut ps.particles{
+                let pos: glm::Vec3 = glm::make_vec3(&p.start_pos[0..3]) 
+                    + (elapsed - p.spawn_time) * glm::make_vec3(&p.velocity[0..3]);
+                p.z_pos = glm::dot(&(pos - cpos), &cam_dir);
+            }
             let mut tmp = ps.particles.clone();
             tmp.sort_by(|a, b | {
-                let a_pos: glm::Vec3 = glm::make_vec3(&a.start_pos[0..3]) 
-                    + (elapsed - a.spawn_time) * glm::make_vec3(&a.velocity[0..3]);
-                let b_pos: glm::Vec3 = glm::make_vec3(&b.start_pos[0..3]) 
-                    + (elapsed - b.spawn_time) * glm::make_vec3(&b.velocity[0..3]);
-                (glm::dot(&(a_pos - cpos), &cam_dir) as f32)
-                        .partial_cmp(&glm::dot(&(b_pos - cpos), &cam_dir))
-                    .unwrap()
-                    // .unwrap_or(std::cmp::Ordering::Equal)
+                // let a_pos: glm::Vec3 = glm::make_vec3(&a.start_pos[0..3]) 
+                //     + (elapsed - a.spawn_time) * glm::make_vec3(&a.velocity[0..3]);
+                // let b_pos: glm::Vec3 = glm::make_vec3(&b.start_pos[0..3]) 
+                //     + (elapsed - b.spawn_time) * glm::make_vec3(&b.velocity[0..3]);
+                // (glm::dot(&(a_pos - cpos), &cam_dir) as f32)
+                //         .partial_cmp(&glm::dot(&(b_pos - cpos), &cam_dir))
+                //     .unwrap_or(std::cmp::Ordering::Equal)
+                a.z_pos.partial_cmp(&b.z_pos).unwrap_or(std::cmp::Ordering::Equal)
             });
             // println!("before: {:?}", ps.particles);
             // println!("after: {:?}", tmp);

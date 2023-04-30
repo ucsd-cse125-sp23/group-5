@@ -8,7 +8,7 @@ struct InstanceInput {
     @location(4) spawn_time: f32,
     @location(5) size: f32,
     @location(6) tex_id: f32,
-    @location(7) _pad0: u32,
+    @location(7) z_pos: f32,
 }
 
 struct VertexOutput {
@@ -18,7 +18,8 @@ struct VertexOutput {
 
 struct CameraUniform {
     view_pos: vec4<f32>,
-    view_proj: mat4x4<f32>,
+    view: mat4x4<f32>,
+    proj: mat4x4<f32>,
     inv_view_proj: mat4x4<f32>,
     location: vec4<f32>,
 };
@@ -84,9 +85,10 @@ fn vs_main(
         // then move according to velocity
         position += time_alive * linear_v;
         // then project
-        out.clip_position = camera.view_proj * vec4<f32>(position, 1.0);
-        // TODO: remove
-        // out.clip_position[2] = 0.0; // set z to 0 so we can see it
+        out.clip_position = camera.view * vec4<f32>(position, 1.0);
+        // set z, for ordering issues
+        out.clip_position[2] = instance.z_pos;
+        out.clip_position = camera.proj * out.clip_position;
     }
     return out;
 }
@@ -100,6 +102,5 @@ var s_diffuse: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    // var t = vec4<f32>(in.clip_position[0], in.clip_position[0], 0.0, 0.1);
     return t;
 }
