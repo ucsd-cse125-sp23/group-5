@@ -120,6 +120,7 @@ impl CommandHandler for RespawnCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         if command_on_cooldown(game_state, self.player_id, Command::Spawn) {
             return Ok(());
