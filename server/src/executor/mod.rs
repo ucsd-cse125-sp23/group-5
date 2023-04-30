@@ -9,8 +9,10 @@ use common::core::states::GameState;
 
 use itertools::Itertools;
 use log::{debug, error, info, warn};
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
+use common::core::events::GameEvent;
+use crate::Recipients;
 
 mod command_handlers;
 
@@ -20,6 +22,7 @@ pub struct Executor {
     /// state of the game, owned by the executor, encapsulated in a Arc and protected by Mutex
     game_state: Arc<Mutex<GameState>>,
     physics_state: RefCell<PhysicsState>,
+    game_events: RefCell<Vec<(GameEvent, Recipients)>>,
 }
 
 impl Executor {
@@ -35,15 +38,18 @@ impl Executor {
         Executor {
             game_state,
             physics_state: RefCell::new(PhysicsState::new()),
+            game_events: RefCell::new(Vec::new()),
         }
     }
 
     pub fn init(&self) {
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
+        let mut game_events = self.game_events.borrow_mut();
 
         let handler = StartupCommandHandler::new("assets/island.obj".to_string());
-        if let Err(e) = handler.handle(&mut game_state, &mut physics_state) {
+
+        if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
         }
     }
@@ -58,8 +64,8 @@ impl Executor {
                 Some(Command::Move(
                     val.command.unwrap_move()
                         + acc
-                            .unwrap_or(Command::Move(MoveDirection::zeros()))
-                            .unwrap_move(),
+                        .unwrap_or(Command::Move(MoveDirection::zeros()))
+                        .unwrap_move(),
                 ))
             })
             .iter()
@@ -80,11 +86,7 @@ impl Executor {
     /// Executes a command issued by a client.
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
-
-        // this is a very simple example of how to update the game state
-        // based on the command received from the client; maybe we can do something fancier such as
-        // dispatch the command to worker threads
-        let mut game_state = self.game_state.lock().unwrap();
+        // TODO: client id should not be passed to the constructor here, it should be passed to the handle method waiting other handlers to be completed before fixing this
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
@@ -99,7 +101,11 @@ impl Executor {
             }
         };
 
-        if let Err(e) = handler.handle(&mut game_state, &mut self.physics_state.borrow_mut()) {
+        let mut game_state = self.game_state.lock().unwrap();
+        let mut physics_state = self.physics_state.borrow_mut();
+        let mut game_events = self.game_events.borrow_mut();
+
+        if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             error!("Failed to execute command: {:?}", e);
         }
         info!("GameState: {:?}", game_state);
@@ -124,8 +130,24 @@ impl Executor {
         }
     }
 
+    pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
+        self.game_events.replace(Vec::new())
+    }
+
     /// get a clone of the game state
     pub fn game_state(&self) -> GameState {
         self.game_state.lock().unwrap().clone()
+    }
+}
+
+type GameEventWithRecipients = (GameEvent, Recipients);
+
+pub trait GameEventCollector {
+    fn add(&mut self, event: GameEvent, recipients: Recipients);
+}
+
+impl GameEventCollector for RefMut<'_, Vec<GameEventWithRecipients>> {
+    fn add(&mut self, event: GameEvent, recipients: Recipients) {
+        self.push((event, recipients));
     }
 }
