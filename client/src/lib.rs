@@ -1,6 +1,7 @@
 use std::{sync::{Arc, Mutex}, f32::consts::PI};
 
 use winit::event::*;
+use rand::{Rng, rngs::ThreadRng};
 
 mod model;
 
@@ -42,6 +43,7 @@ struct State {
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
     particle_renderer: particles::ParticleDrawer,
+    rng: rand::rngs::ThreadRng,
     client_id: u8,
 }
 
@@ -467,9 +469,17 @@ impl State {
             multiview: None,
         });
 
+        let mut rng = rand::thread_rng();
+
         let mut particle_renderer = particles::ParticleDrawer::new(&device, &config, &camera_state.camera_bind_group_layout);
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
-        let test_particle_gen = particles::LineGenerator::new(glm::vec3(0.0, -5.0, 0.0), glm::vec3(0.0, 2.0, 0.0));
+        let test_particle_gen = particles::LineGenerator::new(
+            glm::vec3(0.0, -5.0, 0.0),
+            glm::vec3(0.0, 2.0, 0.0),
+            0.2,
+            PI,
+            0.1,
+        );
         let test_particle = particles::ParticleSystem::new(
             std::time::Duration::from_secs(60),
             2.0,
@@ -479,6 +489,7 @@ impl State {
             &particle_renderer.tex_bind_group_layout,
             4,
             &device,
+            &mut rng,
         );
         particle_renderer.systems.push(test_particle);
 
@@ -506,6 +517,7 @@ impl State {
             #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
             particle_renderer,
+            rng,
             client_id,
         }
     }

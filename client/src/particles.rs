@@ -4,7 +4,8 @@ use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
 use std::f32::consts::{FRAC_PI_2, PI};
 // use rand_distr::Distribution;
-// use rand::Rng;
+use rand::Rng;
+use rand_distr::{Normal, Distribution};
 
 #[rustfmt::skip]
 pub const PVertex : &[[f32; 2];4] = &[
@@ -84,6 +85,7 @@ pub trait ParticleGenerator{
         spawning_time: std::time::Duration,
         spawn_rate: f32,
         num_textures: u32,
+        rng: &mut rand::rngs::ThreadRng,
     ) -> u32;
 }
 
@@ -113,6 +115,7 @@ impl ParticleGenerator for ConeGenerator{
         spawning_time: std::time::Duration,
         spawn_rate: f32, // per second
         num_textures: u32,
+        rng: &mut rand::rngs::ThreadRng,
     ) -> u32{
         todo!();
     }
@@ -120,14 +123,26 @@ impl ParticleGenerator for ConeGenerator{
 pub struct LineGenerator{
     source: glm::Vec3,
     dir: glm::Vec3,
+    linear_variance: f32,
+    angular_velocity: f32,
+    angular_variance: f32,
 }
 
 impl LineGenerator{
     //// Line particle generator
-    pub fn new(source: glm::Vec3, dir: glm::Vec3) -> Self{
+    pub fn new(
+        source: glm::Vec3,
+        dir: glm::Vec3,
+        linear_variance: f32,
+        angular_velocity: f32,
+        angular_variance: f32,
+    ) -> Self{
         Self{
             source,
             dir,
+            linear_variance,
+            angular_velocity,
+            angular_variance,
         }
     }
 }
@@ -139,17 +154,23 @@ impl ParticleGenerator for LineGenerator{
             spawning_time: std::time::Duration,
             spawn_rate: f32,
             num_textures: u32,
+            rng: &mut rand::rngs::ThreadRng,
         ) -> u32 {
         let n : u32 = (spawning_time.as_secs_f32() * spawn_rate).floor() as u32;
-        // let dist = rand_distr::Normal::new(1.0, 0.2).unwrap();
-        // let mut rng = rand::thread_rng();
+        let lin_dist = Normal::new(1.0, self.linear_variance).unwrap();
+        let ang_dist = Normal::new(1.0, self.angular_variance).unwrap();
+        let v = self.dir;
         for i in 0..n{
-            let v = self.dir; //* dist.sample(&mut rng);
+            let linear_scale = lin_dist.sample(rng);
+            let angular_scale = ang_dist.sample(rng);
+            // want velocity to be nonzero
+            glm::clamp_scalar(linear_scale, 0.01, f32::INFINITY);
+            glm::clamp_scalar(angular_scale, 0.01, f32::INFINITY);
             list.push(
                 Particle {
                     start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                     color: [1.0, 1.0, 1.0, 1.0], //TODO
-                    velocity:  [v[0], v[1], v[2], PI],
+                    velocity:  [v[0] * linear_scale, v[1] * linear_scale, v[2] * linear_scale, self.angular_velocity * angular_scale],
                     spawn_time: (i as f32) * 1.0 / spawn_rate,
                     size: 50.0,
                     tex_id: 0.0,
@@ -188,9 +209,10 @@ impl ParticleSystem{
         tex_layout: &wgpu::BindGroupLayout,
         num_textures: u32,
         device: &wgpu::Device,
+        rng: &mut rand::rngs::ThreadRng,
     ) -> Self{
         let mut particles = vec![];
-        let num_instances = gen.generate(&mut particles, generation_time, generation_speed, num_textures);
+        let num_instances = gen.generate(&mut particles, generation_time, generation_speed, num_textures, rng);
         // instances don't change over time
         let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
