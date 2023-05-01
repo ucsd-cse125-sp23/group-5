@@ -91,8 +91,7 @@ impl Executor {
         // this is a very simple example of how to update the game state
         // based on the command received from the client; maybe we can do something fancier such as
         // dispatch the command to worker threads
-        let mut game_state = self.game_state.lock().unwrap();
-        game_state.update_cooldowns();
+        // let mut game_state = self.game_state.lock().unwrap();
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
             Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
@@ -111,6 +110,7 @@ impl Executor {
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
+        game_state.update_cooldowns();
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             error!("Failed to execute command: {:?}", e);
@@ -137,7 +137,6 @@ impl Executor {
         }
     }
 
-
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
         self.game_events.replace(Vec::new())
     }
@@ -149,7 +148,6 @@ impl Executor {
             .filter(|(_, player)| player.transform.translation.y < DEFAULT_RESPAWN_LIMIT)
             .map(|(&id, _)| id)
             .collect::<Vec<_>>()
-
     }
 
     /// get a clone of the game state
