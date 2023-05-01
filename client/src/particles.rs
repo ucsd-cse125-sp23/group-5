@@ -2,7 +2,7 @@ use wgpu::util::DeviceExt;
 use crate::texture;
 use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
-use std::f32::consts::{FRAC_PI_2, PI};
+use std::{f32::consts::{FRAC_PI_2, PI}, ops::IndexMut};
 // use rand_distr::Distribution;
 use rand::Rng;
 use rand_distr::{Normal, Distribution, Poisson};
@@ -209,6 +209,7 @@ struct PSRaw{
 
 pub struct ParticleSystem{
     start_time: std::time::Instant,
+    particle_lifetime: f32,
     last_particle_death: std::time::Duration,
     particles: Vec<Particle>,
     num_instances: u32,
@@ -273,6 +274,7 @@ impl ParticleSystem{
         println!("last particle death: {:?}", last_particle_death.as_secs_f32());
         Self{
             start_time: std::time::Instant::now(),
+            particle_lifetime,
             last_particle_death,
             particles,
             num_instances,
@@ -474,19 +476,23 @@ impl ParticleDrawer{
                     + (elapsed - p.spawn_time) * glm::make_vec3(&p.velocity[0..3]);
                 p.z_pos = glm::dot(&(pos - cpos), &cam_dir);
             }
-            let mut tmp = ps.particles.clone();
+            let start_ind = match ps.particles.binary_search_by(
+                    |&a| (a.spawn_time + ps.particle_lifetime).partial_cmp(&elapsed).expect("Unexpected Nan")
+                ) {
+                Ok(ind) => ind + 1,
+                Err(ind) => ind,
+            };
+            ps.particles.drain(0..start_ind);
+            let end_ind = match ps.particles.binary_search_by(
+                    |&a| a.spawn_time.partial_cmp(&elapsed).expect("Unexpected Nan")
+                ) {
+                Ok(ind) => ind + 1,
+                Err(ind) => ind,
+            };
+            let mut tmp = ps.particles[0..end_ind].to_vec();
             tmp.sort_by(|a, b | {
-                // let a_pos: glm::Vec3 = glm::make_vec3(&a.start_pos[0..3]) 
-                //     + (elapsed - a.spawn_time) * glm::make_vec3(&a.velocity[0..3]);
-                // let b_pos: glm::Vec3 = glm::make_vec3(&b.start_pos[0..3]) 
-                //     + (elapsed - b.spawn_time) * glm::make_vec3(&b.velocity[0..3]);
-                // (glm::dot(&(a_pos - cpos), &cam_dir) as f32)
-                //         .partial_cmp(&glm::dot(&(b_pos - cpos), &cam_dir))
-                //     .unwrap_or(std::cmp::Ordering::Equal)
                 a.z_pos.partial_cmp(&b.z_pos).unwrap_or(std::cmp::Ordering::Equal)
             });
-            // println!("before: {:?}", ps.particles);
-            // println!("after: {:?}", tmp);
             queue.write_buffer(&ps.inst_buf, 0, bytemuck::cast_slice(&tmp));
             render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
             // set rest of the buffers 
@@ -494,7 +500,8 @@ impl ParticleDrawer{
             render_pass.set_bind_group(0, &camera_bind_group, &[]);
             render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
 
-            render_pass.draw_indexed(0..6, 0, 0..ps.num_instances);
+            render_pass.draw_indexed(0..6, 0, 0..(end_ind as u32));
+            // println!("Num particles to draw: {}", tmp.len());
         }
     }
 }

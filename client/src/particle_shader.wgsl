@@ -43,9 +43,9 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = vec2(model.tex[0], (model.tex[1] / (info.num_textures) + (instance.tex_id / info.num_textures)));
-    if (instance.spawn_time > time_elapsed || instance.spawn_time + info.lifetime < time_elapsed){
-        out.clip_position = vec4(2.0, 2.0, 2.0, 1.0);
-    } else {
+    // if (instance.spawn_time > time_elapsed || instance.spawn_time + info.lifetime < time_elapsed){
+    //     out.clip_position = vec4(2.0, 2.0, 2.0, 1.0);
+    // } else {
         // TODO
         var start_disp = vec3<f32>(instance.start_pos[0], instance.start_pos[1], instance.start_pos[2]);
         var start_angle = instance.start_pos[3];
@@ -89,7 +89,7 @@ fn vs_main(
         // set z, for ordering issues
         out.clip_position[2] = instance.z_pos;
         out.clip_position = camera.proj * out.clip_position;
-    }
+    // }
     return out;
 }
 
