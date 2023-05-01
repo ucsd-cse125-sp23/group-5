@@ -88,13 +88,32 @@ impl Executor {
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
 
+        let mut game_state = self.game_state.lock().unwrap();
+        let mut handle_respawn = false;
+
         // this is a very simple example of how to update the game state
         // based on the command received from the client; maybe we can do something fancier such as
         // dispatch the command to worker threads
         // let mut game_state = self.game_state.lock().unwrap();
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
-            Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
+            Command::Respawn => {
+                handle_respawn = true;
+
+                match game_state.player(client_command.client_id) {
+                    Some(player) => {
+                        if !player.on_cooldown.contains_key(&Command::Respawn) {
+                            game_state.insert_cooldown(
+                                client_command.client_id,
+                                Command::Respawn,
+                                5,
+                            );
+                        }
+                    }
+                    None => {}
+                };
+                Box::new(RespawnCommandHandler::new(client_command.client_id))
+            }
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
@@ -107,13 +126,39 @@ impl Executor {
             }
         };
 
-        let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
+
+        let respawn_buffering;
+        match game_state.player(client_command.client_id) {
+            Some(player) => {
+                respawn_buffering = player.on_cooldown.contains_key(&Command::Respawn);
+            }
+            None => respawn_buffering = false,
+        };
+
         game_state.update_cooldowns();
 
-        if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
-            error!("Failed to execute command: {:?}", e);
+        let respawn_should_ex;
+        match game_state.player(client_command.client_id) {
+            Some(player) => {
+                respawn_should_ex = !player.on_cooldown.contains_key(&Command::Respawn);
+            }
+            None => respawn_should_ex = false,
+        };
+
+        if respawn_buffering && respawn_should_ex {
+            println!("here\n\n\n");
+            let respawn_handler = Box::new(RespawnCommandHandler::new(client_command.client_id));
+            respawn_handler
+                .handle(&mut game_state, &mut physics_state, &mut game_events)
+                .unwrap();
+        }
+
+        if !handle_respawn {
+            if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
+                error!("Failed to execute command: {:?}", e);
+            }
         }
         info!("GameState: {:?}", game_state);
     }

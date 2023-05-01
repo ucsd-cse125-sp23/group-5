@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 const TICK_RATE: u64 = 30; // 30 fps
 
 /// Wrapper around a `Command` that also contains the id of the client that issued the command.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClientCommand {
     pub(crate) client_id: u32,
     pub command: Command,

@@ -123,8 +123,10 @@ impl CommandHandler for RespawnCommandHandler {
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // TODO: remove debug code, example usage
-        // if command_on_cooldown(game_state, self.player_id, Command::Spawn) {
+        // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
+        //     game_state.insert_cooldown(self.player_id, Command::Respawn, 5);
         //     return Ok(());
+        // } else {
         // }
         let ground_groups = InteractionGroups::new(1.into(), 1.into());
         let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
@@ -136,7 +138,7 @@ impl CommandHandler for RespawnCommandHandler {
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
         // TODO: remove debug code, example usage
-        // game_state.insert_cooldown(self.player_id, Command::Spawn, 15);
+
         Ok(())
     }
 }
@@ -337,12 +339,4 @@ impl CommandHandler for JumpCommandHandler {
 
         Ok(())
     }
-}
-
-fn command_on_cooldown(game_state: &mut GameState, client_id: u32, command: Command) -> bool {
-    game_state
-        .player(client_id)
-        .unwrap()
-        .on_cooldown
-        .contains_key(&command)
 }

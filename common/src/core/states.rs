@@ -51,6 +51,13 @@ impl GameState {
                 .retain(|_, cd_until| now.lt(cd_until))
         }
     }
+
+    pub fn command_on_cooldown(&self, client_id: u32, command: Command) -> bool {
+        self.player(client_id)
+            .unwrap()
+            .on_cooldown
+            .contains_key(&command)
+    }
 }
 
 mod tests {
