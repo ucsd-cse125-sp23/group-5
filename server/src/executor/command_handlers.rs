@@ -3,13 +3,13 @@ use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
 
 use crate::Recipients;
-use common::core::events::{GameEvent, SoundSpec};
 use common::core::command::{Command, MoveDirection};
+use common::core::events::{GameEvent, SoundSpec};
 
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use nalgebra::UnitQuaternion;
-use nalgebra_glm::{Vec3};
+use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
 use std::fmt::Debug;
@@ -122,9 +122,10 @@ impl CommandHandler for RespawnCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        if command_on_cooldown(game_state, self.player_id, Command::Spawn) {
-            return Ok(());
-        }
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Spawn) {
+        //     return Ok(());
+        // }
         let ground_groups = InteractionGroups::new(1.into(), 1.into());
         let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
             .collision_groups(ground_groups)
@@ -134,7 +135,8 @@ impl CommandHandler for RespawnCommandHandler {
             .translation(rapier::vector![0.0, 3.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
-        game_state.insert_cooldown(self.player_id, Command::Spawn, 15);
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Spawn, 15);
         Ok(())
     }
 }
@@ -180,6 +182,11 @@ impl CommandHandler for MoveCommandHandler {
         if self.direction.eq(&MoveDirection::zeros()) {
             return Ok(());
         }
+
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
+        //     return Ok(());
+        // }
 
         // normalize the direction vector
         let dir_vec = self.direction.normalize();
@@ -234,11 +241,6 @@ impl CommandHandler for MoveCommandHandler {
         // Step 4: Calculate the required torque using the gain factor
         let required_torque = angular_velocity_difference * GAIN;
 
-        // TODO: remove debug code
-        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
-        //     return Ok(());
-        // }
-
         // Step 5: Apply the torque to the player's rigid body
         player_rigid_body.apply_torque_impulse(required_torque, true);
 
@@ -257,6 +259,9 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Move(self.direction), 5);
+
         Ok(())
     }
 }
@@ -273,9 +278,10 @@ impl CommandHandler for JumpCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        if command_on_cooldown(game_state, self.player_id, Command::Jump) {
-            return Ok(());
-        }
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Jump) {
+        //     return Ok(());
+        // }
 
         // check if player is touching the ground
         let player_collider_handle = physics_state
@@ -326,8 +332,8 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
-        // TODO: remove debug code
-        game_state.insert_cooldown(self.player_id, Command::Jump, 5);
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Jump, 5);
 
         Ok(())
     }
