@@ -69,17 +69,15 @@ impl GameLoop<'_> {
 
             // check whether player need to respawn
             let players_to_respawn = self.executor.check_respawn_players();
-            if players_to_respawn.is_empty() {
-                // consume and collect all messages in the channel
-                let commands = self.commands.try_iter().collect::<Vec<_>>();
-                // send commands to the executor
-                self.executor.plan_and_execute(commands);
-            } else {
+            // consume and collect all messages in the channel
+            let mut commands = self.commands.try_iter().collect::<Vec<_>>();
+            if !players_to_respawn.is_empty() {
                 for client_id in players_to_respawn {
-                    self.executor
-                        .plan_and_execute(vec![ClientCommand::new(client_id, Command::Respawn)]);
+                    commands.push(ClientCommand::new(client_id, Command::Respawn));
                 }
             }
+            // send commands to the executor
+            self.executor.plan_and_execute(commands);
 
             // calculate the delta time
             let delta_time = Instant::now().duration_since(last_instant);

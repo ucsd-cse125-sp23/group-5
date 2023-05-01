@@ -124,9 +124,7 @@ impl CommandHandler for RespawnCommandHandler {
     ) -> HandlerResult {
         // TODO: remove debug code, example usage
         // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
-        //     game_state.insert_cooldown(self.player_id, Command::Respawn, 5);
         //     return Ok(());
-        // } else {
         // }
         let ground_groups = InteractionGroups::new(1.into(), 1.into());
         let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
@@ -137,7 +135,6 @@ impl CommandHandler for RespawnCommandHandler {
             .translation(rapier::vector![0.0, 3.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
-        // TODO: remove debug code, example usage
 
         Ok(())
     }
