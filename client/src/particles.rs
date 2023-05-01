@@ -5,7 +5,7 @@ extern crate nalgebra_glm as glm;
 use std::f32::consts::{FRAC_PI_2, PI};
 // use rand_distr::Distribution;
 use rand::Rng;
-use rand_distr::{Normal, Distribution};
+use rand_distr::{Normal, Distribution, Poisson};
 
 #[rustfmt::skip]
 pub const PVertex : &[[f32; 2];4] = &[
@@ -126,6 +126,9 @@ pub struct LineGenerator{
     linear_variance: f32,
     angular_velocity: f32,
     angular_variance: f32,
+    size: f32,
+    size_variance: f32,
+    poisson_generation: bool,
 }
 
 impl LineGenerator{
@@ -136,6 +139,9 @@ impl LineGenerator{
         linear_variance: f32,
         angular_velocity: f32,
         angular_variance: f32,
+        size: f32,
+        size_variance: f32,
+        poisson_generation: bool,
     ) -> Self{
         Self{
             source,
@@ -143,6 +149,9 @@ impl LineGenerator{
             linear_variance,
             angular_velocity,
             angular_variance,
+            size,
+            size_variance,
+            poisson_generation,
         }
     }
 }
@@ -156,29 +165,38 @@ impl ParticleGenerator for LineGenerator{
             num_textures: u32,
             rng: &mut rand::rngs::ThreadRng,
         ) -> u32 {
-        let n : u32 = (spawning_time.as_secs_f32() * spawn_rate).floor() as u32;
+        // let n : u32 = (spawning_time.as_secs_f32() * spawn_rate).floor() as u32;
         let lin_dist = Normal::new(1.0, self.linear_variance).unwrap();
         let ang_dist = Normal::new(1.0, self.angular_variance).unwrap();
+        let size_dist = Normal::new(1.0, self.size_variance).unwrap();
+        let time_dist = Poisson::new(1.0/spawn_rate).unwrap();
         let v = self.dir;
-        for i in 0..n{
+        let mut spawn_time = 0.0;
+        while std::time::Duration::from_secs_f32(spawn_time) < spawning_time{
             let linear_scale = lin_dist.sample(rng);
             let angular_scale = ang_dist.sample(rng);
+            let size_scale = size_dist.sample(rng);
             // want velocity to be nonzero
-            glm::clamp_scalar(linear_scale, 0.01, f32::INFINITY);
-            glm::clamp_scalar(angular_scale, 0.01, f32::INFINITY);
+            glm::clamp_scalar(linear_scale, ParticleSystem::EPSILON, f32::INFINITY);
+            glm::clamp_scalar(angular_scale, ParticleSystem::EPSILON, f32::INFINITY);
+            glm::clamp_scalar(size_scale, ParticleSystem::EPSILON, f32::INFINITY);
             list.push(
                 Particle {
                     start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                     color: [1.0, 1.0, 1.0, 1.0], //TODO
                     velocity:  [v[0] * linear_scale, v[1] * linear_scale, v[2] * linear_scale, self.angular_velocity * angular_scale],
-                    spawn_time: (i as f32) * 1.0 / spawn_rate,
-                    size: 50.0,
-                    tex_id: 0.0,
+                    spawn_time,
+                    size: self.size * size_scale,
+                    tex_id: rng.gen_range(0..num_textures) as f32,
                     z_pos: 0.0,
                 }
             );
+            spawn_time += match self.poisson_generation{
+                true => time_dist.sample(rng),
+                false => 1.0/spawn_rate,
+            };
         }
-        return n;
+        return list.len() as u32;
     }
 }
 
@@ -192,7 +210,6 @@ struct PSRaw{
 pub struct ParticleSystem{
     start_time: std::time::Instant,
     last_particle_death: std::time::Duration,
-    // TODO: poisson process?
     particles: Vec<Particle>,
     num_instances: u32,
     inst_buf: wgpu::Buffer,
@@ -200,6 +217,8 @@ pub struct ParticleSystem{
 }
 
 impl ParticleSystem{
+    const EPSILON: f32 = 1e-6;
+
     pub fn new(
         generation_time: std::time::Duration,
         particle_lifetime: f32, // in seconds
