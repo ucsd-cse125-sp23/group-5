@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
@@ -9,12 +10,17 @@ use common::core::events::{GameEvent, SoundSpec};
 use common::communication::commons::MAX_WIND_CHARGE;
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
-use nalgebra::zero;
+use nalgebra::{Isometry3, Vector3, zero};
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
-use std::fmt::Debug;
+use std::fmt::{Debug, format};
+use itertools::Itertools;
+use rapier3d::math::Isometry;
+use rapier3d::prelude::Ray;
+use common::configs::model_config::ConfigModels;
+use common::configs::scene_config::ConfigSceneGraph;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -35,7 +41,8 @@ pub trait CommandHandler {
 #[derive(Constructor)]
 /// Handles the startup command that initializes the games state and physics world
 pub struct StartupCommandHandler {
-    map_obj_path: String,
+    config_models: ConfigModels,
+    config_scene_graph: ConfigSceneGraph,
 }
 
 impl CommandHandler for StartupCommandHandler {
@@ -45,16 +52,47 @@ impl CommandHandler for StartupCommandHandler {
         physics_state: &mut PhysicsState,
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        // loading the object model
-        let map = tobj::load_obj("assets/island.obj", &tobj::GPU_LOAD_OPTIONS);
 
-        let (models, _) = map.unwrap();
+        let mut scene_entity_id = 0xBEEF; // TOOD: set up a better convention for scene entities
 
-        // Physics state
-        let collider = rapier::ColliderBuilder::from_object_models(models)
-            .translation(rapier::vector![0.0, -9.7, 0.0])
-            .build();
-        physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
+        let mut nodes = self.config_scene_graph.nodes.iter().map(
+            |n| (n.clone(), Isometry::identity())
+        ).collect_vec();
+
+        while !nodes.is_empty() {
+            let (node, parent_transform) = nodes.pop().unwrap();
+            let model = node.model.clone().ok_or(HandlerError::new("Config node not attaching model".to_string()))?;
+
+            let model_config = self.config_models
+                .model(model)
+                .ok_or(HandlerError::new("Model not declared".to_string()))?.path.clone();
+
+            let (models, _) = tobj::load_obj(model_config, &tobj::GPU_LOAD_OPTIONS)
+                .map_err(|e| HandlerError::new(format!("Error loading model {:?}", e)))?;
+
+            let local_transform = Isometry3::from_parts(
+                node.transform.position.into(),
+                UnitQuaternion::from_quaternion(node.transform.rotation),
+            );
+
+            let world_transform = parent_transform * local_transform;
+
+            let collider = rapier::ColliderBuilder::from_object_models(models)
+                .position(world_transform)
+                .build();
+
+            physics_state.insert_entity(scene_entity_id, Some(collider), None); // insert the collider into the physics world
+            scene_entity_id += 1;
+
+            // add children to nodes
+            if let Some(children) = node.children.clone() {
+                nodes.extend(
+                    children.iter().map(
+                        |child| (child.clone(), world_transform)
+                    )
+                );
+            }
+        }
 
         Ok(())
     }
@@ -299,36 +337,32 @@ impl CommandHandler for JumpCommandHandler {
         //     return Ok(());
         // }
 
-        // check if player is touching the ground
-        let player_collider_handle = physics_state
-            .get_entity_handles(self.player_id)
-            .ok_or(HandlerError::new(format!(
-                "Player {} not found",
-                self.player_id
-            )))?
+        let player_collider_handle = physics_state.get_entity_handles(self.player_id)
+            .ok_or(HandlerError::new(format!("Handlers for player {} not found", self.player_id)))?
             .collider
-            .ok_or(HandlerError::new(format!(
-                "Player {} does not have a collider",
-                self.player_id
-            )))?;
+            .ok_or(HandlerError::new(format!("Collider for player {} not found", self.player_id)))?;
 
-        let ground_collider_handle = physics_state
-            .get_entity_handles(0)
-            .ok_or(HandlerError::new("Ground not found".to_string()))?
-            .collider
-            .ok_or(HandlerError::new(
-                "Ground does not have a collider".to_string(),
-            ))?;
+        let player_rigid_body = physics_state
+            .get_entity_rigid_body_mut(self.player_id)
+            .ok_or(HandlerError::new(format!("Rigid body for player {} not found", self.player_id)))?;
 
-        let pair = physics_state
-            .narrow_phase
-            .contact_pair(player_collider_handle, ground_collider_handle);
+        let contact_pairs = physics_state.narrow_phase.contacts_with(player_collider_handle).collect_vec();
+
+        let mut should_reset_jump = false;
+        for contact_pair in contact_pairs {
+            if let Some((manifold, _)) = contact_pair.find_deepest_contact() {
+                // see if player is above another collider by testing the normal angle
+                if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI/3. {
+                    should_reset_jump = true;
+                }
+            }
+        }
 
         let mut player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        if pair.is_some() {
+        if should_reset_jump {
             player_state.jump_count = 0;
         }
 
