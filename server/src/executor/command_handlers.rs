@@ -8,11 +8,11 @@ use common::core::events::{GameEvent, SoundSpec};
 
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
+use nalgebra::zero;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
-use nalgebra::zero;
 use std::fmt::Debug;
 
 #[derive(Constructor, Error, Debug, Display)]
@@ -140,11 +140,11 @@ impl CommandHandler for RespawnCommandHandler {
         if let Some(player) = game_state.players.get(&self.player_id) {
             if !player.on_cooldown.contains_key(&Command::Respawn) {
                 // Teleport the player to the desired position.
-                let new_position = rapier3d::prelude::Isometry::new(
-                    rapier::vector![0.0, 3.0, 0.0],
-                    zero(),
-                );
-                if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
+                let new_position =
+                    rapier3d::prelude::Isometry::new(rapier::vector![0.0, 3.0, 0.0], zero());
+                if let Some(player_rigid_body) =
+                    physics_state.get_entity_rigid_body_mut(self.player_id)
+                {
                     player_rigid_body.set_position(new_position, true);
                     player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
                 }
