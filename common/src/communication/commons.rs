@@ -5,6 +5,7 @@ use std::net::{SocketAddr, TcpStream};
 pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
 pub const CSE125_SERVER_ADDR: &str = "128.54.70.15:2333";
 pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
+pub const MAX_WIND_CHARGE: u32 = 10;
 
 /// Trait for something that can be converted to bytes (&[u8])
 pub trait Serialize {

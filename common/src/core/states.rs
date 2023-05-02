@@ -14,6 +14,7 @@ pub struct PlayerState {
     pub camera_forward: Vec3,
     pub connected: bool,
     pub on_cooldown: HashMap<Command, SystemTime>,
+    pub wind_charge: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

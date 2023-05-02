@@ -6,6 +6,7 @@ use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, SoundSpec};
 
+use common::communication::commons::MAX_WIND_CHARGE;
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use nalgebra::zero;
@@ -104,6 +105,7 @@ impl CommandHandler for SpawnCommandHandler {
             PlayerState {
                 id: self.player_id,
                 connected: true,
+                wind_charge: MAX_WIND_CHARGE,
                 ..Default::default()
             },
         );
