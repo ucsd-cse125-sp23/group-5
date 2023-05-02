@@ -13,6 +13,7 @@ pub struct PlayerState {
     pub jump_count: u32,
     pub camera_forward: Vec3,
     pub connected: bool,
+    pub is_dead: bool,
     pub on_cooldown: HashMap<Command, SystemTime>,
 }
 
