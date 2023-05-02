@@ -1,8 +1,14 @@
+use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::MoveDirection;
+
+use crate::Recipients;
+use common::core::command::{Command, MoveDirection};
+use common::core::events::{GameEvent, SoundSpec};
+
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
+use nalgebra::zero;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use nalgebra_glm as glm;
@@ -18,8 +24,12 @@ pub struct HandlerError {
 type HandlerResult = Result<(), HandlerError>;
 
 pub trait CommandHandler {
-    fn handle(&self, game_state: &mut GameState, physics_state: &mut PhysicsState)
-        -> HandlerResult;
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult;
 }
 
 #[derive(Constructor)]
@@ -29,7 +39,12 @@ pub struct StartupCommandHandler {
 }
 
 impl CommandHandler for StartupCommandHandler {
-    fn handle(&self, _: &mut GameState, physics_state: &mut PhysicsState) -> HandlerResult {
+    fn handle(
+        &self,
+        _: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _game_events: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         // loading the object model
         let map = tobj::load_obj("assets/island.obj", &tobj::GPU_LOAD_OPTIONS);
 
@@ -39,8 +54,8 @@ impl CommandHandler for StartupCommandHandler {
         let collider = rapier::ColliderBuilder::from_object_models(models)
             .translation(rapier::vector![0.0, -9.7, 0.0])
             .build();
-
         physics_state.insert_entity(0, Some(collider), None); // insert the collider into the physics world
+
         Ok(())
     }
 }
@@ -55,6 +70,7 @@ impl CommandHandler for SpawnCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Physics state
 
@@ -79,7 +95,7 @@ impl CommandHandler for SpawnCommandHandler {
             .build();
 
         let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-            .translation(rapier::vector![0.0, 4.0, 0.0])
+            .translation(rapier::vector![0.0, 3.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
@@ -97,13 +113,62 @@ impl CommandHandler for SpawnCommandHandler {
 }
 
 #[derive(Constructor)]
+pub struct RespawnCommandHandler {
+    player_id: u32,
+}
+
+impl CommandHandler for RespawnCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
+        // TODO: remove debug code, example usage
+        // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
+        //     return Ok(());
+        // }
+
+        // if dead player is not on the respawn map, insert it into it
+        if let Some(player) = game_state.players.get(&self.player_id) {
+            if !player.on_cooldown.contains_key(&Command::Respawn) {
+                game_state.insert_cooldown(self.player_id, Command::Respawn, 3);
+            }
+        }
+        // Update all cooldowns in the game state
+        game_state.update_cooldowns();
+        // If the player's respawn cooldown has ended, create a new RespawnCommandHandler and handle the respawn command
+        if let Some(player) = game_state.players.get(&self.player_id) {
+            if !player.on_cooldown.contains_key(&Command::Respawn) {
+                // Teleport the player to the desired position.
+                let new_position =
+                    rapier3d::prelude::Isometry::new(rapier::vector![0.0, 3.0, 0.0], zero());
+                if let Some(player_rigid_body) =
+                    physics_state.get_entity_rigid_body_mut(self.player_id)
+                {
+                    player_rigid_body.set_position(new_position, true);
+                    player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
     player_id: u32,
     forward: Vec3,
 }
 
 impl CommandHandler for UpdateCameraFacingCommandHandler {
-    fn handle(&self, game_state: &mut GameState, _: &mut PhysicsState) -> HandlerResult {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        _: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         // Game state
         let player = game_state
             .player_mut(self.player_id)
@@ -126,11 +191,17 @@ impl CommandHandler for MoveCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Physics state
         if self.direction.eq(&MoveDirection::zeros()) {
             return Ok(());
         }
+
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
+        //     return Ok(());
+        // }
 
         // normalize the direction vector
         let dir_vec = self.direction.normalize();
@@ -193,7 +264,19 @@ impl CommandHandler for MoveCommandHandler {
 
         let dir_vec = rotation * dir_vec;
         physics_state.move_character_with_velocity(self.player_id, dir_vec * STEP_SIZE);
-        // Game state (not needed since the physics state is synced at the end of the tick)
+
+        // TODO: replace this example with actual implementation
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                player_state.transform.translation,
+                "foot_step".to_string(),
+            )),
+            Recipients::One(self.player_id as u8),
+        );
+
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Move(self.direction), 5);
+
         Ok(())
     }
 }
@@ -208,7 +291,13 @@ impl CommandHandler for JumpCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Jump) {
+        //     return Ok(());
+        // }
+
         // check if player is touching the ground
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
@@ -258,6 +347,9 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Jump, 5);
+
         Ok(())
     }
 }
@@ -272,6 +364,7 @@ impl CommandHandler for AttackCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
                 .player(self.player_id)
@@ -340,8 +433,7 @@ impl CommandHandler for AttackCommandHandler {
                         "Player {} does not have a collider",
                         self.player_id
                     )))?;
-                    println!("{:?}", handle);
-                    println!("{:?}", other_player_collider_handle);
+                    
                     // if ray hit the correct target (the other player), apply force
                     if handle == other_player_collider_handle {
                         const ATTACK_IMPULSE: f32 = 40.0; // parameter to tune
