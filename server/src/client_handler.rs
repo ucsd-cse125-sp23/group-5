@@ -7,7 +7,7 @@ use log::{debug, error, info, warn};
 use server::game_loop::ClientCommand;
 use server::outgoing_request::OutgoingRequest;
 use std::net::TcpStream;
-use std::ops::{Deref};
+use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;

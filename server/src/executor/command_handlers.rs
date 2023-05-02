@@ -1,13 +1,16 @@
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
+
 use crate::Recipients;
-use common::core::command::MoveDirection;
+use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, SoundSpec};
+
 use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
+use nalgebra::zero;
 use nalgebra::UnitQuaternion;
-use nalgebra_glm::{Vec3};
+use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
 use std::fmt::Debug;
@@ -91,7 +94,7 @@ impl CommandHandler for SpawnCommandHandler {
             .build();
 
         let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-            .translation(rapier::vector![0.0, 4.0, 0.0])
+            .translation(rapier::vector![0.0, 3.0, 0.0])
             .build();
         physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
@@ -104,6 +107,50 @@ impl CommandHandler for SpawnCommandHandler {
                 ..Default::default()
             },
         );
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
+pub struct RespawnCommandHandler {
+    player_id: u32,
+}
+
+impl CommandHandler for RespawnCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
+        // TODO: remove debug code, example usage
+        // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
+        //     return Ok(());
+        // }
+
+        // if dead player is not on the respawn map, insert it into it
+        if let Some(player) = game_state.players.get(&self.player_id) {
+            if !player.on_cooldown.contains_key(&Command::Respawn) {
+                game_state.insert_cooldown(self.player_id, Command::Respawn, 3);
+            }
+        }
+        // Update all cooldowns in the game state
+        game_state.update_cooldowns();
+        // If the player's respawn cooldown has ended, create a new RespawnCommandHandler and handle the respawn command
+        if let Some(player) = game_state.players.get(&self.player_id) {
+            if !player.on_cooldown.contains_key(&Command::Respawn) {
+                // Teleport the player to the desired position.
+                let new_position =
+                    rapier3d::prelude::Isometry::new(rapier::vector![0.0, 3.0, 0.0], zero());
+                if let Some(player_rigid_body) =
+                    physics_state.get_entity_rigid_body_mut(self.player_id)
+                {
+                    player_rigid_body.set_position(new_position, true);
+                    player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+                }
+            }
+        }
+
         Ok(())
     }
 }
@@ -149,6 +196,11 @@ impl CommandHandler for MoveCommandHandler {
         if self.direction.eq(&MoveDirection::zeros()) {
             return Ok(());
         }
+
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
+        //     return Ok(());
+        // }
 
         // normalize the direction vector
         let dir_vec = self.direction.normalize();
@@ -221,6 +273,9 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Move(self.direction), 5);
+
         Ok(())
     }
 }
@@ -237,6 +292,11 @@ impl CommandHandler for JumpCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        // TODO: remove debug code, example usage
+        // if command_on_cooldown(game_state, self.player_id, Command::Jump) {
+        //     return Ok(());
+        // }
+
         // check if player is touching the ground
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
@@ -285,6 +345,9 @@ impl CommandHandler for JumpCommandHandler {
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
+
+        // TODO: remove debug code, example usage
+        // game_state.insert_cooldown(self.player_id, Command::Jump, 5);
 
         Ok(())
     }

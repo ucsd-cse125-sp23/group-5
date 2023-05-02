@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 const TICK_RATE: u64 = 30; // 30 fps
 
 /// Wrapper around a `Command` that also contains the id of the client that issued the command.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClientCommand {
     pub(crate) client_id: u32,
     pub command: Command,
@@ -67,9 +67,15 @@ impl GameLoop<'_> {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
 
+            // check whether player need to respawn
+            let players_to_respawn = self.executor.check_respawn_players();
             // consume and collect all messages in the channel
-            let commands = self.commands.try_iter().collect::<Vec<_>>();
-
+            let mut commands = self.commands.try_iter().collect::<Vec<_>>();
+            if !players_to_respawn.is_empty() {
+                for client_id in players_to_respawn {
+                    commands.push(ClientCommand::new(client_id, Command::Respawn));
+                }
+            }
             // send commands to the executor
             self.executor.plan_and_execute(commands);
 
