@@ -12,3 +12,9 @@ pub struct ConfigModel {
 pub struct ConfigModels {
     pub models: Vec<ConfigModel>,
 }
+
+impl ConfigModels {
+    pub fn model(&self, name: String) -> Option<&ConfigModel> {
+        self.models.iter().find(|m| m.name == name)
+    }
+}
