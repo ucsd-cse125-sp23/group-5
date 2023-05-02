@@ -128,15 +128,27 @@ impl CommandHandler for RespawnCommandHandler {
         //     return Ok(());
         // }
 
-        // Teleport the player to the desired position.
-        let new_position = rapier3d::prelude::Isometry::new(
-            rapier::vector![0.0, 3.0, 0.0],
-            zero(),
-        );
-
-        if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
-            player_rigid_body.set_position(new_position, true);
-            player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+        // if dead player is not on the respawn map, insert it into it
+        if let Some(player) = game_state.players.get(&self.player_id) {
+            if !player.on_cooldown.contains_key(&Command::Respawn) {
+                game_state.insert_cooldown(self.player_id, Command::Respawn, 3);
+            }
+        }
+        // Update all cooldowns in the game state
+        game_state.update_cooldowns();
+        // If the player's respawn cooldown has ended, create a new RespawnCommandHandler and handle the respawn command
+        if let Some(player) = game_state.players.get(&self.player_id) {
+            if !player.on_cooldown.contains_key(&Command::Respawn) {
+                // Teleport the player to the desired position.
+                let new_position = rapier3d::prelude::Isometry::new(
+                    rapier::vector![0.0, 3.0, 0.0],
+                    zero(),
+                );
+                if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
+                    player_rigid_body.set_position(new_position, true);
+                    player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+                }
+            }
         }
 
         Ok(())

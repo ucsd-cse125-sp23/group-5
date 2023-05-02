@@ -94,15 +94,7 @@ impl Executor {
 
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
-            Command::Respawn => {
-                self.handle_respawn(
-                    client_command.client_id,
-                    &mut game_state,
-                    &mut physics_state,
-                    &mut game_events,
-                );
-                return;
-            }
+            Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
@@ -138,32 +130,6 @@ impl Executor {
             let rigid_body = physics_state.get_entity_rigid_body(player.id).unwrap();
             player.transform.translation = rigid_body.position().translation.vector;
             player.transform.rotation = rigid_body.position().rotation.coords.into();
-        }
-    }
-
-    fn handle_respawn(
-        &self,
-        client_id: u32,
-        game_state: &mut GameState,
-        physics_state: &mut PhysicsState,
-        game_events: &mut dyn GameEventCollector,
-    ) {
-        // if dead player is not on the respawn map, insert it into it
-        if let Some(player) = game_state.players.get(&client_id) {
-            if !player.on_cooldown.contains_key(&Command::Respawn) {
-                game_state.insert_cooldown(client_id, Command::Respawn, 3);
-            }
-        }
-        // Update all cooldowns in the game state
-        game_state.update_cooldowns();
-        // If the player's respawn cooldown has ended, create a new RespawnCommandHandler and handle the respawn command
-        if let Some(player) = game_state.players.get(&client_id) {
-            if !player.on_cooldown.contains_key(&Command::Respawn) {
-                let respawn_handler = Box::new(RespawnCommandHandler::new(client_id));
-                respawn_handler
-                    .handle(game_state, physics_state, game_events)
-                    .unwrap();
-            }
         }
     }
 
