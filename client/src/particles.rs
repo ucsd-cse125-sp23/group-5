@@ -19,6 +19,8 @@ const PV_ATTRIBS : [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
     0 => Float32x2,
 ];
 
+const NUM_TEXTURES: u32 = 4;
+
 fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a>{
     use std::mem;
     wgpu::VertexBufferLayout {
@@ -51,13 +53,18 @@ pub struct Particle{
     size: f32,
     tex_id: f32,
     z_pos: f32,
+    lifetime: f32,
+    _pad0: f32,
+    _pad1: f32,
+    _pad2: f32,
 }
 
 impl Particle{
-    const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
+    const ATTRIBS: [wgpu::VertexAttribute; 11] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
         4 => Float32 ,  5 => Float32,   6 => Float32,
-        7 => Float32,
+        7 => Float32,   8 => Float32,   9 => Float32,
+        10 => Float32, 11 => Float32,
     ];
 }
 
@@ -84,7 +91,8 @@ pub trait ParticleGenerator{
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: f32,
-        num_textures: u32,
+        tex_range: (u32, u32),
+        particle_lifetime: f32,
         rng: &mut rand::rngs::ThreadRng,
     ) -> u32;
 }
@@ -114,7 +122,8 @@ impl ParticleGenerator for ConeGenerator{
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: f32, // per second
-        num_textures: u32,
+        tex_range: (u32, u32),
+        particle_lifetime: f32,
         rng: &mut rand::rngs::ThreadRng,
     ) -> u32{
         todo!();
@@ -162,7 +171,8 @@ impl ParticleGenerator for LineGenerator{
             list: &mut Vec<Particle>,
             spawning_time: std::time::Duration,
             spawn_rate: f32,
-            num_textures: u32,
+            tex_range: (u32, u32),
+            particle_lifetime: f32,
             rng: &mut rand::rngs::ThreadRng,
         ) -> u32 {
         // let n : u32 = (spawning_time.as_secs_f32() * spawn_rate).floor() as u32;
@@ -187,8 +197,12 @@ impl ParticleGenerator for LineGenerator{
                     velocity:  [v[0] * linear_scale, v[1] * linear_scale, v[2] * linear_scale, self.angular_velocity * angular_scale],
                     spawn_time,
                     size: self.size * size_scale,
-                    tex_id: rng.gen_range(0..num_textures) as f32,
+                    tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
                     z_pos: 0.0,
+                    lifetime: particle_lifetime,
+                    _pad0: 0.0,
+                    _pad1: 0.0,
+                    _pad2: 0.0,
                 }
             );
             spawn_time += match self.poisson_generation{
@@ -210,6 +224,7 @@ struct PSRaw{
 pub struct ParticleSystem{
     start_time: std::time::Instant,
     last_particle_death: std::time::Duration,
+    particle_lifetime: f32,
     particles: Vec<Particle>,
     num_instances: u32,
     inst_buf: wgpu::Buffer,
@@ -226,12 +241,19 @@ impl ParticleSystem{
         gen: impl ParticleGenerator,
         texture: &texture::Texture,
         tex_layout: &wgpu::BindGroupLayout,
-        num_textures: u32,
+        tex_range: (u32, u32),
         device: &wgpu::Device,
         rng: &mut rand::rngs::ThreadRng,
     ) -> Self{
         let mut particles = vec![];
-        let num_instances = gen.generate(&mut particles, generation_time, generation_speed, num_textures, rng);
+        let num_instances = gen.generate(
+            &mut particles,
+            generation_time,
+            generation_speed,
+            tex_range,
+            particle_lifetime,
+            rng
+        );
         // instances don't change over time
         let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
@@ -239,15 +261,15 @@ impl ParticleSystem{
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
         // Uniform
-        let meta = PSRaw{
-            lifetime: particle_lifetime,
-            num_textures: num_textures as f32,
-        };
-        let meta_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Particle Meta Buffer"),
-            contents: bytemuck::cast_slice(&[meta]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        // let meta = PSRaw{
+        //     lifetime: particle_lifetime,
+        //     num_textures: num_textures as f32,
+        // };
+        // let meta_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //     label: Some("Particle Meta Buffer"),
+        //     contents: bytemuck::cast_slice(&[meta]),
+        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        // });
         // texture bind group
         let tex_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: tex_layout,
@@ -260,10 +282,10 @@ impl ParticleSystem{
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&texture.sampler),
                 },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: meta_buffer.as_entire_binding(),
-                },
+                // wgpu::BindGroupEntry {
+                //     binding: 2,
+                //     resource: meta_buffer.as_entire_binding(),
+                // },
             ],
             label: None,
         });
@@ -274,6 +296,7 @@ impl ParticleSystem{
         Self{
             start_time: std::time::Instant::now(),
             last_particle_death,
+            particle_lifetime,
             particles,
             num_instances,
             inst_buf,
@@ -369,16 +392,16 @@ impl ParticleDrawer{
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 2,
+                    //     visibility: wgpu::ShaderStages::VERTEX,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
                 ],
                 label: Some("particle_texture_bind_group_layout"),
             });
@@ -456,10 +479,11 @@ impl ParticleDrawer{
         queue: &wgpu::Queue,
     ){
         // remove dead systems
-        self.systems = self.systems.drain(..).filter_map(|x| x.regen()).collect();
+        self.systems = self.systems.drain(..).filter(|x| x.not_done()).collect();
         render_pass.set_pipeline(&self.render_pipeline);
         let cam_dir: glm::Vec3 = glm::normalize(&(camera.position - camera.target));
         let cpos = &camera.position;
+        render_pass.set_bind_group(0, &camera_bind_group, &[]);
 
         for ps in &mut self.systems{
             render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
@@ -474,24 +498,21 @@ impl ParticleDrawer{
                     + (elapsed - p.spawn_time) * glm::make_vec3(&p.velocity[0..3]);
                 p.z_pos = glm::dot(&(pos - cpos), &cam_dir);
             }
-            let mut tmp = ps.particles.clone();
+            let start_ind = ps.particles.partition_point(
+                |&a| a.spawn_time + ps.particle_lifetime < elapsed
+            );
+            ps.particles.drain(0..start_ind);
+            let end_ind = ps.particles.partition_point(
+                    |&a| a.spawn_time < elapsed
+                );
+            let mut tmp = ps.particles[0..end_ind].to_vec();
             tmp.sort_by(|a, b | {
-                // let a_pos: glm::Vec3 = glm::make_vec3(&a.start_pos[0..3]) 
-                //     + (elapsed - a.spawn_time) * glm::make_vec3(&a.velocity[0..3]);
-                // let b_pos: glm::Vec3 = glm::make_vec3(&b.start_pos[0..3]) 
-                //     + (elapsed - b.spawn_time) * glm::make_vec3(&b.velocity[0..3]);
-                // (glm::dot(&(a_pos - cpos), &cam_dir) as f32)
-                //         .partial_cmp(&glm::dot(&(b_pos - cpos), &cam_dir))
-                //     .unwrap_or(std::cmp::Ordering::Equal)
                 a.z_pos.partial_cmp(&b.z_pos).unwrap_or(std::cmp::Ordering::Equal)
             });
-            // println!("before: {:?}", ps.particles);
-            // println!("after: {:?}", tmp);
             queue.write_buffer(&ps.inst_buf, 0, bytemuck::cast_slice(&tmp));
             render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
             // set rest of the buffers 
             render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.set_bind_group(0, &camera_bind_group, &[]);
             render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
 
             render_pass.draw_indexed(0..6, 0, 0..ps.num_instances);

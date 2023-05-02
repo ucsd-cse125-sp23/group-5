@@ -475,22 +475,22 @@ impl State {
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
         let test_particle_gen = particles::LineGenerator::new(
             glm::vec3(0.0, -5.0, 0.0),
-            glm::vec3(0.0, 2.0, 0.0),
-            0.01,
+            glm::vec3(0.0, 5.0, 0.0),
+            0.1,
             PI,
             0.1,
             50.0,
-            0.1,
+            0.2,
             false,
         );
         let test_particle = particles::ParticleSystem::new(
             std::time::Duration::from_secs(60),
             2.0,
-            5.0,
+            3.0,
             test_particle_gen,
             &particle_tex,
             &particle_renderer.tex_bind_group_layout,
-            4,
+            (0,4),
             &device,
             &mut rng,
         );

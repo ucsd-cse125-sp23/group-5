@@ -26,15 +26,10 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
-struct InfoUniform{
-    lifetime: f32, // in sec
-    num_textures: f32,
-}
-@group(1) @binding(2)
-var<uniform> info: InfoUniform;
-
 @group(2) @binding(0)
 var<uniform> time_elapsed: f32;
+
+const NUM_TEXTURES: f32 = 4.0;
 
 @vertex
 fn vs_main(
@@ -42,54 +37,49 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.tex_coords = vec2(model.tex[0], (model.tex[1] / (info.num_textures) + (instance.tex_id / info.num_textures)));
-    if (instance.spawn_time > time_elapsed || instance.spawn_time + info.lifetime < time_elapsed){
-        out.clip_position = vec4(2.0, 2.0, 2.0, 1.0);
-    } else {
-        // TODO
-        var start_disp = vec3<f32>(instance.start_pos[0], instance.start_pos[1], instance.start_pos[2]);
-        var start_angle = instance.start_pos[3];
-        var linear_v = vec3<f32>(instance.velocity[0], instance.velocity[1], instance.velocity[2]);
-        var angular_v = instance.velocity[3];
-        // assuming camera homogenous coord is always 1.0
-        var cpos = vec3<f32>(camera.view_pos[0], camera.view_pos[1], camera.view_pos[2]);
-        var z_prime = normalize(cpos - start_disp);
-        var up = vec3<f32>(0.0, 1.0, 0.0);
-        var x_prime = normalize(cross(up, z_prime));
-        // exact orientation of axes is not super important
-        if (dot(x_prime, x_prime) == 0.0){
-            up = vec3<f32>(1.0, 0.0, 0.0);
-            x_prime = normalize(cross(up, z_prime));
-        }
-        var y_prime = cross(z_prime, x_prime);
-        // scale first
-        var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * instance.size * 0.01;
-        // TODO: then rotate + angular velocity rotation
-        var time_alive = time_elapsed - instance.spawn_time;
-        var theta = start_angle + time_alive * angular_v;
-        var rot_mat = mat3x3<f32>(
-             cos(theta), sin(theta), 0.0,
-            -sin(theta), cos(theta), 0.0,
-            0.0, 0.0, 1.0,
-        );
-        position = rot_mat * position;
-        // then move to alternate coordinates 
-        let coord_matrix = mat3x3<f32>(
-            x_prime,
-            y_prime,
-            z_prime,
-        );
-        position = coord_matrix * position;
-        // then move to start position
-        position += start_disp;
-        // then move according to velocity
-        position += time_alive * linear_v;
-        // then project
-        out.clip_position = camera.view * vec4<f32>(position, 1.0);
-        // set z, for ordering issues
-        out.clip_position[2] = instance.z_pos;
-        out.clip_position = camera.proj * out.clip_position;
+    out.tex_coords = vec2(model.tex[0], (model.tex[1] / (NUM_TEXTURES) + (instance.tex_id / NUM_TEXTURES)));
+    var start_disp = vec3<f32>(instance.start_pos[0], instance.start_pos[1], instance.start_pos[2]);
+    var start_angle = instance.start_pos[3];
+    var linear_v = vec3<f32>(instance.velocity[0], instance.velocity[1], instance.velocity[2]);
+    var angular_v = instance.velocity[3];
+    // assuming camera homogenous coord is always 1.0
+    var cpos = vec3<f32>(camera.view_pos[0], camera.view_pos[1], camera.view_pos[2]);
+    var z_prime = normalize(cpos - start_disp);
+    var up = vec3<f32>(0.0, 1.0, 0.0);
+    var x_prime = normalize(cross(up, z_prime));
+    // exact orientation of axes is not super important
+    if (dot(x_prime, x_prime) == 0.0){
+        up = vec3<f32>(1.0, 0.0, 0.0);
+        x_prime = normalize(cross(up, z_prime));
     }
+    var y_prime = cross(z_prime, x_prime);
+    // scale first
+    var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * instance.size * 0.01;
+    // TODO: then rotate + angular velocity rotation
+    var time_alive = time_elapsed - instance.spawn_time;
+    var theta = start_angle + time_alive * angular_v;
+    var rot_mat = mat3x3<f32>(
+            cos(theta), sin(theta), 0.0,
+        -sin(theta), cos(theta), 0.0,
+        0.0, 0.0, 1.0,
+    );
+    position = rot_mat * position;
+    // then move to alternate coordinates 
+    let coord_matrix = mat3x3<f32>(
+        x_prime,
+        y_prime,
+        z_prime,
+    );
+    position = coord_matrix * position;
+    // then move to start position
+    position += start_disp;
+    // then move according to velocity
+    position += time_alive * linear_v;
+    // then project
+    out.clip_position = camera.view * vec4<f32>(position, 1.0);
+    // set z, for ordering issues
+    out.clip_position[2] = instance.z_pos;
+    out.clip_position = camera.proj * out.clip_position;
     return out;
 }
 
