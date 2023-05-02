@@ -12,6 +12,7 @@ use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::prelude as rapier;
+use nalgebra::zero;
 use std::fmt::Debug;
 
 #[derive(Constructor, Error, Debug, Display)]
@@ -126,15 +127,17 @@ impl CommandHandler for RespawnCommandHandler {
         // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
         //     return Ok(());
         // }
-        let ground_groups = InteractionGroups::new(1.into(), 1.into());
-        let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
-            .collision_groups(ground_groups)
-            .build();
 
-        let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-            .translation(rapier::vector![0.0, 3.0, 0.0])
-            .build();
-        physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
+        // Teleport the player to the desired position.
+        let new_position = rapier3d::prelude::Isometry::new(
+            rapier::vector![0.0, 3.0, 0.0],
+            zero(),
+        );
+
+        if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
+            player_rigid_body.set_position(new_position, true);
+            player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+        }
 
         Ok(())
     }
