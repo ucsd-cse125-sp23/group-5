@@ -1,5 +1,5 @@
 use crate::executor::command_handlers::{
-    CommandHandler, JumpCommandHandler, MoveCommandHandler, RespawnCommandHandler,
+    CommandHandler, AttackCommandHandler, JumpCommandHandler, MoveCommandHandler,
     SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
@@ -13,6 +13,8 @@ use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
+use common::configs::from_file;
+use common::configs::scene_config::ConfigSceneGraph;
 
 mod command_handlers;
 
@@ -48,7 +50,11 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let handler = StartupCommandHandler::new("assets/island.obj".to_string());
+        let scene_config = from_file("scene.json").unwrap();
+        let models_config = from_file("models.json").unwrap();
+
+
+        let handler = StartupCommandHandler::new(models_config, scene_config);
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
@@ -94,13 +100,14 @@ impl Executor {
 
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
-            Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
+            //Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
                 forward,
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
+            Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
                 return;
@@ -110,6 +117,7 @@ impl Executor {
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             error!("Failed to execute command: {:?}", e);
         }
+        //game_state.update_cooldowns();
 
         info!("GameState: {:?}", game_state);
     }
@@ -117,11 +125,12 @@ impl Executor {
     pub(crate) fn step(&self, delta_time: f32) {
         self.physics_state.borrow_mut().set_delta_time(delta_time);
         self.physics_state.borrow_mut().step();
+        
 
-        self.sync_states(); // after physics step, need to sync game state
+        self.sync_states(delta_time); // after physics step, need to sync game state
     }
 
-    fn sync_states(&self) {
+    fn sync_states(&self, delta_time: f32) {
         let mut game_state = self.game_state.lock().unwrap();
         let physics_state = self.physics_state.borrow();
 
@@ -131,17 +140,34 @@ impl Executor {
             player.transform.translation = rigid_body.position().translation.vector;
             player.transform.rotation = rigid_body.position().rotation.coords.into();
         }
+        
+        game_state.update_cooldowns(delta_time);
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
         self.game_events.replace(Vec::new())
     }
 
+    pub(crate) fn update_dead_players(&self) {
+        let dead_players = self.game_state()
+            .players
+            .iter()
+            .filter(|(_, player)| !player.is_dead && player.transform.translation.y < DEFAULT_RESPAWN_LIMIT)
+            .map(|(&id, _)| id)
+            .collect::<Vec<_>>();
+
+        let mut game_state = self.game_state.lock().unwrap();
+        for player_id in dead_players.iter() {
+            game_state.player_mut(*player_id).unwrap().is_dead = true; 
+            game_state.insert_cooldown(*player_id, Command::Spawn, 3);
+        }
+        
+    }
     pub(crate) fn check_respawn_players(&self) -> Vec<u32> {
         self.game_state()
             .players
             .iter()
-            .filter(|(_, player)| player.transform.translation.y < DEFAULT_RESPAWN_LIMIT)
+            .filter(|(_, player)| player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn))
             .map(|(&id, _)| id)
             .collect::<Vec<_>>()
     }

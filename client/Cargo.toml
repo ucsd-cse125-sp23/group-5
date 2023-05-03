@@ -29,6 +29,7 @@ cfg-if = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ambisonic = "0.4.1"
+wgpu_glyph = "0.19.0"
 bus = "2.4.0"
 
 [build-dependencies]

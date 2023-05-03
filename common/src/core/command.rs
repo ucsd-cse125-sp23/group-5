@@ -8,12 +8,15 @@ use std::mem;
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
 
+/*
 /// Game actions that can be performed by the player
-#[derive(Debug, Clone, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub enum GameAction {
     Attack,
     Jump,
 }
+
 
 impl PartialEq for GameAction {
     fn eq(&self, other: &Self) -> bool {
@@ -29,17 +32,18 @@ impl Eq for GameAction {}
 //     Respawn,
 //     Dead,
 // }
+*/ 
 
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Spawn,
-    Respawn,
+    //Respawn,
     Move(MoveDirection),
     Turn(Quat),
     Jump,
     UpdateCamera { forward: glm::Vec3 },
-    Action(GameAction),
+    Attack,
 }
 
 impl Command {
@@ -58,10 +62,6 @@ impl PartialEq for Command {
                 Command::Move(y) => x.eq(y),
                 _ => false,
             },
-            Command::Action(x) => match other {
-                Command::Action(y) => x.eq(y),
-                _ => false,
-            },
             _ => mem::discriminant(self).eq(&mem::discriminant(other)),
         }
     }
@@ -72,11 +72,10 @@ impl Hash for Command {
     fn hash<H: Hasher>(&self, state: &mut H) {
         mem::discriminant(self).hash(state);
         match self {
-            Command::Action(x) => x.hash(state),
             Command::Move(x) => {
-                let _x = ((x.x * (1000000 as f32)).round() / 1.0) as i64;
-                let _y = ((x.y * (1000000 as f32)).round() / 1.0) as i64;
-                let _z = ((x.z * (1000000 as f32)).round() / 1.0) as i64;
+                let _x = ((x.x * 1000000_f32).round() / 1.0) as i64;
+                let _y = ((x.y * 1000000_f32).round() / 1.0) as i64;
+                let _z = ((x.z * 1000000_f32).round() / 1.0) as i64;
                 state.write_i64(_x);
                 state.write_i64(_y);
                 state.write_i64(_z);

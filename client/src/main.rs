@@ -180,12 +180,12 @@ fn recv_server_updates(
 
                 // update state
                 game_events
-                    .broadcast(update_game_event);
-                    // .try_broadcast(update_game_event)
-                    // .map_err(|e| {
-                    //     error!("Failed to broadcast game event: {:?}", e);
-                    // })
-                    // .unwrap();
+                    // .broadcast(update_game_event);
+                    .try_broadcast(update_game_event)
+                    .map_err(|e| {
+                        error!("Failed to broadcast game event: {:?}", e);
+                    })
+                    .unwrap();
             }
             _ => {}
         }

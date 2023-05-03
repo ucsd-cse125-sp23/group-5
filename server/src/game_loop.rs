@@ -67,15 +67,19 @@ impl GameLoop<'_> {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
 
-            // check whether player need to respawn
+            // update list of dead players 
+            self.executor.update_dead_players(); 
+
+            // check whether dead players need to respawn
             let players_to_respawn = self.executor.check_respawn_players();
             // consume and collect all messages in the channel
             let mut commands = self.commands.try_iter().collect::<Vec<_>>();
             if !players_to_respawn.is_empty() {
                 for client_id in players_to_respawn {
-                    commands.push(ClientCommand::new(client_id, Command::Respawn));
+                    commands.push(ClientCommand::new(client_id, Command::Spawn));
                 }
             }
+            
             // send commands to the executor
             self.executor.plan_and_execute(commands);
 
