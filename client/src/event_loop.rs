@@ -38,8 +38,7 @@ impl PlayerLoop {
         let mut event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_title("As The Wind Blows")
-            // TODO: uncomment this line
-            //.with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
+            .with_fullscreen(Some(winit::window::Fullscreen::Borderless(Option::None)))
             .build(&event_loop)
             .unwrap();
 
