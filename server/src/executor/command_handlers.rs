@@ -184,10 +184,6 @@ impl CommandHandler for RespawnCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        // TODO: remove debug code, example usage
-        // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
-        //     return Ok(());
-        // }
 
         // if dead player is not on the respawn map, insert it into it
         if let Some(player) = game_state.players.get(&self.player_id) {
@@ -250,11 +246,6 @@ impl CommandHandler for MoveCommandHandler {
         if self.direction.eq(&MoveDirection::zeros()) {
             return Ok(());
         }
-
-        // TODO: remove debug code, example usage
-        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
-        //     return Ok(());
-        // }
 
         // normalize the direction vector
         let dir_vec = self.direction.normalize();
@@ -327,9 +318,6 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
-        // TODO: remove debug code, example usage
-        // game_state.insert_cooldown(self.player_id, Command::Move(self.direction), 5);
-
         Ok(())
     }
 }
@@ -346,11 +334,6 @@ impl CommandHandler for JumpCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        // TODO: remove debug code, example usage
-        // if command_on_cooldown(game_state, self.player_id, Command::Jump) {
-        //     return Ok(());
-        // }
-
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
             .ok_or(HandlerError::new(format!(
@@ -408,9 +391,6 @@ impl CommandHandler for JumpCommandHandler {
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
-
-        // TODO: remove debug code, example usage
-        // game_state.insert_cooldown(self.player_id, Command::Jump, 5);
 
         Ok(())
     }
