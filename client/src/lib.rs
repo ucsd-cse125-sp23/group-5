@@ -550,6 +550,8 @@ impl State {
 
         let size = &self.window.inner_size();
 
+
+        // TODO: maybe refactor later?
         // if player is alive
         if !self.player.is_dead {
             // render ammo remaining

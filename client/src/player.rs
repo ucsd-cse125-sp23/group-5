@@ -153,5 +153,6 @@ impl PlayerController {
 
         // update ammo count
         player.wind_charge = incoming_player_state.wind_charge;
+
     }
 }

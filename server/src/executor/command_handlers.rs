@@ -7,6 +7,7 @@ use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, SoundSpec};
 
+
 use common::communication::commons::MAX_WIND_CHARGE;
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
@@ -108,6 +109,7 @@ impl CommandHandler for StartupCommandHandler {
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
+    config_scene_graph: ConfigSceneGraph,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -128,13 +130,15 @@ impl CommandHandler for SpawnCommandHandler {
         //     .translation(rapier::vector![0.0, 2.0, 0.0])
         //     .build();
 
+        // get spawn-locations with corresponding id
+        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
+
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
                 // Teleport the player to the desired position.
-                let new_position =
-                    rapier3d::prelude::Isometry::new(rapier::vector![0.0, 3.0, 0.0], zero());
+                let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
                 if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
@@ -151,7 +155,7 @@ impl CommandHandler for SpawnCommandHandler {
                 .build();
 
             let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
-                .translation(rapier::vector![0.0, 3.0, 0.0])
+                .translation(spawn_position)
                 .build();
             physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 

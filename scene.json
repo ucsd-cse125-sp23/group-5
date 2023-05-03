@@ -1,10 +1,16 @@
 {
+  "spawn_points": [
+    [10.0, 3.0, 0.0],
+    [-10.0, 3.0, 0.0],
+    [0.0, 3.0, 10.0],
+    [0.0, 3.0, -10.0]
+  ],
   "nodes": [
     {
-      "id": "object:island1",
+      "id": "object:main_island",
       "model": "island",
       "transform": {
-        "position": [-5, -9.7, 0],
+        "position": [0, -9.7, 0],
         "rotation": [0, 0, 0, 1]
       },
       "children": [
@@ -19,10 +25,34 @@
       ]
     },
     {
-      "id": "object:island2",
+      "id": "object:private_island1",
       "model": "island",
       "transform": {
-        "position": [5, -9.7, 0],
+        "position": [10, -9.7, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    {
+      "id": "object:private_island2",
+      "model": "island",
+      "transform": {
+        "position": [-10, -9.7, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    {
+      "id": "object:private_island3",
+      "model": "island",
+      "transform": {
+        "position": [0, -9.7, 10],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    {
+      "id": "object:private_island4",
+      "model": "island",
+      "transform": {
+        "position": [0, -9.7, -10],
         "rotation": [0, 0, 0, 1]
       }
     }
