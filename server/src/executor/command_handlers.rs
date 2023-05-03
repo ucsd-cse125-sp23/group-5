@@ -53,7 +53,7 @@ impl CommandHandler for StartupCommandHandler {
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
 
-        let mut scene_entity_id = 0xBEEF; // TOOD: set up a better convention for scene entities
+        let mut scene_entity_id = 0xBEEF; // TODO: set up a better convention for scene entities
 
         let mut nodes = self.config_scene_graph.nodes.iter().map(
             |n| (n.clone(), Isometry::identity())
@@ -246,11 +246,6 @@ impl CommandHandler for MoveCommandHandler {
             return Ok(());
         }
 
-        // TODO: remove debug code, example usage
-        // if command_on_cooldown(game_state, self.player_id, Command::Move(self.direction)) {
-        //     return Ok(());
-        // }
-
         // normalize the direction vector
         let dir_vec = self.direction.normalize();
 
@@ -322,9 +317,6 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
-        // TODO: remove debug code, example usage
-        // game_state.insert_cooldown(self.player_id, Command::Move(self.direction), 5);
-
         Ok(())
     }
 }
@@ -341,10 +333,6 @@ impl CommandHandler for JumpCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        // TODO: remove debug code, example usage
-        // if command_on_cooldown(game_state, self.player_id, Command::Jump) {
-        //     return Ok(());
-        // }
 
         let player_collider_handle = physics_state.get_entity_handles(self.player_id)
             .ok_or(HandlerError::new(format!("Handlers for player {} not found", self.player_id)))?
@@ -390,9 +378,6 @@ impl CommandHandler for JumpCommandHandler {
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
-
-        // TODO: remove debug code, example usage
-        // game_state.insert_cooldown(self.player_id, Command::Jump, 5);
 
         Ok(())
     }

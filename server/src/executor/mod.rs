@@ -125,7 +125,6 @@ impl Executor {
     pub(crate) fn step(&self, delta_time: f32) {
         self.physics_state.borrow_mut().set_delta_time(delta_time);
         self.physics_state.borrow_mut().step();
-        
 
         self.sync_states(delta_time); // after physics step, need to sync game state
     }

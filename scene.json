@@ -4,19 +4,9 @@
       "id": "object:main_island",
       "model": "island",
       "transform": {
-        "position": [-5, -9.7, 0],
+        "position": [0, -9.7, 0],
         "rotation": [0, 0, 0, 1]
-      },
-      "children": [
-        {
-          "id": "object:ferris0",
-          "transform": {
-            "position": [0, 5, 0],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "ferris"
-        }
-      ]
+      }
     },
     {
       "id": "object:private_island1",
@@ -89,14 +79,6 @@
           "model": "ferris"
         }
       ]
-    },
-    {
-      "id": "object:island2",
-      "model": "island",
-      "transform": {
-        "position": [5, -9.7, 0],
-        "rotation": [0, 0, 0, 1]
-      }
     }
   ]
 }
