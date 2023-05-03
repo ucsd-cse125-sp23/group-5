@@ -13,6 +13,8 @@ use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
+use common::configs::from_file;
+use common::configs::scene_config::ConfigSceneGraph;
 
 mod command_handlers;
 
@@ -48,7 +50,11 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let handler = StartupCommandHandler::new("assets/island.obj".to_string());
+        let scene_config = from_file("scene.json").unwrap();
+        let models_config = from_file("models.json").unwrap();
+
+
+        let handler = StartupCommandHandler::new(models_config, scene_config);
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);

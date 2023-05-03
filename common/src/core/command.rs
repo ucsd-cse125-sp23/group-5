@@ -73,9 +73,9 @@ impl Hash for Command {
         mem::discriminant(self).hash(state);
         match self {
             Command::Move(x) => {
-                let _x = ((x.x * (1000000 as f32)).round() / 1.0) as i64;
-                let _y = ((x.y * (1000000 as f32)).round() / 1.0) as i64;
-                let _z = ((x.z * (1000000 as f32)).round() / 1.0) as i64;
+                let _x = ((x.x * 1000000_f32).round() / 1.0) as i64;
+                let _y = ((x.y * 1000000_f32).round() / 1.0) as i64;
+                let _z = ((x.z * 1000000_f32).round() / 1.0) as i64;
                 state.write_i64(_x);
                 state.write_i64(_y);
                 state.write_i64(_z);
