@@ -1,8 +1,5 @@
-use crate::audio::{AudioAsset, Audio};
 use crate::inputs::Input;
 use crate::State;
-use bus::BusReader;
-use common::core::events::{SoundSpec, GameEvent};
 use common::core::states::GameState;
 use log::{debug, warn};
 use std::sync::mpsc::Sender;
@@ -22,21 +19,17 @@ pub struct PlayerLoop {
 
     // current player id
     client_id: u8,
-
-    // REMOVE LATER: temporary just to test whether audio can properly receive sound events from the server
-    game_event_receiver: BusReader<GameEvent>, 
 }
 
 impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<Input>, game_state: Arc<Mutex<GameState>>, id: u8, recvr: BusReader<GameEvent>) -> PlayerLoop {
+    pub fn new(commands: Sender<Input>, game_state: Arc<Mutex<GameState>>, id: u8) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             game_state,
             client_id: id,
-            game_event_receiver: recvr,
         }
     }
 
@@ -51,9 +44,6 @@ impl PlayerLoop {
             .unwrap();
 
         let mut state = State::new(window, self.client_id).await;
-
-        let mut audio = Audio::new();
-        audio.play_background_track(AudioAsset::BACKGROUND);
 
         //To check
         let mut last_render_time = instant::Instant::now();
@@ -78,23 +68,13 @@ impl PlayerLoop {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::KeyboardInput { input, .. } => {
-                                match input {
-                                    KeyboardInput {virtual_keycode: Some(VirtualKeyCode::M), ..} => {
-                                        // to toggle on/off the background track because it got annoying
-                                        audio.toggle_background_track();
-                                    },
-                                    // TODO: for testing, remove later
-                                    KeyboardInput {virtual_keycode: Some(VirtualKeyCode::N), ..} => {
-                                        let sound  = SoundSpec{position: glm::Vec3::new(5.0,-3.0,0.0), sound_id: "wind".to_string()};
-                                        audio.handle_sfx_event(sound);
-                                    },
-                                    KeyboardInput {virtual_keycode: Some(VirtualKeyCode::B), ..} => {
-                                        let sound  = SoundSpec{position: glm::Vec3::new(-5.0,-3.0,0.0), sound_id: "wind".to_string()};
-                                        audio.handle_sfx_event(sound);
-                                    },
-
-                                     _ => {},
-                                }
+                                // to toggle on/off the background track because it got annoying
+                                // match input {
+                                //     KeyboardInput {virtual_keycode: Some(VirtualKeyCode::M), ..} => {
+                                //         audio.toggle_background_track();
+                                //     },
+                                //      _ => {},
+                                // }
                                 
                                 match self
                                     .inputs
@@ -168,31 +148,6 @@ impl PlayerLoop {
                     // RedrawRequested will only trigger once, unless we manually
                     // request it.
                     state.window().request_redraw();
-                }
-                _ => {}
-            }
-
-            match self.game_event_receiver.try_recv() {
-                Ok(game_event) => {
-                    match game_event {
-                        GameEvent::SoundEvent(sound_event) => {
-                            println!("SOUND EVENT: {:?}", sound_event);
-                            audio.handle_sfx_event(sound_event);
-                        }
-                        _ => {}
-                    }
-                }
-                Err(_) => {},
-            }
-
-            let gs = self.game_state.lock().unwrap().clone();
-            let player_curr = gs.player(self.client_id as u32)
-                .ok_or_else(|| println!("Player {} not found", self.client_id));
-
-            match player_curr{
-                Ok(_) => {
-                    let cf = player_curr.unwrap().camera_forward;
-                    audio.update_sound_positions(state.player.position, cf); 
                 }
                 _ => {}
             }

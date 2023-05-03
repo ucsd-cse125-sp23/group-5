@@ -2,6 +2,7 @@ extern crate queues;
 
 use std::env;
 
+use client::audio::Audio;
 use log::{debug, error, info};
 use std::fs::File;
 
@@ -29,6 +30,7 @@ fn main() {
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
     let mut game_events_bus = Bus::new(1);
+    let game_event_receiver = game_events_bus.add_rx();
 
     #[cfg(not(feature = "debug-addr"))]
     let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
@@ -71,8 +73,7 @@ fn main() {
     #[cfg(feature = "debug-recon")]
     dump_ids(session_data_path, client_id + 1, session_id);
 
-    let game_event_receiver = game_events_bus.add_rx();
-    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id, game_event_receiver);
+    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id); // , game_event_receiver);
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
@@ -84,9 +85,18 @@ fn main() {
     });
 
     // spawn a thread to handle game state updates and events
+    let game_state_clone = game_state.clone();
     thread::spawn(move || {
-        recv_server_updates(protocol.try_clone().unwrap(), game_state, game_events_bus);
+        recv_server_updates(protocol.try_clone().unwrap(), game_state_clone, game_events_bus);
     });
+
+    // thread for audio
+    let game_state_clone1 = game_state.clone();
+    thread::spawn(move || {
+        let mut audio = Audio::new();
+        audio.play_background_track(client::audio::AudioAsset::BACKGROUND);
+        audio.handle_audio_updates(game_state_clone1, client_id, game_event_receiver);
+    });      
 
     pollster::block_on(player_loop.run());
 }

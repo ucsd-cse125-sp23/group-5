@@ -16,7 +16,6 @@ mod player;
 mod resources;
 mod scene;
 mod screen_objects;
-mod audio;
 mod texture;
 extern crate nalgebra_glm as glm;
 
@@ -24,6 +23,7 @@ use common::configs::{from_file, model_config::ConfigModels};
 
 pub mod event_loop;
 pub mod inputs;
+pub mod audio;
 
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::states::GameState;

@@ -1,8 +1,9 @@
-use std::{io::BufReader, fs::File};
+use std::{io::BufReader, fs::File, sync::{Mutex, Arc}};
 use ambisonic::{rodio, AmbisonicBuilder};
 use instant::{SystemTime, Duration};
 use std::collections::HashMap;
-use common::core::events::SoundSpec;
+use bus::BusReader;
+use common::core::{events::{SoundSpec, GameEvent}, states::GameState};
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
@@ -48,6 +49,7 @@ impl Audio {
         self.sound_controller_background = (Some(sound), false);
     }
 
+    // function in case a button to mute music will be added in the future:
     pub fn toggle_background_track(&mut self){
         if self.time.elapsed().unwrap_or(Duration::new(1,0)) > Duration::new(0,250000000) {
             let (sound, paused) = &mut self.sound_controller_background;
@@ -127,6 +129,35 @@ impl Audio {
             }
         }    
     }           
+
+    pub fn handle_audio_updates(&mut self, game_state: Arc<Mutex<GameState>>, client_id: u8, mut game_event_receiver: BusReader<GameEvent>){
+        loop {
+            match game_event_receiver.try_recv() {
+                Ok(game_event) => {
+                    match game_event {
+                        GameEvent::SoundEvent(sound_event) => {
+                            println!("SOUND EVENT FROM BROADCAST: {:?}", sound_event);
+                            self.handle_sfx_event(sound_event);
+                        }
+                        _ => {}
+                    }
+                }
+                Err(_) => {},
+            }
+
+            let gs = game_state.lock().unwrap().clone();
+            let player_curr = gs.player(client_id as u32)
+                .ok_or_else(|| print!("")); //Player {} not found", client_id));
+
+            match player_curr{
+                Ok(player) => {
+                    let cf = player_curr.unwrap().camera_forward;
+                    self.update_sound_positions(player.transform.translation, cf); 
+                }
+                _ => {}
+            }
+        }
+    }
 }
 
 pub fn to_audio_asset(sound_id: String) -> Option<(AudioAsset,bool)> {
