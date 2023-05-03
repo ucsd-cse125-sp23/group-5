@@ -142,7 +142,7 @@ impl CommandHandler for SpawnCommandHandler {
                     player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
                 }
                 player.is_dead = false;
-                player.refill_wind_charge(Some(10));
+                player.refill_wind_charge(Some(MAX_WIND_CHARGE));
             }
         } else {
             let ground_groups = InteractionGroups::new(1.into(), 1.into());
