@@ -9,11 +9,13 @@ struct InstanceInput {
     @location(5) size: f32,
     @location(6) tex_id: f32,
     @location(7) z_pos: f32,
+    @location(8) time_elapsed: f32,
 }
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
+    @location(1) color: vec4<f32>
 };
 
 struct CameraUniform {
@@ -26,10 +28,7 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
-@group(2) @binding(0)
-var<uniform> time_elapsed: f32;
-
-const NUM_TEXTURES: f32 = 4.0;
+const NUM_TEXTURES: f32 = 5.0;
 
 @vertex
 fn vs_main(
@@ -56,7 +55,7 @@ fn vs_main(
     // scale first
     var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * instance.size * 0.01;
     // TODO: then rotate + angular velocity rotation
-    var time_alive = time_elapsed - instance.spawn_time;
+    var time_alive = instance.time_elapsed - instance.spawn_time;
     var theta = start_angle + time_alive * angular_v;
     var rot_mat = mat3x3<f32>(
             cos(theta), sin(theta), 0.0,
@@ -80,6 +79,7 @@ fn vs_main(
     // set z, for ordering issues
     out.clip_position[2] = instance.z_pos;
     out.clip_position = camera.proj * out.clip_position;
+    out.color = instance.color;
     return out;
 }
 
@@ -92,5 +92,5 @@ var s_diffuse: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    return t;
+    return t * in.color;
 }

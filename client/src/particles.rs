@@ -19,7 +19,7 @@ const PV_ATTRIBS : [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
     0 => Float32x2,
 ];
 
-const NUM_TEXTURES: u32 = 4;
+const NUM_TEXTURES: u32 = 5;
 
 fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a>{
     use std::mem;
@@ -53,7 +53,7 @@ pub struct Particle{
     size: f32,
     tex_id: f32,
     z_pos: f32,
-    lifetime: f32,
+    time_elapsed: f32,
     _pad0: f32,
     _pad1: f32,
     _pad2: f32,
@@ -92,6 +92,7 @@ pub trait ParticleGenerator{
         spawning_time: std::time::Duration,
         spawn_rate: f32,
         tex_range: (u32, u32),
+        color: glm::Vec4,
         particle_lifetime: f32,
         rng: &mut rand::rngs::ThreadRng,
     ) -> u32;
@@ -123,6 +124,7 @@ impl ParticleGenerator for ConeGenerator{
         spawning_time: std::time::Duration,
         spawn_rate: f32, // per second
         tex_range: (u32, u32),
+        color: glm::Vec4,
         particle_lifetime: f32,
         rng: &mut rand::rngs::ThreadRng,
     ) -> u32{
@@ -172,6 +174,7 @@ impl ParticleGenerator for LineGenerator{
             spawning_time: std::time::Duration,
             spawn_rate: f32,
             tex_range: (u32, u32),
+            color: glm::Vec4,
             particle_lifetime: f32,
             rng: &mut rand::rngs::ThreadRng,
         ) -> u32 {
@@ -193,13 +196,13 @@ impl ParticleGenerator for LineGenerator{
             list.push(
                 Particle {
                     start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
-                    color: [1.0, 1.0, 1.0, 1.0], //TODO
+                    color: color.into(),
                     velocity:  [v[0] * linear_scale, v[1] * linear_scale, v[2] * linear_scale, self.angular_velocity * angular_scale],
                     spawn_time,
                     size: self.size * size_scale,
                     tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
                     z_pos: 0.0,
-                    lifetime: particle_lifetime,
+                    time_elapsed: 0.0,
                     _pad0: 0.0,
                     _pad1: 0.0,
                     _pad2: 0.0,
@@ -227,8 +230,6 @@ pub struct ParticleSystem{
     particle_lifetime: f32,
     particles: Vec<Particle>,
     num_instances: u32,
-    inst_buf: wgpu::Buffer,
-    tex_bind_group: wgpu::BindGroup,
 }
 
 impl ParticleSystem{
@@ -238,9 +239,8 @@ impl ParticleSystem{
         generation_time: std::time::Duration,
         particle_lifetime: f32, // in seconds
         generation_speed: f32, // measured per second
+        color: glm::Vec4,
         gen: impl ParticleGenerator,
-        texture: &texture::Texture,
-        tex_layout: &wgpu::BindGroupLayout,
         tex_range: (u32, u32),
         device: &wgpu::Device,
         rng: &mut rand::rngs::ThreadRng,
@@ -251,44 +251,10 @@ impl ParticleSystem{
             generation_time,
             generation_speed,
             tex_range,
+            color,
             particle_lifetime,
             rng
         );
-        // instances don't change over time
-        let inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&particles),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        });
-        // Uniform
-        // let meta = PSRaw{
-        //     lifetime: particle_lifetime,
-        //     num_textures: num_textures as f32,
-        // };
-        // let meta_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //     label: Some("Particle Meta Buffer"),
-        //     contents: bytemuck::cast_slice(&[meta]),
-        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        // });
-        // texture bind group
-        let tex_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: tex_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&texture.sampler),
-                },
-                // wgpu::BindGroupEntry {
-                //     binding: 2,
-                //     resource: meta_buffer.as_entire_binding(),
-                // },
-            ],
-            label: None,
-        });
         // Time
         let last_particle_death = generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
         println!("number of particles: {}", num_instances);
@@ -299,8 +265,6 @@ impl ParticleSystem{
             particle_lifetime,
             particles,
             num_instances,
-            inst_buf,
-            tex_bind_group,
         }
     }
 
@@ -325,16 +289,20 @@ impl ParticleSystem{
 pub struct ParticleDrawer{
     vbuf: wgpu::Buffer,
     ibuf: wgpu::Buffer,
-    tbuf: wgpu::Buffer,
-    t_bind_group_layout: wgpu::BindGroupLayout,
-    t_bind_group: wgpu::BindGroup,
     pub tex_bind_group_layout: wgpu::BindGroupLayout,
+    tex_bind_group: wgpu::BindGroup,
+    texture: texture::Texture,
     render_pipeline: wgpu::RenderPipeline,
     pub systems: Vec<ParticleSystem>,
 }
 
 impl ParticleDrawer{
-    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, camera_layout: &wgpu::BindGroupLayout) -> Self{
+    pub fn new(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+        camera_layout: &wgpu::BindGroupLayout,
+        texture: texture::Texture,
+    ) -> Self{
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Vertex Buffer"),
             contents: bytemuck::cast_slice(PVertex),
@@ -345,34 +313,6 @@ impl ParticleDrawer{
             contents: bytemuck::cast_slice(PInd),
             usage: wgpu::BufferUsages::INDEX,
         });
-        let elapsed: f32  = 0.0;
-        let tbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Time Elapsed Buffer"),
-            contents: bytemuck::cast_slice(&[elapsed]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-        let t_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("time_elapsed_bind_group_layout"),
-            });
-        let t_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &t_bind_group_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: tbuf.as_entire_binding(),
-                }],
-                label: Some("time_elapsed_bind_group"),
-            });
         let tex_bind_group_layout = 
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -392,19 +332,24 @@ impl ParticleDrawer{
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
-                    // wgpu::BindGroupLayoutEntry {
-                    //     binding: 2,
-                    //     visibility: wgpu::ShaderStages::VERTEX,
-                    //     ty: wgpu::BindingType::Buffer {
-                    //         ty: wgpu::BufferBindingType::Uniform,
-                    //         has_dynamic_offset: false,
-                    //         min_binding_size: None,
-                    //     },
-                    //     count: None,
-                    // },
                 ],
                 label: Some("particle_texture_bind_group_layout"),
             });
+        // texture bind group
+        let tex_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &tex_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                },
+            ],
+            label: None,
+        });
         // set up shader
         let shader = device.create_shader_module(wgpu::include_wgsl!("particle_shader.wgsl"));
         let render_pipeline_layout =
@@ -413,7 +358,6 @@ impl ParticleDrawer{
                 bind_group_layouts: &[
                     camera_layout,
                     &tex_bind_group_layout,
-                    &t_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -461,36 +405,27 @@ impl ParticleDrawer{
         Self { 
             vbuf,
             ibuf,
-            tbuf,
-            t_bind_group_layout,
-            t_bind_group,
             tex_bind_group_layout,
+            tex_bind_group,
+            texture,
             render_pipeline,
             systems: vec![],
         }
     }
 
-    pub fn draw<'a>(
-        &'a mut self,
-        render_pass: &mut wgpu::RenderPass<'a>,
-        camera_bind_group: &'a wgpu::BindGroup,
+    pub fn get_particles_to_draw(
+        &mut self,
         camera: &crate::camera::Camera,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        to_draw: &mut Vec<Particle>,
     ){
         // remove dead systems
         self.systems = self.systems.drain(..).filter(|x| x.not_done()).collect();
-        render_pass.set_pipeline(&self.render_pipeline);
+        // Camera info
         let cam_dir: glm::Vec3 = glm::normalize(&(camera.position - camera.target));
         let cpos = &camera.position;
-        render_pass.set_bind_group(0, &camera_bind_group, &[]);
-
         for ps in &mut self.systems{
-            render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
             // set elapsed time uniform
             let elapsed = ps.start_time.elapsed().as_secs_f32();
-            queue.write_buffer(&self.tbuf, 0, bytemuck::cast_slice(&[elapsed]));
-            render_pass.set_bind_group(2, &self.t_bind_group, &[]);
 
             // order instances first, then set instance buffer
             for p in &mut ps.particles{
@@ -505,17 +440,40 @@ impl ParticleDrawer{
             let end_ind = ps.particles.partition_point(
                     |&a| a.spawn_time < elapsed
                 );
-            let mut tmp = ps.particles[0..end_ind].to_vec();
-            tmp.sort_by(|a, b | {
-                a.z_pos.partial_cmp(&b.z_pos).unwrap_or(std::cmp::Ordering::Equal)
-            });
-            queue.write_buffer(&ps.inst_buf, 0, bytemuck::cast_slice(&tmp));
-            render_pass.set_vertex_buffer(1, ps.inst_buf.slice(..)); 
-            // set rest of the buffers 
-            render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.set_bind_group(1, &ps.tex_bind_group, &[]);
-
-            render_pass.draw_indexed(0..6, 0, 0..ps.num_instances);
+            for p in &mut ps.particles[..end_ind]{
+                p.time_elapsed = elapsed;
+            }
+            to_draw.extend_from_slice(&ps.particles[..end_ind]);
         }
+        // sort by depth
+        to_draw.sort_by(|a, b | {
+            a.z_pos.partial_cmp(&b.z_pos).unwrap_or(std::cmp::Ordering::Equal)
+        });
+    }
+
+    pub fn draw<'a>(
+        &'a mut self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        camera_bind_group: &'a wgpu::BindGroup,
+        inst_num: u32,
+        inst_buf: &'a wgpu::Buffer,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ){
+        render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &camera_bind_group, &[]);
+
+        //set up constant buffers
+        // 1. Vertex buffer
+        render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
+        // 2. Index buffer
+        render_pass.set_index_buffer(self.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+        // 3. texture
+        render_pass.set_bind_group(1, &self.tex_bind_group, &[]);
+
+        // Set up instance buffer
+        render_pass.set_vertex_buffer(1, inst_buf.slice(..)); 
+
+        render_pass.draw_indexed(0..6, 0, 0..inst_num);
     }
 }

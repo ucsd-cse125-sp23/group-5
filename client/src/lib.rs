@@ -24,6 +24,7 @@ pub mod inputs;
 
 use common::core::states::GameState;
 use winit::window::Window;
+use wgpu::util::DeviceExt;
 
 struct State {
     surface: wgpu::Surface,
@@ -470,11 +471,15 @@ impl State {
         });
 
         let mut rng = rand::thread_rng();
-
-        let mut particle_renderer = particles::ParticleDrawer::new(&device, &config, &camera_state.camera_bind_group_layout);
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
+        let mut particle_renderer = particles::ParticleDrawer::new(
+            &device,
+            &config,
+            &camera_state.camera_bind_group_layout,
+            particle_tex,
+        );
         let test_particle_gen = particles::LineGenerator::new(
-            glm::vec3(0.0, -5.0, 0.0),
+            glm::vec3(0.0, -10.0, 0.0),
             glm::vec3(0.0, 5.0, 0.0),
             0.1,
             PI,
@@ -487,14 +492,34 @@ impl State {
             std::time::Duration::from_secs(60),
             2.0,
             3.0,
+            glm::vec4(0.8, 0.3, 0.8, 1.0),
             test_particle_gen,
-            &particle_tex,
-            &particle_renderer.tex_bind_group_layout,
             (0,4),
             &device,
             &mut rng,
         );
         particle_renderer.systems.push(test_particle);
+        let test_particle_gen_2 = particles::LineGenerator::new(
+            glm::vec3(-2.0, -10.0, 0.0),
+            glm::vec3(2.0, 5.0, 0.0),
+            0.1,
+            PI,
+            0.1,
+            50.0,
+            0.2,
+            false,
+        );
+        let test_particle_2 = particles::ParticleSystem::new(
+            std::time::Duration::from_secs(60),
+            2.0,
+            10.0,
+            glm::vec4(1.0, 1.0, 1.0, 1.0),
+            test_particle_gen_2,
+            (0,4),
+            &device,
+            &mut rng,
+        );
+        particle_renderer.systems.push(test_particle_2);
 
         let screens = 
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
@@ -619,6 +644,18 @@ impl State {
                 instanced_objs.push((instanced_obj, count));
             }
 
+            let mut to_draw: Vec<particles::Particle> = Vec::new();
+            self.particle_renderer.get_particles_to_draw(
+                &self.camera_state.camera,
+                &mut to_draw
+            );
+            // write buffer to gpu and set buffer
+            let inst_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&to_draw),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -663,9 +700,10 @@ impl State {
             self.particle_renderer.draw(
                 &mut render_pass,
                 &self.camera_state.camera_bind_group,
-                &self.camera_state.camera,
+                to_draw.len() as u32,
+                &inst_buf,
                 &self.device,
-                &self.queue
+                &self.queue,
             );
 
             // GUI drawing
