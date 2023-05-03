@@ -11,6 +11,7 @@ pub struct PlayerState {
     pub transform: Transform,
     pub physics: Physics,
     pub jump_count: u32,
+    pub ammo_count: u32,
     pub camera_forward: Vec3,
     pub connected: bool,
     pub is_dead: bool,

@@ -84,6 +84,8 @@ impl CommandHandler for SpawnCommandHandler {
         //     .build();
 
         // if player already spawned 
+        let starting_ammo = 5; 
+
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
@@ -97,6 +99,7 @@ impl CommandHandler for SpawnCommandHandler {
                     player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
                 }
                 player.is_dead = false;
+                player.ammo_count = starting_ammo;
             }
         } else {
             let ground_groups = InteractionGroups::new(1.into(), 1.into());
@@ -116,6 +119,7 @@ impl CommandHandler for SpawnCommandHandler {
                     id: self.player_id,
                     connected: true,
                     is_dead: false, 
+                    ammo_count: starting_ammo,
                     ..Default::default()
                 },
             );
@@ -373,13 +377,12 @@ impl CommandHandler for AttackCommandHandler {
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         
-
         let player_state = game_state
                 .player(self.player_id)
                 .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // if attack on cooldown, do nothing for now
-        if game_state.command_on_cooldown(self.player_id, Command::Attack) {
+        if game_state.command_on_cooldown(self.player_id, Command::Attack) || player_state.ammo_count == 0 {
             return Ok(());
         }
 
@@ -460,7 +463,10 @@ impl CommandHandler for AttackCommandHandler {
             }
             
         }
+        game_state.player_mut(self.player_id).unwrap().ammo_count -= 1;
+
         game_state.insert_cooldown(self.player_id, Command::Attack, 5);
+
 
         Ok(())
     }

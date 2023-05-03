@@ -552,15 +552,28 @@ impl State {
         
         // if player is alive
         if !self.player.is_dead {
+            // render ammo remaining
+            self.glyph_brush.queue(Section {
+                screen_position: (30.0, 20.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![
+                    Text::new(&format!("Ammo remaining: {:.1}\n", self.player.ammo_count).as_str())
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)
+                    ],
+                ..Section::default()
+            });
             // render ability cooldowns 
             if self.player.on_cooldown.contains_key(&Command::Attack) {
                 let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
                 self.glyph_brush.queue(Section {
-                    screen_position: (30.0, 30.0),
+                    screen_position: (30.0, 60.0),
                     bounds: (size.width as f32, size.height as f32),
-                    text: vec![Text::new(&format!("{:.1}", attack_cooldown).as_str())
+                    text: vec![
+                        Text::new(&format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str())
                         .with_color([0.0, 0.0, 0.0, 1.0])
-                        .with_scale(40.0)],
+                        .with_scale(40.0)
+                        ],
                     ..Section::default()
                 });
             }
