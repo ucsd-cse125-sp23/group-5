@@ -1,5 +1,5 @@
 use crate::executor::command_handlers::{
-    CommandHandler, AttackCommandHandler, JumpCommandHandler, MoveCommandHandler,
+    AttackCommandHandler, CommandHandler, JumpCommandHandler, MoveCommandHandler,
     SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
@@ -8,13 +8,13 @@ use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
 
 use crate::Recipients;
+use common::configs::from_file;
+use common::configs::scene_config::ConfigSceneGraph;
 use common::core::events::GameEvent;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
-use common::configs::from_file;
-use common::configs::scene_config::ConfigSceneGraph;
 
 mod command_handlers;
 
@@ -52,7 +52,6 @@ impl Executor {
 
         let scene_config = from_file("scene.json").unwrap();
         let models_config = from_file("models.json").unwrap();
-
 
         let handler = StartupCommandHandler::new(models_config, scene_config);
 
@@ -125,7 +124,6 @@ impl Executor {
     pub(crate) fn step(&self, delta_time: f32) {
         self.physics_state.borrow_mut().set_delta_time(delta_time);
         self.physics_state.borrow_mut().step();
-        
 
         self.sync_states(delta_time); // after physics step, need to sync game state
     }
@@ -140,7 +138,7 @@ impl Executor {
             player.transform.translation = rigid_body.position().translation.vector;
             player.transform.rotation = rigid_body.position().rotation.coords.into();
         }
-        
+
         game_state.update_cooldowns(delta_time);
     }
 
@@ -149,25 +147,30 @@ impl Executor {
     }
 
     pub(crate) fn update_dead_players(&self) {
-        let dead_players = self.game_state()
+        let dead_players = self
+            .game_state()
             .players
             .iter()
-            .filter(|(_, player)| !player.is_dead && player.transform.translation.y < DEFAULT_RESPAWN_LIMIT)
+            .filter(|(_, player)| {
+                !player.is_dead && player.transform.translation.y < DEFAULT_RESPAWN_LIMIT
+            })
             .map(|(&id, _)| id)
             .collect::<Vec<_>>();
 
         let mut game_state = self.game_state.lock().unwrap();
         for player_id in dead_players.iter() {
-            game_state.player_mut(*player_id).unwrap().is_dead = true; 
-            game_state.insert_cooldown(*player_id, Command::Spawn, 3);
+            let player_state = game_state.player_mut(*player_id).unwrap();
+            player_state.is_dead = true;
+            player_state.insert_cooldown(Command::Spawn, 3);
         }
-        
     }
     pub(crate) fn check_respawn_players(&self) -> Vec<u32> {
         self.game_state()
             .players
             .iter()
-            .filter(|(_, player)| player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn))
+            .filter(|(_, player)| {
+                player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn)
+            })
             .map(|(&id, _)| id)
             .collect::<Vec<_>>()
     }
