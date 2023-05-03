@@ -25,6 +25,7 @@ pub struct Audio {
     sound_controllers_fx: HashMap<AudioAsset, Vec<SoundInstance>>,
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime, // hacky fix for now
+    pub sfx_queue: Arc<Mutex<Vec<SoundSpec>>>,
 }
 
 impl Audio {
@@ -37,6 +38,7 @@ impl Audio {
             sound_controllers_fx: HashMap::new(),
             sound_controller_background: (None, true),
             time: SystemTime::now(),
+            sfx_queue: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -130,19 +132,27 @@ impl Audio {
         }    
     }           
 
-    pub fn handle_audio_updates(&mut self, game_state: Arc<Mutex<GameState>>, client_id: u8, mut game_event_receiver: BusReader<GameEvent>){
+    pub fn handle_audio_updates(&mut self, game_state: Arc<Mutex<GameState>>, client_id: u8){ //, mut game_event_receiver: BusReader<GameEvent>){
         loop {
-            match game_event_receiver.try_recv() {
-                Ok(game_event) => {
-                    match game_event {
-                        GameEvent::SoundEvent(sound_event) => {
-                            println!("SOUND EVENT FROM BROADCAST: {:?}", sound_event);
-                            self.handle_sfx_event(sound_event);
-                        }
-                        _ => {}
-                    }
+            // match game_event_receiver.try_recv() {
+            //     Ok(game_event) => {
+            //         match game_event {
+            //             GameEvent::SoundEvent(sound_event) => {
+            //                 println!("SOUND EVENT FROM BROADCAST: {:?}", sound_event);
+            //                 self.handle_sfx_event(sound_event);
+            //             }
+            //             _ => {}
+            //         }
+            //     }
+            //     Err(_) => {},
+            // }
+            let mut sfx_queue = self.sfx_queue.lock().unwrap().clone();
+            if !sfx_queue.is_empty() {
+                for i in 0..sfx_queue.len() {
+                    self.handle_sfx_event(sfx_queue[i].clone());
                 }
-                Err(_) => {},
+                sfx_queue.clear();
+                *self.sfx_queue.lock().unwrap() = sfx_queue;
             }
 
             let gs = game_state.lock().unwrap().clone();

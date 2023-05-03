@@ -17,7 +17,7 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-use common::core::events::GameEvent;
+use common::core::events::{GameEvent, SoundSpec};
 
 use common::core::states::GameState;
 
@@ -30,7 +30,7 @@ fn main() {
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
     let mut game_events_bus = Bus::new(1);
-    let game_event_receiver = game_events_bus.add_rx();
+    let mut game_event_receiver = game_events_bus.add_rx();
 
     #[cfg(not(feature = "debug-addr"))]
     let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
@@ -95,7 +95,25 @@ fn main() {
     thread::spawn(move || {
         let mut audio = Audio::new();
         audio.play_background_track(client::audio::AudioAsset::BACKGROUND);
-        audio.handle_audio_updates(game_state_clone1, client_id, game_event_receiver);
+
+        let sfx_queue= audio.sfx_queue.clone();
+        thread::spawn(move || {
+            loop {
+                match game_event_receiver.recv() {
+                    Ok(game_event) => {
+                        match game_event {
+                            GameEvent::SoundEvent(sound_event) => {
+                                sfx_queue.lock().unwrap().push(sound_event);
+                            }
+                            _ => {}
+                        }
+                    }
+                    Err(_) => {},
+                }
+            }
+        });
+
+        audio.handle_audio_updates(game_state_clone1, client_id);
     });      
 
     pollster::block_on(player_loop.run());
@@ -162,11 +180,12 @@ fn recv_server_updates(
 
                 // update state
                 game_events
-                    .try_broadcast(update_game_event)
-                    .map_err(|e| {
-                        error!("Failed to broadcast game event: {:?}", e);
-                    })
-                    .unwrap();
+                    .broadcast(update_game_event);
+                    // .try_broadcast(update_game_event)
+                    // .map_err(|e| {
+                    //     error!("Failed to broadcast game event: {:?}", e);
+                    // })
+                    // .unwrap();
             }
             _ => {}
         }
