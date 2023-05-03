@@ -54,8 +54,8 @@ pub struct Particle{
     tex_id: f32,
     z_pos: f32,
     time_elapsed: f32,
-    _pad0: f32,
-    _pad1: f32,
+    size_growth: f32,
+    halflife: f32,
     _pad2: f32,
 }
 
@@ -91,9 +91,9 @@ pub trait ParticleGenerator{
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: f32,
+        halflife: f32,
         tex_range: (u32, u32),
         color: glm::Vec4,
-        particle_lifetime: f32,
         rng: &mut rand::rngs::ThreadRng,
     ) -> u32;
 }
@@ -123,9 +123,9 @@ impl ParticleGenerator for ConeGenerator{
         list: &mut Vec<Particle>,
         spawning_time: std::time::Duration,
         spawn_rate: f32, // per second
+        halflife: f32,
         tex_range: (u32, u32),
         color: glm::Vec4,
-        particle_lifetime: f32,
         rng: &mut rand::rngs::ThreadRng,
     ) -> u32{
         todo!();
@@ -139,6 +139,7 @@ pub struct LineGenerator{
     angular_variance: f32,
     size: f32,
     size_variance: f32,
+    size_growth: f32,
     poisson_generation: bool,
 }
 
@@ -152,6 +153,7 @@ impl LineGenerator{
         angular_variance: f32,
         size: f32,
         size_variance: f32,
+        size_growth: f32,
         poisson_generation: bool,
     ) -> Self{
         Self{
@@ -162,6 +164,7 @@ impl LineGenerator{
             angular_variance,
             size,
             size_variance,
+            size_growth,
             poisson_generation,
         }
     }
@@ -173,38 +176,31 @@ impl ParticleGenerator for LineGenerator{
             list: &mut Vec<Particle>,
             spawning_time: std::time::Duration,
             spawn_rate: f32,
+            halflife: f32,
             tex_range: (u32, u32),
             color: glm::Vec4,
-            particle_lifetime: f32,
             rng: &mut rand::rngs::ThreadRng,
         ) -> u32 {
-        // let n : u32 = (spawning_time.as_secs_f32() * spawn_rate).floor() as u32;
         let lin_dist = Normal::new(1.0, self.linear_variance).unwrap();
-        let ang_dist = Normal::new(1.0, self.angular_variance).unwrap();
-        let size_dist = Normal::new(1.0, self.size_variance).unwrap();
+        let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
+        let size_dist = Normal::new(self.size, self.size_variance).unwrap();
         let time_dist = Poisson::new(1.0/spawn_rate).unwrap();
-        let v = self.dir;
         let mut spawn_time = 0.0;
+        let v = self.dir;
         while std::time::Duration::from_secs_f32(spawn_time) < spawning_time{
-            let linear_scale = lin_dist.sample(rng);
-            let angular_scale = ang_dist.sample(rng);
-            let size_scale = size_dist.sample(rng);
-            // want velocity to be nonzero
-            glm::clamp_scalar(linear_scale, ParticleSystem::EPSILON, f32::INFINITY);
-            glm::clamp_scalar(angular_scale, ParticleSystem::EPSILON, f32::INFINITY);
-            glm::clamp_scalar(size_scale, ParticleSystem::EPSILON, f32::INFINITY);
+            let lin_scale = lin_dist.sample(rng);
             list.push(
                 Particle {
                     start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                     color: color.into(),
-                    velocity:  [v[0] * linear_scale, v[1] * linear_scale, v[2] * linear_scale, self.angular_velocity * angular_scale],
+                    velocity:  [v[0] * lin_scale, v[1] * lin_scale, v[2] * lin_scale, ang_dist.sample(rng)],
                     spawn_time,
-                    size: self.size * size_scale,
+                    size: size_dist.sample(rng),
                     tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
                     z_pos: 0.0,
                     time_elapsed: 0.0,
-                    _pad0: 0.0,
-                    _pad1: 0.0,
+                    size_growth: self.size_growth,
+                    halflife,
                     _pad2: 0.0,
                 }
             );
@@ -250,9 +246,9 @@ impl ParticleSystem{
             &mut particles,
             generation_time,
             generation_speed,
+            particle_lifetime / 2.0,
             tex_range,
             color,
-            particle_lifetime,
             rng
         );
         // Time

@@ -10,6 +10,11 @@ struct InstanceInput {
     @location(6) tex_id: f32,
     @location(7) z_pos: f32,
     @location(8) time_elapsed: f32,
+    // allow size to grow
+    // if it's non-zero: 
+    // size = (size) / (1 + e^{-size_growth * (t - 0.5 * halflife)})
+    @location(9) size_growth: f32,
+    @location(10) halflife: f32,
 }
 
 struct VertexOutput {
@@ -52,10 +57,15 @@ fn vs_main(
         x_prime = normalize(cross(up, z_prime));
     }
     var y_prime = cross(z_prime, x_prime);
-    // scale first
-    var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * instance.size * 0.01;
-    // TODO: then rotate + angular velocity rotation
+    // get time
     var time_alive = instance.time_elapsed - instance.spawn_time;
+    // scale first
+    var size = instance.size;
+    if (instance.size_growth != 0.0){
+        size = (size) / (1.0 + exp(-1.0 * instance.size_growth * (time_alive - instance.halflife)));
+    }
+    var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * size * 0.01;
+    // then rotate + angular velocity rotation
     var theta = start_angle + time_alive * angular_v;
     var rot_mat = mat3x3<f32>(
             cos(theta), sin(theta), 0.0,
