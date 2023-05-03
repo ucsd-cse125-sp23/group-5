@@ -176,7 +176,7 @@ impl PlayerLoop {
                     match game_event {
                         GameEvent::SoundEvent(sound_event) => {
                             println!("SOUND EVENT: {:?}", sound_event);
-                            state.audio.handle_sfx_event(sound_event.clone());
+                            state.audio.handle_sfx_event(sound_event);
                         }
                         _ => {}
                     }
