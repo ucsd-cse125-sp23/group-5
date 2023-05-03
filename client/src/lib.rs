@@ -480,7 +480,7 @@ impl State {
         );
         let test_particle_gen = particles::LineGenerator::new(
             glm::vec3(0.0, -10.0, 0.0),
-            glm::vec3(0.0, 5.0, 0.0),
+            glm::vec3(0.0, 10.0, 0.0),
             0.1,
             PI,
             0.1,
@@ -491,10 +491,10 @@ impl State {
         let test_particle = particles::ParticleSystem::new(
             std::time::Duration::from_secs(60),
             2.0,
-            3.0,
+            2000.0,
             glm::vec4(0.8, 0.3, 0.8, 1.0),
             test_particle_gen,
-            (0,4),
+            (4,5),
             &device,
             &mut rng,
         );

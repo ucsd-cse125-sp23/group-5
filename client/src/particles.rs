@@ -2,7 +2,7 @@ use wgpu::util::DeviceExt;
 use crate::texture;
 use crate::model::Vertex;
 extern crate nalgebra_glm as glm;
-use std::f32::consts::{FRAC_PI_2, PI};
+use std::{f32::consts::{FRAC_PI_2, PI}, ops::IndexMut};
 // use rand_distr::Distribution;
 use rand::Rng;
 use rand_distr::{Normal, Distribution, Poisson};
@@ -226,8 +226,8 @@ struct PSRaw{
 
 pub struct ParticleSystem{
     start_time: std::time::Instant,
-    last_particle_death: std::time::Duration,
     particle_lifetime: f32,
+    last_particle_death: std::time::Duration,
     particles: Vec<Particle>,
     num_instances: u32,
 }
@@ -261,8 +261,8 @@ impl ParticleSystem{
         println!("last particle death: {:?}", last_particle_death.as_secs_f32());
         Self{
             start_time: std::time::Instant::now(),
-            last_particle_death,
             particle_lifetime,
+            last_particle_death,
             particles,
             num_instances,
         }
