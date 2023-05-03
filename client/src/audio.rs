@@ -2,16 +2,13 @@ use std::{io::BufReader, fs::File};
 use ambisonic::{rodio, AmbisonicBuilder};
 use instant::{SystemTime, Duration};
 use std::collections::HashMap;
+use common::core::events::SoundSpec;
 
-pub struct SoundSpec{
-    pub position: glm::Vec3,
-    pub sound_id: String,
-}
-
-#[derive(Copy, Clone, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
     BACKGROUND = 0,
     WIND = 1,
+    BEEP = 2,
 }
 
 pub struct SoundInstance{
@@ -33,7 +30,8 @@ impl Audio {
         Audio {
             audio_scene: AmbisonicBuilder::default().build(),
             audio_assets: vec![("client/res/royalty-free-sample.mp3".to_string(), Duration::new(0,0)), // duration of background track doesn't matter
-                               ("client/res/woosh_sound.mp3".to_string(), Duration::new(5, 2500)),],
+                               ("client/res/woosh_sound.mp3".to_string(), Duration::new(5, 2500)),
+                               ("client/res/beep_for_testing.mp3".to_string(), Duration::new(1, 2500)),],
             sound_controllers_fx: HashMap::new(),
             sound_controller_background: (None, true),
             time: SystemTime::now(),
@@ -44,7 +42,7 @@ impl Audio {
         let file = File::open(self.audio_assets[track as usize].0.clone()).unwrap();
         let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
         let source = rodio::Source::repeat_infinite(source);
-        let mut sound = self.audio_scene.play_at(rodio::Source::convert_samples(source), [0.0, 50.0, 0.0]);
+        let mut sound = self.audio_scene.play_at(rodio::Source::convert_samples(source), [0.0, 10.0, 0.0]);
         // sound.set_velocity([10.0,0.0,0.0]);
         self.sound_controller_background = (Some(sound), false);
     }
@@ -76,7 +74,9 @@ impl Audio {
                 }
                 else{
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
-                    sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
+                    if pos != glm::Vec3::new(0.0,0.0,0.0) {
+                        sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
+                    }
                 }
             }
             for i in 0..to_remove.len() {
@@ -90,7 +90,7 @@ impl Audio {
 
         let file = File::open(self.audio_assets[index as usize].0.clone()).unwrap();
         let source = rodio::Decoder::new(std::io::BufReader::new(file)).unwrap();
-        let sound = self.audio_scene.play_at(rodio::Source::convert_samples(source), [sfxevent.position.x, sfxevent.position.y, sfxevent.position.z]);
+        let sound = self.audio_scene.play_at(rodio::Source::convert_samples(source), [sfxevent.position.x, sfxevent.position.z, sfxevent.position.y]); // double check y,z should be switched
 
         let sound_vec = self.sound_controllers_fx.get_mut(&index);
         match sound_vec {
@@ -118,6 +118,7 @@ impl Audio {
 pub fn to_audio_asset(sound_id: String) -> Option<AudioAsset> {
     match sound_id.as_str() {
         "wind" => Some(AudioAsset::WIND),
+        "foot_step" => Some(AudioAsset::BEEP),
         _ => None
     }
 }

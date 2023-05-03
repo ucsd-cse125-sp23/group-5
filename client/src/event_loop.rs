@@ -1,6 +1,8 @@
-use crate::audio::{AudioAsset, SoundSpec};
+use crate::audio::AudioAsset;
 use crate::inputs::Input;
 use crate::State;
+use bus::BusReader;
+use common::core::events::{SoundSpec, GameEvent};
 use common::core::states::GameState;
 use log::{debug, warn};
 use std::sync::mpsc::Sender;
@@ -20,17 +22,21 @@ pub struct PlayerLoop {
 
     // current player id
     client_id: u8,
+
+    // REMOVE LATER: temporary just to test whether audio can properly receive sound events from the server
+    game_event_receiver: BusReader<GameEvent>, 
 }
 
 impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<Input>, game_state: Arc<Mutex<GameState>>, id: u8) -> PlayerLoop {
+    pub fn new(commands: Sender<Input>, game_state: Arc<Mutex<GameState>>, id: u8, recvr: BusReader<GameEvent>) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             game_state,
             client_id: id,
+            game_event_receiver: recvr,
         }
     }
 
@@ -163,6 +169,19 @@ impl PlayerLoop {
                     state.window().request_redraw();
                 }
                 _ => {}
+            }
+
+            match self.game_event_receiver.try_recv() {
+                Ok(game_event) => {
+                    match game_event {
+                        GameEvent::SoundEvent(sound_event) => {
+                            println!("SOUND EVENT: {:?}", sound_event);
+                            state.audio.handle_sfx_event(sound_event.clone());
+                        }
+                        _ => {}
+                    }
+                }
+                Err(_) => {},
             }
 
             let gs = self.game_state.lock().unwrap().clone();

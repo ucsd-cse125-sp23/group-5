@@ -544,6 +544,7 @@ version = "0.1.0"
 dependencies = [
  "ambisonic",
  "anyhow",
+ "bus",
  "bytemuck",
  "cfg-if",
  "common",
@@ -609,6 +610,7 @@ version = "0.1.0"
 dependencies = [
  "bson",
  "byteorder",
+ "derive_more",
  "env_logger",
  "log",
  "nalgebra-glm",

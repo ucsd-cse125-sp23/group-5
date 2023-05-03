@@ -29,6 +29,7 @@ cfg-if = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ambisonic = "0.4.1"
+bus = "2.4.0"
 
 [build-dependencies]
 anyhow = "1.0"
