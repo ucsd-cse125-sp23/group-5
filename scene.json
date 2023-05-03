@@ -6,7 +6,17 @@
       "transform": {
         "position": [0, -9.7, 0],
         "rotation": [0, 0, 0, 1]
-      }
+      },
+      "children": [
+        {
+          "id": "object:ferris",
+          "transform": {
+            "position": [0, 5, 0],
+            "rotation": [0, 0.2, 0, 1]
+          },
+          "model": "ferris"
+        }
+      ]
     },
     {
       "id": "object:private_island1",
@@ -14,17 +24,7 @@
       "transform": {
         "position": [10, -9.7, 0],
         "rotation": [0, 0, 0, 1]
-      },
-      "children": [
-        {
-          "id": "object:ferris1",
-          "transform": {
-            "position": [0, 5, 0],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "ferris"
-        }
-      ]
+      }
     },
     {
       "id": "object:private_island2",
@@ -32,17 +32,7 @@
       "transform": {
         "position": [-10, -9.7, 0],
         "rotation": [0, 0, 0, 1]
-      },
-      "children": [
-        {
-          "id": "object:ferris2",
-          "transform": {
-            "position": [0, 5, 0],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "ferris"
-        }
-      ]
+      }
     },
     {
       "id": "object:private_island3",
@@ -50,17 +40,7 @@
       "transform": {
         "position": [0, -9.7, 10],
         "rotation": [0, 0, 0, 1]
-      },
-      "children": [
-        {
-          "id": "object:ferris3",
-          "transform": {
-            "position": [0, 5, 0],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "ferris"
-        }
-      ]
+      }
     },
     {
       "id": "object:private_island4",
@@ -68,17 +48,7 @@
       "transform": {
         "position": [0, -9.7, -10],
         "rotation": [0, 0, 0, 1]
-      },
-      "children": [
-        {
-          "id": "object:ferris4",
-          "transform": {
-            "position": [0, 5, 0],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "ferris"
-        }
-      ]
+      }
     }
   ]
 }
