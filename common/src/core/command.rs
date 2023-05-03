@@ -8,23 +8,42 @@ use std::mem;
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
 
+/*
 /// Game actions that can be performed by the player
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub enum GameAction {
     Attack,
     Jump,
 }
 
+
+impl PartialEq for GameAction {
+    fn eq(&self, other: &Self) -> bool {
+        mem::discriminant(self).eq(&mem::discriminant(other))
+    }
+}
+impl Eq for GameAction {}
+
+// /// Spawn type that can be issued by the client
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub enum SpawnType {
+//     NewSpawn,
+//     Respawn,
+//     Dead,
+// }
+*/ 
+
 /// Commands that can be issued by the client
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Spawn,
-    Respawn,
+    //Respawn,
     Move(MoveDirection),
     Turn(Quat),
     Jump,
     UpdateCamera { forward: glm::Vec3 },
-    Action(GameAction),
+    Attack,
 }
 
 impl Command {
@@ -36,13 +55,23 @@ impl Command {
     }
 }
 
+impl PartialEq for Command {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Command::Move(x) => match other {
+                Command::Move(y) => x.eq(y),
+                _ => false,
+            },
+            _ => mem::discriminant(self).eq(&mem::discriminant(other)),
+        }
+    }
+}
 impl Eq for Command {}
 
 impl Hash for Command {
     fn hash<H: Hasher>(&self, state: &mut H) {
         mem::discriminant(self).hash(state);
         match self {
-            Command::Action(x) => x.hash(state),
             Command::Move(x) => {
                 let _x = ((x.x * 1000000_f32).round() / 1.0) as i64;
                 let _y = ((x.y * 1000000_f32).round() / 1.0) as i64;
