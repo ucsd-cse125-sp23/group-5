@@ -50,7 +50,6 @@ struct State {
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
     client_id: u8,
-    audio: audio::Audio,
 }
 
 impl State {
@@ -352,8 +351,6 @@ impl State {
         let screens =
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
-        let audio = audio::Audio::new();
-
         Self {
             window,
             surface,
@@ -375,7 +372,6 @@ impl State {
             #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
             client_id,
-            audio,
         }
     }
 

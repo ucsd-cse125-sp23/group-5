@@ -92,8 +92,13 @@ impl Audio {
         }
     }
 
-    pub fn handle_sfx_event(&mut self, sfxevent: SoundSpec){
+    pub fn handle_sfx_event(&mut self, mut sfxevent: SoundSpec){
         let (index, adjust_position) = to_audio_asset(sfxevent.sound_id).unwrap();
+
+        // adjust position false means the sound should be played at the client
+        if !adjust_position {
+            sfxevent.position = glm::Vec3::new(0.0,1.0,0.0);
+        }
 
         let file = File::open(self.audio_assets[index as usize].0.clone()).unwrap();
         let source = rodio::Decoder::new(std::io::BufReader::new(file)).unwrap();
