@@ -387,8 +387,8 @@ pub async fn get_screens(
 // only for title screen right now
 pub fn update_screen(width: u32, height: u32, device: &wgpu::Device, screen: &mut ScreenObject) {
     let aspect: f32 = (width as f32) / (height as f32);
-    const title_ar: f32 = 16.0 / 9.0;
-    let title_x_span_half = (glm::clamp_scalar(aspect / title_ar, 0.0, 1.0)) / 2.0;
+    const TITLE_AR: f32 = 16.0 / 9.0;
+    let title_x_span_half = (glm::clamp_scalar(aspect / TITLE_AR, 0.0, 1.0)) / 2.0;
     let title_vert: Vec<Vertex> = vec![
         Vertex {
             position: [-1.0, -1.0],
