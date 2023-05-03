@@ -101,6 +101,7 @@ impl CommandHandler for StartupCommandHandler {
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
+    config_scene_graph: ConfigSceneGraph,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -122,7 +123,7 @@ impl CommandHandler for SpawnCommandHandler {
         //     .build();
 
         // get spawn-locations with corresponding id
-        let spawn_position = PhysicsState::get_spawn_position(self.player_id);
+        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
 
         // if player already spawned
         let starting_ammo = 5;

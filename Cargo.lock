@@ -525,6 +525,7 @@ dependencies = [
  "env_logger",
  "log",
  "nalgebra-glm",
+ "rapier3d",
  "serde",
  "serde_json",
  "structopt",

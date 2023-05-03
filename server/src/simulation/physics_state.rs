@@ -197,16 +197,6 @@ impl PhysicsState {
 
         character_body.set_linvel(velocity, true);
     }
-
-    pub fn get_spawn_position(player_id: u32) -> rapier3d::prelude::Vector<f32> {
-        match player_id {
-            1 => rapier3d::prelude::vector![10.0, 3.0, 0.0],
-            2 => rapier3d::prelude::vector![-10.0, 3.0, 0.0],
-            3 => rapier3d::prelude::vector![0.0, 3.0, 10.0],
-            4 => rapier3d::prelude::vector![0.0, 3.0, -10.0],
-            _ => rapier3d::prelude::vector![0.0, 3.0, 0.0],
-        }
-    }
 }
 
 #[cfg(test)]

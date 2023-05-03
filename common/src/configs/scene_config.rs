@@ -1,5 +1,6 @@
 use nalgebra_glm::{Quat, TVec3};
 use serde::{Deserialize, Serialize};
+use rapier3d::prelude;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigTransform {
@@ -17,5 +18,7 @@ pub struct ConfigNode {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigSceneGraph {
+    pub spawn_points: Vec<rapier3d::prelude::Vector<f32>>,
     pub nodes: Vec<ConfigNode>,
+
 }

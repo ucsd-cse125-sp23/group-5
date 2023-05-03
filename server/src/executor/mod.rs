@@ -94,12 +94,13 @@ impl Executor {
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
 
+        let scene_config = from_file("scene.json").unwrap();
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
         let handler: Box<dyn CommandHandler> = match client_command.command {
-            Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id)),
+            Command::Spawn => Box::new(SpawnCommandHandler::new(client_command.client_id, scene_config)),
             //Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
