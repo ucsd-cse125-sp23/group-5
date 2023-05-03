@@ -412,9 +412,9 @@ impl CommandHandler for AttackCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        // if attack on cooldown, do nothing for now
+        // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::Attack)
-            || !player_state.consume_wind_charge(None)
+            || !player_state.try_consume_wind_charge(None)
         {
             return Ok(());
         }
@@ -448,6 +448,7 @@ impl CommandHandler for AttackCommandHandler {
         player_rigid_body.set_rotation(rotation, true);
 
         player_state.insert_cooldown(Command::Attack, 5);
+
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {
             if &self.player_id == other_player_id {

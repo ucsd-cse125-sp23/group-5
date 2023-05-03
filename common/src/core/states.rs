@@ -30,7 +30,8 @@ pub struct GameState {
 
 impl PlayerState {
     // add to attack command handlers, put NONE for consume 1
-    pub fn consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
+    // returns if the consumption is successful
+    pub fn try_consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
         let consume_amount = consume_amount.unwrap_or(1);
         return if self.wind_charge >= consume_amount {
             self.wind_charge -= consume_amount;
@@ -40,7 +41,7 @@ impl PlayerState {
         };
     }
 
-    // add to refill command handlers, put NONE for refill all
+    // add to refill command handlers, put NONE for refill all, won't exceed cap
     pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>) {
         let refill_amount = refill_amount.unwrap_or(MAX_WIND_CHARGE);
         let mut charges = self.wind_charge;
