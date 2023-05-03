@@ -47,16 +47,13 @@ impl GameState {
 
     pub fn update_cooldowns(&mut self, delta_time: f32) {
         for (_, player_state) in self.players.iter_mut() {
-            player_state.on_cooldown = player_state.on_cooldown.clone()
+            player_state.on_cooldown = player_state
+                .on_cooldown
+                .clone()
                 .into_iter()
-                .map(|(key, cooldown)| {
-                    (
-                        key, 
-                        cooldown - delta_time,
-                    )
-                })
+                .map(|(key, cooldown)| (key, cooldown - delta_time))
                 .filter(|(_key, cooldown)| *cooldown > 0.0)
-                .collect(); 
+                .collect();
         }
     }
 

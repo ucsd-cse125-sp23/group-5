@@ -25,10 +25,10 @@ pub mod event_loop;
 pub mod inputs;
 
 use common::configs::scene_config::ConfigSceneGraph;
-use common::core::states::GameState;
 use common::core::command::Command;
+use common::core::states::GameState;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use wgpu_glyph::{ab_glyph, GlyphBrushBuilder, Section, Text, Layout, GlyphBrush, HorizontalAlign};
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -52,7 +52,7 @@ struct State {
     screen_ind: usize,
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
-    glyph_brush: GlyphBrush<()>
+    glyph_brush: GlyphBrush<()>,
 }
 
 impl State {
@@ -351,14 +351,14 @@ impl State {
             multiview: None,
         });
 
-        // text 
+        // text
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
-        )).unwrap();
+        ))
+        .unwrap();
 
-        let glyph_brush = GlyphBrushBuilder::using_font(inconsolata)
-        .build(&device, surface_format);
+        let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let screens =
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
@@ -549,31 +549,32 @@ impl State {
         }
 
         let size = &self.window.inner_size();
-        
+
+        // TODO: maybe refactor later?
         // if player is alive
         if !self.player.is_dead {
             // render ammo remaining
             self.glyph_brush.queue(Section {
                 screen_position: (30.0, 20.0),
                 bounds: (size.width as f32, size.height as f32),
-                text: vec![
-                    Text::new(&format!("Ammo remaining: {:.1}\n", self.player.ammo_count).as_str())
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)
-                    ],
+                text: vec![Text::new(
+                    &format!("Ammo remaining: {:.1}\n", self.player.ammo_count).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
                 ..Section::default()
             });
-            // render ability cooldowns 
+            // render ability cooldowns
             if self.player.on_cooldown.contains_key(&Command::Attack) {
                 let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
                 self.glyph_brush.queue(Section {
                     screen_position: (30.0, 60.0),
                     bounds: (size.width as f32, size.height as f32),
-                    text: vec![
-                        Text::new(&format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str())
-                        .with_color([0.0, 0.0, 0.0, 1.0])
-                        .with_scale(40.0)
-                        ],
+                    text: vec![Text::new(
+                        &format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
+                    )
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
                     ..Section::default()
                 });
             }
@@ -586,18 +587,18 @@ impl State {
                     bounds: (size.width as f32, size.height as f32),
                     text: vec![
                         Text::new("You died!\n")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(100.0),
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(100.0),
                         Text::new("Respawning in ")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
                         Text::new(&format!("{:.1}", spawn_cooldown).as_str())
-                        .with_color([1.0, 1.0, 1.0, 1.0])
-                        .with_scale(60.0),
+                            .with_color([1.0, 1.0, 1.0, 1.0])
+                            .with_scale(60.0),
                         Text::new(" seconds")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                        ],
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                    ],
                     layout: Layout::default().h_align(HorizontalAlign::Center),
                     ..Section::default()
                 });
@@ -606,15 +607,15 @@ impl State {
 
         // Draw the text!
         self.glyph_brush
-        .draw_queued(
-            &self.device,
-            &mut self.staging_belt,
-            &mut encoder,
-            &view,
-            size.width,
-            size.height,
-        )
-        .expect("Draw queued");
+            .draw_queued(
+                &self.device,
+                &mut self.staging_belt,
+                &mut encoder,
+                &view,
+                size.width,
+                size.height,
+            )
+            .expect("Draw queued");
 
         // Submit the work!
         self.staging_belt.finish();
