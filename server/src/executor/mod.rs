@@ -120,10 +120,11 @@ impl Executor {
         self.physics_state.borrow_mut().set_delta_time(delta_time);
         self.physics_state.borrow_mut().step();
         
-        self.sync_states(); // after physics step, need to sync game state
+
+        self.sync_states(delta_time); // after physics step, need to sync game state
     }
 
-    fn sync_states(&self) {
+    fn sync_states(&self, delta_time: f32) {
         let mut game_state = self.game_state.lock().unwrap();
         let physics_state = self.physics_state.borrow();
 
@@ -133,7 +134,8 @@ impl Executor {
             player.transform.translation = rigid_body.position().translation.vector;
             player.transform.rotation = rigid_body.position().rotation.coords.into();
         }
-        game_state.update_cooldowns();
+        
+        game_state.update_cooldowns(delta_time);
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {

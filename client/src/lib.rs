@@ -26,8 +26,9 @@ pub mod inputs;
 
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::states::GameState;
+use common::core::command::Command;
 use winit::window::Window;
-use wgpu_glyph::{ab_glyph, GlyphBrushBuilder, Section, Text, GlyphBrush};
+use wgpu_glyph::{ab_glyph, GlyphBrushBuilder, Section, Text, Layout, GlyphBrush, HorizontalAlign};
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -548,23 +549,47 @@ impl State {
         }
 
         let size = &self.window.inner_size();
-        self.glyph_brush.queue(Section {
-            screen_position: (30.0, 30.0),
-            bounds: (size.width as f32, size.height as f32),
-            text: vec![Text::new("Hello wgpu_glyph!")
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-            ..Section::default()
-        });
-
-        self.glyph_brush.queue(Section {
-            screen_position: (30.0, 90.0),
-            bounds: (size.width as f32, size.height as f32),
-            text: vec![Text::new("Hello wgpu_glyph!")
-                .with_color([1.0, 1.0, 1.0, 1.0])
-                .with_scale(40.0)],
-            ..Section::default()
-        });
+        
+        // if player is alive
+        if !self.player.is_dead {
+            // render ability cooldowns 
+            if self.player.on_cooldown.contains_key(&Command::Attack) {
+                let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (30.0, 30.0),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![Text::new(&format!("{:.1}", attack_cooldown).as_str())
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(40.0)],
+                    ..Section::default()
+                });
+            }
+        } else {
+            // render respawn cooldown
+            if self.player.on_cooldown.contains_key(&Command::Spawn) {
+                let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![
+                        Text::new("You died!\n")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(100.0),
+                        Text::new("Respawning in ")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                        Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([1.0, 1.0, 1.0, 1.0])
+                        .with_scale(60.0),
+                        Text::new(" seconds")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                        ],
+                    layout: Layout::default().h_align(HorizontalAlign::Center),
+                    ..Section::default()
+                });
+            }
+        }
 
         // Draw the text!
         self.glyph_brush

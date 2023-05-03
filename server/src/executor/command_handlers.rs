@@ -380,7 +380,6 @@ impl CommandHandler for AttackCommandHandler {
 
         // if attack on cooldown, do nothing for now
         if game_state.command_on_cooldown(self.player_id, Command::Attack) {
-            println!("on cooldown {:?}", player_state.on_cooldown.get(&Command::Attack).unwrap());
             return Ok(());
         }
 
