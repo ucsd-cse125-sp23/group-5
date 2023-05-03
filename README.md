@@ -22,7 +22,9 @@ Project for CSE 125 Spring 2023, Group 5
 </div>
 
 <!-- ABOUT THE PROJECT -->
-*As the Wind Blows* is a 3D multiplayer game made with Rust, WGPU, and love 💖.
+As the Wind Blows is a 3D multiplayer game, created with Rust, WGPU, and a touch of love. We built the game engine from scratch, providing a fresh gameplay experience accompanied by a visually appealing art style. Set in a world of floating sky islands, this immersive battle game invites you and your friends to enjoy together. Come and discover the charming universe of As the Wind Blows!
+
+[![Product Name Screen Shot][product-screenshot]](https://cse125.ucsd.edu/2023/cse125g5/)
 
 
 <!-- GETTING STARTED -->
