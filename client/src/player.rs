@@ -1,14 +1,12 @@
 use common::core::command::Command;
 use common::core::states::PlayerState;
 use instant::Duration;
-use std::time::SystemTime;
+use std::collections::HashMap;
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
-use std::collections::HashMap;
+use std::time::SystemTime;
 use winit::dpi::PhysicalPosition;
 use winit::event::*;
-
-
 
 extern crate nalgebra_glm as glm;
 
@@ -99,7 +97,7 @@ impl PlayerController {
     }
 
     /// update the player's position, cooldowns, camera's position and target based on incoming player state
-    /// 
+    ///
     pub fn update(
         &mut self,
         player: &mut Player,
@@ -147,14 +145,13 @@ impl PlayerController {
             .clamp(PI / 6.0, PI / 3.0);
         self.scroll = 0.0;
 
-        // update dead status 
-        player.is_dead = incoming_player_state.is_dead; 
-        
+        // update dead status
+        player.is_dead = incoming_player_state.is_dead;
+
         // update cooldowns
         player.on_cooldown = incoming_player_state.on_cooldown.clone();
 
-        // update ammo count 
+        // update ammo count
         player.ammo_count = incoming_player_state.ammo_count;
-        
     }
 }

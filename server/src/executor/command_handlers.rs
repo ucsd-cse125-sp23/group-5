@@ -1,26 +1,26 @@
-use std::f32::consts::PI;
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
+use std::f32::consts::PI;
 
 use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, SoundSpec};
 
-use common::core::states::{GameState, PlayerState};
-use derive_more::{Constructor, Display, Error};
-use nalgebra::{Isometry3, Vector3, zero};
-use nalgebra::UnitQuaternion;
-use nalgebra_glm::Vec3;
-use nalgebra_glm as glm;
-use rapier3d::geometry::InteractionGroups;
-use rapier3d::prelude as rapier;
-use std::fmt::{Debug, format};
-use itertools::Itertools;
-use rapier3d::math::Isometry;
-use rapier3d::prelude::Ray;
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
+use common::core::states::{GameState, PlayerState};
+use derive_more::{Constructor, Display, Error};
+use itertools::Itertools;
+use nalgebra::UnitQuaternion;
+use nalgebra::{zero, Isometry3, Vector3};
+use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
+use rapier3d::geometry::InteractionGroups;
+use rapier3d::math::Isometry;
+use rapier3d::prelude as rapier;
+use rapier3d::prelude::Ray;
+use std::fmt::{format, Debug};
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -52,20 +52,27 @@ impl CommandHandler for StartupCommandHandler {
         physics_state: &mut PhysicsState,
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-
         let mut scene_entity_id = 0xBEEF; // TODO: set up a better convention for scene entities
 
-        let mut nodes = self.config_scene_graph.nodes.iter().map(
-            |n| (n.clone(), Isometry::identity())
-        ).collect_vec();
+        let mut nodes = self
+            .config_scene_graph
+            .nodes
+            .iter()
+            .map(|n| (n.clone(), Isometry::identity()))
+            .collect_vec();
 
         while !nodes.is_empty() {
             let (node, parent_transform) = nodes.pop().unwrap();
-            let model = node.model.clone().ok_or(HandlerError::new("Config node not attaching model".to_string()))?;
+            let model = node.model.clone().ok_or(HandlerError::new(
+                "Config node not attaching model".to_string(),
+            ))?;
 
-            let model_config = self.config_models
+            let model_config = self
+                .config_models
                 .model(model)
-                .ok_or(HandlerError::new("Model not declared".to_string()))?.path.clone();
+                .ok_or(HandlerError::new("Model not declared".to_string()))?
+                .path
+                .clone();
 
             let (models, _) = tobj::load_obj(model_config, &tobj::GPU_LOAD_OPTIONS)
                 .map_err(|e| HandlerError::new(format!("Error loading model {:?}", e)))?;
@@ -87,9 +94,9 @@ impl CommandHandler for StartupCommandHandler {
             // add children to nodes
             if let Some(children) = node.children.clone() {
                 nodes.extend(
-                    children.iter().map(
-                        |child| (child.clone(), world_transform)
-                    )
+                    children
+                        .iter()
+                        .map(|child| (child.clone(), world_transform)),
                 );
             }
         }
@@ -132,8 +139,7 @@ impl CommandHandler for SpawnCommandHandler {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
                 // Teleport the player to the desired position.
-                let new_position =
-                rapier3d::prelude::Isometry::new(spawn_position, zero());
+                let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
                 if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
@@ -148,19 +154,19 @@ impl CommandHandler for SpawnCommandHandler {
             let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
                 .collision_groups(ground_groups)
                 .build();
-    
+
             let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
                 .translation(spawn_position)
                 .build();
             physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
-    
+
             // Game state (needed because syncing is only for the physical properties of entities)
             game_state.players.insert(
                 self.player_id,
                 PlayerState {
                     id: self.player_id,
                     connected: true,
-                    is_dead: false, 
+                    is_dead: false,
                     ammo_count: starting_ammo,
                     ..Default::default()
                 },
@@ -337,23 +343,35 @@ impl CommandHandler for JumpCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-
-        let player_collider_handle = physics_state.get_entity_handles(self.player_id)
-            .ok_or(HandlerError::new(format!("Handlers for player {} not found", self.player_id)))?
+        let player_collider_handle = physics_state
+            .get_entity_handles(self.player_id)
+            .ok_or(HandlerError::new(format!(
+                "Handlers for player {} not found",
+                self.player_id
+            )))?
             .collider
-            .ok_or(HandlerError::new(format!("Collider for player {} not found", self.player_id)))?;
+            .ok_or(HandlerError::new(format!(
+                "Collider for player {} not found",
+                self.player_id
+            )))?;
 
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
-            .ok_or(HandlerError::new(format!("Rigid body for player {} not found", self.player_id)))?;
+            .ok_or(HandlerError::new(format!(
+                "Rigid body for player {} not found",
+                self.player_id
+            )))?;
 
-        let contact_pairs = physics_state.narrow_phase.contacts_with(player_collider_handle).collect_vec();
+        let contact_pairs = physics_state
+            .narrow_phase
+            .contacts_with(player_collider_handle)
+            .collect_vec();
 
         let mut should_reset_jump = false;
         for contact_pair in contact_pairs {
             if let Some((manifold, _)) = contact_pair.find_deepest_contact() {
                 // see if player is above another collider by testing the normal angle
-                if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI/3. {
+                if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI / 3. {
                     should_reset_jump = true;
                 }
             }
@@ -399,13 +417,14 @@ impl CommandHandler for AttackCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        
         let player_state = game_state
-                .player(self.player_id)
-                .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+            .player(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // if attack on cooldown, do nothing for now
-        if game_state.command_on_cooldown(self.player_id, Command::Attack) || player_state.ammo_count == 0 {
+        if game_state.command_on_cooldown(self.player_id, Command::Attack)
+            || player_state.ammo_count == 0
+        {
             return Ok(());
         }
 
@@ -443,10 +462,10 @@ impl CommandHandler for AttackCommandHandler {
                 continue;
             }
 
-            // get direction from this player to other player 
+            // get direction from this player to other player
             let other_player_pos = other_player_state.transform.translation;
             let vec_to_other = glm::normalize(&(other_player_pos - player_pos));
-            
+
             // check dot product between direction to other player and attack direction
             let angle = glm::angle(&camera_forward, &vec_to_other);
 
@@ -455,41 +474,51 @@ impl CommandHandler for AttackCommandHandler {
                 // send ray to other player (may need multiple later)
                 let max_toi = 5.0; // max attack distance
                 let solid = true;
-                let filter = rapier::QueryFilter::default().exclude_collider(player_collider_handle);
+                let filter =
+                    rapier::QueryFilter::default().exclude_collider(player_collider_handle);
 
-                let ray = rapier::Ray::new(rapier::point![player_pos.x, player_pos.y, player_pos.z], rapier::vector![vec_to_other.x, vec_to_other.y, vec_to_other.z]);
+                let ray = rapier::Ray::new(
+                    rapier::point![player_pos.x, player_pos.y, player_pos.z],
+                    rapier::vector![vec_to_other.x, vec_to_other.y, vec_to_other.z],
+                );
                 if let Some((handle, toi)) = physics_state.query_pipeline.cast_ray(
-                    &physics_state.bodies, &physics_state.colliders, &ray, max_toi, solid, filter
+                    &physics_state.bodies,
+                    &physics_state.colliders,
+                    &ray,
+                    max_toi,
+                    solid,
+                    filter,
                 ) {
                     let other_player_collider_handle = physics_state
-                    .get_entity_handles(*other_player_id)
-                    .ok_or(HandlerError::new(format!(
-                        "Player {} not found",
-                        self.player_id
-                    )))?
-                    .collider
-                    .ok_or(HandlerError::new(format!(
-                        "Player {} does not have a collider",
-                        self.player_id
-                    )))?;
+                        .get_entity_handles(*other_player_id)
+                        .ok_or(HandlerError::new(format!(
+                            "Player {} not found",
+                            self.player_id
+                        )))?
+                        .collider
+                        .ok_or(HandlerError::new(format!(
+                            "Player {} does not have a collider",
+                            self.player_id
+                        )))?;
 
                     // if ray hit the correct target (the other player), apply force
                     if handle == other_player_collider_handle {
                         const ATTACK_IMPULSE: f32 = 40.0; // parameter to tune
                         let other_player_rigid_body = physics_state
-                        .get_entity_rigid_body_mut(*other_player_id)
-                        .unwrap();
+                            .get_entity_rigid_body_mut(*other_player_id)
+                            .unwrap();
                         let impulse_vec = vec_to_other * ATTACK_IMPULSE * 2.0 / toi;
-                        other_player_rigid_body.apply_impulse(rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z], true);
+                        other_player_rigid_body.apply_impulse(
+                            rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
+                            true,
+                        );
                     }
                 }
             }
-            
         }
         game_state.player_mut(self.player_id).unwrap().ammo_count -= 1;
 
         game_state.insert_cooldown(self.player_id, Command::Attack, 5);
-
 
         Ok(())
     }

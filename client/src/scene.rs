@@ -276,6 +276,12 @@ mod test {
         // Define the JSON string
         let json_scene_graph_str = r#"
         {
+          "spawn_points": [
+            [10.0, 3.0, 0.0],
+            [-10.0, 3.0, 0.0],
+            [0.0, 3.0, 10.0],
+            [0.0, 3.0, -10.0]
+          ],
           "nodes": [
             {
               "id": "object:island",
