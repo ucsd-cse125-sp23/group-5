@@ -1,3 +1,4 @@
+use crate::communication::commons::MAX_WIND_CHARGE;
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use nalgebra_glm::Vec3;
@@ -15,6 +16,31 @@ pub struct PlayerState {
     pub connected: bool,
     pub on_cooldown: HashMap<Command, SystemTime>,
     pub wind_charge: u32,
+}
+
+impl PlayerState {
+    // add to attack command handlers, put NONE for consume 1
+    pub fn consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
+        let consume_amount = consume_amount.unwrap_or(1);
+        return if self.wind_charge >= consume_amount {
+            self.wind_charge -= consume_amount;
+            true
+        } else {
+            false
+        };
+    }
+
+    // add to refill command handlers, put NONE for refill all
+    pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>) {
+        let refill_amount = refill_amount.unwrap_or(MAX_WIND_CHARGE);
+        let mut charges = self.wind_charge;
+        charges += refill_amount;
+        self.wind_charge = if charges > MAX_WIND_CHARGE {
+            MAX_WIND_CHARGE
+        } else {
+            charges
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

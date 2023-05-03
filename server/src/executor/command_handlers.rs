@@ -338,6 +338,11 @@ impl CommandHandler for JumpCommandHandler {
             return Ok(());
         }
 
+        // TODO: remove testing for consume charge, needs to be added at correct places
+        if !player_state.consume_wind_charge(None) {
+            return Ok(());
+        }
+
         player_state.jump_count += 1;
 
         // apply upward impulse to the player's rigid body
