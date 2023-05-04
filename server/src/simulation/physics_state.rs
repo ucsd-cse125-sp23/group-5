@@ -74,6 +74,8 @@ impl PhysicsState {
             println!("Received contact force event: {:?}", contact_force_event);
             panic!("Contact force event received")
         }
+
+        self.query_pipeline.update(&self.bodies, &self.colliders);
     }
 
     pub fn insert_entity(

@@ -1,9 +1,10 @@
 use std::collections::btree_map::Range;
 
-use wgpu::util::DeviceExt;
-use crate::texture;
-use crate::resources;
 use crate::model;
+
+use crate::resources;
+use crate::texture;
+use wgpu::util::DeviceExt;
 
 // Vertex
 #[repr(C)]
@@ -13,7 +14,6 @@ pub struct Vertex {
     pub color: [f32; 4],
     pub texture: [f32; 2],
 }
-
 
 impl Vertex {
     const ATTRIBS: [wgpu::VertexAttribute; 3] =
@@ -32,8 +32,8 @@ impl Vertex {
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ScreenInstance{
-    pub transform:[[f32; 4] ; 4],
+pub struct ScreenInstance {
+    pub transform: [[f32; 4]; 4],
 }
 
 impl ScreenInstance{
@@ -53,7 +53,7 @@ impl ScreenInstance{
     }
 }
 
-impl crate::model::Vertex for ScreenInstance{
+impl crate::model::Vertex for ScreenInstance {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
@@ -64,22 +64,27 @@ impl crate::model::Vertex for ScreenInstance{
     }
 }
 
-pub struct ScreenObject{
-    pub vbuf : wgpu::Buffer,
-    pub ibuf : wgpu::Buffer,
-    pub num_indices : u32,
-    pub num_inst : u32,
-    pub instances : Vec<ScreenInstance>,
-    pub inst_buf : wgpu::Buffer,
+pub struct ScreenObject {
+    pub vbuf: wgpu::Buffer,
+    pub ibuf: wgpu::Buffer,
+    pub num_indices: u32,
+    pub num_inst: u32,
+    pub instances: Vec<ScreenInstance>,
+    pub inst_buf: wgpu::Buffer,
     pub diffuse_texture: texture::Texture,
     pub bind_group: wgpu::BindGroup,
 }
 
-impl ScreenObject{
-    pub async fn new(vtxs : &Vec<Vertex>, idxs : &Vec<u16>, instances : Vec<ScreenInstance>,
-        tex_name: &str, 
-        layout : &wgpu::BindGroupLayout,
-        device : &wgpu::Device, queue: &wgpu::Queue) -> Self{
+impl ScreenObject {
+    pub async fn new(
+        vtxs: &Vec<Vertex>,
+        idxs: &Vec<u16>,
+        instances: Vec<ScreenInstance>,
+        tex_name: &str,
+        layout: &wgpu::BindGroupLayout,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Self {
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Screen Obj Vertex Buffer"),
             contents: bytemuck::cast_slice(vtxs),
@@ -99,7 +104,7 @@ impl ScreenObject{
         });
 
         //Assume there's always a texture
-        let diffuse_texture = match resources::load_texture(tex_name, device, queue).await{
+        let diffuse_texture = match resources::load_texture(tex_name, device, queue).await {
             Ok(tex) => tex,
             Err(e) => panic!("Failed to load screen texture {:?}\n", e),
         };
@@ -118,7 +123,7 @@ impl ScreenObject{
             ],
             label: None,
         });
-        Self { 
+        Self {
             vbuf,
             ibuf,
             num_indices: idxs.len() as u32,
@@ -128,33 +133,48 @@ impl ScreenObject{
             // TODO!
             instances,
             inst_buf,
-
         }
     }
 }
 
-pub struct Screen{
-    pub name : String,
-    pub objects : Vec<ScreenObject>,
+pub struct Screen {
+    pub name: String,
+    pub objects: Vec<ScreenObject>,
     pub ranges: Vec<std::ops::Range<u32>>,
 }
 
 pub async fn get_screens(
     texture_bind_group_layout_2d: &wgpu::BindGroupLayout,
     device: &wgpu::Device,
-    queue: &wgpu::Queue
-) -> Vec<Screen>{
+    queue: &wgpu::Queue,
+) -> Vec<Screen> {
     #[rustfmt::skip]
     let rect_indices : Vec<u16> = vec![
         0, 2, 1,
         0, 3, 2,
     ];
 
-    let title_vert : Vec<Vertex> = vec![
-        Vertex { position: [-1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
-        Vertex { position: [-1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
-        Vertex { position: [ 1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
-        Vertex { position: [ 1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
+    let title_vert: Vec<Vertex> = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.0, 1.0],
+        }, // A
+        Vertex {
+            position: [-1.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.0, 0.0],
+        }, // B
+        Vertex {
+            position: [1.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [1.0, 0.0],
+        }, // C
+        Vertex {
+            position: [1.0, -1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [1.0, 1.0],
+        }, // D
     ];
     #[rustfmt::skip]
     let title_inst = vec![
@@ -166,16 +186,17 @@ pub async fn get_screens(
         },
     ];
     let title_inst_num = title_inst.len() as u32;
-    let title_hover_inst = vec![
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],]
-        },
-    ];
-    let title_hover_inst_num = title_inst.len() as u32;
-    
+    let title_hover_inst = vec![ScreenInstance {
+        transform: [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ],
+    }];
+
+    let _title_hover_inst_num = title_inst.len() as u32;
+
     #[rustfmt::skip]
     let atk_bx_vert : Vec<Vertex> = vec![
         Vertex { position: [-0.90, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [0.0, 1.0] }, // A
@@ -184,11 +205,27 @@ pub async fn get_screens(
         Vertex { position: [-0.30, 0.75], color: [1.0, 1.0, 1.0, 0.9], texture: [1.0, 1.0] }, // D
     ];
 
-    let atk_itm_vert : Vec<Vertex> = vec![
-        Vertex { position: [-0.88, 0.75], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 1.0] }, // A
-        Vertex { position: [-0.88, 0.90], color: [1.0, 1.0, 1.0, 1.0], texture: [0.0, 0.0] }, // B
-        Vertex { position: [-0.78, 0.90], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 0.0] }, // C
-        Vertex { position: [-0.78, 0.75], color: [1.0, 1.0, 1.0, 1.0], texture: [1.0, 1.0] }, // D
+    let atk_itm_vert: Vec<Vertex> = vec![
+        Vertex {
+            position: [-0.88, 0.75],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.0, 1.0],
+        }, // A
+        Vertex {
+            position: [-0.88, 0.90],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.0, 0.0],
+        }, // B
+        Vertex {
+            position: [-0.78, 0.90],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [1.0, 0.0],
+        }, // C
+        Vertex {
+            position: [-0.78, 0.75],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [1.0, 1.0],
+        }, // D
     ];
 
     #[rustfmt::skip]
@@ -202,80 +239,124 @@ pub async fn get_screens(
     ];
     let atk_bx_inst_num = atk_bx_inst.len() as u32;
     let atk_itm_inst = vec![
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.065, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.065, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.130, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.130, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.195, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.195, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.260, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.260, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.325, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.325, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.390, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.390, 0.0, 0.0, 1.0],
+            ],
         },
-        ScreenInstance{
-            transform: [[1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.455, 0.0, 0.0, 1.0],]
+        ScreenInstance {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.455, 0.0, 0.0, 1.0],
+            ],
         },
     ];
     let atk_itm_inst_num = atk_itm_inst.len() as u32;
 
     let title_obj = ScreenObject::new(
-        &title_vert, &rect_indices, title_inst, "start_screen_default.jpg", 
-        texture_bind_group_layout_2d, device, queue).await;
+        &title_vert,
+        &rect_indices,
+        title_inst,
+        "start_screen_default.jpg",
+        texture_bind_group_layout_2d,
+        device,
+        queue,
+    )
+    .await;
 
     let title_hover_obj = ScreenObject::new(
-        &title_vert, &rect_indices, title_hover_inst, "start_screen_hover.jpg", 
-        texture_bind_group_layout_2d, device, queue).await;
+        &title_vert,
+        &rect_indices,
+        title_hover_inst,
+        "start_screen_hover.jpg",
+        texture_bind_group_layout_2d,
+        device,
+        queue,
+    )
+    .await;
 
     let atk_box_obj = ScreenObject::new(
-        &atk_bx_vert, &rect_indices, atk_bx_inst, "back1.png", 
-        texture_bind_group_layout_2d, device, queue).await;
+        &atk_bx_vert,
+        &rect_indices,
+        atk_bx_inst,
+        "back1.png",
+        texture_bind_group_layout_2d,
+        device,
+        queue,
+    )
+    .await;
 
     let atk_itm_obj = ScreenObject::new(
-        &atk_itm_vert, &rect_indices, atk_itm_inst, "wind.png", 
-        texture_bind_group_layout_2d, device, queue).await;
-    
+        &atk_itm_vert,
+        &rect_indices,
+        atk_itm_inst,
+        "wind.png",
+        texture_bind_group_layout_2d,
+        device,
+        queue,
+    )
+    .await;
+
     vec![
-        Screen{
+        Screen {
             name: String::from("Title Screen"),
             objects: vec![title_obj, title_hover_obj],
             ranges: vec![(0..title_inst_num), (0..0)],
         },
-        Screen{
+        Screen {
             name: String::from("Playing Screen"),
             objects: vec![atk_box_obj, atk_itm_obj],
             ranges: vec![(0..atk_bx_inst_num), (0..atk_itm_inst_num)],
@@ -284,15 +365,31 @@ pub async fn get_screens(
 }
 
 // only for title screen right now
-pub fn update_screen(width: u32, height: u32, device: &wgpu::Device, screen: &mut ScreenObject){
-    let aspect: f32 = (width as f32)/(height as f32);
-    const title_ar : f32 = 16.0/9.0;
-    let title_x_span_half = (glm::clamp_scalar(aspect / title_ar,0.0, 1.0)) / 2.0;
-    let title_vert : Vec<Vertex> = vec![
-        Vertex { position: [-1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 - title_x_span_half, 1.0] }, // A
-        Vertex { position: [-1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 - title_x_span_half, 0.0] }, // B
-        Vertex { position: [ 1.0,  1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 + title_x_span_half, 0.0] }, // C
-        Vertex { position: [ 1.0, -1.0], color: [1.0, 1.0, 1.0, 1.0], texture: [0.5 + title_x_span_half, 1.0] }, // D
+pub fn update_screen(width: u32, height: u32, device: &wgpu::Device, screen: &mut ScreenObject) {
+    let aspect: f32 = (width as f32) / (height as f32);
+    const TITLE_AR: f32 = 16.0 / 9.0;
+    let title_x_span_half = (glm::clamp_scalar(aspect / TITLE_AR, 0.0, 1.0)) / 2.0;
+    let title_vert: Vec<Vertex> = vec![
+        Vertex {
+            position: [-1.0, -1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.5 - title_x_span_half, 1.0],
+        }, // A
+        Vertex {
+            position: [-1.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.5 - title_x_span_half, 0.0],
+        }, // B
+        Vertex {
+            position: [1.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.5 + title_x_span_half, 0.0],
+        }, // C
+        Vertex {
+            position: [1.0, -1.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            texture: [0.5 + title_x_span_half, 1.0],
+        }, // D
     ];
     let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Screen Obj Vertex Buffer"),

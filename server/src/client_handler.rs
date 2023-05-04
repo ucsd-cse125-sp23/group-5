@@ -4,8 +4,10 @@ use common::communication::commons::Protocol;
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::states::GameState;
 use log::{debug, error, info, warn};
-use server::game_loop::{ClientCommand, ServerEvent};
+use server::game_loop::ClientCommand;
+use server::outgoing_request::OutgoingRequest;
 use std::net::TcpStream;
+use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -13,15 +15,16 @@ use std::thread;
 pub struct ClientHandler {
     protocol: Protocol,
     tx: mpsc::Sender<ClientCommand>,
-    rx: BusReader<ServerEvent>,
+    rx: BusReader<OutgoingRequest>,
     game_state: Arc<Mutex<GameState>>,
+    client_id: Option<u8>,
 }
 
 impl ClientHandler {
     pub fn new(
         stream: TcpStream,
         tx: mpsc::Sender<ClientCommand>,
-        broadcast: Arc<Mutex<Bus<ServerEvent>>>,
+        broadcast: Arc<Mutex<Bus<OutgoingRequest>>>,
         game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         // add a new rx to the broadcast bus
@@ -35,13 +38,13 @@ impl ClientHandler {
             tx,
             rx,
             game_state,
+            client_id: None,
         }
     }
 
     pub fn run(mut self) {
         let read_protocol = self.protocol.try_clone().unwrap();
         let write_protocol = self.protocol.try_clone().unwrap();
-        let client_id;
 
         // connect with client
         if let Ok(msg) = self.protocol.read_message::<Message>() {
@@ -53,15 +56,19 @@ impl ClientHandler {
             {
                 if !SESSION_ID.cmp(&incoming_session_id).is_eq() {
                     info!("New client connected");
-                    client_id = CLIENT_ID_ASSIGNER.fetch_add(1, Ordering::SeqCst);
+                    self.client_id = Some(CLIENT_ID_ASSIGNER.fetch_add(1, Ordering::SeqCst));
                 } else {
                     info!("Client reconnected");
-                    client_id = incoming_client_id;
+                    self.client_id = Some(incoming_client_id);
                 }
                 self.protocol
                     .send_message(&Message::new(
                         HostRole::Server,
-                        Payload::Init((HostRole::Client(client_id).into(), SESSION_ID.to_owned())),
+                        // by this point client id is assigned by the server
+                        Payload::Init((
+                            HostRole::Client(self.client_id.unwrap()).into(),
+                            SESSION_ID.to_owned(),
+                        )),
                     ))
                     .expect("send message fails");
             } else {
@@ -75,7 +82,12 @@ impl ClientHandler {
         });
 
         let write_handler = thread::spawn(move || {
-            let mut write_resources = (write_protocol, self.rx, self.game_state);
+            let mut write_resources = (
+                self.client_id.unwrap(),
+                write_protocol,
+                self.rx,
+                self.game_state,
+            );
             Self::write_messages(&mut write_resources);
         });
 
@@ -112,15 +124,26 @@ impl ClientHandler {
         }
     }
 
-    fn write_messages(resources: &mut (Protocol, BusReader<ServerEvent>, Arc<Mutex<GameState>>)) {
-        let (protocol, rx, game_state) = resources;
-        while let Ok(ServerEvent::Sync) = rx.recv() {
+    fn write_messages(
+        resources: &mut (
+            u8,
+            Protocol,
+            BusReader<OutgoingRequest>,
+            Arc<Mutex<GameState>>,
+        ),
+    ) {
+        let (client_id, protocol, rx, game_state) = resources;
+        while let Ok(outgoing_request) = rx.recv() {
+            if !outgoing_request.recipients().matches(*client_id) {
+                // this message is not for this client
+                continue;
+            }
+
             debug!("Updating game state to client");
             let game_state = game_state.lock().unwrap();
-            if let Err(e) = protocol.send_message(&Message::new(
-                HostRole::Server,
-                Payload::StateSync(game_state.clone()),
-            )) {
+            if let Err(e) =
+                protocol.send_message(&outgoing_request.make_message(game_state.deref()))
+            {
                 match e.kind() {
                     std::io::ErrorKind::BrokenPipe
                     | std::io::ErrorKind::ConnectionAborted

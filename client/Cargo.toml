@@ -31,6 +31,8 @@ serde_json = "1.0"
 hashbrown = "0.13.2"
 rand = "0.8.5"
 rand_distr = "0.4"
+wgpu_glyph = "0.19.0"
+bus = "2.4.0"
 
 [build-dependencies]
 anyhow = "1.0"

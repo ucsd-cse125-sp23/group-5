@@ -1,3 +1,5 @@
+use glm::vec3;
+use std::collections::HashMap;
 use std::{sync::{Arc, Mutex}, f32::consts::PI};
 
 use winit::event::*;
@@ -14,17 +16,25 @@ mod lights;
 mod player;
 mod resources;
 mod scene;
-mod texture;
 mod screen_objects;
+mod texture;
 mod particles;
 extern crate nalgebra_glm as glm;
+
+use common::configs::{from_file, model_config::ConfigModels};
 
 pub mod event_loop;
 pub mod inputs;
 
+use common::configs::scene_config::ConfigSceneGraph;
+use common::core::command::Command;
 use common::core::states::GameState;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
 use wgpu::util::DeviceExt;
+
+const MODELS_CONFIG_PATH: &str = "models.json";
+const SCENE_CONFIG_PATH: &str = "scene.json";
 
 struct State {
     surface: wgpu::Surface,
@@ -46,6 +56,8 @@ struct State {
     particle_renderer: particles::ParticleDrawer,
     rng: rand::rngs::ThreadRng,
     client_id: u8,
+    staging_belt: wgpu::util::StagingBelt,
+    glyph_brush: GlyphBrush<()>,
 }
 
 impl State {
@@ -222,116 +234,63 @@ impl State {
             });
 
         let texture_bind_group_layout_2d =
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-            label: Some("2d_texture_bind_group_layout"),
-        });
-        
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("2d_texture_bind_group_layout"),
+            });
+
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
-        
-        let player = player::Player::new(glm::vec3(5.0, 7.0, 5.0));
-        // let player_controller = player::PlayerController::new(4.0, 1.0, 0.7); 
-        let player_controller = player::PlayerController::new(4.0, 1.0, 0.1); 
-
-        let camera_state = camera::CameraState::new(
-            &device,
-        player.position + glm::vec3(-5.0, 15.0, 0.0), 
-        player.position, 
-        glm::vec3(0.0, 1.0, 0.0),
-        config.width, config.height, 45.0, 0.1, 100.0,
-        );
 
         // Scene
-        let obj_model = resources::load_model(
-            "assets/islands_set.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
-        // let instance_vec = vec![
-        //     instance::Instance{transform: glm::mat4(
-        //         1.0, 0.0, 0.0, 0.0,
-        //         0.0, 1.0, 0.0, 0.0,
-        //         0.0, 0.0, 1.0, 0.0,
-        //         0.0, 0.0, 0.0, 1.0
-        //     )},
-        //     instance::Instance{transform: glm::mat4(
-        //         1.0, 0.0, 0.0, 10.0,
-        //         0.0, 1.0, 0.0, 2.0,
-        //         0.0, 0.0, 1.0, 2.0,
-        //         0.0, 0.0, 0.0, 1.0
-        //     )},
-        // ];
-        // use cube as a placeholder player model for now
-        let player_obj = resources::load_model(
-            "assets/cube.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
+        let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 
-        let cube_obj = resources::load_model(
-            "assets/cube.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
+        let mut models = HashMap::new();
 
-        let ferris_obj = resources::load_model(
-            "assets/ferris.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
-        // let cube_instance_vec = vec![
-        //     instance::Instance{transform: glm::mat4(
-        //         1.0, 0.0, 0.0, 5.0,
-        //         0.0, 1.0, 0.0, 10.0,
-        //         0.0, 0.0, 1.0, 5.0,
-        //         0.0, 0.0, 0.0, 1.0
-        //     )},
-        // ];
-        // let scene = scene::Scene{objects: vec![obj_model], instance_vectors: vec![instance_vec]};
+        for model_config in model_configs.models {
+            let model = resources::load_model(
+                &model_config.path,
+                &device,
+                &queue,
+                &texture_bind_group_layout,
+            )
+            .await
+            .unwrap();
+            models.insert(model_config.name, model);
+        }
 
-        let mut scene = scene::Scene::new(vec![obj_model, player_obj, cube_obj, ferris_obj]);
-        scene.init_scene_graph();
+        let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
+
+        let mut scene = scene::Scene::from_config(&scene_config);
+        scene.objects = models;
 
         // placeholder position, will get overriden by server
-        let player = player::Player::new(glm::vec3(0.0, 0.0, 0.0));
+        let player = player::Player::new(vec3(0.0, 0.0, 0.0));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
-            player.position + glm::vec3(-2.0, 2.0, 0.0),
+            player.position + vec3(-2.0, 2.0, 0.0),
             player.position,
-            glm::vec3(0.0, 1.0, 0.0),
+            vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
             45.0,
@@ -339,7 +298,7 @@ impl State {
             100.0,
         );
 
-        scene.draw_scene_dfs(&camera_state.camera);
+        scene.draw_scene_dfs();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -415,7 +374,7 @@ impl State {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::LessEqual, // 1.
-                stencil: wgpu::StencilState::default(),     // 2.
+                stencil: wgpu::StencilState::default(),          // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState {
@@ -432,7 +391,10 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader_2d,
                 entry_point: "vs_main",
-                buffers: &[screen_objects::Vertex::desc(), screen_objects::ScreenInstance::desc()],
+                buffers: &[
+                    screen_objects::Vertex::desc(),
+                    screen_objects::ScreenInstance::desc(),
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader_2d,
@@ -469,6 +431,15 @@ impl State {
             },
             multiview: None,
         });
+
+        // text
+        let staging_belt = wgpu::util::StagingBelt::new(1024);
+        let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
+            "../../assets/Inconsolata-Regular.ttf"
+        ))
+        .unwrap();
+
+        let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let mut rng = rand::thread_rng();
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
@@ -523,7 +494,7 @@ impl State {
         );
         particle_renderer.systems.push(test_particle_2);
 
-        let screens = 
+        let screens =
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
         Self {
@@ -549,6 +520,8 @@ impl State {
             particle_renderer,
             rng,
             client_id,
+            staging_belt,
+            glyph_brush,
         }
     }
 
@@ -575,7 +548,12 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
-            screen_objects::update_screen(new_size.width, new_size.height, &self.device, &mut self.screens[0].objects[0]);
+            screen_objects::update_screen(
+                new_size.width,
+                new_size.height,
+                &self.device,
+                &mut self.screens[0].objects[0],
+            );
 
             self.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
@@ -608,6 +586,9 @@ impl State {
             dt,
             self.client_id,
         );
+
+        self.scene.draw_scene_dfs();
+
         // camera update
         self.camera_state
             .camera_uniform
@@ -639,10 +620,13 @@ impl State {
             //placed up here because it needs to be dropped after the render pass
             let mut instanced_objs = Vec::new();
 
-            for i in self.scene.objects_and_instances.iter() {
-                let count = i.1.len();
-                let instanced_obj =
-                    model::InstancedModel::new(&self.scene.objects[i.0.index], &i.1, &self.device);
+            for (index, instances) in self.scene.objects_and_instances.iter() {
+                let count = instances.len();
+                let instanced_obj = model::InstancedModel::new(
+                    self.scene.objects.get(index).unwrap(),
+                    instances,
+                    &self.device,
+                );
                 instanced_objs.push((instanced_obj, count));
             }
 
@@ -665,10 +649,6 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            // r: 0.1,
-                            // g: 0.2,
-                            // b: 0.3,
-                            // a: 1.0,
                             r: 0.274,
                             g: 0.698,
                             b: 0.875,
@@ -712,25 +692,100 @@ impl State {
             render_pass.set_pipeline(&self.render_pipeline_2d);
 
             // TO REMOVE: for testing
-            if self.screen_ind == 1{
+            if self.screen_ind == 1 {
                 self.screens[self.screen_ind].ranges[1] = 0..5;
             }
-            
-            for i in 0..self.screens[self.screen_ind].objects.len(){
+
+            for i in 0..self.screens[self.screen_ind].objects.len() {
                 let obj = &self.screens[self.screen_ind].objects[i];
                 let range = &self.screens[self.screen_ind].ranges[i];
                 render_pass.set_vertex_buffer(0, obj.vbuf.slice(..));
-                render_pass.set_vertex_buffer(1, obj.inst_buf.slice(..)); 
+                render_pass.set_vertex_buffer(1, obj.inst_buf.slice(..));
                 render_pass.set_index_buffer(obj.ibuf.slice(..), wgpu::IndexFormat::Uint16);
                 render_pass.set_bind_group(0, &obj.bind_group, &[]);
                 render_pass.draw_indexed(0..obj.num_indices, 0, range.clone());
             }
         }
 
+        let size = &self.window.inner_size();
+
+
+        // TODO: maybe refactor later?
+        // if player is alive
+        if !self.player.is_dead {
+            // render ammo remaining
+            self.glyph_brush.queue(Section {
+                screen_position: (30.0, 20.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    &format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+            // render ability cooldowns
+            if self.player.on_cooldown.contains_key(&Command::Attack) {
+                let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (30.0, 60.0),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![Text::new(
+                        &format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
+                    )
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
+                    ..Section::default()
+                });
+            }
+        } else {
+            // render respawn cooldown
+            if self.player.on_cooldown.contains_key(&Command::Spawn) {
+                let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![
+                        Text::new("You died!\n")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(100.0),
+                        Text::new("Respawning in ")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                        Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                            .with_color([1.0, 1.0, 1.0, 1.0])
+                            .with_scale(60.0),
+                        Text::new(" seconds")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                    ],
+                    layout: Layout::default().h_align(HorizontalAlign::Center),
+                    ..Section::default()
+                });
+            }
+        }
+
+        // Draw the text!
+        self.glyph_brush
+            .draw_queued(
+                &self.device,
+                &mut self.staging_belt,
+                &mut encoder,
+                &view,
+                size.width,
+                size.height,
+            )
+            .expect("Draw queued");
+
+        // Submit the work!
+        self.staging_belt.finish();
+
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
+        // Recall unused staging buffers
+        self.staging_belt.recall();
         Ok(())
     }
 }

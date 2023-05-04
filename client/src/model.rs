@@ -1,9 +1,11 @@
 use std::ops::Range;
 
 use crate::instance;
+
 use crate::texture;
 
 pub struct Model {
+    pub path: String,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
