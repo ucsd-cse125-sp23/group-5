@@ -1,7 +1,11 @@
 use glm::vec3;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::{
+    f32::consts::PI,
+    sync::{Arc, Mutex},
+};
 
+use rand::{rngs::ThreadRng, Rng};
 use winit::event::*;
 
 mod model;
@@ -12,6 +16,7 @@ use model::Vertex;
 mod camera;
 mod instance;
 mod lights;
+mod particles;
 mod player;
 mod resources;
 mod scene;
@@ -27,6 +32,7 @@ pub mod inputs;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
 use common::core::states::GameState;
+use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
 
@@ -50,6 +56,8 @@ struct State {
     camera_state: camera::CameraState,
     screens: Vec<screen_objects::Screen>,
     screen_ind: usize,
+    particle_renderer: particles::ParticleDrawer,
+    rng: rand::rngs::ThreadRng,
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
@@ -127,6 +135,26 @@ impl State {
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -135,29 +163,73 @@ impl State {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 1,
+                        binding: 3,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 2,
+                        binding: 4,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 3,
+                        binding: 5,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 6,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 7,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 8,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 9,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 10,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 11,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                 ],
@@ -236,7 +308,8 @@ impl State {
 
         #[rustfmt::skip]
             let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
-            lights::Light { position: glm::vec4(1.0, 0.0, 0.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0) },
+            lights::Light { position: glm::vec4(1.0, 1.0, 1.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0) },
+            lights::Light { position: glm::vec4(-1.0, -1.0, -1.0, 0.0), color: glm::vec3(1.0, 0.7, 0.4) },
             lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
@@ -256,6 +329,17 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[&texture_bind_group_layout_2d],
+                push_constant_ranges: &[],
+            });
+
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("3D Render Pipeline Layout"),
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &camera_state.camera_bind_group_layout,
+                    &light_state.light_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -339,8 +423,8 @@ impl State {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual, // 1.
-                stencil: wgpu::StencilState::default(),          // 2.
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState {
@@ -359,6 +443,61 @@ impl State {
         .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
+
+        let mut rng = rand::thread_rng();
+        let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
+            .await
+            .unwrap();
+        let mut particle_renderer = particles::ParticleDrawer::new(
+            &device,
+            &config,
+            &camera_state.camera_bind_group_layout,
+            particle_tex,
+        );
+        let test_particle_gen = particles::LineGenerator::new(
+            glm::vec3(0.0, -10.0, 0.0),
+            glm::vec3(0.0, 1.0, 0.0),
+            0.1,
+            PI,
+            0.1,
+            50.0,
+            5.0,
+            2.0,
+            false,
+        );
+        let test_particle = particles::ParticleSystem::new(
+            std::time::Duration::from_secs(60),
+            5.0,
+            10.0,
+            glm::vec4(0.8, 0.3, 0.8, 1.0),
+            test_particle_gen,
+            (1, 4),
+            &device,
+            &mut rng,
+        );
+        particle_renderer.systems.push(test_particle);
+        let test_particle_gen_2 = particles::LineGenerator::new(
+            glm::vec3(-2.0, -10.0, 0.0),
+            glm::vec3(2.0, 5.0, 0.0),
+            0.1,
+            PI,
+            0.1,
+            25.0,
+            0.5,
+            0.0,
+            false,
+        );
+        let test_particle_2 = particles::ParticleSystem::new(
+            std::time::Duration::from_secs(60),
+            2.0,
+            10.0,
+            glm::vec4(1.0, 1.0, 1.0, 1.0),
+            test_particle_gen_2,
+            (4, 5),
+            &device,
+            &mut rng,
+        );
+        particle_renderer.systems.push(test_particle_2);
 
         let screens =
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
@@ -383,6 +522,8 @@ impl State {
             screen_ind: 0,
             #[cfg(feature = "debug-lobby")]
             screen_ind: 1,
+            particle_renderer,
+            rng,
             client_id,
             staging_belt,
             glyph_brush,
@@ -494,6 +635,18 @@ impl State {
                 instanced_objs.push((instanced_obj, count));
             }
 
+            let mut to_draw: Vec<particles::Particle> = Vec::new();
+            self.particle_renderer
+                .get_particles_to_draw(&self.camera_state.camera, &mut to_draw);
+            // write buffer to gpu and set buffer
+            let inst_buf = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Instance Buffer"),
+                    contents: bytemuck::cast_slice(&to_draw),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -501,9 +654,9 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.274,
-                            g: 0.698,
-                            b: 0.875,
+                            r: 0.888,
+                            g: 0.815,
+                            b: 0.745,
                             a: 1.0,
                         }),
                         store: true,
@@ -530,6 +683,17 @@ impl State {
                 );
             }
 
+            // Particle Drawing
+            self.particle_renderer.draw(
+                &mut render_pass,
+                &self.camera_state.camera_bind_group,
+                to_draw.len() as u32,
+                &inst_buf,
+                &self.device,
+                &self.queue,
+            );
+
+            // GUI drawing
             render_pass.set_pipeline(&self.render_pipeline_2d);
 
             // TO REMOVE: for testing
