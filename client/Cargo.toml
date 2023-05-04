@@ -33,6 +33,7 @@ rand = "0.8.5"
 rand_distr = "0.4"
 wgpu_glyph = "0.19.0"
 bus = "2.4.0"
+const_format = "0.2.30"
 
 [build-dependencies]
 anyhow = "1.0"

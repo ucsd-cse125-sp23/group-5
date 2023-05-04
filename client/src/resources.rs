@@ -1,12 +1,22 @@
 use std::io::{BufReader, Cursor};
 
 use cfg_if::cfg_if;
+use const_format::formatcp;
 use wgpu::util::DeviceExt;
 
 use crate::{
     model::{self},
     texture,
 };
+
+//assuming we run from root (group-5 folder)
+#[rustfmt::skip]
+const SEARCH_PATH : [&'static str; 4] = [
+    formatcp!(""), 
+    formatcp!("assets"), 
+    formatcp!("client{}res", std::path::MAIN_SEPARATOR_STR), 
+    formatcp!("client{}res{}textures", std::path::MAIN_SEPARATOR_STR, std::path::MAIN_SEPARATOR_STR),
+];
 
 // #[cfg(target_arch = "wasm32")]
 // fn format_url(file_name: &str) -> reqwest::Url {
@@ -28,21 +38,21 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
                 .await?
                 .text()
                 .await?;
+            return Ok(txt);
         } else {
-            // let path = std::path::Path::new(env!("OUT_DIR"))
-            //     .join("res")
-            //     // .parent()
-            //     // .unwrap()   // should never fail because our folder structure won't change
-            //     // .join("common")
-            //     // .join("assets")
-            //     .join(file_name);
-            let path = std::path::Path::new(file_name);
-            println!("path: {path:?}");
-            let txt = std::fs::read_to_string(path)?;
+            for p in SEARCH_PATH{
+                let path = std::path::Path::new(p)
+                    .join(file_name);
+                println!("trying: {path:?}");
+                match std::fs::read_to_string(path){
+                    Ok(txt) => return Ok(txt),
+                    Err(e) => continue,
+                };
+            }
+            // NOTE: consider actually using the error value somehow...
+            return Err(anyhow::Error::msg(format!("error finding {file_name}")));
         }
     }
-
-    Ok(txt)
 }
 
 pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
@@ -54,15 +64,21 @@ pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
                 .bytes()
                 .await?
                 .to_vec();
+            return Ok(data);
         } else {
-            let path = std::path::Path::new(env!("OUT_DIR"))
-                .join("res")
-                .join(file_name);
-            let data = std::fs::read(path)?;
+            for p in SEARCH_PATH{
+                let path = std::path::Path::new(p)
+                    .join(file_name);
+                println!("trying: {path:?}");
+                match std::fs::read(path){
+                    Ok(d) => return Ok(d),
+                    Err(e) => continue,
+                };
+            }
+            // NOTE: consider actually using the error value somehow...
+            return Err(anyhow::Error::msg(format!("error finding {file_name}")));
         }
     }
-
-    Ok(data)
 }
 
 pub async fn load_texture(
