@@ -1,6 +1,7 @@
 use crate::communication::commons::MAX_WIND_CHARGE;
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
+use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -83,6 +84,17 @@ impl GameState {
                 .filter(|(_key, cooldown)| *cooldown > 0.0)
                 .collect();
         }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ParticleQueue{
+    pub particles: Vec<ParticleSpec>,
+}
+
+impl ParticleQueue{
+    pub fn add_particle(&mut self, particle: ParticleSpec){
+        self.particles.push(particle);
     }
 }
 

@@ -12,7 +12,7 @@ struct InstanceInput {
     @location(8) time_elapsed: f32,
     // allow size to grow
     // if it's non-zero: 
-    // size = (size) / (1 + e^{-size_growth * (t - 0.5 * halflife)})
+    // size = (size) / (1 + e^{-size_growth * (t - halflife)})
     @location(9) size_growth: f32,
     @location(10) halflife: f32,
 }

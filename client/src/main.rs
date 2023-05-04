@@ -16,9 +16,9 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-use common::core::events::GameEvent;
+use common::core::events::{GameEvent};
 
-use common::core::states::GameState;
+use common::core::states::{GameState, ParticleQueue};
 
 fn main() {
     Builder::from_default_env().format_timestamp_micros().init();
@@ -26,8 +26,10 @@ fn main() {
     // input channel for communicating between event loop and input processor
     let (tx, rx) = mpsc::channel::<Input>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
+    let particle_queue = Arc::new(Mutex::new(ParticleQueue::default()));
 
-    let game_events_bus = Bus::new(1);
+    let mut game_events_bus = Bus::new(1);
+    let mut particle_rcvr = game_events_bus.add_rx();
 
     #[cfg(not(feature = "debug-addr"))]
     let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
@@ -70,7 +72,7 @@ fn main() {
     #[cfg(feature = "debug-recon")]
     dump_ids(session_data_path, client_id + 1, session_id);
 
-    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
+    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), particle_queue.clone(), client_id);
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
@@ -83,7 +85,15 @@ fn main() {
 
     // spawn a thread to handle game state updates and events
     thread::spawn(move || {
-        recv_server_updates(protocol.try_clone().unwrap(), game_state, game_events_bus);
+        recv_server_updates(
+            protocol.try_clone().unwrap(),
+            game_state,
+            game_events_bus
+        );
+        receive_particles(
+            particle_queue,
+            &mut particle_rcvr,
+        );
     });
 
     pollster::block_on(player_loop.run());
@@ -157,6 +167,19 @@ fn recv_server_updates(
                     .unwrap();
             }
             _ => {}
+        }
+    }
+}
+
+fn receive_particles(
+    particle_state: Arc<Mutex<ParticleQueue>>,
+    reader: &mut bus::BusReader<GameEvent>,
+){
+    loop{
+        match reader.try_recv(){
+            Ok(GameEvent::ParticleEvent(p)) => 
+                particle_state.lock().unwrap().add_particle(p),
+            _ => {},
         }
     }
 }

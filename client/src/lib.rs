@@ -1,5 +1,6 @@
 use glm::vec3;
 use std::collections::HashMap;
+use std::sync::MutexGuard;
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
@@ -31,7 +32,8 @@ pub mod inputs;
 
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
-use common::core::states::GameState;
+use common::core::states::{GameState, ParticleQueue};
+use common::core::events;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
@@ -584,7 +586,7 @@ impl State {
         }
     }
 
-    fn update(&mut self, game_state: Arc<Mutex<GameState>>, dt: instant::Duration) {
+    fn update(&mut self, game_state: Arc<Mutex<GameState>>, particle_queue: Arc<Mutex<ParticleQueue>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
         self.scene.load_game_state(
@@ -595,6 +597,8 @@ impl State {
             dt,
             self.client_id,
         );
+        let particle_queue = particle_queue.lock().unwrap();
+        self.load_particles(particle_queue);
 
         self.scene.draw_scene_dfs();
 
@@ -795,5 +799,42 @@ impl State {
         // Recall unused staging buffers
         self.staging_belt.recall();
         Ok(())
+    }
+
+    fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>){
+        for p in &particle_queue.particles{
+            match p.p_type {
+                //TODO: move to config
+                events::ParticleType::ATTACK => {
+                    println!("adding particle: {:?}", p);
+                    let atk_gen = particles::FanGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        std::f32::consts::FRAC_PI_3,
+                        5.0,
+                        0.3,
+                        PI,
+                        0.5,
+                        75.0, 
+                        7.0,
+                        27.0,
+                        false);
+                        let atk = particles::ParticleSystem::new(
+                            std::time::Duration::from_secs(60),
+                            0.5,
+                            1000.0,
+                            p.color,
+                            atk_gen,
+                            (1, 4),
+                            &self.device,
+                            &mut self.rng,
+                        );
+                        self.particle_renderer.systems.push(atk);
+                },
+                _ => {},
+            }
+        }
+        particle_queue.particles.clear();
     }
 }

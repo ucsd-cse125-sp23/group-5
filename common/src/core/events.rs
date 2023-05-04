@@ -17,10 +17,17 @@ pub struct SoundSpec {
     pub sound_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ParticleType{
+    ATTACK,
+}
 /// Particle specification
 #[derive(Constructor, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ParticleSpec {
+    pub p_type: ParticleType,
     pub position: glm::Vec3,
+    pub direction: glm::Vec3,
+    pub up: glm::Vec3,
+    pub color: glm::Vec4,
     pub particle_id: String,
-    // TODO: may add more fields like duration, shape, etc. But this can also be done on the client side only if the specs of particles are finite
 }
