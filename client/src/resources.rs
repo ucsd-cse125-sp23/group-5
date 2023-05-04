@@ -138,35 +138,35 @@ pub async fn load_model(
             d => {
                 flags |= model::ShaderFlags::HAS_DIFFUSE_TEXTURE;
                 load_texture(d, device, queue).await?
-            },
+            }
         };
         let normal_texture = match m.normal_texture.as_str() {
             "" => texture::Texture::dummy(device),
             d => {
                 flags |= model::ShaderFlags::HAS_NORMAL_TEXTURE;
                 load_texture(d, device, queue).await?
-            },
+            }
         };
         let specular_texture = match m.specular_texture.as_str() {
             "" => texture::Texture::dummy(device),
             d => {
                 flags |= model::ShaderFlags::HAS_SPECULAR_TEXTURE;
                 load_texture(d, device, queue).await?
-            },
+            }
         };
         let ambient_texture = match m.ambient_texture.as_str() {
             "" => texture::Texture::dummy(device),
             d => {
                 flags |= model::ShaderFlags::HAS_AMBIENT_TEXTURE;
                 load_texture(d, device, queue).await?
-            },
+            }
         };
         let shininess_texture = match m.shininess_texture.as_str() {
             "" => texture::Texture::dummy(device),
             d => {
                 flags |= model::ShaderFlags::HAS_SHININESS_TEXTURE;
                 load_texture(d, device, queue).await?
-            },
+            }
         };
         let flags_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Shader Flags VB"),

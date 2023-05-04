@@ -1,11 +1,14 @@
-use wgpu::util::DeviceExt;
-use crate::texture;
 use crate::model::Vertex;
+use crate::texture;
+use wgpu::util::DeviceExt;
 extern crate nalgebra_glm as glm;
-use std::{f32::consts::{FRAC_PI_2, PI}, ops::IndexMut};
+use std::{
+    f32::consts::{FRAC_PI_2, PI},
+    ops::IndexMut,
+};
 // use rand_distr::Distribution;
 use rand::Rng;
-use rand_distr::{Normal, Distribution, Poisson};
+use rand_distr::{Distribution, Normal, Poisson};
 
 #[rustfmt::skip]
 pub const PVertex : &[[f32; 2];4] = &[
@@ -15,13 +18,13 @@ pub const PVertex : &[[f32; 2];4] = &[
     [1.0, 1.0],
 ];
 
-const PV_ATTRIBS : [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
+const PV_ATTRIBS: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
     0 => Float32x2,
 ];
 
 const NUM_TEXTURES: u32 = 5;
 
-fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a>{
+fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a> {
     use std::mem;
     wgpu::VertexBufferLayout {
         array_stride: mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
@@ -44,7 +47,7 @@ pub const PInd : &[u16; 6] = &[
 /// color: color to tint the particle
 /// spawn_time: relative to the time which the system was created in seconds
 /// size: diameter in cm
-pub struct Particle{ 
+pub struct Particle {
     // use last f32 as angluar position/velocity
     start_pos: [f32; 4],
     velocity: [f32; 4],
@@ -59,7 +62,7 @@ pub struct Particle{
     _pad2: f32,
 }
 
-impl Particle{
+impl Particle {
     const ATTRIBS: [wgpu::VertexAttribute; 11] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
         4 => Float32 ,  5 => Float32,   6 => Float32,
@@ -68,7 +71,7 @@ impl Particle{
     ];
 }
 
-impl crate::model::Vertex for Particle{
+impl crate::model::Vertex for Particle {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
@@ -79,8 +82,8 @@ impl crate::model::Vertex for Particle{
     }
 }
 
-pub trait ParticleGenerator{
-    //// 
+pub trait ParticleGenerator {
+    ////
     /// list: vector to place generated particles in
     /// spawning time: amount of time to keep spawning
     /// spawn rate: average rate of spawning in particles per second
@@ -98,40 +101,7 @@ pub trait ParticleGenerator{
     ) -> u32;
 }
 
-pub struct ConeGenerator{
-    source: glm::Vec3,
-    dir: glm::Vec3,
-    //angle should be in radians
-    angle: f32,
-}
-
-impl ConeGenerator{
-    //// Cone particle generator
-    /// Arguments: angle: in degrees, the spread for the cone
-    pub fn new(source: glm::Vec3, dir: glm::Vec3, angle: f32) -> Self{
-        Self{
-            source,
-            dir,
-            angle: angle * FRAC_PI_2 / 180.0,
-        }
-    }
-}
-
-impl ParticleGenerator for ConeGenerator{
-    fn generate(
-        &self,
-        list: &mut Vec<Particle>,
-        spawning_time: std::time::Duration,
-        spawn_rate: f32, // per second
-        halflife: f32,
-        tex_range: (u32, u32),
-        color: glm::Vec4,
-        rng: &mut rand::rngs::ThreadRng,
-    ) -> u32{
-        todo!();
-    }
-}
-pub struct LineGenerator{
+pub struct LineGenerator {
     source: glm::Vec3,
     dir: glm::Vec3,
     linear_variance: f32,
@@ -143,7 +113,7 @@ pub struct LineGenerator{
     poisson_generation: bool,
 }
 
-impl LineGenerator{
+impl LineGenerator {
     //// Line particle generator
     pub fn new(
         source: glm::Vec3,
@@ -155,8 +125,8 @@ impl LineGenerator{
         size_variance: f32,
         size_growth: f32,
         poisson_generation: bool,
-    ) -> Self{
-        Self{
+    ) -> Self {
+        Self {
             source,
             dir,
             linear_variance,
@@ -170,43 +140,46 @@ impl LineGenerator{
     }
 }
 
-impl ParticleGenerator for LineGenerator{
+impl ParticleGenerator for LineGenerator {
     fn generate(
-            &self,
-            list: &mut Vec<Particle>,
-            spawning_time: std::time::Duration,
-            spawn_rate: f32,
-            halflife: f32,
-            tex_range: (u32, u32),
-            color: glm::Vec4,
-            rng: &mut rand::rngs::ThreadRng,
-        ) -> u32 {
+        &self,
+        list: &mut Vec<Particle>,
+        spawning_time: std::time::Duration,
+        spawn_rate: f32,
+        halflife: f32,
+        tex_range: (u32, u32),
+        color: glm::Vec4,
+        rng: &mut rand::rngs::ThreadRng,
+    ) -> u32 {
         let lin_dist = Normal::new(1.0, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
-        let time_dist = Poisson::new(1.0/spawn_rate).unwrap();
+        let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
         let mut spawn_time = 0.0;
         let v = self.dir;
-        while std::time::Duration::from_secs_f32(spawn_time) < spawning_time{
+        while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
             let lin_scale = lin_dist.sample(rng);
-            list.push(
-                Particle {
-                    start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
-                    color: color.into(),
-                    velocity:  [v[0] * lin_scale, v[1] * lin_scale, v[2] * lin_scale, ang_dist.sample(rng)],
-                    spawn_time,
-                    size: size_dist.sample(rng),
-                    tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
-                    z_pos: 0.0,
-                    time_elapsed: 0.0,
-                    size_growth: self.size_growth,
-                    halflife,
-                    _pad2: 0.0,
-                }
-            );
-            spawn_time += match self.poisson_generation{
+            list.push(Particle {
+                start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
+                color: color.into(),
+                velocity: [
+                    v[0] * lin_scale,
+                    v[1] * lin_scale,
+                    v[2] * lin_scale,
+                    ang_dist.sample(rng),
+                ],
+                spawn_time,
+                size: size_dist.sample(rng),
+                tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
+                z_pos: 0.0,
+                time_elapsed: 0.0,
+                size_growth: self.size_growth,
+                halflife,
+                _pad2: 0.0,
+            });
+            spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
-                false => 1.0/spawn_rate,
+                false => 1.0 / spawn_rate,
             };
         }
         return list.len() as u32;
@@ -215,12 +188,12 @@ impl ParticleGenerator for LineGenerator{
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct PSRaw{
+struct PSRaw {
     lifetime: f32, // in seconds
     num_textures: f32,
 }
 
-pub struct ParticleSystem{
+pub struct ParticleSystem {
     start_time: std::time::Instant,
     particle_lifetime: f32,
     last_particle_death: std::time::Duration,
@@ -228,19 +201,19 @@ pub struct ParticleSystem{
     num_instances: u32,
 }
 
-impl ParticleSystem{
+impl ParticleSystem {
     const EPSILON: f32 = 1e-6;
 
     pub fn new(
         generation_time: std::time::Duration,
         particle_lifetime: f32, // in seconds
-        generation_speed: f32, // measured per second
+        generation_speed: f32,  // measured per second
         color: glm::Vec4,
         gen: impl ParticleGenerator,
         tex_range: (u32, u32),
         device: &wgpu::Device,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> Self{
+    ) -> Self {
         let mut particles = vec![];
         let num_instances = gen.generate(
             &mut particles,
@@ -249,13 +222,17 @@ impl ParticleSystem{
             particle_lifetime / 2.0,
             tex_range,
             color,
-            rng
+            rng,
         );
         // Time
-        let last_particle_death = generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
+        let last_particle_death =
+            generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
         println!("number of particles: {}", num_instances);
-        println!("last particle death: {:?}", last_particle_death.as_secs_f32());
-        Self{
+        println!(
+            "last particle death: {:?}",
+            last_particle_death.as_secs_f32()
+        );
+        Self {
             start_time: std::time::Instant::now(),
             particle_lifetime,
             last_particle_death,
@@ -264,7 +241,7 @@ impl ParticleSystem{
         }
     }
 
-    pub fn regen(mut self) -> Option<Self>{
+    pub fn regen(mut self) -> Option<Self> {
         if self.start_time.elapsed() < self.last_particle_death {
             return Some(self);
         }
@@ -272,17 +249,17 @@ impl ParticleSystem{
         return None;
     }
 
-    pub fn not_done(&self) -> bool{
+    pub fn not_done(&self) -> bool {
         return self.start_time.elapsed() < self.last_particle_death;
     }
 }
 
 ////
 /// Should only have one in the entire client
-/// This struct stores the buffers and layouts 
+/// This struct stores the buffers and layouts
 /// to prevent (more) clutter in State::new()
 /// systems: should always
-pub struct ParticleDrawer{
+pub struct ParticleDrawer {
     vbuf: wgpu::Buffer,
     ibuf: wgpu::Buffer,
     pub tex_bind_group_layout: wgpu::BindGroupLayout,
@@ -292,13 +269,13 @@ pub struct ParticleDrawer{
     pub systems: Vec<ParticleSystem>,
 }
 
-impl ParticleDrawer{
+impl ParticleDrawer {
     pub fn new(
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
         camera_layout: &wgpu::BindGroupLayout,
         texture: texture::Texture,
-    ) -> Self{
+    ) -> Self {
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Vertex Buffer"),
             contents: bytemuck::cast_slice(PVertex),
@@ -309,7 +286,7 @@ impl ParticleDrawer{
             contents: bytemuck::cast_slice(PInd),
             usage: wgpu::BufferUsages::INDEX,
         });
-        let tex_bind_group_layout = 
+        let tex_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -351,10 +328,7 @@ impl ParticleDrawer{
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Particle Render Pipeline Layout"),
-                bind_group_layouts: &[
-                    camera_layout,
-                    &tex_bind_group_layout,
-                ],
+                bind_group_layouts: &[camera_layout, &tex_bind_group_layout],
                 push_constant_ranges: &[],
             });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -398,7 +372,7 @@ impl ParticleDrawer{
             },
             multiview: None,
         });
-        Self { 
+        Self {
             vbuf,
             ibuf,
             tex_bind_group_layout,
@@ -413,37 +387,37 @@ impl ParticleDrawer{
         &mut self,
         camera: &crate::camera::Camera,
         to_draw: &mut Vec<Particle>,
-    ){
+    ) {
         // remove dead systems
         self.systems = self.systems.drain(..).filter(|x| x.not_done()).collect();
         // Camera info
         let cam_dir: glm::Vec3 = glm::normalize(&(camera.position - camera.target));
         let cpos = &camera.position;
-        for ps in &mut self.systems{
+        for ps in &mut self.systems {
             // set elapsed time uniform
             let elapsed = ps.start_time.elapsed().as_secs_f32();
 
             // order instances first, then set instance buffer
-            for p in &mut ps.particles{
-                let pos: glm::Vec3 = glm::make_vec3(&p.start_pos[0..3]) 
+            for p in &mut ps.particles {
+                let pos: glm::Vec3 = glm::make_vec3(&p.start_pos[0..3])
                     + (elapsed - p.spawn_time) * glm::make_vec3(&p.velocity[0..3]);
                 p.z_pos = glm::dot(&(pos - cpos), &cam_dir);
             }
-            let start_ind = ps.particles.partition_point(
-                |&a| a.spawn_time + ps.particle_lifetime < elapsed
-            );
+            let start_ind = ps
+                .particles
+                .partition_point(|&a| a.spawn_time + ps.particle_lifetime < elapsed);
             ps.particles.drain(0..start_ind);
-            let end_ind = ps.particles.partition_point(
-                    |&a| a.spawn_time < elapsed
-                );
-            for p in &mut ps.particles[..end_ind]{
+            let end_ind = ps.particles.partition_point(|&a| a.spawn_time < elapsed);
+            for p in &mut ps.particles[..end_ind] {
                 p.time_elapsed = elapsed;
             }
             to_draw.extend_from_slice(&ps.particles[..end_ind]);
         }
         // sort by depth
-        to_draw.sort_by(|a, b | {
-            a.z_pos.partial_cmp(&b.z_pos).unwrap_or(std::cmp::Ordering::Equal)
+        to_draw.sort_by(|a, b| {
+            a.z_pos
+                .partial_cmp(&b.z_pos)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
     }
 
@@ -455,7 +429,7 @@ impl ParticleDrawer{
         inst_buf: &'a wgpu::Buffer,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-    ){
+    ) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &camera_bind_group, &[]);
 
@@ -468,7 +442,7 @@ impl ParticleDrawer{
         render_pass.set_bind_group(1, &self.tex_bind_group, &[]);
 
         // Set up instance buffer
-        render_pass.set_vertex_buffer(1, inst_buf.slice(..)); 
+        render_pass.set_vertex_buffer(1, inst_buf.slice(..));
 
         render_pass.draw_indexed(0..6, 0, 0..inst_num);
     }

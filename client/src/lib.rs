@@ -1,9 +1,12 @@
 use glm::vec3;
 use std::collections::HashMap;
-use std::{sync::{Arc, Mutex}, f32::consts::PI};
+use std::{
+    f32::consts::PI,
+    sync::{Arc, Mutex},
+};
 
+use rand::{rngs::ThreadRng, Rng};
 use winit::event::*;
-use rand::{Rng, rngs::ThreadRng};
 
 mod model;
 
@@ -13,12 +16,12 @@ use model::Vertex;
 mod camera;
 mod instance;
 mod lights;
+mod particles;
 mod player;
 mod resources;
 mod scene;
 mod screen_objects;
 mod texture;
-mod particles;
 extern crate nalgebra_glm as glm;
 
 use common::configs::{from_file, model_config::ConfigModels};
@@ -29,9 +32,9 @@ pub mod inputs;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
 use common::core::states::GameState;
+use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use wgpu::util::DeviceExt;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -328,7 +331,7 @@ impl State {
                 bind_group_layouts: &[&texture_bind_group_layout_2d],
                 push_constant_ranges: &[],
             });
-        
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("3D Render Pipeline Layout"),
@@ -442,7 +445,9 @@ impl State {
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let mut rng = rand::thread_rng();
-        let particle_tex = resources::load_texture("test_particle.png", &device, &queue).await.unwrap();
+        let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
+            .await
+            .unwrap();
         let mut particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
@@ -466,7 +471,7 @@ impl State {
             10.0,
             glm::vec4(0.8, 0.3, 0.8, 1.0),
             test_particle_gen,
-            (1,4),
+            (1, 4),
             &device,
             &mut rng,
         );
@@ -488,7 +493,7 @@ impl State {
             10.0,
             glm::vec4(1.0, 1.0, 1.0, 1.0),
             test_particle_gen_2,
-            (4,5),
+            (4, 5),
             &device,
             &mut rng,
         );
@@ -631,16 +636,16 @@ impl State {
             }
 
             let mut to_draw: Vec<particles::Particle> = Vec::new();
-            self.particle_renderer.get_particles_to_draw(
-                &self.camera_state.camera,
-                &mut to_draw
-            );
+            self.particle_renderer
+                .get_particles_to_draw(&self.camera_state.camera, &mut to_draw);
             // write buffer to gpu and set buffer
-            let inst_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&to_draw),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
+            let inst_buf = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Instance Buffer"),
+                    contents: bytemuck::cast_slice(&to_draw),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -708,7 +713,6 @@ impl State {
         }
 
         let size = &self.window.inner_size();
-
 
         // TODO: maybe refactor later?
         // if player is alive

@@ -36,13 +36,13 @@ pub struct ScreenInstance {
     pub transform: [[f32; 4]; 4],
 }
 
-impl ScreenInstance{
+impl ScreenInstance {
     const ATTRIBS: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
         3 => Float32x4, 4 => Float32x4, 5 => Float32x4, 6 => Float32x4
     ];
 
-    pub fn default() -> Self{
-        Self { 
+    pub fn default() -> Self {
+        Self {
             transform: [
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],

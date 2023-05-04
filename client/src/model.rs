@@ -119,7 +119,7 @@ pub struct ModelVertex {
     pub bitangent: [f32; 3],
 }
 
-impl ModelVertex{
+impl ModelVertex {
     const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
         0 => Float32x3, 1 => Float32x2, 2 => Float32x3,
         3 => Float32x3, 4 => Float32x3,

@@ -133,7 +133,7 @@ impl Texture {
         })
     }
 
-    pub fn dummy(device: &wgpu::Device) -> Self{
+    pub fn dummy(device: &wgpu::Device) -> Self {
         //Create dummy texture
         let wgpu_t = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("1x1 white"),
