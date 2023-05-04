@@ -1,9 +1,14 @@
-use crate::communication::commons::MAX_WIND_CHARGE;
+use crate::communication::commons::{
+    FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, WINNING_THRESHOLD,
+};
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use nalgebra_glm::Vec3;
+use rapier3d::parry::transformation::utils::transform;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::iter::Map;
+use std::ops::Deref;
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -17,6 +22,7 @@ pub struct PlayerState {
     pub is_dead: bool,
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
+    pub on_flag_time: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -26,6 +32,7 @@ pub struct WorldState {}
 pub struct GameState {
     pub world: WorldState,
     pub players: HashMap<u32, PlayerState>,
+    pub previous_tick_winner: Option<u32>,
 }
 
 impl PlayerState {
@@ -62,6 +69,40 @@ impl PlayerState {
     pub fn command_on_cooldown(&self, command: Command) -> bool {
         self.on_cooldown.contains_key(&command)
     }
+
+    pub fn is_in_circular_area(
+        &self,
+        horizontal_center: (f32, f32),
+        radius: f32,
+        vertical_bounds: (Option<f32>, Option<f32>),
+    ) -> bool {
+        let (p_x, p_y, p_z) = (
+            self.transform.translation.x,
+            self.transform.translation.y,
+            self.transform.translation.z,
+        );
+        let (c_x, c_z) = horizontal_center;
+
+        match vertical_bounds {
+            (Some(y1), Some(y2)) => {
+                if p_y > y2 || p_y < y1 {
+                    return false;
+                }
+            }
+            (Some(y1), None) => {
+                if p_y < y1 {
+                    return false;
+                }
+            }
+            (None, Some(y2)) => {
+                if p_y > y2 {
+                    return false;
+                }
+            }
+            (None, None) => {}
+        }
+        (p_x - c_x).powi(2) + (p_z - c_z).powi(2) < radius.powi(2)
+    }
 }
 
 impl GameState {
@@ -84,6 +125,41 @@ impl GameState {
                 .collect();
         }
     }
+
+    pub fn has_single_winner(&self) -> Option<u32> {
+        let valid_players: HashMap<u32, bool> = self
+            .clone()
+            .players
+            .into_iter()
+            .map(|(id, player_state)| {
+                (
+                    id,
+                    player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
+                )
+            })
+            .filter(|(_, res)| *res == true)
+            .collect();
+        if valid_players.clone().len() != 1 {
+            None
+        } else {
+            Some(*valid_players.keys().last().unwrap())
+        }
+    }
+
+    // returns winner if winner is decided
+    pub fn update_player_on_flag_time(&mut self, delta_time: f32) -> Option<u32> {
+        match self.previous_tick_winner {
+            None => None,
+            Some(id) => {
+                self.player_mut(id).unwrap().on_flag_time += delta_time;
+                return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                    Some(id)
+                } else {
+                    None
+                };
+            }
+        }
+    }
 }
 
 mod tests {
@@ -93,6 +169,7 @@ mod tests {
         let state = GameState {
             world: WorldState::default(),
             players: HashMap::default(),
+            previous_tick_winner: None,
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -103,6 +180,7 @@ mod tests {
         let state = GameState {
             world: WorldState::default(),
             players: HashMap::default(),
+            previous_tick_winner: None,
         };
         let serialized = bson::to_bson(&state).unwrap();
         let deserialized: GameState = bson::from_bson(serialized).unwrap();
