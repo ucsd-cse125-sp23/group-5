@@ -189,19 +189,29 @@ pub fn relative_position(sound_position: glm::Vec3, player_pos: glm::Vec3, dir: 
 
     let dot = right_dir.x*new_pos.x + right_dir.z*new_pos.z;
     let det = right_dir.x*new_pos.z - right_dir.z*new_pos.x;
-    let angle = glm::atan2(&glm::Vec1::new(det), &glm::Vec1::new(dot)).x;
+    let angle = glm::atan2(&glm::Vec1::new(det), &glm::Vec1::new(dot)).x; // theta
+
+    let side = glm::Vec3::new(1.0, 0.0, 0.0);
+    let new_pos_2 = glm::Vec3::new(rel_pos.x, rel_pos.y, 0.0);
+
+    let dot2 = side.x*new_pos_2.x + side.y*new_pos_2.y;
+    let det2 = side.x*new_pos_2.y - side.y*new_pos_2.x;
+    let angle2 = glm::atan2(&glm::Vec1::new(det2), &glm::Vec1::new(dot2)).x; // phi
+
+
     // let mut angle = glm::angle(&right_dir,&new_pos);
     // let matrix = glm::mat3(right_dir.x, new_pos.x, 0.0, 
     //                        right_dir.y, new_pos.y, 0.0, 
     //                        right_dir.z, new_pos.z, 1.0);
     // let det = glm::determinant(&matrix);
-    let r = glm::magnitude(&new_pos);
+    let r = glm::magnitude(&rel_pos);
     // if r <= 10.0 {
         // if det > 0.0 {
         //     angle = angle + glm::pi::<f32>();
         // }
-        let x = r * glm::cos(&glm::Vec1::new(-angle)).x;
-        let z = r * glm::sin(&glm::Vec1::new(-angle)).x;
+        let x = r * glm::cos(&glm::Vec1::new(-angle)).x; // * glm::sin(&glm::Vec1::new(-angle2)).x;
+        let z = r * glm::sin(&glm::Vec1::new(-angle)).x; // * glm::sin(&glm::Vec1::new(-angle2)).x;
+        // let y = r * glm::cos(&glm::Vec1::new(-angle2)).x;
         // println!("Position: {}", new_pos);
         // println!("x: {}, and z: {}", x, z);
         // println!("Determinant: {}", det);
