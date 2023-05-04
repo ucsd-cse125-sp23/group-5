@@ -290,11 +290,9 @@ impl CommandHandler for MoveCommandHandler {
 
         // Step 1: Calculate the angular displacement required to reach the desired rotation
         let rotation_difference = player_rotation * player_rigid_body.rotation().inverse();
-        let angle = rotation_difference.angle();
-        let axis = rotation_difference.axis().unwrap();
 
         // Step 2: Divide the angular displacement by dt to get the desired angular velocity
-        let desired_angular_velocity = axis.scale(angle) / dt;
+        let desired_angular_velocity = rotation_difference.scaled_axis() / dt;
 
         // Step 3: Calculate the difference between the current and desired angular velocities
 
