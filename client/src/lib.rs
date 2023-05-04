@@ -454,9 +454,12 @@ impl State {
             &camera_state.camera_bind_group_layout,
             particle_tex,
         );
-        let test_particle_gen = particles::LineGenerator::new(
+        let test_particle_gen = particles::FanGenerator::new(
             glm::vec3(0.0, -10.0, 0.0),
             glm::vec3(0.0, 1.0, 0.0),
+            glm::vec3(0.0, 0.0, 1.0),
+            60.0,
+            1.0,
             0.1,
             PI,
             0.1,
@@ -466,9 +469,9 @@ impl State {
             false,
         );
         let test_particle = particles::ParticleSystem::new(
-            std::time::Duration::from_secs(60),
+            std::time::Duration::from_secs(120),
             5.0,
-            10.0,
+            100.0,
             glm::vec4(0.8, 0.3, 0.8, 1.0),
             test_particle_gen,
             (1, 4),
@@ -479,6 +482,7 @@ impl State {
         let test_particle_gen_2 = particles::LineGenerator::new(
             glm::vec3(-2.0, -10.0, 0.0),
             glm::vec3(2.0, 5.0, 0.0),
+            6.0,
             0.1,
             PI,
             0.1,
