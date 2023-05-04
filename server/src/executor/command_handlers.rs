@@ -7,7 +7,6 @@ use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, SoundSpec};
 
-
 use common::communication::commons::MAX_WIND_CHARGE;
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;

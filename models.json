@@ -1,8 +1,8 @@
 {
   "models": [
     {
-      "name": "island",
-      "path": "assets/island.obj"
+      "name": "islands_set",
+      "path": "assets/islands_set.obj"
     },
     {
       "name": "player",
