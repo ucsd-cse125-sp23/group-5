@@ -16,7 +16,6 @@ pub struct SoundInstance{
     controller: ambisonic::SoundController,
     position: glm::Vec3,
     start: SystemTime,
-    adjust_pos: bool,
 }
 
 pub struct Audio {
@@ -77,16 +76,13 @@ impl Audio {
                 if sound_instances[i].start.elapsed().unwrap_or(Duration::new(1,0)) >= sound_duration {
                     to_remove.push(i);
                 }
-                else if !sound_instances[i].adjust_pos {
-                    continue;
-                }
                 else{
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
                     if pos != glm::Vec3::new(0.0,0.0,0.0) {
                         sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
                     }
                     else {
-                        sound_instances[i].controller.adjust_position([pos.x, pos.z+0.01, 0.0]);
+                        sound_instances[i].controller.adjust_position([pos.x, pos.z+0.1, 0.0]);
                     }
                 }
             }
@@ -97,12 +93,7 @@ impl Audio {
     }
 
     pub fn handle_sfx_event(&mut self, mut sfxevent: SoundSpec){
-        let (index, adjust_position) = to_audio_asset(sfxevent.sound_id).unwrap();
-
-        // adjust position false means the sound should be played at the client
-        if !adjust_position {
-            sfxevent.position = glm::Vec3::new(0.0,1.0,0.0);
-        }
+        let index = to_audio_asset(sfxevent.sound_id).unwrap();
 
         let file = File::open(self.audio_assets[index as usize].0.clone()).unwrap();
         let source = rodio::Decoder::new(std::io::BufReader::new(file)).unwrap();
@@ -115,7 +106,6 @@ impl Audio {
                     controller: sound,
                     position: sfxevent.position,
                     start: SystemTime::now(),
-                    adjust_pos: adjust_position,
                 });
             }
             None => {
@@ -125,7 +115,6 @@ impl Audio {
                         controller: sound,
                         position: sfxevent.position,
                         start: SystemTime::now(),
-                        adjust_pos: adjust_position,
                     }],
                 );
             }
@@ -170,10 +159,10 @@ impl Audio {
     }
 }
 
-pub fn to_audio_asset(sound_id: String) -> Option<(AudioAsset,bool)> {
+pub fn to_audio_asset(sound_id: String) -> Option<AudioAsset> {
     match sound_id.as_str() {
-        "wind" => Some((AudioAsset::WIND, true)),
-        "foot_step" => Some((AudioAsset::STEP, false)),
+        "wind" => Some(AudioAsset::WIND),
+        "foot_step" => Some(AudioAsset::STEP),
         _ => None
     }
 }
