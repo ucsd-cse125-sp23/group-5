@@ -28,8 +28,8 @@ fn main() {
     let game_state = Arc::new(Mutex::new(GameState::default()));
     let particle_queue = Arc::new(Mutex::new(ParticleQueue::default()));
 
-    let mut game_events_bus = Bus::new(1);
-    let mut particle_rcvr = game_events_bus.add_rx();
+    let game_events_bus = Bus::new(1);
+    // let mut particle_rcvr = game_events_bus.add_rx();
 
     #[cfg(not(feature = "debug-addr"))]
     let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
@@ -88,11 +88,8 @@ fn main() {
         recv_server_updates(
             protocol.try_clone().unwrap(),
             game_state,
-            game_events_bus
-        );
-        receive_particles(
             particle_queue,
-            &mut particle_rcvr,
+            game_events_bus
         );
     });
 
@@ -135,6 +132,7 @@ fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
 fn recv_server_updates(
     mut protocol: Protocol,
     game_state: Arc<Mutex<GameState>>,
+    particle_queue: Arc<Mutex<ParticleQueue>>,
     mut game_events: Bus<GameEvent>,
 ) {
     // check for new state & update local game state
@@ -150,6 +148,15 @@ fn recv_server_updates(
                 *game_state = update_game_state;
                 // according to the state, render world
                 debug!("Received game state: {:?}", game_state);
+            } 
+            Message {
+                host_role: HostRole::Server,
+                payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),
+                ..
+            } => {
+                print!("Receiving PARTICLE: {:?}...", p);
+                particle_queue.lock().unwrap().add_particle(p);
+                println!("Done!");
             }
             Message {
                 host_role: HostRole::Server,
@@ -167,19 +174,6 @@ fn recv_server_updates(
                     .unwrap();
             }
             _ => {}
-        }
-    }
-}
-
-fn receive_particles(
-    particle_state: Arc<Mutex<ParticleQueue>>,
-    reader: &mut bus::BusReader<GameEvent>,
-){
-    loop{
-        match reader.try_recv(){
-            Ok(GameEvent::ParticleEvent(p)) => 
-                particle_state.lock().unwrap().add_particle(p),
-            _ => {},
         }
     }
 }
