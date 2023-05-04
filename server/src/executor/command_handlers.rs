@@ -7,6 +7,8 @@ use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, SoundSpec};
 
+
+use common::communication::commons::MAX_WIND_CHARGE;
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::states::{GameState, PlayerState};
@@ -19,7 +21,6 @@ use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
-use rapier3d::prelude::Ray;
 use std::fmt::{format, Debug};
 
 #[derive(Constructor, Error, Debug, Display)]
@@ -133,8 +134,6 @@ impl CommandHandler for SpawnCommandHandler {
         let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
 
         // if player already spawned
-        let starting_ammo = 5;
-
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
@@ -147,7 +146,7 @@ impl CommandHandler for SpawnCommandHandler {
                     player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
                 }
                 player.is_dead = false;
-                player.ammo_count = starting_ammo;
+                player.refill_wind_charge(Some(MAX_WIND_CHARGE));
             }
         } else {
             let ground_groups = InteractionGroups::new(1.into(), 1.into());
@@ -167,7 +166,7 @@ impl CommandHandler for SpawnCommandHandler {
                     id: self.player_id,
                     connected: true,
                     is_dead: false,
-                    ammo_count: starting_ammo,
+                    wind_charge: MAX_WIND_CHARGE,
                     ..Default::default()
                 },
             );
@@ -189,10 +188,6 @@ impl CommandHandler for RespawnCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        // TODO: remove debug code, example usage
-        // if !command_on_cooldown(game_state, self.player_id, Command::Respawn) {
-        //     return Ok(());
-        // }
 
         // if dead player is not on the respawn map, insert it into it
         if let Some(player) = game_state.players.get(&self.player_id) {
@@ -416,12 +411,12 @@ impl CommandHandler for AttackCommandHandler {
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
-            .player(self.player_id)
+            .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        // if attack on cooldown, do nothing for now
-        if game_state.command_on_cooldown(self.player_id, Command::Attack)
-            || player_state.ammo_count == 0
+        // if attack on cooldown, or cannot consume charge, do nothing for now
+        if player_state.command_on_cooldown(Command::Attack)
+            || !player_state.try_consume_wind_charge(None)
         {
             return Ok(());
         }
@@ -454,8 +449,10 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
+        player_state.insert_cooldown(Command::Attack, 5);
+
         // loop over all other players
-        for (other_player_id, other_player_state) in &game_state.players {
+        for (other_player_id, other_player_state) in game_state.players.iter() {
             if &self.player_id == other_player_id {
                 continue;
             }
@@ -514,9 +511,6 @@ impl CommandHandler for AttackCommandHandler {
                 }
             }
         }
-        game_state.player_mut(self.player_id).unwrap().ammo_count -= 1;
-
-        game_state.insert_cooldown(self.player_id, Command::Attack, 5);
 
         Ok(())
     }

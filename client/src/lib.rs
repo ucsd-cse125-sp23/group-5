@@ -550,6 +550,7 @@ impl State {
 
         let size = &self.window.inner_size();
 
+
         // TODO: maybe refactor later?
         // if player is alive
         if !self.player.is_dead {
@@ -558,7 +559,7 @@ impl State {
                 screen_position: (30.0, 20.0),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![Text::new(
-                    &format!("Ammo remaining: {:.1}\n", self.player.ammo_count).as_str(),
+                    &format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],

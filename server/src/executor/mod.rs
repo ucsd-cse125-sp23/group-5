@@ -167,8 +167,9 @@ impl Executor {
 
         let mut game_state = self.game_state.lock().unwrap();
         for player_id in dead_players.iter() {
-            game_state.player_mut(*player_id).unwrap().is_dead = true;
-            game_state.insert_cooldown(*player_id, Command::Spawn, 3);
+            let player_state = game_state.player_mut(*player_id).unwrap();
+            player_state.is_dead = true;
+            player_state.insert_cooldown(Command::Spawn, 3);
         }
     }
     pub(crate) fn check_respawn_players(&self) -> Vec<u32> {

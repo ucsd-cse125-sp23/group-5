@@ -1,3 +1,4 @@
+use crate::communication::commons::MAX_WIND_CHARGE;
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use nalgebra_glm::Vec3;
@@ -11,11 +12,11 @@ pub struct PlayerState {
     pub transform: Transform,
     pub physics: Physics,
     pub jump_count: u32,
-    pub ammo_count: u32,
     pub camera_forward: Vec3,
     pub connected: bool,
     pub is_dead: bool,
     pub on_cooldown: HashMap<Command, f32>,
+    pub wind_charge: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -27,6 +28,42 @@ pub struct GameState {
     pub players: HashMap<u32, PlayerState>,
 }
 
+impl PlayerState {
+    // add to attack command handlers, put NONE for consume 1
+    // returns if the consumption is successful
+    pub fn try_consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
+        let consume_amount = consume_amount.unwrap_or(1);
+        return if self.wind_charge >= consume_amount {
+            self.wind_charge -= consume_amount;
+            true
+        } else {
+            false
+        };
+    }
+
+    // add to refill command handlers, put NONE for refill all, won't exceed cap
+    pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>) {
+        let refill_amount = refill_amount.unwrap_or(MAX_WIND_CHARGE);
+        let mut charges = self.wind_charge;
+        charges += refill_amount;
+        self.wind_charge = if charges > MAX_WIND_CHARGE {
+            MAX_WIND_CHARGE
+        } else {
+            charges
+        };
+    }
+
+    pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: u64) {
+        let cd_secs = Duration::from_secs(cooldown_in_sec).as_secs_f32();
+        //let cd_until = SystemTime::now().checked_add(cd_secs).unwrap();
+        self.on_cooldown.insert(command, cd_secs);
+    }
+
+    pub fn command_on_cooldown(&self, command: Command) -> bool {
+        self.on_cooldown.contains_key(&command)
+    }
+}
+
 impl GameState {
     pub fn player_mut(&mut self, id: u32) -> Option<&mut PlayerState> {
         self.players.get_mut(&id)
@@ -34,15 +71,6 @@ impl GameState {
 
     pub fn player(&self, id: u32) -> Option<&PlayerState> {
         self.players.get(&id)
-    }
-
-    pub fn insert_cooldown(&mut self, id: u32, command: Command, cooldown_in_sec: u64) {
-        let cd_secs = Duration::from_secs(cooldown_in_sec).as_secs_f32();
-        //let cd_until = SystemTime::now().checked_add(cd_secs).unwrap();
-        self.player_mut(id)
-            .unwrap()
-            .on_cooldown
-            .insert(command, cd_secs);
     }
 
     pub fn update_cooldowns(&mut self, delta_time: f32) {
@@ -55,13 +83,6 @@ impl GameState {
                 .filter(|(_key, cooldown)| *cooldown > 0.0)
                 .collect();
         }
-    }
-
-    pub fn command_on_cooldown(&self, client_id: u32, command: Command) -> bool {
-        self.player(client_id)
-            .unwrap()
-            .on_cooldown
-            .contains_key(&command)
     }
 }
 

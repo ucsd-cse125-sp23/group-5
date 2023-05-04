@@ -42,7 +42,7 @@ pub struct Player {
     pub position: glm::TVec3<f32>,
     pub rotation: glm::Quat,
     pub is_dead: bool,
-    pub ammo_count: u32,
+    pub wind_charge: u32,
     pub on_cooldown: HashMap<Command, f32>,
 }
 
@@ -152,6 +152,7 @@ impl PlayerController {
         player.on_cooldown = incoming_player_state.on_cooldown.clone();
 
         // update ammo count
-        player.ammo_count = incoming_player_state.ammo_count;
+        player.wind_charge = incoming_player_state.wind_charge;
+
     }
 }
