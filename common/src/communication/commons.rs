@@ -6,9 +6,9 @@ pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
 pub const CSE125_SERVER_ADDR: &str = "128.54.70.15:2333";
 pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
 pub const MAX_WIND_CHARGE: u32 = 10;
-pub const FLAG_XZ: (f32, f32) = (-10.0, -1.0);
+pub const FLAG_XZ: (f32, f32) = (0.0, 0.0);
 pub const FLAG_RADIUS: f32 = 2.0;
-pub const FLAG_Z_BOUND: (Option<f32>, Option<f32>) = (Some(-10.0), None);
+pub const FLAG_Z_BOUND: (Option<f32>, Option<f32>) = (Some(-10.0), Some(0.0));
 pub const WINNING_THRESHOLD: f32 = 20.0;
 
 /// Trait for something that can be converted to bytes (&[u8])
