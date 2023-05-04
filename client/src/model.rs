@@ -74,6 +74,11 @@ pub struct ShaderFlags {
 
 impl ShaderFlags {
     pub const HAS_DIFFUSE_TEXTURE: u32 = 1;
+    pub const HAS_AMBIENT_TEXTURE: u32 = 2;
+    pub const HAS_SPECULAR_TEXTURE: u32 = 4;
+    pub const HAS_NORMAL_TEXTURE: u32 = 8;
+    pub const HAS_SHININESS_TEXTURE: u32 = 16;
+
     pub fn new(flags: u32) -> Self {
         Self { flags }
     }
@@ -83,6 +88,10 @@ impl ShaderFlags {
 pub struct Material {
     pub name: String,
     pub diffuse_texture: texture::Texture,
+    pub normal_texture: texture::Texture,
+    pub specular_texture: texture::Texture,
+    pub ambient_texture: texture::Texture,
+    pub shininess_texture: texture::Texture,
     pub phong_mtl: Phong,
     pub flags: ShaderFlags,
     pub bind_group: wgpu::BindGroup,
@@ -106,31 +115,24 @@ pub struct ModelVertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
+    pub tangent: [f32; 3],
+    pub bitangent: [f32; 3],
+}
+
+impl ModelVertex {
+    const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
+        0 => Float32x3, 1 => Float32x2, 2 => Float32x3,
+        3 => Float32x3, 4 => Float32x3,
+    ];
 }
 
 impl Vertex for ModelVertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<ModelVertex>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x2,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
-                    shader_location: 2,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
+            attributes: &Self::ATTRIBS,
         }
     }
 }

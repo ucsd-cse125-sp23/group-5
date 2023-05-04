@@ -34,3 +34,6 @@ target/
 Cargo.lock
 
 session_data.json
+
+# debug files
+*.rdc

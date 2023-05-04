@@ -32,7 +32,7 @@ impl Eq for GameAction {}
 //     Respawn,
 //     Dead,
 // }
-*/ 
+*/
 
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
