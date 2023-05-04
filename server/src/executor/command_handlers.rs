@@ -164,6 +164,7 @@ impl CommandHandler for SpawnCommandHandler {
                     connected: true,
                     is_dead: false,
                     wind_charge: MAX_WIND_CHARGE,
+                    on_flag_time: 0.0,
                     ..Default::default()
                 },
             );

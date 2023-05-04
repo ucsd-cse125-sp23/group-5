@@ -151,6 +151,17 @@ impl Executor {
         }
 
         game_state.update_cooldowns(delta_time);
+
+        match game_state.update_player_on_flag_time(delta_time) {
+            Some(id) => {
+                panic!("Winner is {}, game finished!", id)
+            }
+            None => {}
+        }
+        game_state.previous_tick_winner = match game_state.has_single_winner() {
+            Some(id) => Some(id),
+            None => None,
+        }
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
