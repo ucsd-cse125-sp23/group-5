@@ -161,6 +161,41 @@ impl GameState {
             }
         }
     }
+
+    pub fn has_single_winner(&self) -> Option<u32> {
+        let valid_players: HashMap<u32, bool> = self
+            .clone()
+            .players
+            .into_iter()
+            .map(|(id, player_state)| {
+                (
+                    id,
+                    player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
+                )
+            })
+            .filter(|(_, res)| *res == true)
+            .collect();
+        if valid_players.clone().len() != 1 {
+            None
+        } else {
+            Some(*valid_players.keys().last().unwrap())
+        }
+    }
+
+    // returns winner if winner is decided
+    pub fn update_player_on_flag_time(&mut self, delta_time: f32) -> Option<u32> {
+        match self.previous_tick_winner {
+            None => None,
+            Some(id) => {
+                self.player_mut(id).unwrap().on_flag_time += delta_time;
+                return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                    Some(id)
+                } else {
+                    None
+                };
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
