@@ -1,9 +1,12 @@
+use std::hash::Hash;
 use log::debug;
 use nalgebra::Point3;
 use rapier3d::geometry::ColliderBuilder;
 use rapier3d::math::Real;
+use once_cell::sync::Lazy;
 
 use tobj;
+use common::utils::file_cache::{Cache, FileCache};
 
 pub trait FromObject {
     fn from_object_models(
@@ -12,9 +15,28 @@ pub trait FromObject {
     ) -> Self;
 }
 
+static OBJ_COLLIDER_CACHE : Lazy<FileCache<String, ColliderBuilder>> = Lazy::new(|| {
+    FileCache::new("obj_collider_cache.bin")
+});
+
 impl FromObject for ColliderBuilder {
     /// Create a collider from a list of object models (combine all the meshes into one collider)
     fn from_object_models(models: Vec<tobj::Model>, decompose: bool) -> ColliderBuilder {
+
+
+        // check cache
+        let mut cache_key = String::new();
+
+        // simple cache key (just use the model name)
+        for model in &models {
+            cache_key.push_str(&model.name);
+        }
+
+        if let Some(cached_value) = OBJ_COLLIDER_CACHE.get(&cache_key) {
+            debug!("Found cached collider for {}", cache_key);
+            return cached_value;
+        }
+
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let mut vertex_offset = 0;
@@ -31,11 +53,15 @@ impl FromObject for ColliderBuilder {
             );
             vertex_offset = vertices.len() as u32;
         }
-        if decompose {
+        let collider = if decompose {
             ColliderBuilder::round_convex_decomposition(&vertices, &indices, 0.01)
         } else {
             ColliderBuilder::trimesh(vertices, indices)
-        }
+        };
+
+        // cache the collider
+        OBJ_COLLIDER_CACHE.insert(cache_key, collider.clone());
+        collider
     }
 }
 

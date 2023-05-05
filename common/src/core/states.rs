@@ -194,8 +194,8 @@ mod tests {
             players: HashMap::default(),
             previous_tick_winner: None,
         };
-        let serialized = bson::to_bson(&state).unwrap();
-        let deserialized: GameState = bson::from_bson(serialized).unwrap();
+        let serialized = bincode::serialize(&state).unwrap();
+        let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();
         assert_eq!(state.players.len(), deserialized.players.len());
     }
 }
