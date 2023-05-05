@@ -136,14 +136,12 @@ impl CommandHandler for SpawnCommandHandler {
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
-                // Teleport the player to the desired position.
-                let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
-                if let Some(player_rigid_body) =
+                if let Some(player_rigid_body) = 
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
-                    player_rigid_body.set_position(new_position, true);
-                    player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+                    player_rigid_body.set_enabled(true);
                 }
+
                 player.is_dead = false;
                 player.refill_wind_charge(Some(MAX_WIND_CHARGE));
             }
@@ -175,39 +173,43 @@ impl CommandHandler for SpawnCommandHandler {
     }
 }
 
-/*
+
 #[derive(Constructor)]
-pub struct RespawnCommandHandler {
+pub struct DieCommandHandler {
     player_id: u32,
+    config_scene_graph: ConfigSceneGraph,
 }
 
-impl CommandHandler for RespawnCommandHandler {
+impl CommandHandler for DieCommandHandler {
     fn handle(
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        let player_state = game_state
+            .player_mut(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        // if dead player is not on the respawn map, insert it into it
-        if let Some(player) = game_state.players.get(&self.player_id) {
-            if !player.on_cooldown.contains_key(&Command::Respawn) {
-                game_state.insert_cooldown(self.player_id, Command::Respawn, 3);
-            }
-        }
-        // Update all cooldowns in the game state
-        //game_state.update_cooldowns();
-        // If the player's respawn cooldown has ended, create a new RespawnCommandHandler and handle the respawn command
-        if let Some(player) = game_state.players.get(&self.player_id) {
-            if !player.on_cooldown.contains_key(&Command::Respawn) {
+        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
 
-            }
+        // Teleport the player back to their spawn position and disable physics.
+        let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
+        if let Some(player_rigid_body) =
+            physics_state.get_entity_rigid_body_mut(self.player_id)
+        {
+            player_rigid_body.set_position(new_position, true);
+            player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+            player_rigid_body.set_enabled(false);
         }
+
+        player_state.is_dead = true;
+        player_state.insert_cooldown(Command::Spawn, 3);
 
         Ok(())
     }
 }
-*/
+
 
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {

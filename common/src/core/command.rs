@@ -38,7 +38,7 @@ impl Eq for GameAction {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Spawn,
-    //Respawn,
+    Die,
     Move(MoveDirection),
     Turn(Quat),
     Jump,
