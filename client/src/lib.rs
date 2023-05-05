@@ -456,54 +456,6 @@ impl State {
             &camera_state.camera_bind_group_layout,
             particle_tex,
         );
-        let test_particle_gen = particles::gen::FanGenerator::new(
-            glm::vec3(0.0, -10.0, 0.0),
-            glm::vec3(0.0, 1.0, 0.0),
-            glm::vec3(0.0, 0.0, 1.0),
-            60.0,
-            1.0,
-            0.1,
-            PI,
-            0.1,
-            50.0,
-            5.0,
-            4.0,
-            false,
-        );
-        let test_particle = particles::ParticleSystem::new(
-            std::time::Duration::from_secs(120),
-            5.0,
-            100.0,
-            glm::vec4(0.8, 0.3, 0.8, 1.0),
-            test_particle_gen,
-            (1, 4),
-            &device,
-            &mut rng,
-        );
-        particle_renderer.systems.push(test_particle);
-        let test_particle_gen_2 = particles::gen::LineGenerator::new(
-            glm::vec3(-2.0, -10.0, 0.0),
-            glm::vec3(2.0, 5.0, 0.0),
-            6.0,
-            0.1,
-            PI,
-            0.1,
-            25.0,
-            0.5,
-            0.0,
-            false,
-        );
-        let test_particle_2 = particles::ParticleSystem::new(
-            std::time::Duration::from_secs(60),
-            2.0,
-            10.0,
-            glm::vec4(1.0, 1.0, 1.0, 1.0),
-            test_particle_gen_2,
-            (4, 5),
-            &device,
-            &mut rng,
-        );
-        particle_renderer.systems.push(test_particle_2);
 
         let screens =
             screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
@@ -809,7 +761,7 @@ impl State {
                 // generator
                 events::ParticleType::ATTACK => {
                     println!("adding particle: {:?}", p);
-                    let atk_gen = particles::gen::FanGenerator::new(
+                    let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
@@ -818,16 +770,16 @@ impl State {
                         0.3,
                         PI,
                         0.5,
-                        300.0, 
-                        7.0,
+                        75.0, 
                         10.0,
+                        7.0,
                         false
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         0.5,
-                        2500.0,
+                        2000.0,
                         p.color,
                         atk_gen,
                         (1, 4),
