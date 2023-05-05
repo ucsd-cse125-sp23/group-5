@@ -14,6 +14,7 @@ pub struct ConfigNode {
     pub transform: ConfigTransform,
     pub children: Option<Vec<ConfigNode>>,
     pub model: Option<String>,
+    pub decompose: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

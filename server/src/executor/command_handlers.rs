@@ -84,11 +84,16 @@ impl CommandHandler for StartupCommandHandler {
 
             let world_transform = parent_transform * local_transform;
 
-            let collider = rapier::ColliderBuilder::from_object_models(models)
+            let body = rapier::RigidBodyBuilder::fixed()
                 .position(world_transform)
                 .build();
 
-            physics_state.insert_entity(scene_entity_id, Some(collider), None); // insert the collider into the physics world
+            let decompose = node.decompose.unwrap_or(false);
+
+            let collider = rapier::ColliderBuilder::from_object_models(models, decompose)
+                .build();
+
+            physics_state.insert_entity(scene_entity_id, Some(collider), Some(body)); // insert the collider into the physics world
             scene_entity_id += 1;
 
             // add children to nodes
@@ -147,13 +152,15 @@ impl CommandHandler for SpawnCommandHandler {
             }
         } else {
             let ground_groups = InteractionGroups::new(1.into(), 1.into());
-            let collider = rapier::ColliderBuilder::round_cuboid(1.0, 1.0, 1.0, 0.01)
+            let collider = rapier::ColliderBuilder::cuboid(1.0, 1.0, 1.0)
                 .collision_groups(ground_groups)
                 .build();
 
             let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
                 .translation(spawn_position)
+                .ccd_enabled(true)
                 .build();
+
             physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
 
             // Game state (needed because syncing is only for the physical properties of entities)
