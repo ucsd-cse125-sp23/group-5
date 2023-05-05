@@ -6,12 +6,15 @@ use rapier3d::math::Real;
 use tobj;
 
 pub trait FromObject {
-    fn from_object_models(models: Vec<tobj::Model>) -> Self;
+    fn from_object_models(
+        models: Vec<tobj::Model>,
+        decompose: bool,
+    ) -> Self;
 }
 
 impl FromObject for ColliderBuilder {
     /// Create a collider from a list of object models (combine all the meshes into one collider)
-    fn from_object_models(models: Vec<tobj::Model>) -> ColliderBuilder {
+    fn from_object_models(models: Vec<tobj::Model>, decompose: bool) -> ColliderBuilder {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
         let mut vertex_offset = 0;
@@ -28,8 +31,11 @@ impl FromObject for ColliderBuilder {
             );
             vertex_offset = vertices.len() as u32;
         }
-
-        ColliderBuilder::trimesh(vertices, indices)
+        if decompose {
+            ColliderBuilder::round_convex_decomposition(&vertices, &indices, 0.01)
+        } else {
+            ColliderBuilder::trimesh(vertices, indices)
+        }
     }
 }
 
@@ -49,7 +55,7 @@ mod tests {
 
         let (models, _materials) = island.unwrap();
 
-        let collider = ColliderBuilder::from_object_models(models);
+        let collider = ColliderBuilder::from_object_models(models, false);
         let aabb = collider.shape.0.compute_aabb(&Isometry::identity());
 
         // mins: [-4.934327, -1.3986979, -3.9341192], maxs: [4.454054, 3.599072, 4.615514] }
