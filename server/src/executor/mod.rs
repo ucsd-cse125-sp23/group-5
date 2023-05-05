@@ -1,5 +1,5 @@
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CommandHandler, JumpCommandHandler, MoveCommandHandler,
+    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler, MoveCommandHandler, 
     SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
@@ -107,7 +107,10 @@ impl Executor {
                 client_command.client_id,
                 scene_config,
             )),
-            //Command::Respawn => Box::new(RespawnCommandHandler::new(client_command.client_id)),
+            Command::Die => Box::new(DieCommandHandler::new
+                (client_command.client_id, 
+                scene_config,
+            )),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
@@ -165,8 +168,8 @@ impl Executor {
         self.game_events.replace(Vec::new())
     }
 
-    pub(crate) fn update_dead_players(&self) {
-        let dead_players = self
+    pub(crate) fn update_dead_players(&self) -> Vec<u32> {
+        self
             .game_state()
             .players
             .iter()
@@ -174,15 +177,9 @@ impl Executor {
                 !player.is_dead && player.transform.translation.y < DEFAULT_RESPAWN_LIMIT
             })
             .map(|(&id, _)| id)
-            .collect::<Vec<_>>();
-
-        let mut game_state = self.game_state.lock().unwrap();
-        for player_id in dead_players.iter() {
-            let player_state = game_state.player_mut(*player_id).unwrap();
-            player_state.is_dead = true;
-            player_state.insert_cooldown(Command::Spawn, 3);
-        }
+            .collect::<Vec<_>>()
     }
+
     pub(crate) fn check_respawn_players(&self) -> Vec<u32> {
         self.game_state()
             .players
