@@ -94,9 +94,9 @@ pub mod prefix_len {
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid utf8"))
     }
 
-    pub fn extract_json<T: for<'a> serde::Deserialize<'a>>(buf: &mut impl Read) -> io::Result<T> {
-        let json = extract_bytes(buf)?;
-        let value = serde_json::from_slice(&json)
+    pub fn extract_bincode<T: for<'a> serde::Deserialize<'a>>(buf: &mut impl Read) -> io::Result<T> {
+        let bincode = extract_bytes(buf)?;
+        let value = bincode::deserialize(&bincode)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         Ok(value)
     }
@@ -111,9 +111,9 @@ pub mod prefix_len {
         write_bytes(buf, string.as_bytes())
     }
 
-    pub fn write_json(buf: &mut impl Write, obj: &impl serde::Serialize) -> io::Result<()> {
+    pub fn write_bincode(buf: &mut impl Write, obj: &impl serde::Serialize) -> io::Result<()> {
         let bytes =
-            serde_json::to_vec(obj).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+            bincode::serialize(obj).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         write_bytes(buf, &bytes)
     }
 }
