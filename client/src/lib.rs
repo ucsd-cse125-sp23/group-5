@@ -456,7 +456,7 @@ impl State {
             &camera_state.camera_bind_group_layout,
             particle_tex,
         );
-        let test_particle_gen = particles::FanGenerator::new(
+        let test_particle_gen = particles::gen::FanGenerator::new(
             glm::vec3(0.0, -10.0, 0.0),
             glm::vec3(0.0, 1.0, 0.0),
             glm::vec3(0.0, 0.0, 1.0),
@@ -467,7 +467,7 @@ impl State {
             0.1,
             50.0,
             5.0,
-            2.0,
+            4.0,
             false,
         );
         let test_particle = particles::ParticleSystem::new(
@@ -481,7 +481,7 @@ impl State {
             &mut rng,
         );
         particle_renderer.systems.push(test_particle);
-        let test_particle_gen_2 = particles::LineGenerator::new(
+        let test_particle_gen_2 = particles::gen::LineGenerator::new(
             glm::vec3(-2.0, -10.0, 0.0),
             glm::vec3(2.0, 5.0, 0.0),
             6.0,
@@ -809,18 +809,18 @@ impl State {
                 // generator
                 events::ParticleType::ATTACK => {
                     println!("adding particle: {:?}", p);
-                    let atk_gen = particles::FanGenerator::new(
+                    let atk_gen = particles::gen::FanGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
                         std::f32::consts::FRAC_PI_3 * 180.0 / PI,
-                        5.0,
+                        10.0,
                         0.3,
                         PI,
                         0.5,
-                        75.0, 
+                        300.0, 
                         7.0,
-                        27.0,
+                        10.0,
                         false
                     );
                     // System
