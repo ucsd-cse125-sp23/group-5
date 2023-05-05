@@ -215,4 +215,9 @@ impl ParticleGenerator for LineGenerator {
     }
 }
 
+<<<<<<< HEAD
+=======
+// Actual system
+
+>>>>>>> d17780b499c987981cbe171421c8c2f02dcc5d24
 
