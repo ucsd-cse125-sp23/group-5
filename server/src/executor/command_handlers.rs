@@ -5,7 +5,7 @@ use std::f32::consts::PI;
 
 use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
-use common::core::events::{GameEvent, SoundSpec};
+use common::core::events::{GameEvent, SoundSpec, ParticleSpec, ParticleType};
 
 use common::communication::commons::MAX_WIND_CHARGE;
 use common::configs::model_config::ConfigModels;
@@ -410,7 +410,7 @@ impl CommandHandler for AttackCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        _: &mut dyn GameEventCollector,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
             .player_mut(self.player_id)
@@ -452,6 +452,20 @@ impl CommandHandler for AttackCommandHandler {
         player_rigid_body.set_rotation(rotation, true);
 
         player_state.insert_cooldown(Command::Attack, 5);
+        game_events.add(
+            GameEvent::ParticleEvent(
+                ParticleSpec::new(
+                    ParticleType::ATTACK,
+                    player_pos.clone(),
+                    camera_forward.clone(),
+                    //TODO: placeholder for player color
+                    glm::vec3(0.0, 1.0, 0.0),
+                    glm::vec4(0.4, 0.9, 0.7, 1.0),
+                    format!("Attack from player {}", self.player_id)
+                )
+            ),
+            Recipients::All,
+        );
 
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {

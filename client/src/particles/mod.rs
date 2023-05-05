@@ -1,43 +1,10 @@
 use crate::model::Vertex;
 use crate::texture;
 use wgpu::util::DeviceExt;
-extern crate nalgebra_glm as glm;
-use std::{
-    f32::consts::{FRAC_PI_2, PI},
-    ops::IndexMut,
-};
-// use rand_distr::Distribution;
-use rand::Rng;
-use rand_distr::{Distribution, Normal, Poisson};
 
-#[rustfmt::skip]
-pub const PVertex : &[[f32; 2];4] = &[
-    [0.0, 1.0],
-    [0.0, 0.0],
-    [1.0, 0.0],
-    [1.0, 1.0],
-];
-
-const PV_ATTRIBS: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
-    0 => Float32x2,
-];
-
-const NUM_TEXTURES: u32 = 5;
-
-fn PV_desc<'a>() -> wgpu::VertexBufferLayout<'a> {
-    use std::mem;
-    wgpu::VertexBufferLayout {
-        array_stride: mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &PV_ATTRIBS,
-    }
-}
-
-#[rustfmt::skip]
-pub const PInd : &[u16; 6] = &[
-    0, 1, 2,
-    0, 2, 3,
-];
+//exports
+pub mod gen;
+pub mod constants;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -82,117 +49,6 @@ impl crate::model::Vertex for Particle {
     }
 }
 
-pub trait ParticleGenerator {
-    ////
-    /// list: vector to place generated particles in
-    /// spawning time: amount of time to keep spawning
-    /// spawn rate: average rate of spawning in particles per second
-    /// num_textures: number of possible particle textures in one file (arranged vertically)
-    /// returns: number of particles generated
-    fn generate(
-        &self,
-        list: &mut Vec<Particle>,
-        spawning_time: std::time::Duration,
-        spawn_rate: f32,
-        halflife: f32,
-        tex_range: (u32, u32),
-        color: glm::Vec4,
-        rng: &mut rand::rngs::ThreadRng,
-    ) -> u32;
-}
-
-pub struct LineGenerator {
-    source: glm::Vec3,
-    dir: glm::Vec3,
-    linear_variance: f32,
-    angular_velocity: f32,
-    angular_variance: f32,
-    size: f32,
-    size_variance: f32,
-    size_growth: f32,
-    poisson_generation: bool,
-}
-
-impl LineGenerator {
-    //// Line particle generator
-    pub fn new(
-        source: glm::Vec3,
-        dir: glm::Vec3,
-        linear_variance: f32,
-        angular_velocity: f32,
-        angular_variance: f32,
-        size: f32,
-        size_variance: f32,
-        size_growth: f32,
-        poisson_generation: bool,
-    ) -> Self {
-        Self {
-            source,
-            dir,
-            linear_variance,
-            angular_velocity,
-            angular_variance,
-            size,
-            size_variance,
-            size_growth,
-            poisson_generation,
-        }
-    }
-}
-
-impl ParticleGenerator for LineGenerator {
-    fn generate(
-        &self,
-        list: &mut Vec<Particle>,
-        spawning_time: std::time::Duration,
-        spawn_rate: f32,
-        halflife: f32,
-        tex_range: (u32, u32),
-        color: glm::Vec4,
-        rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
-        let lin_dist = Normal::new(1.0, self.linear_variance).unwrap();
-        let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
-        let size_dist = Normal::new(self.size, self.size_variance).unwrap();
-        let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
-        let mut spawn_time = 0.0;
-        let v = self.dir;
-        while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
-            let lin_scale = lin_dist.sample(rng);
-            list.push(Particle {
-                start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
-                color: color.into(),
-                velocity: [
-                    v[0] * lin_scale,
-                    v[1] * lin_scale,
-                    v[2] * lin_scale,
-                    ang_dist.sample(rng),
-                ],
-                spawn_time,
-                size: size_dist.sample(rng),
-                tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
-                z_pos: 0.0,
-                time_elapsed: 0.0,
-                size_growth: self.size_growth,
-                halflife,
-                _pad2: 0.0,
-            });
-            spawn_time += match self.poisson_generation {
-                true => time_dist.sample(rng),
-                false => 1.0 / spawn_rate,
-            };
-        }
-        return list.len() as u32;
-    }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct PSRaw {
-    lifetime: f32, // in seconds
-    num_textures: f32,
-}
-
 pub struct ParticleSystem {
     start_time: std::time::Instant,
     particle_lifetime: f32,
@@ -209,7 +65,7 @@ impl ParticleSystem {
         particle_lifetime: f32, // in seconds
         generation_speed: f32,  // measured per second
         color: glm::Vec4,
-        gen: impl ParticleGenerator,
+        gen: impl gen::ParticleGenerator,
         tex_range: (u32, u32),
         device: &wgpu::Device,
         rng: &mut rand::rngs::ThreadRng,
@@ -245,7 +101,7 @@ impl ParticleSystem {
         if self.start_time.elapsed() < self.last_particle_death {
             return Some(self);
         }
-        //TODO: comtinued generation
+        //TODO if necessary: comtinued generation
         return None;
     }
 
@@ -278,12 +134,12 @@ impl ParticleDrawer {
     ) -> Self {
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Vertex Buffer"),
-            contents: bytemuck::cast_slice(PVertex),
+            contents: bytemuck::cast_slice(constants::VTXS),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(PInd),
+            contents: bytemuck::cast_slice(constants::INDS),
             usage: wgpu::BufferUsages::INDEX,
         });
         let tex_bind_group_layout =
@@ -337,7 +193,7 @@ impl ParticleDrawer {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[PV_desc(), Particle::desc()],
+                buffers: &[constants::vtx_desc(), Particle::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,

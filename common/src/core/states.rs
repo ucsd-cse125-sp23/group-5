@@ -3,6 +3,7 @@ use crate::communication::commons::{
 };
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
+use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
 use rapier3d::parry::transformation::utils::transform;
 use serde::{Deserialize, Serialize};
@@ -159,6 +160,17 @@ impl GameState {
                 };
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ParticleQueue{
+    pub particles: Vec<ParticleSpec>,
+}
+
+impl ParticleQueue{
+    pub fn add_particle(&mut self, particle: ParticleSpec){
+        self.particles.push(particle);
     }
 }
 
