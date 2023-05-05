@@ -454,7 +454,7 @@ dependencies = [
  "serde",
  "serde_json",
  "server",
- "tobj",
+ "tobj 3.2.5",
  "wgpu",
  "wgpu_glyph",
  "winit",
@@ -876,6 +876,12 @@ name = "glam"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e4afd9ad95555081e109fe1d21f2a30c691b5f0919c67dfa690a2e1eb6bd51c"
+
+[[package]]
+name = "glam"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad83ab008a4fa3b31dfa713dd41b5a9bdea1e94e4cf1e2fc274ffbd49b0271d3"
 
 [[package]]
 name = "glob"
@@ -1485,7 +1491,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d68d47bba83f9e2006d117a9a33af1524e655516b8919caac694427a6fb1e511"
 dependencies = [
  "approx",
- "glam",
+ "glam 0.23.0",
  "matrixmultiply",
  "nalgebra-macros",
  "num-complex",
@@ -2330,16 +2336,17 @@ dependencies = [
  "common",
  "derive_more",
  "env_logger",
- "glam",
+ "glam 0.24.0",
  "itertools",
  "log",
  "nalgebra",
  "nalgebra-glm",
+ "once_cell",
  "rand",
  "rapier3d",
  "serde_json",
  "threadpool",
- "tobj",
+ "tobj 4.0.0",
 ]
 
 [[package]]
@@ -2611,6 +2618,15 @@ name = "tobj"
 version = "3.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57381207291289bad19de63acd3fbf5948ff99b2868116c367b7224c37d55f90"
+dependencies = [
+ "ahash 0.8.3",
+]
+
+[[package]]
+name = "tobj"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b450e3ba06251ec4fc76917dafeaf55805ffb26dbf7d5500bfb9511ce63a0d1f"
 dependencies = [
  "ahash 0.8.3",
 ]

@@ -37,3 +37,6 @@ session_data.json
 
 # debug files
 *.rdc
+
+# .bin files
+*.bin

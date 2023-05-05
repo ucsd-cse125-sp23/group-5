@@ -8,6 +8,7 @@ use server::game_loop::GameLoop;
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{net::TcpListener, thread};
+use log::info;
 
 use common::communication::commons::{CSE125_SERVER_ADDR, DEFAULT_SERVER_ADDR};
 
@@ -35,6 +36,8 @@ fn main() {
     // executor
     let executor = Executor::new(game_state.clone());
     executor.init();
+
+    info!("World initialized");
 
     // start of server listening
     #[cfg(not(feature = "debug-addr"))]

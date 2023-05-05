@@ -3,20 +3,21 @@ use std::fs::{File, OpenOptions};
 use std::hash::Hash;
 use std::io::{BufWriter, Read, Write};
 use std::marker::PhantomData;
+use std::sync::RwLock;
 use bincode::{deserialize, serialize};
 use serde::{Serialize, Deserialize};
 use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 
 pub trait Cache<K, V> {
-    fn get(&mut self, key: &K) -> Option<&V>;
-    fn insert(&mut self, key: K, value: V) -> Option<V>;
+    fn get(&self, key: &K) -> Option<V>;
+    fn insert(&self, key: K, value: V) -> Option<V>;
 }
 
 #[derive(Debug)]
 pub struct FileCache<K, V> {
     file_path: String,
-    cache: HashMap<K, V>,
+    cache: RwLock<HashMap<K, V>>,
     _marker: PhantomData<(K, V)>,
 }
 
@@ -29,7 +30,7 @@ impl<K, V> FileCache<K, V>
         let cache = FileCache::load_from_file(file_path).unwrap_or(HashMap::new());
         FileCache {
             file_path: file_path.to_string(),
-            cache,
+            cache: RwLock::new(cache),
             _marker: PhantomData,
         }
     }
@@ -66,12 +67,14 @@ impl<K, V> Cache<K, V> for FileCache<K, V>
         K: Serialize + DeserializeOwned + Eq + Hash + Clone,
         V: Serialize + DeserializeOwned + Clone,
 {
-    fn get(&mut self, key: &K) -> Option<&V> {
-        self.cache.get(key)
+    fn get(&self, key: &K) -> Option<V> {
+        self.cache.read().unwrap().get(key).cloned()
     }
 
-    fn insert(&mut self, key: K, value: V) -> Option<V> {
-        let result = self.cache.insert(key.clone(), value.clone());
+    fn insert(&self, key: K, value: V) -> Option<V> {
+        let mut cache = self.cache.write().unwrap();
+        let result = cache.insert(key, value);
+        drop(cache); // Explicitly drop the lock before saving to the file
         if self.save_to_file().is_err() {
             eprintln!("Error saving cache to file");
         }
@@ -83,6 +86,8 @@ impl<K, V> Cache<K, V> for FileCache<K, V>
 mod tests {
     use serde::{Serialize, Deserialize};
     use std::fs::remove_file;
+    use std::sync::{Arc, Barrier};
+    use std::thread;
     use crate::utils::file_cache::{Cache, FileCache};
 
     #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
@@ -104,7 +109,7 @@ mod tests {
 
         let cached_value = cache.get(&key);
         assert!(cached_value.is_some());
-        assert_eq!(cached_value.unwrap(), &value);
+        assert_eq!(cached_value.unwrap(), value);
 
         // Cleanup
         let _ = remove_file(file_path);
@@ -132,10 +137,57 @@ mod tests {
 
             let cached_value = cache.get(&key);
             assert!(cached_value.is_some());
-            assert_eq!(cached_value.unwrap(), &value);
+            assert_eq!(cached_value.unwrap(), value);
         }
 
         // Cleanup
         let _ = remove_file(file_path);
     }
+
+    const NUM_THREADS: usize = 10;
+    const NUM_ITERATIONS: usize = 100;
+
+    #[test]
+    fn test_thread_safety() {
+        let file_path = "test_cache_thread_safety.bin";
+        let cache = Arc::new(FileCache::<Key, Value>::new(file_path));
+        let barrier = Arc::new(Barrier::new(NUM_THREADS));
+
+        let mut handles = vec![];
+
+        for i in 0..NUM_THREADS {
+            let cache = Arc::clone(&cache);
+            let barrier = Arc::clone(&barrier);
+
+            let handle = thread::spawn(move || {
+                barrier.wait(); // Ensure all threads start at the same time
+
+                for j in 0..NUM_ITERATIONS {
+                    let key = Key(format!("key_{}_{}", i, j));
+                    let value = Value((i* j) as i32);
+
+                    if let Some(cached_value) = cache.get(&key) {
+                        assert_eq!(cached_value, value);
+                    } else {
+                        cache.insert(key, value);
+                    }
+                }
+            });
+
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        // Cleanup
+        let _ = remove_file(file_path);
+    }
+
+
+
+
+
+
 }
