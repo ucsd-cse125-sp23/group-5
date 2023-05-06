@@ -1,0 +1,22 @@
+{
+    "sounds": [
+      {
+        "name": "background",
+        "path": "assets/audio/background/royalty-free-sample.mp3",
+        "seconds": 128,
+        "nanoseconds": 0 
+      },
+      {
+        "name": "wind_sound",
+        "path": "assets/audio/sound_effects/woosh_sound.mp3",
+        "seconds": 5,
+        "nanoseconds": 2500 
+      },
+      {
+        "name": "step_sound",
+        "path": "assets/audio/sound_effects/step_sound.mp3",
+        "seconds": 0,
+        "nanoseconds": 500000000
+      }
+    ]
+  }

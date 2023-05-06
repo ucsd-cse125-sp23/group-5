@@ -2,7 +2,8 @@ extern crate queues;
 
 use std::env;
 
-use client::audio::Audio;
+use client::audio::{Audio, ConfigAudioAssets};
+use common::configs::from_file;
 use log::{debug, error, info};
 use std::fs::File;
 
@@ -17,9 +18,11 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-use common::core::events::{GameEvent, SoundSpec};
+use common::core::events::GameEvent;
 
 use common::core::states::GameState;
+
+const AUDIO_CONFIG_PATH: &str = "audio.json";
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -73,7 +76,7 @@ fn main() {
     #[cfg(feature = "debug-recon")]
     dump_ids(session_data_path, client_id + 1, session_id);
 
-    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id); // , game_event_receiver);
+    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), client_id);
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
@@ -93,8 +96,10 @@ fn main() {
     // thread for audio
     let game_state_clone1 = game_state.clone();
     thread::spawn(move || {
-        let mut audio = Audio::new();
-        audio.play_background_track(client::audio::AudioAsset::BACKGROUND);
+        let audio_config = from_file::<_, ConfigAudioAssets>(AUDIO_CONFIG_PATH).unwrap();
+        let mut audio = Audio::from_config(&audio_config);
+        
+        // audio.play_background_track([0.0, 10.0, 0.0]);
 
         let sfx_queue= audio.sfx_queue.clone();
         thread::spawn(move || {
@@ -176,7 +181,7 @@ fn recv_server_updates(
                 payload: Payload::ServerEvent(update_game_event),
                 ..
             } => {
-                println!("Received game events: {:?}", update_game_event);
+                debug!("Received game events: {:?}", update_game_event);
 
                 // update state
                 game_events

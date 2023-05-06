@@ -31,12 +31,7 @@ fn vs_main(
     );
     var out: VertexOutput;
     out.color = model.color;
-    // out.clip_position = vec4(model.position, DEPTH, 1.0);
-    //hack since the background has lower opacity
-    // TO FIX!
-    out.clip_position = model_matrix * vec4(model.position, 0.0, 1.0);
-    out.clip_position[2] *= 0.00001;
-    // end TO FIX!
+    out.clip_position = model_matrix * vec4(model.position, DEPTH, 1.0);
     out.tex_coords = model.texture;
     return out;
 }

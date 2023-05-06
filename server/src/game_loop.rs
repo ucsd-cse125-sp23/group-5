@@ -67,8 +67,8 @@ impl GameLoop<'_> {
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
 
-            // update list of dead players 
-            self.executor.update_dead_players(); 
+            // update list of dead players
+            self.executor.update_dead_players();
 
             // check whether dead players need to respawn
             let players_to_respawn = self.executor.check_respawn_players();
@@ -79,7 +79,7 @@ impl GameLoop<'_> {
                     commands.push(ClientCommand::new(client_id, Command::Spawn));
                 }
             }
-            
+
             // send commands to the executor
             self.executor.plan_and_execute(commands);
 
