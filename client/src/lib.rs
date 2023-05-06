@@ -21,9 +21,9 @@ mod particles;
 mod player;
 mod resources;
 mod scene;
-mod screen_objects;
+// mod screen_objects;
 mod texture;
-extern crate nalgebra_glm as glm;
+use nalgebra_glm as glm;
 
 use common::configs::{from_file, model_config::ConfigModels};
 
