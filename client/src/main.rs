@@ -16,7 +16,7 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-use common::core::events::{GameEvent};
+use common::core::events::GameEvent;
 
 use common::core::states::{GameState, ParticleQueue};
 
@@ -72,7 +72,8 @@ fn main() {
     #[cfg(feature = "debug-recon")]
     dump_ids(session_data_path, client_id + 1, session_id);
 
-    let mut player_loop = PlayerLoop::new(tx, game_state.clone(), particle_queue.clone(), client_id);
+    let mut player_loop =
+        PlayerLoop::new(tx, game_state.clone(), particle_queue.clone(), client_id);
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
@@ -89,7 +90,7 @@ fn main() {
             protocol.try_clone().unwrap(),
             game_state,
             particle_queue,
-            game_events_bus
+            game_events_bus,
         );
     });
 
@@ -148,7 +149,7 @@ fn recv_server_updates(
                 *game_state = update_game_state;
                 // according to the state, render world
                 debug!("Received game state: {:?}", game_state);
-            } 
+            }
             Message {
                 host_role: HostRole::Server,
                 payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),

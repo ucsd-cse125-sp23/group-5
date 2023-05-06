@@ -1,6 +1,7 @@
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler, MoveCommandHandler, 
-    SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler,
+    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
+    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+    UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
@@ -107,8 +108,8 @@ impl Executor {
                 client_command.client_id,
                 scene_config,
             )),
-            Command::Die => Box::new(DieCommandHandler::new
-                (client_command.client_id, 
+            Command::Die => Box::new(DieCommandHandler::new(
+                client_command.client_id,
                 scene_config,
             )),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
@@ -118,6 +119,10 @@ impl Executor {
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+            Command::Refill => Box::new(RefillCommandHandler::new(
+                client_command.client_id,
+                scene_config,
+            )),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
                 return;
@@ -152,7 +157,7 @@ impl Executor {
 
         game_state.update_cooldowns(delta_time);
 
-        match game_state.update_player_on_flag_time(delta_time) {
+        match game_state.update_player_on_flag_times(delta_time) {
             Some(id) => {
                 panic!("Winner is {}, game finished!", id)
             }
@@ -169,8 +174,7 @@ impl Executor {
     }
 
     pub(crate) fn update_dead_players(&self) -> Vec<u32> {
-        self
-            .game_state()
+        self.game_state()
             .players
             .iter()
             .filter(|(_, player)| {

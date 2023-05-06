@@ -1,7 +1,7 @@
 use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
 use common::communication::commons::Protocol;
 use common::core::command::Command;
-use common::core::command::Command::{Attack, Die, Jump, Spawn};
+use common::core::command::Command::{Attack, Die, Jump, Refill, Spawn};
 use glm::{vec3, Vec3};
 use log::debug;
 
@@ -60,6 +60,7 @@ impl InputEventProcessor {
             VirtualKeyCode::A => Some((GameKeyKind::Holdable, Command::Move(vec3(1., 0., 0.)))),
             VirtualKeyCode::S => Some((GameKeyKind::Holdable, Command::Move(vec3(0., 0., -1.)))),
             VirtualKeyCode::D => Some((GameKeyKind::Holdable, Command::Move(vec3(-1., 0., 0.)))),
+            VirtualKeyCode::R => Some((GameKeyKind::Holdable, Refill)),
             // match Pressable keys
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),

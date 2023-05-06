@@ -1,13 +1,13 @@
+use anyhow::{Context, Result};
+use bincode::{deserialize, serialize};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::hash::Hash;
 use std::io::{BufWriter, Read, Write};
 use std::marker::PhantomData;
 use std::sync::RwLock;
-use bincode::{deserialize, serialize};
-use serde::{Serialize, Deserialize};
-use anyhow::{Context, Result};
-use serde::de::DeserializeOwned;
 
 pub trait Cache<K, V> {
     fn get(&self, key: &K) -> Option<V>;
@@ -22,9 +22,9 @@ pub struct FileCache<K, V> {
 }
 
 impl<K, V> FileCache<K, V>
-    where
-        K: Serialize + DeserializeOwned + Eq + Hash + Clone,
-        V: Serialize + DeserializeOwned + Clone,
+where
+    K: Serialize + DeserializeOwned + Eq + Hash + Clone,
+    V: Serialize + DeserializeOwned + Clone,
 {
     pub fn new(file_path: &str) -> Self {
         let cache = FileCache::load_from_file(file_path).unwrap_or(HashMap::new());
@@ -35,17 +35,16 @@ impl<K, V> FileCache<K, V>
         }
     }
 
-
     fn load_from_file(file_path: &str) -> Result<HashMap<K, V>> {
         let mut file = match OpenOptions::new().read(true).open(file_path) {
             Ok(file) => file,
-            _ => return Ok(HashMap::new())
+            _ => return Ok(HashMap::new()),
         };
 
         let mut contents = Vec::new();
         file.read_to_end(&mut contents)?;
-        let map: HashMap<K, V> = deserialize(&contents[..])
-            .with_context(|| "Failed to deserialize the cache")?;
+        let map: HashMap<K, V> =
+            deserialize(&contents[..]).with_context(|| "Failed to deserialize the cache")?;
 
         Ok(map)
     }
@@ -63,9 +62,9 @@ impl<K, V> FileCache<K, V>
 }
 
 impl<K, V> Cache<K, V> for FileCache<K, V>
-    where
-        K: Serialize + DeserializeOwned + Eq + Hash + Clone,
-        V: Serialize + DeserializeOwned + Clone,
+where
+    K: Serialize + DeserializeOwned + Eq + Hash + Clone,
+    V: Serialize + DeserializeOwned + Clone,
 {
     fn get(&self, key: &K) -> Option<V> {
         self.cache.read().unwrap().get(key).cloned()
@@ -84,11 +83,11 @@ impl<K, V> Cache<K, V> for FileCache<K, V>
 
 #[cfg(test)]
 mod tests {
-    use serde::{Serialize, Deserialize};
+    use crate::utils::file_cache::{Cache, FileCache};
+    use serde::{Deserialize, Serialize};
     use std::fs::remove_file;
     use std::sync::{Arc, Barrier};
     use std::thread;
-    use crate::utils::file_cache::{Cache, FileCache};
 
     #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
     struct Key(String);
@@ -164,7 +163,7 @@ mod tests {
 
                 for j in 0..NUM_ITERATIONS {
                     let key = Key(format!("key_{}_{}", i, j));
-                    let value = Value((i* j) as i32);
+                    let value = Value((i * j) as i32);
 
                     if let Some(cached_value) = cache.get(&key) {
                         assert_eq!(cached_value, value);
@@ -184,10 +183,4 @@ mod tests {
         // Cleanup
         let _ = remove_file(file_path);
     }
-
-
-
-
-
-
 }
