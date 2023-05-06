@@ -26,7 +26,12 @@ impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<Input>, game_state: Arc<Mutex<GameState>>, particle_queue: Arc<Mutex<ParticleQueue>>, id: u8) -> PlayerLoop {
+    pub fn new(
+        commands: Sender<Input>,
+        game_state: Arc<Mutex<GameState>>,
+        particle_queue: Arc<Mutex<ParticleQueue>>,
+        id: u8,
+    ) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             game_state,

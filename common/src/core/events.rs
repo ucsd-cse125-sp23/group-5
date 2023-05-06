@@ -18,7 +18,7 @@ pub struct SoundSpec {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ParticleType{
+pub enum ParticleType {
     ATTACK,
 }
 /// Particle specification

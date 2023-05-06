@@ -1,16 +1,6 @@
-use crate::executor::GameEventCollector;
-use crate::simulation::obj_collider::FromObject;
-use crate::simulation::physics_state::PhysicsState;
 use std::f32::consts::PI;
+use std::fmt::{format, Debug};
 
-use crate::Recipients;
-use common::core::command::{Command, MoveDirection};
-use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
-
-use common::communication::commons::{MAX_WIND_CHARGE, ONE_TIME_CHARGE};
-use common::configs::model_config::ConfigModels;
-use common::configs::scene_config::ConfigSceneGraph;
-use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
 use nalgebra::UnitQuaternion;
@@ -20,7 +10,18 @@ use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
-use std::fmt::{format, Debug};
+
+use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE};
+use common::configs::model_config::ConfigModels;
+use common::configs::scene_config::ConfigSceneGraph;
+use common::core::command::{Command, MoveDirection};
+use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
+use common::core::states::{GameState, PlayerState};
+
+use crate::executor::GameEventCollector;
+use crate::simulation::obj_collider::FromObject;
+use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -542,9 +543,10 @@ impl CommandHandler for RefillCommandHandler {
     fn handle(
         &self,
         game_state: &mut GameState,
-        physics_state: &mut PhysicsState,
-        game_events: &mut dyn GameEventCollector,
+        _: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        println!("here1");
         let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
         let player_state = game_state.player_mut(self.player_id).unwrap();
         if !player_state.is_in_circular_area(
@@ -556,7 +558,7 @@ impl CommandHandler for RefillCommandHandler {
             // signal player that he/she is not in refill area
             return Ok(());
         }
-        player_state.refill_wind_charge(Some(ONE_TIME_CHARGE));
+        player_state.refill_wind_charge(Some(ONE_CHARGE));
         player_state.insert_cooldown(Command::Refill, 0.5);
         Ok(())
     }
