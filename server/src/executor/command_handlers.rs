@@ -546,7 +546,6 @@ impl CommandHandler for RefillCommandHandler {
         _: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        println!("here1");
         let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
         let player_state = game_state.player_mut(self.player_id).unwrap();
         if !player_state.is_in_circular_area(
