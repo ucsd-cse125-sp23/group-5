@@ -22,6 +22,7 @@ mod player;
 mod resources;
 mod scene;
 // mod screen_objects;
+mod screen;
 mod texture;
 use nalgebra_glm as glm;
 
