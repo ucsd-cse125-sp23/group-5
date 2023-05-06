@@ -7,6 +7,7 @@ use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
 use rapier3d::parry::transformation::utils::transform;
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::collections::HashMap;
 use std::iter::Map;
 use std::ops::Deref;
@@ -151,7 +152,12 @@ impl GameState {
     pub fn update_player_on_flag_times(&mut self, delta_time: f32) -> Option<u32> {
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            player_state.on_flag_time -= delta_time / 3.0;
+            let provisional_on_flag_time = player_state.on_flag_time - delta_time / 3.0;
+            player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
+                provisional_on_flag_time
+            } else {
+                0.0
+            };
         }
 
         match self.previous_tick_winner {
