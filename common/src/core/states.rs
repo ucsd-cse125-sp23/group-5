@@ -61,8 +61,8 @@ impl PlayerState {
         };
     }
 
-    pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: u64) {
-        let cd_secs = Duration::from_secs(cooldown_in_sec).as_secs_f32();
+    pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: f32) {
+        let cd_secs = Duration::from_secs_f32(cooldown_in_sec).as_secs_f32();
         //let cd_until = SystemTime::now().checked_add(cd_secs).unwrap();
         self.on_cooldown.insert(command, cd_secs);
     }
@@ -164,12 +164,12 @@ impl GameState {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct ParticleQueue{
+pub struct ParticleQueue {
     pub particles: Vec<ParticleSpec>,
 }
 
-impl ParticleQueue{
-    pub fn add_particle(&mut self, particle: ParticleSpec){
+impl ParticleQueue {
+    pub fn add_particle(&mut self, particle: ParticleSpec) {
         self.particles.push(particle);
     }
 }

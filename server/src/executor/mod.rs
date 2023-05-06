@@ -118,10 +118,14 @@ impl Executor {
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+            Command::Refill => Box::new(SpawnCommandHandler::new(
+                client_command.client_id,
+                scene_config,
+            )),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
                 return;
-            }
+            },
         };
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
