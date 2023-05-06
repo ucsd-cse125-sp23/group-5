@@ -289,7 +289,7 @@ impl State {
 
         // placeholder position, will get overriden by server
         let player = player::Player::new(vec3(0.0, 0.0, 0.0));
-        let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
+        let player_controller = player::PlayerController::new(8.0, 4.0, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,

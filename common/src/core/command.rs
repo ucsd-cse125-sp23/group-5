@@ -42,7 +42,7 @@ pub enum Command {
     Move(MoveDirection),
     Turn(Quat),
     Jump,
-    UpdateCamera { forward: glm::Vec3 },
+    UpdateCamera { forward: glm::Vec3, prelim_position: glm::Vec3},
     Attack,
     Refill,
 }

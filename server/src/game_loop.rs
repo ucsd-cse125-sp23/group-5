@@ -161,6 +161,7 @@ mod tests {
                     1,
                     UpdateCamera {
                         forward: nalgebra_glm::vec3(2., 0., 1.),
+                        prelim_position: nalgebra_glm::vec3(0., 0., 0.),
                     },
                 ))
                 .unwrap();

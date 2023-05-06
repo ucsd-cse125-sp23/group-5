@@ -4,6 +4,7 @@ use wgpu::util::DeviceExt;
 #[derive(Debug)]
 pub struct Camera {
     pub position: glm::TVec3<f32>,
+    pub prelim_position: glm::TVec3<f32>, // preliminary position calculated on client side
     pub target: glm::TVec3<f32>,
     up: glm::TVec3<f32>,
 }
@@ -12,6 +13,7 @@ impl Camera {
     pub fn new(position: glm::TVec3<f32>, target: glm::TVec3<f32>, up: glm::TVec3<f32>) -> Self {
         Self {
             position,
+            prelim_position: position,
             target,
             up,
         }

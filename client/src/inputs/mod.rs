@@ -18,7 +18,7 @@ pub mod handlers;
 pub enum Input {
     Keyboard(KeyboardInput),
     Mouse(DeviceEvent),
-    Camera { forward: Vec3 },
+    Camera { forward: Vec3, prelim_position: Vec3},
 }
 
 #[derive(Debug, Clone)]
@@ -37,6 +37,7 @@ pub struct InputEventProcessor {
     rx: Receiver<Input>,
     button_states: Arc<Mutex<HashMap<VirtualKeyCode, ButtonState>>>,
     camera_forward: Arc<Mutex<Vec3>>,
+    camera_prelim_position: Arc<Mutex<Vec3>>,
     poller_signal: Arc<(Mutex<bool>, Condvar)>,
 }
 
@@ -48,6 +49,7 @@ impl InputEventProcessor {
             rx,
             button_states: Arc::new(Mutex::new(HashMap::new())),
             camera_forward: Arc::new(Mutex::new(Default::default())),
+            camera_prelim_position: Arc::new(Mutex::new(Default::default())),
             poller_signal: Arc::new((Mutex::new(true), Condvar::new())),
         }
     }
@@ -77,6 +79,7 @@ impl InputEventProcessor {
         let client_id = self.client_id;
         let button_states = Arc::clone(&self.button_states);
         let camera_forward = Arc::clone(&self.camera_forward);
+        let camera_prelim_position = Arc::clone(&self.camera_prelim_position);
         let poller_signal = Arc::clone(&self.poller_signal);
 
         thread::spawn(move || {
@@ -95,6 +98,7 @@ impl InputEventProcessor {
 
                 let mut button_states = button_states.lock().unwrap();
                 let camera_forward = camera_forward.lock().unwrap();
+                let camera_prelim_position = camera_prelim_position.lock().unwrap();
 
                 button_states.retain(|key, state| {
                     if let Some((key_type, command)) = Self::map_key(*key) {
@@ -117,7 +121,7 @@ impl InputEventProcessor {
 
                 // send camera update
                 // TODO: send camera update only when the camera has moved
-                handle_camera_update(*camera_forward, &mut protocol, client_id);
+                handle_camera_update(*camera_forward, *camera_prelim_position, &mut protocol, client_id);
             }
         });
     }
@@ -151,9 +155,12 @@ impl InputEventProcessor {
                 }
 
                 // receive camera update
-                Input::Camera { forward } => {
+                Input::Camera { forward, prelim_position} => {
                     let mut camera_forward = self.camera_forward.lock().unwrap();
                     *camera_forward = forward;
+
+                    let mut camera_prelim_position = self.camera_prelim_position.lock().unwrap();
+                    *camera_prelim_position = prelim_position;
                 }
                 _ => {}
             }

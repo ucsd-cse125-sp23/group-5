@@ -109,16 +109,17 @@ impl PlayerController {
         let rotation = incoming_player_state.transform.rotation;
 
         camera_state.camera.target = translation;
+        camera_state.camera.prelim_position = camera_state.camera.position; 
 
         let pos_delta = translation - player.position;
 
         player.position = translation;
         player.rotation = rotation;
 
-        camera_state.camera.position += pos_delta;
+        camera_state.camera.prelim_position += pos_delta;
 
         let mut spherical_coords =
-            cartesian_to_spherical(&(camera_state.camera.position - player.position));
+            cartesian_to_spherical(&(camera_state.camera.prelim_position - player.position));
 
         // update camera
         let dt = dt.as_secs_f32();
@@ -137,7 +138,10 @@ impl PlayerController {
         self.rotate_horizontal = 0.0;
         self.rotate_vertical = 0.0;
 
-        camera_state.camera.position = translation + spherical_to_cartesian(&spherical_coords);
+        camera_state.camera.prelim_position = translation + spherical_to_cartesian(&spherical_coords);
+
+        // update actual camera position
+        camera_state.camera.position = incoming_player_state.camera_position; 
 
         // update camera zoom (can tune parameters later)
         camera_state.projection.fovy = (camera_state.projection.fovy
@@ -153,5 +157,7 @@ impl PlayerController {
 
         // update ammo count
         player.wind_charge = incoming_player_state.wind_charge;
+
+        
     }
 }

@@ -113,9 +113,10 @@ impl Executor {
                 scene_config,
             )),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
-            Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
+            Command::UpdateCamera { forward, prelim_position} => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
                 forward,
+                prelim_position,
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),

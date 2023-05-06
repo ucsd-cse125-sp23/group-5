@@ -218,6 +218,7 @@ impl CommandHandler for DieCommandHandler {
 pub struct UpdateCameraFacingCommandHandler {
     player_id: u32,
     forward: Vec3,
+    prelim_position: Vec3,
 }
 
 impl CommandHandler for UpdateCameraFacingCommandHandler {
@@ -233,6 +234,7 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         player.camera_forward = self.forward;
+        player.camera_position = self.prelim_position;
 
         Ok(())
     }

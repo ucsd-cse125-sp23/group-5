@@ -139,7 +139,8 @@ impl PlayerLoop {
 
                     // send camera position to input processor
                     self.inputs.send(Input::Camera {
-                        forward: state.camera_state.camera.forward()
+                        forward: state.camera_state.camera.forward(),
+                        prelim_position: state.camera_state.camera.prelim_position,
                     }).unwrap();
 
                     match state.render() {

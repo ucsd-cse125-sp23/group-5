@@ -20,6 +20,7 @@ pub struct PlayerState {
     pub physics: Physics,
     pub jump_count: u32,
     pub camera_forward: Vec3,
+    pub camera_position: Vec3,
     pub connected: bool,
     pub is_dead: bool,
     pub on_cooldown: HashMap<Command, f32>,
