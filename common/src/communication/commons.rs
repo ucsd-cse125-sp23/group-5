@@ -11,6 +11,7 @@ pub const FLAG_XZ: (f32, f32) = (0.0, 0.0);
 pub const FLAG_RADIUS: f32 = 2.0;
 pub const FLAG_Z_BOUND: (Option<f32>, Option<f32>) = (Some(-10.0), Some(0.0));
 pub const WINNING_THRESHOLD: f32 = 20.0;
+pub const DECAY_RATE: f32 = 1.0 / 3.0;
 
 /// Trait for something that can be converted to bytes (&[u8])
 pub trait Serialize {

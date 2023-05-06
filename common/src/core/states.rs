@@ -1,5 +1,5 @@
 use crate::communication::commons::{
-    FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, WINNING_THRESHOLD,
+    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, WINNING_THRESHOLD,
 };
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
@@ -152,7 +152,7 @@ impl GameState {
     pub fn update_player_on_flag_times(&mut self, delta_time: f32) -> Option<u32> {
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            let provisional_on_flag_time = player_state.on_flag_time - delta_time / 3.0;
+            let provisional_on_flag_time = player_state.on_flag_time - delta_time * DECAY_RATE;
             player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
                 provisional_on_flag_time
             } else {
@@ -163,7 +163,7 @@ impl GameState {
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time += delta_time * 4.0 / 3.0;
+                self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
                 return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
                     Some(id)
                 } else {
