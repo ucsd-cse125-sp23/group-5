@@ -148,11 +148,16 @@ impl GameState {
     }
 
     // returns winner if winner is decided
-    pub fn update_player_on_flag_time(&mut self, delta_time: f32) -> Option<u32> {
+    pub fn update_player_on_flag_times(&mut self, delta_time: f32) -> Option<u32> {
+        // decay
+        for (_, player_state) in self.players.iter_mut() {
+            player_state.on_flag_time -= delta_time / 3.0;
+        }
+
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time += delta_time;
+                self.player_mut(id).unwrap().on_flag_time += delta_time * 4.0 / 3.0;
                 return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
                     Some(id)
                 } else {

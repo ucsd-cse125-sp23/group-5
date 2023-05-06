@@ -157,7 +157,7 @@ impl Executor {
 
         game_state.update_cooldowns(delta_time);
 
-        match game_state.update_player_on_flag_time(delta_time) {
+        match game_state.update_player_on_flag_times(delta_time) {
             Some(id) => {
                 panic!("Winner is {}, game finished!", id)
             }
