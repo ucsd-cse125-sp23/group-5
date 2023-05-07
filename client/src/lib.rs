@@ -34,8 +34,8 @@ pub mod inputs;
 
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
-use common::core::states::{GameState, ParticleQueue};
 use common::core::events;
+use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
@@ -593,7 +593,12 @@ impl State {
         }
     }
 
-    fn update(&mut self, game_state: Arc<Mutex<GameState>>, particle_queue: Arc<Mutex<ParticleQueue>>, dt: instant::Duration) {
+    fn update(
+        &mut self,
+        game_state: Arc<Mutex<GameState>>,
+        particle_queue: Arc<Mutex<ParticleQueue>>,
+        dt: instant::Duration,
+    ) {
         let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
         {   // new block because we need to drop scene_id before continuing
@@ -739,8 +744,8 @@ impl State {
         Ok(())
     }
 
-    fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>){
-        for p in &particle_queue.particles{
+    fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
+        for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
                 //TODO: move to config
@@ -756,10 +761,10 @@ impl State {
                         0.3,
                         PI,
                         0.5,
-                        75.0, 
+                        75.0,
                         10.0,
                         7.0,
-                        false
+                        false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(

@@ -5,8 +5,8 @@ use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
 //exports
-pub mod gen;
 pub mod constants;
+pub mod gen;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

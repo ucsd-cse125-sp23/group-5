@@ -1,16 +1,6 @@
-use crate::executor::GameEventCollector;
-use crate::simulation::obj_collider::FromObject;
-use crate::simulation::physics_state::PhysicsState;
 use std::f32::consts::PI;
+use std::fmt::{format, Debug};
 
-use crate::Recipients;
-use common::core::command::{Command, MoveDirection};
-use common::core::events::{GameEvent, SoundSpec, ParticleSpec, ParticleType};
-
-use common::communication::commons::MAX_WIND_CHARGE;
-use common::configs::model_config::ConfigModels;
-use common::configs::scene_config::ConfigSceneGraph;
-use common::core::states::{GameState, PlayerState};
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
 use nalgebra::UnitQuaternion;
@@ -20,7 +10,18 @@ use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
-use std::fmt::{format, Debug};
+
+use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE};
+use common::configs::model_config::ConfigModels;
+use common::configs::scene_config::ConfigSceneGraph;
+use common::core::command::{Command, MoveDirection};
+use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
+use common::core::states::{GameState, PlayerState};
+
+use crate::executor::GameEventCollector;
+use crate::simulation::obj_collider::FromObject;
+use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -90,8 +91,7 @@ impl CommandHandler for StartupCommandHandler {
 
             let decompose = node.decompose.unwrap_or(false);
 
-            let collider = rapier::ColliderBuilder::from_object_models(models, decompose)
-                .build();
+            let collider = rapier::ColliderBuilder::from_object_models(models, decompose).build();
 
             physics_state.insert_entity(scene_entity_id, Some(collider), Some(body)); // insert the collider into the physics world
             scene_entity_id += 1;
@@ -141,7 +141,7 @@ impl CommandHandler for SpawnCommandHandler {
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
-                if let Some(player_rigid_body) = 
+                if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
                     player_rigid_body.set_enabled(true);
@@ -180,7 +180,6 @@ impl CommandHandler for SpawnCommandHandler {
     }
 }
 
-
 #[derive(Constructor)]
 pub struct DieCommandHandler {
     player_id: u32,
@@ -202,21 +201,18 @@ impl CommandHandler for DieCommandHandler {
 
         // Teleport the player back to their spawn position and disable physics.
         let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
-        if let Some(player_rigid_body) =
-            physics_state.get_entity_rigid_body_mut(self.player_id)
-        {
+        if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
             player_rigid_body.set_position(new_position, true);
             player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
             player_rigid_body.set_enabled(false);
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, 3);
+        player_state.insert_cooldown(Command::Spawn, 3.0);
 
         Ok(())
     }
 }
-
 
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
@@ -458,19 +454,17 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Attack, 5);
+        player_state.insert_cooldown(Command::Attack, 1.0);
         game_events.add(
-            GameEvent::ParticleEvent(
-                ParticleSpec::new(
-                    ParticleType::ATTACK,
-                    player_pos.clone(),
-                    camera_forward.clone(),
-                    //TODO: placeholder for player color
-                    glm::vec3(0.0, 1.0, 0.0),
-                    glm::vec4(0.4, 0.9, 0.7, 1.0),
-                    format!("Attack from player {}", self.player_id)
-                )
-            ),
+            GameEvent::ParticleEvent(ParticleSpec::new(
+                ParticleType::ATTACK,
+                player_pos.clone(),
+                camera_forward.clone(),
+                //TODO: placeholder for player color
+                glm::vec3(0.0, 1.0, 0.0),
+                glm::vec4(0.4, 0.9, 0.7, 1.0),
+                format!("Attack from player {}", self.player_id),
+            )),
             Recipients::All,
         );
 
@@ -535,6 +529,36 @@ impl CommandHandler for AttackCommandHandler {
             }
         }
 
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
+pub struct RefillCommandHandler {
+    player_id: u32,
+    config_scene_graph: ConfigSceneGraph,
+}
+
+impl CommandHandler for RefillCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        _: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
+        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
+        let player_state = game_state.player_mut(self.player_id).unwrap();
+        if !player_state.is_in_circular_area(
+            (spawn_position.x, spawn_position.z),
+            2.0,
+            (None, None),
+        ) || player_state.command_on_cooldown(Command::Refill)
+        {
+            // signal player that he/she is not in refill area
+            return Ok(());
+        }
+        player_state.refill_wind_charge(Some(ONE_CHARGE));
+        player_state.insert_cooldown(Command::Refill, 0.5);
         Ok(())
     }
 }

@@ -6,10 +6,12 @@ pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
 pub const CSE125_SERVER_ADDR: &str = "128.54.70.15:2333";
 pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
 pub const MAX_WIND_CHARGE: u32 = 10;
+pub const ONE_CHARGE: u32 = 1;
 pub const FLAG_XZ: (f32, f32) = (0.0, 0.0);
 pub const FLAG_RADIUS: f32 = 2.0;
 pub const FLAG_Z_BOUND: (Option<f32>, Option<f32>) = (Some(-10.0), Some(0.0));
 pub const WINNING_THRESHOLD: f32 = 20.0;
+pub const DECAY_RATE: f32 = 1.0 / 3.0;
 
 /// Trait for something that can be converted to bytes (&[u8])
 pub trait Serialize {
@@ -94,7 +96,9 @@ pub mod prefix_len {
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid utf8"))
     }
 
-    pub fn extract_bincode<T: for<'a> serde::Deserialize<'a>>(buf: &mut impl Read) -> io::Result<T> {
+    pub fn extract_bincode<T: for<'a> serde::Deserialize<'a>>(
+        buf: &mut impl Read,
+    ) -> io::Result<T> {
         let bincode = extract_bytes(buf)?;
         let value = bincode::deserialize(&bincode)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;

@@ -1,29 +1,23 @@
-use std::hash::Hash;
 use log::debug;
 use nalgebra::Point3;
+use once_cell::sync::Lazy;
 use rapier3d::geometry::ColliderBuilder;
 use rapier3d::math::Real;
-use once_cell::sync::Lazy;
+use std::hash::Hash;
 
-use tobj;
 use common::utils::file_cache::{Cache, FileCache};
+use tobj;
 
 pub trait FromObject {
-    fn from_object_models(
-        models: Vec<tobj::Model>,
-        decompose: bool,
-    ) -> Self;
+    fn from_object_models(models: Vec<tobj::Model>, decompose: bool) -> Self;
 }
 
-static OBJ_COLLIDER_CACHE : Lazy<FileCache<String, ColliderBuilder>> = Lazy::new(|| {
-    FileCache::new("obj_collider_cache.bin")
-});
+static OBJ_COLLIDER_CACHE: Lazy<FileCache<String, ColliderBuilder>> =
+    Lazy::new(|| FileCache::new("obj_collider_cache.bin"));
 
 impl FromObject for ColliderBuilder {
     /// Create a collider from a list of object models (combine all the meshes into one collider)
     fn from_object_models(models: Vec<tobj::Model>, decompose: bool) -> ColliderBuilder {
-
-
         // check cache
         let mut cache_key = String::new();
 
