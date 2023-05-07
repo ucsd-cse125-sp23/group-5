@@ -1,4 +1,5 @@
 use glm::vec3;
+use screen::objects::DisplayGroup;
 use std::collections::HashMap;
 use std::sync::MutexGuard;
 use std::{
@@ -49,17 +50,18 @@ struct State {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     window: Window,
-    depth_texture: texture::Texture,
-    render_pipeline: wgpu::RenderPipeline,
-    render_pipeline_2d: wgpu::RenderPipeline,
+    // depth_texture: texture::Texture,
+    // render_pipeline: wgpu::RenderPipeline,
+    // render_pipeline_2d: wgpu::RenderPipeline,
     player: player::Player,
     player_controller: player::PlayerController,
-    scene: scene::Scene,
-    light_state: lights::LightState,
+    // scene: scene::Scene,
+    // light_state: lights::LightState,
     camera_state: camera::CameraState,
-    screens: Vec<screen_objects::Screen>,
-    screen_ind: usize,
-    particle_renderer: particles::ParticleDrawer,
+    // screens: Vec<screen_objects::Screen>,
+    // screen_ind: usize,
+    display: screen::Display,
+    // particle_renderer: particles::ParticleDrawer,
     rng: rand::rngs::ThreadRng,
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
@@ -398,8 +400,8 @@ impl State {
                 module: &shader_2d,
                 entry_point: "vs_main",
                 buffers: &[
-                    screen_objects::Vertex::desc(),
-                    screen_objects::ScreenInstance::desc(),
+                    screen::objects::Vertex::desc(),
+                    screen::objects::ScreenInstance::desc(),
                 ],
             },
             fragment: Some(wgpu::FragmentState {
@@ -458,8 +460,69 @@ impl State {
             particle_tex,
         );
 
-        let screens =
-            screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
+        //TODO: for debugging -----
+        let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
+        screen::objects::get_display_groups(&device, scene, &mut groups);
+        let default_display_id = String::from("display:title");
+
+        let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
+        // String::from("bkgd:title")
+        // String::from("btn:title")
+        // String::from("btn:title_hover")
+        //Assume there's always a texture
+        screen::texture_config::load_screen_tex(
+            &device,
+            &queue,
+            &texture_bind_group_layout_2d,
+            String::from("bkgd:title"),
+            "start_screen_without_btn.jpg",
+            &mut texture_map
+        );
+        screen::texture_config::load_screen_tex(
+            &device,
+            &queue,
+            &texture_bind_group_layout_2d,
+            String::from("btn:title"),
+            "start_btn_default.png",
+            &mut texture_map
+        );
+        screen::texture_config::load_screen_tex(
+            &device,
+            &queue,
+            &texture_bind_group_layout_2d,
+            String::from("btn:title_hover"),
+            "start_btn_hover.png",
+            &mut texture_map
+        );
+        // end debug code that needs to be replaced
+
+        let rect_ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Const Rect Index Buffer"),
+            contents: bytemuck::cast_slice(&screen::objects::RECT_IND),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let default_inst = screen::objects::ScreenInstance::default();
+        let default_inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Default Instance Buffer"),
+            contents: bytemuck::cast_slice(&[default_inst]),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let display = screen::Display::new(
+            groups,
+            default_display_id,
+            texture_map,
+            light_state,
+            render_pipeline,
+            render_pipeline_2d,
+            particle_renderer,
+            rect_ibuf,
+            depth_texture,
+            default_inst_buf
+        );
+
+        // let screens =
+        //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
         Self {
             window,
@@ -468,20 +531,21 @@ impl State {
             queue,
             config,
             size,
-            render_pipeline,
-            render_pipeline_2d,
-            scene,
+            // render_pipeline,
+            // render_pipeline_2d,
+            // scene,
             player,
             player_controller,
             camera_state,
-            depth_texture,
-            light_state,
-            screens,
-            #[cfg(not(feature = "debug-lobby"))]
-            screen_ind: 0,
-            #[cfg(feature = "debug-lobby")]
-            screen_ind: 1,
-            particle_renderer,
+            // depth_texture,
+            // light_state,
+            // screens,
+            // #[cfg(not(feature = "debug-lobby"))]
+            // screen_ind: 0,
+            // #[cfg(feature = "debug-lobby")]
+            // screen_ind: 1,
+            // particle_renderer,
+            display,
             rng,
             client_id,
             staging_belt,
@@ -512,14 +576,16 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
-            screen_objects::update_screen(
-                new_size.width,
-                new_size.height,
-                &self.device,
-                &mut self.screens[0].objects[0],
-            );
+            // for dg in self.display.groups.values_mut(){
+            //     dg.resize(
+            //         new_size.width,
+            //         new_size.height,
+            //         &self.device,
+            //         &self.queue,
+            //     );
+            // }
 
-            self.depth_texture =
+            self.display.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
     }
@@ -542,7 +608,13 @@ impl State {
     fn update(&mut self, game_state: Arc<Mutex<GameState>>, particle_queue: Arc<Mutex<ParticleQueue>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
-        self.scene.load_game_state(
+        // TODO: hard coded!
+        self.display.groups
+            .get(&String::from("display:game"))
+            .unwrap()
+            .scene
+            .unwrap()
+            .load_game_state(
             game_state,
             &mut self.player_controller,
             &mut self.player,
@@ -553,7 +625,9 @@ impl State {
         let particle_queue = particle_queue.lock().unwrap();
         self.load_particles(particle_queue);
 
-        self.scene.draw_scene_dfs();
+        self.display.groups
+        .get(&String::from("display:game")).unwrap()
+        .scene.unwrap().draw_scene_dfs();
 
         // camera update
         self.camera_state
@@ -563,12 +637,6 @@ impl State {
             &self.camera_state.camera_buffer,
             0,
             bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
-        );
-        // light update
-        self.queue.write_buffer(
-            &self.light_state.light_buffer,
-            0,
-            bytemuck::cast_slice(&[self.light_state.light_uniform]),
         );
     }
 
@@ -582,96 +650,15 @@ impl State {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
-        {
-            //placed up here because it needs to be dropped after the render pass
-            let mut instanced_objs = Vec::new();
-
-            for (index, instances) in self.scene.objects_and_instances.iter() {
-                let count = instances.len();
-                let instanced_obj = model::InstancedModel::new(
-                    self.scene.objects.get(index).unwrap(),
-                    instances,
-                    &self.device,
-                );
-                instanced_objs.push((instanced_obj, count));
-            }
-
-            let mut to_draw: Vec<particles::Particle> = Vec::new();
-            self.particle_renderer
-                .get_particles_to_draw(&self.camera_state.camera, &mut to_draw);
-            // write buffer to gpu and set buffer
-            let inst_buf = self
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Instance Buffer"),
-                    contents: bytemuck::cast_slice(&to_draw),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
-
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.888,
-                            g: 0.815,
-                            b: 0.745,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.depth_texture.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: true,
-                    }),
-                    stencil_ops: None,
-                }),
-            });
-
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
-
-            for obj in instanced_objs.iter() {
-                render_pass.draw_model_instanced(
-                    &obj.0,
-                    0..obj.1 as u32,
-                    &self.camera_state.camera_bind_group,
-                );
-            }
-
-            // Particle Drawing
-            self.particle_renderer.draw(
-                &mut render_pass,
-                &self.camera_state.camera_bind_group,
-                to_draw.len() as u32,
-                &inst_buf,
-                &self.device,
-                &self.queue,
-            );
-
-            // GUI drawing
-            render_pass.set_pipeline(&self.render_pipeline_2d);
-
-            // TO REMOVE: for testing
-            if self.screen_ind == 1 {
-                self.screens[self.screen_ind].ranges[1] = 0..5;
-            }
-
-            for i in 0..self.screens[self.screen_ind].objects.len() {
-                let obj = &self.screens[self.screen_ind].objects[i];
-                let range = &self.screens[self.screen_ind].ranges[i];
-                render_pass.set_vertex_buffer(0, obj.vbuf.slice(..));
-                render_pass.set_vertex_buffer(1, obj.inst_buf.slice(..));
-                render_pass.set_index_buffer(obj.ibuf.slice(..), wgpu::IndexFormat::Uint16);
-                render_pass.set_bind_group(0, &obj.bind_group, &[]);
-                render_pass.draw_indexed(0..obj.num_indices, 0, range.clone());
-            }
-        }
+        
+        self.display.render(
+            &self.camera_state,
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            &view,
+            &output,
+        );
 
         let size = &self.window.inner_size();
 
@@ -787,7 +774,7 @@ impl State {
                         &self.device,
                         &mut self.rng,
                     );
-                    self.particle_renderer.systems.push(atk);
+                    self.display.particles.systems.push(atk);
                 },
                 _ => {},
             }

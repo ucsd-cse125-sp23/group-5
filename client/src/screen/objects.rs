@@ -11,6 +11,11 @@ static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map!{
     "game_start" => game_start,
 };
 
+// Place click events here
+fn game_start(display: &mut screen::Display){
+    display.current = String::from("display:game");
+}
+
 // Vertex
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -30,6 +35,46 @@ impl Vertex {
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
+        }
+    }
+}
+
+#[rustfmt::skip]
+pub const RECT_IND : [u16; 6] = [
+    0, 2, 1,
+    0, 3, 2,
+];
+
+#[repr(C)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ScreenInstance {
+    pub transform: [[f32; 4]; 4],
+}
+
+impl ScreenInstance {
+    const ATTRIBS: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+        3 => Float32x4, 4 => Float32x4, 5 => Float32x4, 6 => Float32x4
+    ];
+
+    pub fn default() -> Self {
+        Self {
+            transform: [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+}
+
+impl crate::model::Vertex for ScreenInstance {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
             attributes: &Self::ATTRIBS,
         }
     }
@@ -93,6 +138,7 @@ pub enum ScreenObject{
         hover_tint: glm::Vec4,
         default_texture: String,
         hover_texture: String,
+        is_hover: bool, // For now, we assume nothing can overlap
         on_click: Option<String>,
     },
     Icon{
@@ -108,8 +154,59 @@ pub enum ScreenObject{
     },
 }
 
+impl DisplayGroup{
+    pub fn resize(
+        &mut self,
+        screen_width: u32,
+        screen_height: u32,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ){
+        // Recalculate for every screen
+        match &self.screen {
+            None => {return;},
+            Some(mut s) => {
+                match s.background {
+                    None => {},
+                    Some(mut bkgd) => {bkgd.resize(
+                            screen_width,
+                            screen_height,
+                            device,
+                            queue,
+                        );
+                    }
+                };
+                for i in &mut s.items{
+                    match i {
+                        ScreenObject::Button { 
+                            location,
+                            aspect,
+                            height,
+                            vertices,
+                            vbuf,
+                            ..
+                        } => {
+                            location.get_coords(*aspect, *height, screen_width, screen_height, vertices);
+                        },
+                        ScreenObject::Icon { 
+                            location,
+                            aspect,
+                            height,
+                            vertices,
+                            vbuf,
+                            ..
+                        } => {
+                            location.get_coords(*aspect, *height, screen_width, screen_height, vertices);
+                        }
+                    };
+                }
+            }
+        };
+    }
+}
+
 impl ScreenBackground{
-    pub fn update(
+    pub fn resize(
         &mut self,
         width: u32,
         height: u32,
@@ -147,14 +244,71 @@ impl ScreenBackground{
             bytemuck::cast_slice(&title_vert),
         );
     }
+
+    pub fn render(
+        &self,
+        texture_map: &HashMap<String, wgpu::BindGroup>,
+        default_inst_buf: &wgpu::Buffer,
+        render_pass: &mut wgpu::RenderPass, 
+        device: &wgpu::Device,
+    ){
+        render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
+        render_pass.set_vertex_buffer(1, default_inst_buf.slice(..));
+        // will probably panic if it cannot find the texture
+        render_pass.set_bind_group(0, texture_map.get(&self.texture).unwrap(), &[]);
+        render_pass.draw_indexed(0..6, 0, 0..1);
+    }
 }
 
+impl ScreenObject{
+    pub fn render<'a>(
+        &self,
+        texture_map: &'a HashMap<String, wgpu::BindGroup>,
+        default_inst_buf: & wgpu::Buffer,
+        render_pass: &'a mut wgpu::RenderPass<'a>, 
+        device: &wgpu::Device,
+    ){
+        match self{
+            ScreenObject::Button {
+                vbuf,
+                default_texture,
+                hover_texture,
+                is_hover,
+                ..
+            } => {
+                render_pass.set_vertex_buffer(0, vbuf.slice(..));
+                render_pass.set_vertex_buffer(1, default_inst_buf.slice(..));
+                let tex_bind_group= match is_hover{
+                    true => texture_map.get(hover_texture).unwrap(),
+                    false => texture_map.get(default_texture).unwrap(),
+                };
+                render_pass.set_bind_group(0, tex_bind_group, &[]);
+                render_pass.draw_indexed(0..6, 0, 0..1);
+            },
+            ScreenObject::Icon {
+                vertices,
+                vbuf,
+                tint,
+                texture,
+                inst_range,
+                ..
+            } => {
+                render_pass.set_vertex_buffer(0, vbuf.slice(..));
+                // TODO: change when/if we want instancing
+                render_pass.set_vertex_buffer(1, default_inst_buf.slice(..));
+                let tex_bind_group= texture_map.get(texture).unwrap();
+                render_pass.set_bind_group(0, tex_bind_group, &[]);
+                // TODO: change when/if we want instancing
+                render_pass.draw_indexed(0..6, 0, 0..1);
+            }
+        }
+    }
+}
 
 // For testing
 pub fn get_display_groups(
     device: &wgpu::Device,
     scene_game: Scene,
-    texture_map: &HashMap<String, wgpu::BindGroup>,
     groups: &mut HashMap<String, DisplayGroup>,
 ){
     // title screen
@@ -191,6 +345,7 @@ pub fn get_display_groups(
         hover_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
         default_texture: String::from("btn:title"),
         hover_texture: String::from("btn:title_hover"),
+        is_hover: false,
         on_click: Some(String::from("game_start")),
     };
     let title_screen = Screen{
@@ -213,8 +368,4 @@ pub fn get_display_groups(
     };
     groups.insert(id2, game_dg);
     return;
-}
-
-pub fn game_start(display: &mut screen::Display){
-    display.current = String::from("display:game");
 }

@@ -1,41 +1,174 @@
 use std::collections::HashMap;
-use crate::particles::ParticleDrawer;
-use crate::texture;
+use wgpu::util::DeviceExt;
+
+use crate::model::DrawModel;
+use crate::particles::{ParticleDrawer, self};
+use crate::{texture, model, camera, lights};
 
 pub mod objects;
 pub mod location;
+pub mod texture_config;
 // pub mod config; // TODO later
 
-#[rustfmt::skip]
-const RECT_IND : Vec<u16> = vec![
-    0, 2, 1,
-    0, 3, 2,
-];
-
-// Should only be one of these int he entire game
+// Should only be one of these in the entire game
 pub struct Display{
     pub groups: HashMap<String, objects::DisplayGroup>,
     pub current: String,
+    pub texture_map: HashMap<String, wgpu::BindGroup>,
+    pub light_state: lights::LightState, // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
     pub ui_pipeline: wgpu::RenderPipeline,
     pub particles: ParticleDrawer,
     pub rect_ibuf: wgpu::Buffer,
+    pub depth_texture: texture::Texture,
+    pub default_inst_buf: wgpu::Buffer,
 }
 
 impl Display{
-    pub fn new() -> Self{
-        todo!();
+    pub fn new(
+        groups: HashMap<String, objects::DisplayGroup>,
+        current: String,
+        texture_map: HashMap<String, wgpu::BindGroup>,
+        light_state: lights::LightState,
+        scene_pipeline: wgpu::RenderPipeline,
+        ui_pipeline: wgpu::RenderPipeline,
+        particles: ParticleDrawer,
+        rect_ibuf: wgpu::Buffer,
+        depth_texture: texture::Texture,
+        default_inst_buf: wgpu::Buffer,
+    ) -> Self{
+        Self {
+            groups,
+            current,
+            texture_map,
+            light_state,
+            scene_pipeline,
+            ui_pipeline,
+            particles,rect_ibuf,
+            depth_texture,
+            default_inst_buf
+        }
     }
 
     pub fn render(
         &mut self,
-        texture_map: &HashMap<String, texture::Texture>,
+        camera_state: &camera::CameraState,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        render_pass: &wgpu::RenderPass,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        output: &wgpu::SurfaceTexture,
     ){
-        todo!();
+        // inability to find the scene would be a major bug
+        // panicking is fine
+        let display_group = self.groups.get(&self.current).unwrap();
+
+        // Instance 3D objects
+        let mut instanced_objs = Vec::new();
+        
+        match &display_group.scene {
+            None => {},
+            Some(scene) => {
+                for (index, instances) in scene.objects_and_instances.iter() {
+                    let count = instances.len();
+                    let instanced_obj = model::InstancedModel::new(
+                        scene.objects.get(index).unwrap(),
+                        instances,
+                        device,
+                    );
+                    instanced_objs.push((instanced_obj, count));
+                }
+            }
+        };
+        
+        // generate particles
+        let mut to_draw: Vec<particles::Particle> = Vec::new();
+        self.particles
+            .get_particles_to_draw(&camera_state.camera, &mut to_draw);
+        // write buffer to gpu and set buffer
+        let particle_inst_buf = device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&to_draw),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        {
+            // Make render pass
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.888,
+                            g: 0.815,
+                            b: 0.745,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true,
+                    }),
+                    stencil_ops: None,
+                }),
+            });
+
+            // Optionally draw scene
+            if instanced_objs.len() > 0{
+                render_pass.set_pipeline(&self.scene_pipeline);
+                render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
+
+                for obj in instanced_objs.iter() {
+                    render_pass.draw_model_instanced(
+                        &obj.0,
+                        0..obj.1 as u32,
+                        &camera_state.camera_bind_group,
+                    );
+                }
+            }
+
+            // Draw particles
+            self.particles.draw(
+                &mut render_pass,
+                &camera_state.camera_bind_group,
+                to_draw.len() as u32,
+                &particle_inst_buf,
+                device,
+                queue,
+            );
+
+            // Optionally draw GUI
+            match &display_group.screen{
+                None => {},
+                Some(screen) => {
+                    render_pass.set_pipeline(&self.ui_pipeline);
+                    render_pass.set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
+                    // first optionally draw background
+                    if let Some(bkgd) = &screen.background { 
+                        bkgd.render(
+                            &self.texture_map,
+                            &self.default_inst_buf,
+                            &mut render_pass,
+                            device
+                        );
+                    };
+                    for item in &screen.items{
+                        item.render(
+                            &self.texture_map,
+                            &self.default_inst_buf,
+                            &mut render_pass,
+                            device,
+                        );
+                    }
+                }
+            };
+        }
     }
 }
-
-// Place click events here
