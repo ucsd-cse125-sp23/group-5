@@ -1,0 +1,39 @@
+{
+    "default_display": "display:title",
+    "game_display": "display:game",
+    "displays": [
+        {
+            "id": "display:title",
+            "screen": "screen:title"
+        },
+        {
+            "id": "display:game",
+            "scene":"scene:game"
+        }
+    ],
+    "screens": [
+        {
+            "id": "screen:title",
+            "background": {
+                "tex": "bkgd:title",
+                "aspect": 1.77777778
+            },
+            "buttons": [
+                {
+                    "location": {
+                        "vert_disp": [0.0, -0.5],
+                        "horz_disp": [0.0, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.926,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:title",
+                    "hover_tex": "btn:title_hover",
+                    "on_click": "game_start"
+                }
+            ],
+            "icons": []
+        }
+    ]
+}

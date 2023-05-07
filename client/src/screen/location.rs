@@ -13,8 +13,8 @@ pub struct ScreenLocation{
 impl ScreenLocation{
     pub fn to_absolute(&self, width: u32, height: u32) -> [f32; 2]{
         let aspect: f32 = (width as f32) / (height as f32);
-        let w = self.horz_disp.1 + self.horz_disp.0 / aspect;
-        let h = self.vert_disp.0 + self.vert_disp.1 * aspect;
+        let w = self.horz_disp.0 + self.horz_disp.1 / aspect;
+        let h = self.vert_disp.1 + self.vert_disp.0 * aspect;
         [w, h]
     }
 
@@ -25,6 +25,7 @@ impl ScreenLocation{
         screen_height: u32
     ) -> f32{
         let r_aspect: f32 = (screen_height as f32) / (screen_width as f32);
+        let aspect: f32 = (screen_width as f32) / (screen_height as f32);
         return height * object_aspect * r_aspect;
     }
 

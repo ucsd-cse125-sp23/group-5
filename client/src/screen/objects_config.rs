@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
-use crate::scene::Scene;
 use crate::screen::location::ScreenLocation;
 use crate::screen::objects;
 
@@ -12,21 +9,23 @@ use crate::screen::objects;
 //    with the exception of aspect ratio, which is unitless
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigDisplays{
+pub struct ConfigDisplay{
     pub displays: Vec<ConfigDisplayGroup>,
     pub default_display: String,
     pub game_display: String,
+    pub screens: Vec<ConfigScreen>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigDisplayGroup {
     pub id: String,
-    pub screen: Option<ConfigScreen>,
+    pub screen: Option<String>,
     pub scene: Option<String>, // To load the scene graph
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigScreen {
+    pub id: String,
     pub background: Option<ConfigScreenBackground>,
     pub buttons: Vec<ConfigButton>,
     pub icons: Vec<ConfigIcon>,
@@ -76,16 +75,11 @@ impl ConfigDisplayGroup{
         height: u32,
         device: &wgpu::Device,
     ) -> objects::DisplayGroup{
-        let screen = match self.screen.as_ref(){
-            None => None,
-            Some(s) => Some(s.unwrap_config(width, height, device))
-        };
-        todo!();
-        // objects::DisplayGroup{
-        //     id: self.id.clone(),
-        //     screen,
-        //     scene,
-        // }
+        objects::DisplayGroup{
+            id: self.id.clone(),
+            screen: self.screen.clone(),
+            scene: self.scene.clone(),
+        }
     }
 }
 
@@ -110,6 +104,7 @@ impl ConfigScreen{
         }
 
         objects::Screen { 
+            id: self.id.clone(),
             background,
             icons,
             buttons

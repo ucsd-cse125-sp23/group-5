@@ -111,12 +111,13 @@ pub const TITLE_VERT: [Vertex; 4] = [
 // #[derive(Debug)]
 pub struct DisplayGroup {
     pub id: String,
-    pub screen: Option<Screen>,
-    pub scene: Option<Scene>, // To load the scene graph
+    pub screen: Option<String>,
+    pub scene: Option<String>, // To load the scene graph
 }
 
 #[derive(Debug)]
 pub struct Screen {
+    pub id: String,
     pub background: Option<ScreenBackground>,
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
@@ -155,21 +156,6 @@ pub struct Icon{
     pub instances: Vec<ScreenInstance>,
     pub inst_buf: wgpu::Buffer,
     pub inst_range: std::ops::Range<u32>,
-}
-
-impl DisplayGroup{
-    pub fn resize(
-        &mut self,
-        screen_width: u32,
-        screen_height: u32,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ){
-        match self.screen.as_mut(){
-            None => {},
-            Some(s) => s.resize(screen_width, screen_height, device, queue)
-        };
-    }
 }
 
 impl Screen{
@@ -302,12 +288,10 @@ impl Icon{
 // For testing
 pub fn get_display_groups(
     device: &wgpu::Device,
-    scene_game: Scene,
     groups: &mut HashMap<String, DisplayGroup>,
 ){
     // title screen
     let id1 = String::from("display:title");
-    let scene1 = None;
     let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("title background Obj Vertex Buffer"),
         contents: bytemuck::cast_slice(&TITLE_VERT),
@@ -319,8 +303,8 @@ pub fn get_display_groups(
         texture: String::from("bkgd:title"),
     };
     let button1_loc = ScreenLocation{
-        vert_disp: (-0.5, 0.0),
-        horz_disp: ( 0.0, 0.0)
+        vert_disp: (0.0, -0.5),
+        horz_disp: (0.0,  0.0)
     };
     let mut b_vert = TITLE_VERT;
     button1_loc.get_coords(1.0, 0.463, 1920, 1080, &mut b_vert);
@@ -342,14 +326,15 @@ pub fn get_display_groups(
         on_click: String::from("game_start"),
     };
     let title_screen = Screen{
+        id: String::from("screen:title"),
         background: Some(bkgd1),
         buttons: vec![button1],
         icons: vec![],
     };
     let title_dg = DisplayGroup{
         id: id1.clone(),
-        screen: Some(title_screen),
-        scene: scene1,
+        screen: Some(String::from("screen:title")),
+        scene: None,
     };
     groups.insert(id1, title_dg);
     
@@ -358,7 +343,7 @@ pub fn get_display_groups(
     let game_dg = DisplayGroup{
         id: id2.clone(),
         screen: None,
-        scene: Some(scene_game),
+        scene: Some(String::from("scene:game")),
     };
     groups.insert(id2, game_dg);
     return;

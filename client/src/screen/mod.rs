@@ -3,7 +3,10 @@ use wgpu::util::DeviceExt;
 
 use crate::model::DrawModel;
 use crate::particles::{ParticleDrawer, self};
+use crate::scene::Scene;
 use crate::{texture, model, camera, lights};
+
+use self::objects::Screen;
 
 pub mod objects;
 pub mod location;
@@ -11,6 +14,7 @@ pub mod texture_config;
 pub mod objects_config; // TODO later
 
 pub const TEX_CONFIG_PATH : &str = "tex.json";
+pub const DISPLAY_CONFIG_PATH : &str = "display.json";
 
 // Should only be one of these in the entire game
 pub struct Display{
@@ -18,6 +22,8 @@ pub struct Display{
     pub current: String,
     pub game_display: String,
     pub texture_map: HashMap<String, wgpu::BindGroup>,
+    pub screen_map: HashMap<String, Screen>,
+    pub scene_map: HashMap<String, Scene>,
     pub light_state: lights::LightState, // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
     pub ui_pipeline: wgpu::RenderPipeline,
@@ -33,6 +39,8 @@ impl Display{
         current: String,
         game_display: String,
         texture_map: HashMap<String, wgpu::BindGroup>,
+        screen_map: HashMap<String, Screen>,
+        scene_map: HashMap<String, Scene>,
         light_state: lights::LightState,
         scene_pipeline: wgpu::RenderPipeline,
         ui_pipeline: wgpu::RenderPipeline,
@@ -46,10 +54,56 @@ impl Display{
             current,
             game_display,
             texture_map,
+            screen_map,
+            scene_map,
             light_state,
             scene_pipeline,
             ui_pipeline,
             particles,rect_ibuf,
+            depth_texture,
+            default_inst_buf
+        }
+    }
+
+    pub fn from_config(
+        config: &objects_config::ConfigDisplay,
+        texture_map: HashMap<String, wgpu::BindGroup>,
+        scene_map: HashMap<String, Scene>,
+        light_state: lights::LightState,
+        scene_pipeline: wgpu::RenderPipeline,
+        ui_pipeline: wgpu::RenderPipeline,
+        particles: ParticleDrawer,
+        rect_ibuf: wgpu::Buffer,
+        depth_texture: texture::Texture,
+        default_inst_buf: wgpu::Buffer,
+        screen_width: u32,
+        screen_height: u32,
+        device: &wgpu::Device,
+    ) -> Self{
+        let mut groups = HashMap::new();
+        for g in &config.displays{
+            let tmp = g.unwrap_config(screen_width, screen_height, device);
+            groups.insert(g.id.clone(), tmp);
+        }
+
+        let mut screen_map = HashMap::new();
+        for s in &config.screens{
+            let tmp = s.unwrap_config(screen_width, screen_height, device);
+            screen_map.insert(tmp.id.clone(), tmp);
+        }
+
+        Self { 
+            groups,
+            current: config.default_display.clone(),
+            game_display: config.game_display.clone(),
+            texture_map,
+            screen_map,
+            scene_map,
+            light_state,
+            scene_pipeline,
+            ui_pipeline,
+            particles,
+            rect_ibuf,
             depth_texture,
             default_inst_buf
         }
@@ -74,7 +128,8 @@ impl Display{
         
         match &display_group.scene {
             None => {},
-            Some(scene) => {
+            Some(scene_id) => {
+                let scene = self.scene_map.get(scene_id).unwrap();
                 for (index, instances) in scene.objects_and_instances.iter() {
                     let count = instances.len();
                     let instanced_obj = model::InstancedModel::new(
@@ -153,7 +208,8 @@ impl Display{
             // Optionally draw GUI
             match &display_group.screen{
                 None => {},
-                Some(screen) => {
+                Some(screen_id) => {
+                    let screen = self.screen_map.get(screen_id).unwrap();
                     render_pass.set_pipeline(&self.ui_pipeline);
                     render_pass.set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
                     // first optionally draw background
@@ -202,7 +258,7 @@ impl Display{
         let screen;
         match display_group.screen.as_ref() {
             None => return,
-            Some(s) => screen = s
+            Some(s) => screen = self.screen_map.get(s).unwrap()
         };
         let mut to_call: Option<&str> = None;
         for button in &screen.buttons{

@@ -455,10 +455,13 @@ impl State {
         );
 
         //TODO: for debugging -----
-        let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
-        screen::objects::get_display_groups(&device, scene, &mut groups);
+        // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
+        // screen::objects::get_display_groups(&device, scene, &mut groups);
         let default_display_id = String::from("display:title");
         let game_display_id = String::from("display:game");
+
+        let mut scene_map = HashMap::new();
+        scene_map.insert(String::from("scene:game"), scene);
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -482,18 +485,23 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let display = screen::Display::new(
-            groups,
-            default_display_id,
-            game_display_id,
+        let display_config = common::configs::from_file(screen::DISPLAY_CONFIG_PATH).unwrap();
+        let display = screen::Display::from_config(
+            &display_config,
             texture_map,
+            scene_map,
             light_state,
             render_pipeline,
             render_pipeline_2d,
             particle_renderer,
             rect_ibuf,
             depth_texture,
-            default_inst_buf
+            default_inst_buf,
+            // width and height not too important as they will be resized
+            // just need to maks sure they're not zero
+            1920,
+            1080,
+            &device,
         );
 
         // let screens =
@@ -545,8 +553,8 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
-            for dg in self.display.groups.values_mut(){
-                dg.resize(
+            for screen in self.display.screen_map.values_mut(){
+                screen.resize(
                     new_size.width,
                     new_size.height,
                     &self.device,
@@ -588,33 +596,35 @@ impl State {
     fn update(&mut self, game_state: Arc<Mutex<GameState>>, particle_queue: Arc<Mutex<ParticleQueue>>, dt: instant::Duration) {
         let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
-        // TODO: hard coded!
-        self.display.groups
-            .get_mut(&self.display.game_display)
-            .as_mut()
-            .unwrap()
-            .scene
-            .as_mut()
-            .unwrap()
-            .load_game_state(
-            game_state,
-            &mut self.player_controller,
-            &mut self.player,
-            &mut self.camera_state,
-            dt,
-            self.client_id,
-        );
-        let particle_queue = particle_queue.lock().unwrap();
-        self.load_particles(particle_queue);
+        {   // new block because we need to drop scene_id before continuing
+            // it borrows self
+            let scene_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .scene
+                .as_ref()
+                .unwrap();
 
-        self.display.groups
-            .get_mut(&self.display.game_display)
-            .as_mut()
-            .unwrap()
-            .scene
-            .as_mut()
-            .unwrap()
-            .draw_scene_dfs();
+            self.display.scene_map
+                .get_mut(scene_id)
+                .unwrap()
+                .load_game_state(
+                game_state,
+                &mut self.player_controller,
+                &mut self.player,
+                &mut self.camera_state,
+                dt,
+                self.client_id,
+            );
+
+            self.display.scene_map
+                .get_mut(scene_id)
+                .unwrap()
+                .draw_scene_dfs();
+        }
+
+        let particle_queue = particle_queue.lock().unwrap();
+            self.load_particles(particle_queue);
 
         // camera update
         self.camera_state
