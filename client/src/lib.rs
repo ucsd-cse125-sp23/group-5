@@ -477,7 +477,7 @@ impl State {
             String::from("bkgd:title"),
             "start_screen_without_btn.jpg",
             &mut texture_map
-        );
+        ).await;
         screen::texture_config::load_screen_tex(
             &device,
             &queue,
@@ -485,7 +485,7 @@ impl State {
             String::from("btn:title"),
             "start_btn_default.png",
             &mut texture_map
-        );
+        ).await;
         screen::texture_config::load_screen_tex(
             &device,
             &queue,
@@ -493,7 +493,7 @@ impl State {
             String::from("btn:title_hover"),
             "start_btn_hover.png",
             &mut texture_map
-        );
+        ).await;
         // end debug code that needs to be replaced
 
         let rect_ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -576,14 +576,14 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
-            // for dg in self.display.groups.values_mut(){
-            //     dg.resize(
-            //         new_size.width,
-            //         new_size.height,
-            //         &self.device,
-            //         &self.queue,
-            //     );
-            // }
+            for dg in self.display.groups.values_mut(){
+                dg.resize(
+                    new_size.width,
+                    new_size.height,
+                    &self.device,
+                    &self.queue,
+                );
+            }
 
             self.display.depth_texture =
                 texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
@@ -610,9 +610,11 @@ impl State {
         // game state to scene graph conversion and update
         // TODO: hard coded!
         self.display.groups
-            .get(&String::from("display:game"))
+            .get_mut(&String::from("display:game"))
+            .as_mut()
             .unwrap()
             .scene
+            .as_mut()
             .unwrap()
             .load_game_state(
             game_state,
@@ -626,8 +628,13 @@ impl State {
         self.load_particles(particle_queue);
 
         self.display.groups
-        .get(&String::from("display:game")).unwrap()
-        .scene.unwrap().draw_scene_dfs();
+            .get_mut(&String::from("display:game"))
+            .as_mut()
+            .unwrap()
+            .scene
+            .as_mut()
+            .unwrap()
+            .draw_scene_dfs();
 
         // camera update
         self.camera_state

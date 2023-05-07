@@ -152,23 +152,69 @@ impl Display{
                     render_pass.set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
                     // first optionally draw background
                     if let Some(bkgd) = &screen.background { 
-                        bkgd.render(
-                            &self.texture_map,
+                        render_pass.draw_ui_instanced(
+                            &self.texture_map.get(
+                                &bkgd.texture
+                            ).unwrap(),
+                            &bkgd.vbuf,
                             &self.default_inst_buf,
-                            &mut render_pass,
-                            device
+                            0..1
                         );
                     };
-                    for item in &screen.items{
-                        item.render(
-                            &self.texture_map,
+                    for button in &screen.buttons{
+                        let texture = match button.is_hover {
+                            true => &button.hover_texture,
+                            false => &button.default_texture,
+                        };
+                        render_pass.draw_ui_instanced(
+                            &self.texture_map.get(
+                                texture
+                            ).unwrap(),
+                            &button.vbuf,
                             &self.default_inst_buf,
-                            &mut render_pass,
-                            device,
+                            0..1
+                        );
+                    }
+                    for icon in &screen.icons{
+                        render_pass.draw_ui_instanced(
+                            &self.texture_map.get(
+                                &icon.texture
+                            ).unwrap(),
+                            &icon.vbuf,
+                            &self.default_inst_buf,
+                            0..1
                         );
                     }
                 }
             };
         }
+    }
+}
+
+pub trait DrawGUI<'a> {
+    fn draw_ui_instanced(
+        &mut self,
+        tex_bind_group: &'a wgpu::BindGroup,
+        vbuf: &'a wgpu::Buffer,
+        inst_buf: &'a wgpu::Buffer,
+        instances: std::ops::Range<u32>,
+    );
+}
+
+impl<'a, 'b> DrawGUI<'b> for wgpu::RenderPass<'a>
+where
+    'b: 'a,
+{
+    fn draw_ui_instanced(
+            &mut self,
+            tex_bind_group: &'a wgpu::BindGroup,
+            vbuf: &'a wgpu::Buffer,
+            inst_buf: &'a wgpu::Buffer,
+            instances: std::ops::Range<u32>,
+        ) {
+        self.set_vertex_buffer(0, vbuf.slice(..));
+        self.set_vertex_buffer(1, inst_buf.slice(..));
+        self.set_bind_group(0, tex_bind_group, &[]);
+        self.draw_indexed(0..6, 0, instances);
     }
 }

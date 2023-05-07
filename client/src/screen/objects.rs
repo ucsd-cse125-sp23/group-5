@@ -116,42 +116,43 @@ pub struct DisplayGroup {
 #[derive(Debug)]
 pub struct Screen {
     pub background: Option<ScreenBackground>,
-    pub items: Vec<ScreenObject>,
+    pub icons: Vec<Icon>,
+    pub buttons: Vec<Button>,
 }
 
 #[derive(Debug)]
-struct ScreenBackground{
+pub struct ScreenBackground{
     pub aspect: f32,
     pub vbuf: wgpu::Buffer,
     pub texture: String,
 }
 
 #[derive(Debug)]
-pub enum ScreenObject{
-    Button{
-        location: ScreenLocation,
-        aspect: f32,    // both textures must be the same aspect ratio
-        height: f32,
-        vertices: [Vertex; 4],
-        vbuf: wgpu::Buffer,
-        default_tint: glm::Vec4,
-        hover_tint: glm::Vec4,
-        default_texture: String,
-        hover_texture: String,
-        is_hover: bool, // For now, we assume nothing can overlap
-        on_click: Option<String>,
-    },
-    Icon{
-        location: ScreenLocation,
-        aspect: f32,
-        height: f32,
-        vertices: [Vertex; 4],
-        vbuf: wgpu::Buffer,
-        tint: glm::Vec4,
-        texture: String,
-        // instances: Vec<ConfigTransform>, // TODO: what did they do w/ the transform
-        inst_range: std::ops::Range<u32>,
-    },
+pub struct Button{
+    pub location: ScreenLocation,
+    pub aspect: f32,    // both textures must be the same aspect ratio
+    pub height: f32,
+    pub vertices: [Vertex; 4],
+    pub vbuf: wgpu::Buffer,
+    pub default_tint: glm::Vec4,
+    pub hover_tint: glm::Vec4,
+    pub default_texture: String,
+    pub hover_texture: String,
+    pub is_hover: bool, // For now, we assume nothing can overlap
+    pub on_click: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct Icon{
+    pub location: ScreenLocation,
+    pub aspect: f32,
+    pub height: f32,
+    pub vertices: [Vertex; 4],
+    pub vbuf: wgpu::Buffer,
+    pub tint: glm::Vec4,
+    pub texture: String,
+    // pub instances: Vec<ConfigTransform>, // TODO: what did they do w/ the transform
+    pub inst_range: std::ops::Range<u32>,
 }
 
 impl DisplayGroup{
@@ -162,46 +163,37 @@ impl DisplayGroup{
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ){
-        // Recalculate for every screen
-        match &self.screen {
-            None => {return;},
-            Some(mut s) => {
-                match s.background {
-                    None => {},
-                    Some(mut bkgd) => {bkgd.resize(
-                            screen_width,
-                            screen_height,
-                            device,
-                            queue,
-                        );
-                    }
-                };
-                for i in &mut s.items{
-                    match i {
-                        ScreenObject::Button { 
-                            location,
-                            aspect,
-                            height,
-                            vertices,
-                            vbuf,
-                            ..
-                        } => {
-                            location.get_coords(*aspect, *height, screen_width, screen_height, vertices);
-                        },
-                        ScreenObject::Icon { 
-                            location,
-                            aspect,
-                            height,
-                            vertices,
-                            vbuf,
-                            ..
-                        } => {
-                            location.get_coords(*aspect, *height, screen_width, screen_height, vertices);
-                        }
-                    };
-                }
+        match self.screen.as_mut(){
+            None => {},
+            Some(s) => s.resize(screen_width, screen_height, device, queue)
+        };
+    }
+}
+
+impl Screen{
+    pub fn resize(
+        &mut self,
+        screen_width: u32,
+        screen_height: u32,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ){
+        match self.background.as_mut() {
+            None => {},
+            Some(bkgd) => {bkgd.resize(
+                    screen_width,
+                    screen_height,
+                    device,
+                    queue,
+                );
             }
         };
+        for i in &mut self.buttons{
+            i.resize(screen_width, screen_height);
+        }
+        for i in &mut self.icons{
+            i.resize(screen_width, screen_height);
+        }
     }
 }
 
@@ -244,64 +236,37 @@ impl ScreenBackground{
             bytemuck::cast_slice(&title_vert),
         );
     }
+}
 
-    pub fn render(
-        &self,
-        texture_map: &HashMap<String, wgpu::BindGroup>,
-        default_inst_buf: &wgpu::Buffer,
-        render_pass: &mut wgpu::RenderPass, 
-        device: &wgpu::Device,
+impl Button{
+    pub fn resize(
+        &mut self,
+        screen_width: u32,
+        screen_height: u32,
     ){
-        render_pass.set_vertex_buffer(0, self.vbuf.slice(..));
-        render_pass.set_vertex_buffer(1, default_inst_buf.slice(..));
-        // will probably panic if it cannot find the texture
-        render_pass.set_bind_group(0, texture_map.get(&self.texture).unwrap(), &[]);
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        self.location.get_coords(
+            self.aspect,
+            self.height,
+            screen_width,
+            screen_height,
+            &mut self.vertices
+        );
     }
 }
 
-impl ScreenObject{
-    pub fn render<'a>(
-        &self,
-        texture_map: &'a HashMap<String, wgpu::BindGroup>,
-        default_inst_buf: & wgpu::Buffer,
-        render_pass: &'a mut wgpu::RenderPass<'a>, 
-        device: &wgpu::Device,
+impl Icon{
+    pub fn resize(
+        &mut self,
+        screen_width: u32,
+        screen_height: u32,
     ){
-        match self{
-            ScreenObject::Button {
-                vbuf,
-                default_texture,
-                hover_texture,
-                is_hover,
-                ..
-            } => {
-                render_pass.set_vertex_buffer(0, vbuf.slice(..));
-                render_pass.set_vertex_buffer(1, default_inst_buf.slice(..));
-                let tex_bind_group= match is_hover{
-                    true => texture_map.get(hover_texture).unwrap(),
-                    false => texture_map.get(default_texture).unwrap(),
-                };
-                render_pass.set_bind_group(0, tex_bind_group, &[]);
-                render_pass.draw_indexed(0..6, 0, 0..1);
-            },
-            ScreenObject::Icon {
-                vertices,
-                vbuf,
-                tint,
-                texture,
-                inst_range,
-                ..
-            } => {
-                render_pass.set_vertex_buffer(0, vbuf.slice(..));
-                // TODO: change when/if we want instancing
-                render_pass.set_vertex_buffer(1, default_inst_buf.slice(..));
-                let tex_bind_group= texture_map.get(texture).unwrap();
-                render_pass.set_bind_group(0, tex_bind_group, &[]);
-                // TODO: change when/if we want instancing
-                render_pass.draw_indexed(0..6, 0, 0..1);
-            }
-        }
+        self.location.get_coords(
+            self.aspect,
+            self.height,
+            screen_width,
+            screen_height,
+            &mut self.vertices
+        );
     }
 }
 
@@ -335,7 +300,7 @@ pub fn get_display_groups(
         contents: bytemuck::cast_slice(&TITLE_VERT),
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     });
-    let button1 = ScreenObject::Button{
+    let button1 = Button{
         location: button1_loc,
         aspect: 1.0,
         height: 0.463,
@@ -350,7 +315,8 @@ pub fn get_display_groups(
     };
     let title_screen = Screen{
         background: Some(bkgd1),
-        items: vec![button1],
+        buttons: vec![button1],
+        icons: vec![],
     };
     let title_dg = DisplayGroup{
         id: id1.clone(),
