@@ -2,11 +2,31 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::resources;
+use crate::screen;
+use common::configs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigTexture {
+    pub textures: Vec<ConfigTextureItem>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConfigTextureItem {
     pub name: String,
     pub path: String,
+}
+
+pub async fn load_screen_tex_config(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    layout: &wgpu::BindGroupLayout,
+    file_name: &str,
+    texture_map: &mut HashMap<String, wgpu::BindGroup>,
+){
+    let screen_tex_config = configs::from_file::<_, ConfigTexture>(file_name).unwrap();
+    for tex in &screen_tex_config.textures{
+        load_screen_tex(device, queue, layout, tex.name.clone(), &tex.path, texture_map).await;
+    }
 }
 
 pub async fn load_screen_tex(

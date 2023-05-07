@@ -10,6 +10,8 @@ pub mod location;
 pub mod texture_config;
 // pub mod config; // TODO later
 
+pub const TEX_CONFIG_PATH : &str = "tex.json";
+
 // Should only be one of these in the entire game
 pub struct Display{
     pub groups: HashMap<String, objects::DisplayGroup>,

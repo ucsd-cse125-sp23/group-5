@@ -458,36 +458,17 @@ impl State {
         let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
         screen::objects::get_display_groups(&device, scene, &mut groups);
         let default_display_id = String::from("display:title");
-
         let game_display_id = String::from("display:game");
+        // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        //Assume there's always a texture
-        screen::texture_config::load_screen_tex(
+        screen::texture_config::load_screen_tex_config(
             &device,
             &queue,
             &texture_bind_group_layout_2d,
-            String::from("bkgd:title"),
-            "start_screen_without_btn.jpg",
+            screen::TEX_CONFIG_PATH,
             &mut texture_map
         ).await;
-        screen::texture_config::load_screen_tex(
-            &device,
-            &queue,
-            &texture_bind_group_layout_2d,
-            String::from("btn:title"),
-            "start_btn_default.png",
-            &mut texture_map
-        ).await;
-        screen::texture_config::load_screen_tex(
-            &device,
-            &queue,
-            &texture_bind_group_layout_2d,
-            String::from("btn:title_hover"),
-            "start_btn_hover.png",
-            &mut texture_map
-        ).await;
-        // end debug code that needs to be replaced
 
         let rect_ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Const Rect Index Buffer"),

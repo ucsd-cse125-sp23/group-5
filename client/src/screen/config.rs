@@ -47,5 +47,14 @@ pub struct ConfigIcon{
     pub height: f32,
     pub tint: [f32; 4],
     pub tex: String,
-    pub instances: Vec<ConfigTransform>,
+    pub instances: Vec<ConfigScreenTransform>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConfigScreenTransform{
+    // Scale, then rotate, then translate
+    // No shearing...
+    pub translation: ScreenLocation,
+    pub rotation: f32, // in radians, rotating CCW
+    pub scale: (f32, f32),
 }
