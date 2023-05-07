@@ -225,7 +225,7 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
     fn handle(
         &self,
         game_state: &mut GameState,
-        _: &mut PhysicsState,
+        physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Game state
@@ -233,8 +233,45 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
+        let player_collider_handle = physics_state
+        .get_entity_handles(self.player_id)
+        .ok_or(HandlerError::new(format!(
+            "Player {} not found",
+            self.player_id
+        )))?
+        .collider
+        .ok_or(HandlerError::new(format!(
+            "Player {} does not have a collider",
+            self.player_id
+        )))?;
+
+        let max_toi = 5.0; // max attack distance
+        let solid = false; // if we are inside an object, want to find boundary
+        let filter =
+            rapier::QueryFilter::default();
+
+        let mut ray = rapier::Ray::new(
+            rapier::point![self.prelim_position.x, self.prelim_position.y, self.prelim_position.z],
+            rapier::vector![self.forward.x, self.forward.y, self.forward.z],
+        );
+        while let Some((handle, toi)) = physics_state.query_pipeline.cast_ray(
+            &physics_state.bodies,
+            &physics_state.colliders,
+            &ray,
+            max_toi,
+            solid,
+            filter,
+        ) {
+            // if ray hit the correct target (the player), stop
+            if handle == player_collider_handle {
+                break;
+            } else { // otherwise, move ray up
+                ray.origin = ray.point_at(toi + 0.001); 
+            }
+        }
+
         player.camera_forward = self.forward;
-        player.camera_position = self.prelim_position;
+        player.camera_position = glm::vec3(ray.origin.x, ray.origin.y, ray.origin.z);
 
         Ok(())
     }
