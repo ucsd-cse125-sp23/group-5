@@ -259,7 +259,7 @@ impl CommandHandler for MoveCommandHandler {
         let dir_vec = self.direction.normalize();
 
         let player_state = game_state
-            .player(self.player_id)
+            .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // rotate the direction vector to face the camera (only take the x and z components)
@@ -324,6 +324,8 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
+        player_state.animation_id = None;
+
         Ok(())
     }
 }
@@ -382,7 +384,7 @@ impl CommandHandler for JumpCommandHandler {
             player_state.jump_count = 0;
         }
 
-        const MAX_JUMP_COUNT: u32 = 2; // allow double jump
+        const MAX_JUMP_COUNT: u32 = 2; // allow double idle
 
         if player_state.jump_count >= MAX_JUMP_COUNT {
             return Ok(());
@@ -397,6 +399,8 @@ impl CommandHandler for JumpCommandHandler {
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
+
+        player_state.animation_id = Some("jump".to_string()); // TODO: replace this example with actual implementation
 
         Ok(())
     }

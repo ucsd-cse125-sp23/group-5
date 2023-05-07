@@ -23,6 +23,7 @@ pub struct PlayerState {
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
     pub on_flag_time: f32,
+    pub animation_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

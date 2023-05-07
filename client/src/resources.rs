@@ -1,5 +1,6 @@
 use std::fs::{read, read_to_string};
 use std::io::{BufReader, Cursor};
+use std::sync::Arc;
 
 use const_format::formatcp;
 use wgpu::util::DeviceExt;
@@ -326,8 +327,8 @@ pub async fn load_model(
         .collect::<Vec<_>>();
 
     Ok(model::StaticModel {
-        meshes,
-        materials,
+        meshes: Arc::new(meshes),
+        materials: Arc::new(materials),
         path: file_path.to_string(),
     })
 }

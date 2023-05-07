@@ -5,12 +5,15 @@ use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
 };
+use std::cell::RefCell;
+use std::ops::Deref;
+use std::rc::Rc;
 
 use winit::event::*;
 
 mod model;
 
-use crate::model::{DrawModel, Model};
+use crate::model::{DrawModel, Model, StaticModel};
 use model::Vertex;
 
 mod camera;
@@ -66,6 +69,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
+    animation_controller: animation::AnimationController,
 }
 
 impl State {
@@ -273,21 +277,15 @@ impl State {
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
 
-        let mut korok_model = AnimatedModel::new("korok");
-        korok_model
-            .load_all_animations_from_dir("assets/korok", model_loading_resources)
-            .await
-            .unwrap();
-
-        println!("Korok model loaded {:?}", korok_model);
-
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
 
         for model_config in model_configs.models {
-            let model = resources::load_model(&model_config.path, model_loading_resources)
-                .await
-                .unwrap();
-            models.insert(model_config.name, Box::new(model));
+            let model: Box<dyn Model> = if model_config.animated() {
+                Box::new(AnimatedModel::load(&model_config.path, model_loading_resources).await.unwrap())
+            } else {
+                Box::new(StaticModel::load(&model_config.path, model_loading_resources).await.unwrap())
+            };
+            models.insert(model_config.name, model);
         }
 
         let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
@@ -312,6 +310,8 @@ impl State {
         );
 
         scene.draw_scene_dfs();
+
+        let animation_controller = animation::AnimationController::default();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -493,6 +493,7 @@ impl State {
             client_id,
             staging_belt,
             glyph_brush,
+            animation_controller,
         }
     }
 
@@ -552,10 +553,9 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
-        let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
         self.scene.load_game_state(
-            game_state,
+            game_state.lock().unwrap(),
             &mut self.player_controller,
             &mut self.player,
             &mut self.camera_state,
@@ -566,6 +566,10 @@ impl State {
         self.load_particles(particle_queue);
 
         self.scene.draw_scene_dfs();
+
+        // animation update
+        self.animation_controller.update(dt);
+        self.animation_controller.load_game_state(game_state.lock().unwrap());
 
         // camera update
         self.camera_state
@@ -595,20 +599,23 @@ impl State {
                 label: Some("Render Encoder"),
             });
         {
-            //placed up here because it needs to be dropped after the render pass
             let mut instanced_objs = Vec::new();
 
             for (index, instances) in self.scene.objects_and_instances.iter() {
                 let count = instances.len();
-                let instanced_obj = model::InstancedModel::new(
-                    self.scene.objects.get(index).unwrap().as_ref(),
-                    &instances
-                        .iter()
-                        .map(InstanceBundle::instance)
-                        .collect::<Vec<_>>(),
-                    &self.device,
-                );
-                instanced_objs.push((instanced_obj, count));
+
+
+                for instance in instances.iter() {
+                    let mut model = self.scene.objects.get(index).unwrap().clone_box();
+                    self.animation_controller.update_animated_model_state(&mut model, &instance.node_id);
+
+                    let instanced_obj = model::InstancedModel::new(
+                        model,
+                        &vec![InstanceBundle::instance(instance)],
+                        &self.device,
+                    );
+                    instanced_objs.push((instanced_obj, 1));
+                }
             }
 
             let mut to_draw: Vec<particles::Particle> = Vec::new();

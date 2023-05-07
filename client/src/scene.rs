@@ -1,9 +1,12 @@
+use std::cell::RefCell;
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
 use crate::model::{self, Model, StaticModel};
 use glm::TMat4;
 use log::debug;
 use std::collections::HashMap;
+use std::ops::Deref;
+use std::rc::Rc;
 use std::sync::MutexGuard;
 
 use crate::player::{Player, PlayerController};
@@ -162,7 +165,7 @@ impl Scene {
 
     pub fn load_game_state(
         &mut self,
-        game_state: MutexGuard<GameState>,
+        game_state: impl Deref<Target = GameState>,
         player_controller: &mut PlayerController,
         player: &mut Player,
         camera_state: &mut CameraState,
@@ -258,7 +261,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-        .add_model("player".to_string());
+        .add_model("korok".to_string());
     }
 }
 

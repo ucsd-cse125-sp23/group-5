@@ -1,6 +1,9 @@
+use std::any::Any;
+use std::fmt::{Debug, Formatter};
 use crate::instance::Instance;
 
 use std::ops::Range;
+use std::sync::Arc;
 use wgpu::Device;
 
 use crate::instance;
@@ -8,15 +11,31 @@ use crate::resources::{load_model, ModelLoadingResources};
 
 use crate::texture;
 
-pub trait Model {
+
+pub trait Model: Any + Debug {
     fn meshes(&self) -> &[Mesh];
     fn materials(&self) -> &[Material];
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn clone_box(&self) -> Box<dyn Model>;
 }
 
+
+#[derive(Clone)]
 pub struct StaticModel {
     pub path: String,
-    pub meshes: Vec<Mesh>,
-    pub materials: Vec<Material>,
+    pub meshes: Arc<Vec<Mesh>>,
+    pub materials: Arc<Vec<Material>>,
+}
+
+impl Debug for StaticModel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StaticModel")
+            .field("path", &self.path)
+            .field("meshes_len", &self.meshes.len())
+            .field("materials", &self.materials)
+            .finish()
+    }
 }
 
 impl Model for StaticModel {
@@ -27,6 +46,18 @@ impl Model for StaticModel {
     fn materials(&self) -> &[Material] {
         &self.materials
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn clone_box(&self) -> Box<dyn Model> {
+        Box::new(self.clone())
+    }
 }
 
 impl StaticModel {
@@ -35,17 +66,17 @@ impl StaticModel {
     }
 }
 
-pub struct InstancedModel<'a> {
+pub struct InstancedModel {
     // want instances and instanceState to always be synced
     // can only be created, cannot be edited
     // TODO: enforce that somehow?
-    pub model: &'a dyn Model,
+    pub model: Box<dyn Model>,
     pub num_instances: usize,
     pub instance_state: instance::InstanceState,
 }
 
-impl<'a> InstancedModel<'a> {
-    pub fn new(model: &'a dyn Model, instances: &Vec<Instance>, device: &Device) -> Self {
+impl InstancedModel {
+    pub fn new(model: Box<dyn Model>, instances: &Vec<Instance>, device: &Device) -> Self {
         Self {
             model,
             num_instances: instances.len(),
@@ -158,21 +189,21 @@ impl Vertex for ModelVertex {
     }
 }
 
-pub trait DrawModel<'a> {
+pub trait DrawModel<'a, 'b> {
     fn draw_model(
         &mut self,
         instanced_model: &'a InstancedModel,
-        camera_bind_group: &'a wgpu::BindGroup,
+        camera_bind_group: &'b wgpu::BindGroup,
     );
     fn draw_model_instanced(
         &mut self,
         instanced_model: &'a InstancedModel,
         instances: Range<u32>,
-        camera_bind_group: &'a wgpu::BindGroup,
+        camera_bind_group: &'b wgpu::BindGroup,
     );
 }
 
-impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
+impl<'a, 'b> DrawModel<'a, 'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {

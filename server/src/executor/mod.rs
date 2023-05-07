@@ -30,13 +30,13 @@ pub struct Executor {
 }
 
 impl Executor {
-    /// Creates a new Executor with default game state.
+    /// Creates a new Executor with idle game state.
     /// # Examples
     /// ```
     /// use std::sync::{Arc, Mutex};
     /// use common::core::states::GameState;
     /// use server::executor::Executor;
-    /// let game_state = Arc::new(Mutex::new(GameState::default()));
+    /// let game_state = Arc::new(Mutex::new(GameState::idle()));
     /// let executor = Executor::new(game_state);
     pub fn new(game_state: Arc<Mutex<GameState>>) -> Executor {
         Executor {
