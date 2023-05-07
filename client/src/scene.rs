@@ -1,6 +1,6 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::model::{self, StaticModel};
+use crate::model::{self, Model, StaticModel};
 use glm::TMat4;
 use log::debug;
 use std::collections::HashMap;
@@ -18,7 +18,8 @@ pub type NodeId = String;
 pub struct Node {
     pub id: NodeId,
     pub child_ids: Vec<NodeId>,
-    pub models: Vec<(ModelIndex, Transform)>,
+    pub model: Option<ModelIndex>,
+    pub transform: Transform,
 }
 
 impl Node {
@@ -26,16 +27,22 @@ impl Node {
         Node {
             id,
             child_ids: Vec::new(),
-            models: Vec::new(),
+            model: None,
+            transform: Transform::default()
+        }
+    }
+
+    pub fn with_transform(id: NodeId, transform: Transform) -> Self {
+        Node {
+            id,
+            child_ids: Vec::new(),
+            model: None,
+            transform,
         }
     }
 
     pub fn add_model(&mut self, model_index: ModelIndex) {
-        self.models.push((model_index, glm::identity()));
-    }
-
-    pub fn add_model_at(&mut self, model_index: ModelIndex, transform: Transform, index: usize) {
-        self.models.insert(index, (model_index, transform));
+        self.model = Some(model_index);
     }
 }
 
@@ -63,8 +70,8 @@ impl InstanceBundle {
 
 // #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scene {
-    pub objects: HashMap<ModelIndex, model::StaticModel>,
-    pub scene_graph: HashMap<NodeId, (Node, Transform)>,
+    pub objects: HashMap<ModelIndex, Box<dyn Model>>,
+    pub scene_graph: HashMap<NodeId, Node>,
     pub objects_and_instances: HashMap<ModelIndex, Vec<InstanceBundle>>,
 }
 
@@ -100,22 +107,22 @@ impl NodeKind {
 }
 
 impl Scene {
-    pub fn new(objs: HashMap<ModelIndex, StaticModel>) -> Self {
+    pub fn new(objs: HashMap<ModelIndex, Box<dyn Model>>) -> Self {
         let world_node_id = NodeKind::World.base_id();
         Scene {
             objects: objs,
             scene_graph: HashMap::from([(
                 world_node_id.clone(),
-                (Node::new(world_node_id), glm::identity()),
+                Node::with_transform(world_node_id, glm::identity()),
             )]),
             objects_and_instances: HashMap::new(),
         }
     }
 
     pub fn add_node(&mut self, node_id: NodeId, transform: Transform) -> &mut Node {
-        let node = Node::new(node_id.clone());
-        self.scene_graph.insert(node_id.clone(), (node, transform));
-        let (node, _) = self.scene_graph.get_mut(&node_id).unwrap();
+        let node = Node::with_transform(node_id.clone(), transform);
+        self.scene_graph.insert(node_id.clone(), node);
+        let node = self.scene_graph.get_mut(&node_id).unwrap();
         node
     }
 
@@ -126,12 +133,12 @@ impl Scene {
         transform: Transform,
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
-        let (parent_node, _) = self.scene_graph.get_mut(&parent_node_id).unwrap();
+        let parent_node = self.scene_graph.get_mut(&parent_node_id).unwrap();
         parent_node.child_ids.push(child_node_id.clone());
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
-        let (child_node, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
+        let child_node = self.scene_graph.get_mut(&child_node_id).unwrap();
         child_node
     }
 
@@ -141,7 +148,7 @@ impl Scene {
         transform: Transform,
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
-        let (parent_node, _) = self
+        let parent_node = self
             .scene_graph
             .get_mut(&NodeKind::World.base_id())
             .unwrap();
@@ -149,7 +156,7 @@ impl Scene {
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
-        let (child_node, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
+        let child_node = self.scene_graph.get_mut(&child_node_id).unwrap();
         child_node
     }
 
@@ -179,7 +186,7 @@ impl Scene {
 
             for (id, player_state) in game_state.players.iter() {
                 let node_id = NodeKind::Player.node_id(id.to_string());
-                self.scene_graph.get_mut(&node_id).unwrap().1 = Player::calc_transf_matrix(
+                self.scene_graph.get_mut(&node_id).unwrap().transform = Player::calc_transf_matrix(
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
@@ -197,14 +204,14 @@ impl Scene {
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
 
         // state needed for DFS:
-        let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap().0;
+        let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
 
         let mut total_number_of_edges: usize = 0;
         for n in self.scene_graph.iter() {
-            total_number_of_edges += n.1 .0.child_ids.len();
+            total_number_of_edges += n.1.child_ids.len();
         }
 
         debug!("total number of nodes = {}", self.scene_graph.len());
@@ -217,32 +224,31 @@ impl Scene {
             cur_node = dfs_stack.pop().unwrap();
             current_view_matrix = matrix_stack.pop().unwrap();
 
-            // draw all models at curr_node
-            for i in 0..cur_node.models.len() {
-                let (curr_model_index, curr_transform) = &cur_node.models[i];
-                let curr_node_id = cur_node.id.clone();
-
-                let model_view: TMat4<f32> = current_view_matrix * (*curr_transform);
-                let curr_model = self.objects_and_instances.get_mut(curr_model_index);
+            if let Some(model_index) = cur_node.model.clone() {
+                let model_view: TMat4<f32> = current_view_matrix;
+                let curr_model = self.objects_and_instances.get_mut(&model_index);
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
-                        obj.push(InstanceBundle::from_transform(&model_view, curr_node_id));
+                        obj.push(InstanceBundle::from_transform(&model_view, cur_node.id.clone()));
                     }
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
-                            curr_model_index.clone(),
-                            vec![InstanceBundle::from_transform(&model_view, curr_node_id)],
+                            model_index,
+                            vec![InstanceBundle::from_transform(
+                                &model_view,
+                                cur_node.id.clone(),
+                            )],
                         );
                     }
                 }
             }
 
             for node_id in cur_node.child_ids.iter() {
-                let (node, transform) = self.scene_graph.get(node_id).unwrap();
+                let node = self.scene_graph.get(node_id).unwrap();
                 dfs_stack.push(node);
-                matrix_stack.push(current_view_matrix * transform);
+                matrix_stack.push(current_view_matrix * node.transform);
             }
         }
     }

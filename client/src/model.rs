@@ -45,7 +45,7 @@ pub struct InstancedModel<'a> {
 }
 
 impl<'a> InstancedModel<'a> {
-    pub fn new(model: &'a dyn Model, instances: &Vec<instance::Instance>, device: &Device) -> Self {
+    pub fn new(model: &'a dyn Model, instances: &Vec<Instance>, device: &Device) -> Self {
         Self {
             model,
             num_instances: instances.len(),

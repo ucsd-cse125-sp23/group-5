@@ -6,6 +6,12 @@ use log::error;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+
+pub struct AnimationState {
+    // to keep record of which node is playing which animation
+
+}
+
 type AnimationId = String;
 
 #[derive(Debug)]

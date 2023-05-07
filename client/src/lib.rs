@@ -10,7 +10,7 @@ use winit::event::*;
 
 mod model;
 
-use crate::model::DrawModel;
+use crate::model::{DrawModel, Model};
 use model::Vertex;
 
 mod camera;
@@ -281,13 +281,13 @@ impl State {
 
         println!("Korok model loaded {:?}", korok_model);
 
-        let mut models = HashMap::new();
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
 
         for model_config in model_configs.models {
             let model = resources::load_model(&model_config.path, model_loading_resources)
                 .await
                 .unwrap();
-            models.insert(model_config.name, model);
+            models.insert(model_config.name, Box::new(model));
         }
 
         let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
@@ -450,7 +450,7 @@ impl State {
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
         ))
-        .unwrap();
+            .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
@@ -601,7 +601,7 @@ impl State {
             for (index, instances) in self.scene.objects_and_instances.iter() {
                 let count = instances.len();
                 let instanced_obj = model::InstancedModel::new(
-                    self.scene.objects.get(index).unwrap(),
+                    self.scene.objects.get(index).unwrap().as_ref(),
                     &instances
                         .iter()
                         .map(InstanceBundle::instance)
@@ -700,8 +700,8 @@ impl State {
                 text: vec![Text::new(
                     format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
                 )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
                 ..Section::default()
             });
             // render ability cooldowns
@@ -713,8 +713,8 @@ impl State {
                     text: vec![Text::new(
                         format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
                     )
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)],
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(40.0)],
                     ..Section::default()
                 });
             }
