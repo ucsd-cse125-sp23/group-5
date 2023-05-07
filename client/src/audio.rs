@@ -1,4 +1,4 @@
-use std::{io::BufReader, fs::File, sync::{Mutex, Arc}};
+use std::{io::BufReader, fs::File, sync::{Mutex, Arc}, thread};
 use ambisonic::{rodio::{self, Decoder, source::{Source, Buffered}}, AmbisonicBuilder};
 use instant::{SystemTime, Duration};
 use serde::{Serialize, Deserialize};
@@ -20,24 +20,35 @@ pub struct SoundInstance{
     at_client: bool,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct SoundQueue{
+    sound_queue: Vec<SoundSpec>,
+}
+
+impl SoundQueue {
+    pub fn add_sound(&mut self, sound: SoundSpec) {
+        self.sound_queue.push(sound);
+    }
+}
+
 pub struct Audio {
     audio_scene: ambisonic::Ambisonic,
     audio_assets: Vec<(Buffered<Decoder<BufReader<File>>>, Duration)>,
     sound_controllers_fx: HashMap<AudioAsset, Vec<SoundInstance>>,
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime,
-    pub sfx_queue: Arc<Mutex<Vec<SoundSpec>>>,
+    sfx_queue: Arc<Mutex<SoundQueue>>,
 }
 
 impl Audio {
-    pub fn new() -> Self{        
+    pub fn new(q: Arc<Mutex<SoundQueue>>) -> Self{        
         Audio {
             audio_scene: AmbisonicBuilder::default().build(),
             audio_assets: Vec::new(),
             sound_controllers_fx: HashMap::new(),
             sound_controller_background: (None, true),
             time: SystemTime::now(),
-            sfx_queue: Arc::new(Mutex::new(Vec::new())),
+            sfx_queue: q,
         }
     }
 
@@ -79,14 +90,15 @@ impl Audio {
                 }
                 else{
                     if true { // in case some sound effects shouldn't get quieter the farther they get
-                        let percent = 0.005; // changes how fast the sound moves away from original position --> add to sound-instance if this should vary across sound effects
+                        let percent = 0.1; // changes how fast the sound moves away from original position --> add to sound-instance if this should vary across sound effects
                         let mut offset = glm::Vec3::new(
                                 sound_instances[i].initial_dir.x * percent, 
                                 sound_instances[i].initial_dir.y * percent, 
                                 sound_instances[i].initial_dir.z * percent);
                         // if offset != glm::Vec3::new(0.0,0.0,0.0) {offset = glm::normalize(&offset);}
                         sound_instances[i].position = sound_instances[i].position + offset;
-                        println!(""); // without this print_statement the sounds don't play; maybe need delay?
+                        thread::sleep(Duration::from_millis(1));
+                        //println!(""); // without this print_statement the sounds don't play; maybe need delay?
                     }
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
                     if !basically_zero(pos) {
@@ -156,13 +168,13 @@ impl Audio {
             }
 
             let mut sfx_queue = self.sfx_queue.lock().unwrap().clone();
-            if !sfx_queue.is_empty() {
-                for i in 0..sfx_queue.len() {
-                    let se = sfx_queue[i].clone();
+            if !sfx_queue.sound_queue.is_empty() {
+                for i in 0..sfx_queue.sound_queue.len() {
+                    let se = sfx_queue.sound_queue[i].clone();
                     let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
                     self.handle_sfx_event(se, cf, at_client);
                 }
-                sfx_queue.clear();
+                sfx_queue.sound_queue.clear();
                 *self.sfx_queue.lock().unwrap() = sfx_queue;
             }
 
@@ -208,8 +220,8 @@ pub fn basically_zero(position: glm::Vec3) -> bool {
 
 // audio assets from config file
 impl Audio {
-    pub fn from_config(json: &ConfigAudioAssets) -> Self {
-        let mut audio = Self::new();
+    pub fn from_config(json: &ConfigAudioAssets, sound_queue: Arc<Mutex<SoundQueue>>) -> Self {
+        let mut audio = Self::new(sound_queue);
 
         for sound in &json.sounds {
             let file = BufReader::new(File::open(sound.path.clone()).unwrap());

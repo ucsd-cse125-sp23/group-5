@@ -1,6 +1,6 @@
 use crate::inputs::Input;
 use crate::State;
-use common::core::states::GameState;
+use common::core::states::{GameState, ParticleQueue};
 use log::{debug, warn};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -16,6 +16,7 @@ pub struct PlayerLoop {
     inputs: Sender<Input>,
 
     game_state: Arc<Mutex<GameState>>,
+    particle_queue: Arc<Mutex<ParticleQueue>>,
 
     // current player id
     client_id: u8,
@@ -25,10 +26,16 @@ impl PlayerLoop {
     /// Creates a new PlayerLoop.
     /// # Arguments
     /// * `commands` - a channel that receives commands from the clients (multi-producer, single-consumer)
-    pub fn new(commands: Sender<Input>, game_state: Arc<Mutex<GameState>>, id: u8) -> PlayerLoop {
+    pub fn new(
+        commands: Sender<Input>,
+        game_state: Arc<Mutex<GameState>>,
+        particle_queue: Arc<Mutex<ParticleQueue>>,
+        id: u8,
+    ) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             game_state,
+            particle_queue,
             client_id: id,
         }
     }
@@ -136,7 +143,7 @@ impl PlayerLoop {
                     let dt = now - last_render_time;
                     last_render_time = now;
 
-                    state.update(self.game_state.clone(), dt);
+                    state.update(self.game_state.clone(), self.particle_queue.clone(), dt);
 
                     // send camera position to input processor
                     self.inputs.send(Input::Camera {

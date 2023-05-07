@@ -196,6 +196,7 @@ impl PhysicsState {
         velocity.y = character_body.linvel().y;
 
         character_body.set_linvel(velocity, true);
+        // character_body.set_translation(character_body.translation() + corrected_movement.translation, true);
     }
 }
 

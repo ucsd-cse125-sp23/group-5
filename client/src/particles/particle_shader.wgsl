@@ -12,7 +12,8 @@ struct InstanceInput {
     @location(8) time_elapsed: f32,
     // allow size to grow
     // if it's non-zero: 
-    // size = (size) / (1 + e^{-size_growth * (t - 0.5 * halflife)})
+    // option A) size = (size) / (1 + e^{-size_growth * (t - halflife)})
+    // option B) size = (2*size) / (1 + e^{-size_growth * (t)}) - size
     @location(9) size_growth: f32,
     @location(10) halflife: f32,
 }
@@ -62,7 +63,7 @@ fn vs_main(
     // scale first
     var size = instance.size;
     if (instance.size_growth != 0.0){
-        size = (size) / (1.0 + exp(-1.0 * instance.size_growth * (time_alive - instance.halflife)));
+        size = (2.0 * size) / (1.0 + exp(-1.0 * instance.size_growth * time_alive)) - size;
     }
     var position = vec3<f32>(model.tex[0] - 0.5, 0.5 - model.tex[1], 0.0) * size * 0.01;
     // then rotate + angular velocity rotation

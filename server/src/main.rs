@@ -4,6 +4,7 @@ use common::core::states::GameState;
 use std::sync::atomic::AtomicU8;
 
 use clap::__derive_refs::once_cell::sync::Lazy;
+use log::info;
 use server::game_loop::GameLoop;
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
@@ -35,6 +36,8 @@ fn main() {
     // executor
     let executor = Executor::new(game_state.clone());
     executor.init();
+
+    info!("World initialized");
 
     // start of server listening
     #[cfg(not(feature = "debug-addr"))]

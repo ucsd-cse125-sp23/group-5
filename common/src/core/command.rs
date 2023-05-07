@@ -38,12 +38,13 @@ impl Eq for GameAction {}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Spawn,
-    //Respawn,
+    Die,
     Move(MoveDirection),
     Turn(Quat),
     Jump,
     UpdateCamera { forward: glm::Vec3 },
     Attack,
+    Refill,
 }
 
 impl Command {

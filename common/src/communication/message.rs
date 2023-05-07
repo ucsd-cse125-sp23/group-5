@@ -94,16 +94,16 @@ impl Serialize for Message {
         match &self.payload {
             Payload::Ping => {}
             Payload::StateSync(state) => {
-                prefix_len::write_json(buf, state)?;
+                prefix_len::write_bincode(buf, state)?;
             }
             Payload::Command(cmd) => {
-                prefix_len::write_json(buf, cmd)?;
+                prefix_len::write_bincode(buf, cmd)?;
             }
             Payload::Init(info) => {
-                prefix_len::write_json(buf, info)?;
+                prefix_len::write_bincode(buf, info)?;
             }
             Payload::ServerEvent(event) => {
-                prefix_len::write_json(buf, event)?;
+                prefix_len::write_bincode(buf, event)?;
             }
         }
         Ok(())
@@ -120,10 +120,10 @@ impl Deserialize for Message {
 
         let payload = match payload_kind {
             0 => Payload::Ping,
-            1 => Payload::StateSync(prefix_len::extract_json(&mut buf)?),
-            2 => Payload::Command(prefix_len::extract_json(&mut buf)?),
-            3 => Payload::Init(prefix_len::extract_json(&mut buf)?),
-            4 => Payload::ServerEvent(prefix_len::extract_json(&mut buf)?),
+            1 => Payload::StateSync(prefix_len::extract_bincode(&mut buf)?),
+            2 => Payload::Command(prefix_len::extract_bincode(&mut buf)?),
+            3 => Payload::Init(prefix_len::extract_bincode(&mut buf)?),
+            4 => Payload::ServerEvent(prefix_len::extract_bincode(&mut buf)?),
             _ => panic!("Invalid payload kind {}", payload_kind),
         };
 
@@ -190,7 +190,7 @@ mod tests {
         let msg = Message::new(HostRole::Server, Payload::Init((10, 100)));
         let mut buf = Vec::new();
         msg.serialize(&mut buf).unwrap();
-        assert_eq!(buf.len(), 22);
+        assert_eq!(buf.len(), 23);
     }
 
     #[test]
