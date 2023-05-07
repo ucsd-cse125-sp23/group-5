@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::screen::objects::Vertex;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct ScreenLocation{
     // each tuple represents (rel_width, rel_height)
     // e.g. (0.5, 0.5) means a displacement of 1/4th the height + 1/4th the width

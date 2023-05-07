@@ -49,7 +49,7 @@ pub const RECT_IND : [u16; 6] = [
 ];
 
 #[repr(C)]
-#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Debug)]
 pub struct ScreenInstance {
     pub transform: [[f32; 4]; 4],
 }
@@ -82,7 +82,7 @@ impl crate::model::Vertex for ScreenInstance {
     }
 }
 
-const TITLE_VERT: [Vertex; 4] = [
+pub const TITLE_VERT: [Vertex; 4] = [
     Vertex {
         position: [-1.0, -1.0],
         color: [1.0, 1.0, 1.0, 1.0],
@@ -152,7 +152,8 @@ pub struct Icon{
     pub vbuf: wgpu::Buffer,
     pub tint: glm::Vec4,
     pub texture: String,
-    // pub instances: Vec<ConfigTransform>, // TODO: what did they do w/ the transform
+    pub instances: Vec<ScreenInstance>,
+    pub inst_buf: wgpu::Buffer,
     pub inst_range: std::ops::Range<u32>,
 }
 

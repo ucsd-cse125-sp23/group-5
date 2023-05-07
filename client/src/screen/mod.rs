@@ -8,7 +8,7 @@ use crate::{texture, model, camera, lights};
 pub mod objects;
 pub mod location;
 pub mod texture_config;
-// pub mod config; // TODO later
+pub mod objects_config; // TODO later
 
 pub const TEX_CONFIG_PATH : &str = "tex.json";
 
