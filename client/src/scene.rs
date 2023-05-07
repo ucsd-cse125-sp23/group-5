@@ -1,6 +1,6 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::model::{self, Model};
+use crate::model::{self, StaticModel};
 use glm::TMat4;
 use log::debug;
 use std::collections::HashMap;
@@ -16,13 +16,15 @@ pub type NodeId = String;
 
 #[derive(Clone, Debug)]
 pub struct Node {
+    pub id: NodeId,
     pub child_ids: Vec<NodeId>,
     pub models: Vec<(ModelIndex, Transform)>,
 }
 
 impl Node {
-    pub fn new() -> Self {
+    pub fn new(id: NodeId) -> Self {
         Node {
+            id,
             child_ids: Vec::new(),
             models: Vec::new(),
         }
@@ -37,11 +39,33 @@ impl Node {
     }
 }
 
+pub struct InstanceBundle {
+    pub instance: Instance,
+    pub node_id: NodeId,
+}
+
+impl InstanceBundle {
+    pub fn new(instance: Instance, node_id: NodeId) -> Self {
+        Self { instance, node_id }
+    }
+
+    pub fn from_transform(transform: &TMat4<f32>, node_id: NodeId) -> Self {
+        Self {
+            instance: Instance::from_transform(transform),
+            node_id,
+        }
+    }
+
+    pub fn instance(&self) -> Instance {
+        self.instance.clone()
+    }
+}
+
 // #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scene {
-    pub objects: HashMap<ModelIndex, model::Model>,
+    pub objects: HashMap<ModelIndex, model::StaticModel>,
     pub scene_graph: HashMap<NodeId, (Node, Transform)>,
-    pub objects_and_instances: HashMap<ModelIndex, Vec<Instance>>,
+    pub objects_and_instances: HashMap<ModelIndex, Vec<InstanceBundle>>,
 }
 
 pub enum NodeKind {
@@ -76,19 +100,20 @@ impl NodeKind {
 }
 
 impl Scene {
-    pub fn new(objs: HashMap<ModelIndex, Model>) -> Self {
+    pub fn new(objs: HashMap<ModelIndex, StaticModel>) -> Self {
+        let world_node_id = NodeKind::World.base_id();
         Scene {
             objects: objs,
             scene_graph: HashMap::from([(
-                NodeKind::World.base_id(),
-                (Node::new(), glm::identity()),
+                world_node_id.clone(),
+                (Node::new(world_node_id), glm::identity()),
             )]),
             objects_and_instances: HashMap::new(),
         }
     }
 
     pub fn add_node(&mut self, node_id: NodeId, transform: Transform) -> &mut Node {
-        let node = Node::new();
+        let node = Node::new(node_id.clone());
         self.scene_graph.insert(node_id.clone(), (node, transform));
         let (node, _) = self.scene_graph.get_mut(&node_id).unwrap();
         node
@@ -194,22 +219,21 @@ impl Scene {
 
             // draw all models at curr_node
             for i in 0..cur_node.models.len() {
-                let model_view: TMat4<f32> = current_view_matrix * (cur_node.models[i].1);
-                let curr_model = self.objects_and_instances.get_mut(&cur_node.models[i].0);
+                let (curr_model_index, curr_transform) = &cur_node.models[i];
+                let curr_node_id = cur_node.id.clone();
+
+                let model_view: TMat4<f32> = current_view_matrix * (*curr_transform);
+                let curr_model = self.objects_and_instances.get_mut(curr_model_index);
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
-                        obj.push(Instance {
-                            transform: model_view,
-                        });
+                        obj.push(InstanceBundle::from_transform(&model_view, curr_node_id));
                     }
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
-                            cur_node.models[i].0.clone(),
-                            vec![Instance {
-                                transform: model_view,
-                            }],
+                            curr_model_index.clone(),
+                            vec![InstanceBundle::from_transform(&model_view, curr_node_id)],
                         );
                     }
                 }

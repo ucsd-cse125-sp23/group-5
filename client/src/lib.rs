@@ -12,6 +12,7 @@ use winit::event::*;
 mod model;
 
 use crate::model::DrawModel;
+use crate::instance::Instance;
 use model::Vertex;
 
 mod camera;
@@ -23,12 +24,14 @@ mod resources;
 mod scene;
 mod screen_objects;
 mod texture;
+
 extern crate nalgebra_glm as glm;
 
 use common::configs::{from_file, model_config::ConfigModels};
 
 pub mod event_loop;
 pub mod inputs;
+pub mod animation;
 
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
@@ -37,6 +40,8 @@ use common::core::events;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use crate::animation::AnimatedModel;
+use crate::scene::InstanceBundle;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -268,17 +273,22 @@ impl State {
         // Scene
         let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 
+
+        let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
+
+        let mut korok_model = AnimatedModel::new("korok");
+        korok_model.load_all_animations_from_dir("assets/korok", model_loading_resources).await.unwrap();
+
+        println!("Korok model loaded {:?}", korok_model);
+
         let mut models = HashMap::new();
 
         for model_config in model_configs.models {
             let model = resources::load_model(
                 &model_config.path,
-                &device,
-                &queue,
-                &texture_bind_group_layout,
-            )
-            .await
-            .unwrap();
+                model_loading_resources)
+                .await
+                .unwrap();
             models.insert(model_config.name, model);
         }
 
@@ -442,7 +452,7 @@ impl State {
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
         ))
-        .unwrap();
+            .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
@@ -589,7 +599,7 @@ impl State {
                 let count = instances.len();
                 let instanced_obj = model::InstancedModel::new(
                     self.scene.objects.get(index).unwrap(),
-                    instances,
+                    &instances.iter().map(InstanceBundle::instance).collect::<Vec<_>>(),
                     &self.device,
                 );
                 instanced_objs.push((instanced_obj, count));
@@ -684,8 +694,8 @@ impl State {
                 text: vec![Text::new(
                     &format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
                 )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
                 ..Section::default()
             });
             // render ability cooldowns
@@ -697,8 +707,8 @@ impl State {
                     text: vec![Text::new(
                         &format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
                     )
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)],
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(40.0)],
                     ..Section::default()
                 });
             }
@@ -753,8 +763,8 @@ impl State {
         Ok(())
     }
 
-    fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>){
-        for p in &particle_queue.particles{
+    fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
+        for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
                 //TODO: move to config
@@ -770,10 +780,10 @@ impl State {
                         0.3,
                         PI,
                         0.5,
-                        75.0, 
+                        75.0,
                         10.0,
                         7.0,
-                        false
+                        false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
@@ -787,8 +797,8 @@ impl State {
                         &mut self.rng,
                     );
                     self.particle_renderer.systems.push(atk);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
         particle_queue.particles.clear();

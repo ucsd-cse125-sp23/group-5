@@ -1,34 +1,59 @@
+use std::collections::HashMap;
 use std::ops::Range;
+use wgpu::{BindGroupLayout, Device, Queue};
+use crate::instance::Instance;
 
 use crate::instance;
+use crate::resources::{load_model, ModelLoadingResources};
 
 use crate::texture;
 
-pub struct Model {
+pub trait Model {
+    fn meshes(&self) -> &[Mesh];
+    fn materials(&self) -> &[Material];
+}
+
+pub struct StaticModel {
     pub path: String,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
+}
+
+impl Model for StaticModel {
+    fn meshes(&self) -> &[Mesh] {
+        &self.meshes
+    }
+
+    fn materials(&self) -> &[Material] {
+        &self.materials
+    }
+}
+
+impl StaticModel {
+    pub async fn load(file_path: &str, res: ModelLoadingResources<'_>) -> anyhow::Result<Self> {
+        load_model(file_path, res).await
+    }
 }
 
 pub struct InstancedModel<'a> {
     // want instances and instanceState to always be synced
     // can only be created, cannot be edited
     // TODO: enforce that somehow?
-    pub model: &'a Model,
+    pub model: &'a dyn Model,
     pub num_instances: usize,
     pub instance_state: instance::InstanceState,
 }
 
 impl<'a> InstancedModel<'a> {
     pub fn new(
-        model: &'a Model,
+        model: &'a dyn Model,
         instances: &Vec<instance::Instance>,
-        device: &wgpu::Device,
+        device: &Device,
     ) -> Self {
         Self {
             model,
             num_instances: instances.len(),
-            instance_state: instance::Instance::make_buffer(instances, device),
+            instance_state: Instance::make_buffer(instances, device),
         }
     }
 }
@@ -152,8 +177,8 @@ pub trait DrawModel<'a> {
 }
 
 impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
-where
-    'b: 'a,
+    where
+        'b: 'a,
 {
     fn draw_model(
         &mut self,
@@ -170,12 +195,12 @@ where
         camera_bind_group: &'b wgpu::BindGroup,
     ) {
         self.set_vertex_buffer(1, instanced_model.instance_state.buffer.slice(..));
-        for mesh in &instanced_model.model.meshes {
+        for mesh in instanced_model.model.meshes() {
             // assume each mesh has a material
             let mat_id = mesh.material;
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            self.set_bind_group(0, &instanced_model.model.materials[mat_id].bind_group, &[]);
+            self.set_bind_group(0, &instanced_model.model.materials()[mat_id].bind_group, &[]);
             // print!("model:154 {:?}\n", &instanced_model.model.materials[mat_id]);
             self.set_bind_group(1, camera_bind_group, &[]);
             self.draw_indexed(0..mesh.num_elements, 0, instances.clone());
