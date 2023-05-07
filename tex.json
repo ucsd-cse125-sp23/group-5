@@ -1,0 +1,16 @@
+{
+    "textures": [
+        {
+            "name": "bkgd:title",
+            "path": "start_screen_without_btn.jpg"
+        },
+        {
+            "name": "btn:title",
+            "path": "start_btn_default.png"
+        },
+        {
+            "name": "btn:title_hover",
+            "path": "start_btn_hover.png"
+        }
+    ]
+}

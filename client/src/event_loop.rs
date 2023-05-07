@@ -104,14 +104,14 @@ impl PlayerLoop {
                             _ => {}
                         }
                     }
-                }
+                },
                 // event
                 Event::DeviceEvent {
                     event: DeviceEvent::MouseMotion{ delta, },
                     .. // We're not using device_id currently
                 } => {
                     state.player_controller.process_mouse(delta.0, delta.1)
-                }
+                },
                 Event::DeviceEvent { ref event, .. } => match event {
                     DeviceEvent::MouseWheel { .. }
                     | DeviceEvent::Button { .. } => {

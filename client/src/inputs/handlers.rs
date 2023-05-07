@@ -3,6 +3,7 @@ use common::communication::commons::*;
 use common::communication::message::*;
 
 use common::core::command::Command;
+use nalgebra_glm as glm;
 use glm::Vec3;
 use log::{debug, error, info};
 use queues::{IsQueue, Queue};
