@@ -55,6 +55,7 @@ impl Display{
 
     pub fn render(
         &mut self,
+        mouse: &[f32; 2],
         camera_state: &camera::CameraState,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -165,7 +166,7 @@ impl Display{
                         );
                     };
                     for button in &screen.buttons{
-                        let texture = match button.is_hover {
+                        let texture = match button.is_hover(mouse) {
                             true => &button.hover_texture,
                             false => &button.default_texture,
                         };

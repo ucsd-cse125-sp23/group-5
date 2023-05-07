@@ -138,7 +138,6 @@ pub struct Button{
     pub hover_tint: glm::Vec4,
     pub default_texture: String,
     pub hover_texture: String,
-    pub is_hover: bool, // For now, we assume nothing can overlap
     pub on_click: Option<String>,
 }
 
@@ -259,6 +258,21 @@ impl Button{
             bytemuck::cast_slice(&self.vertices),
         );
     }
+
+    pub fn is_hover(&self, mouse: &[f32; 2]) -> bool{
+        // 1st vertex is lower left
+        // 3rd is upper right
+        // check x bound
+        if self.vertices[0].position[0] > mouse[0]
+            || self.vertices[2].position[0] < mouse[0] {
+            return false;
+        }
+        if self.vertices[0].position[1] > mouse[1]
+            || self.vertices[2].position[1] < mouse[1] {
+            return false;
+        }
+        return true;
+    }
 }
 
 impl Icon{
@@ -323,7 +337,6 @@ pub fn get_display_groups(
         hover_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
         default_texture: String::from("btn:title"),
         hover_texture: String::from("btn:title_hover"),
-        is_hover: false,
         on_click: Some(String::from("game_start")),
     };
     let title_screen = Screen{

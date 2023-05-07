@@ -54,6 +54,8 @@ struct State {
     player_controller: player::PlayerController,
     camera_state: camera::CameraState,
     display: screen::Display,
+    pub mouse_position: [f32; 2],
+    pub window_size: [f32; 2],
     rng: rand::rngs::ThreadRng,
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
@@ -530,6 +532,8 @@ impl State {
             player_controller,
             camera_state,
             display,
+            mouse_position: [0.0, 0.0],
+            window_size: [1.0, 1.0],
             rng,
             client_id,
             staging_belt,
@@ -543,6 +547,9 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
+            self.window_size[0] = new_size.width as f32;
+            self.window_size[1] = new_size.height as f32;
+
             self.camera_state
                 .projection
                 .resize(new_size.width, new_size.height);
@@ -643,6 +650,7 @@ impl State {
             });
         
         self.display.render(
+            &self.mouse_position,
             &self.camera_state,
             &self.device,
             &self.queue,

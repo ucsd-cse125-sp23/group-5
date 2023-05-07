@@ -1,6 +1,13 @@
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
 use crate::resources;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConfigTexture {
+    pub name: String,
+    pub path: String,
+}
 
 pub async fn load_screen_tex(
     device: &wgpu::Device,
