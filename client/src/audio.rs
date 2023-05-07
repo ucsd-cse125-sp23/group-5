@@ -16,6 +16,8 @@ pub struct SoundInstance{
     controller: ambisonic::SoundController,
     position: glm::Vec3,
     start: SystemTime,
+    initial_dir: glm::Vec3,
+    at_client: bool,
 }
 
 pub struct Audio {
@@ -63,23 +65,40 @@ impl Audio {
 
     pub fn update_sound_positions(&mut self, player_pos: glm::Vec3, dir: glm::Vec3){
         let mut to_remove = Vec::new();
+        // for each sound effect
         for (asset, sound_instances) in self.sound_controllers_fx.iter_mut() {
+            // for each sound event for each sound effect
             let sound_duration = self.audio_assets[*asset as usize].1;
-            if sound_instances.len() != 0 {println!("{:#?} LEN: {}", asset, sound_instances.len());} else {println!("ZERO");}
             for i in 0..sound_instances.len() {
-                if sound_instances[i].start.elapsed().unwrap_or(Duration::new(1,0)) >= sound_duration {
+                let time_elapsed = sound_instances[i].start.elapsed().unwrap_or(Duration::new(1,0));
+                if  time_elapsed >= sound_duration {
                     to_remove.push(i);
                 }
+                else if sound_instances[i].at_client {
+                    sound_instances[i].controller.adjust_position([0.0, 10.0, 0.0]);
+                }
                 else{
+                    if true { // in case some sound effects shouldn't get quieter the farther they get
+                        let percent = 0.005; // changes how fast the sound moves away from original position --> add to sound-instance if this should vary across sound effects
+                        let mut offset = glm::Vec3::new(
+                                sound_instances[i].initial_dir.x * percent, 
+                                sound_instances[i].initial_dir.y * percent, 
+                                sound_instances[i].initial_dir.z * percent);
+                        // if offset != glm::Vec3::new(0.0,0.0,0.0) {offset = glm::normalize(&offset);}
+                        sound_instances[i].position = sound_instances[i].position + offset;
+                        println!(""); // without this print_statement the sounds don't play; maybe need delay?
+                    }
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
                     if !basically_zero(pos) {
                         sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
                     }
                     else {
-                        sound_instances[i].controller.adjust_position([0.0, 1.0, 0.0]);
+                        sound_instances[i].controller.adjust_position([0.0, 0.1, 0.0]);
                     }
                 }
             }
+
+            // remove all sounds that have ended
             for _ in 0..to_remove.len() {
                 sound_instances.remove(to_remove.pop().unwrap());
             }
@@ -87,7 +106,7 @@ impl Audio {
         }
     }
 
-    pub fn handle_sfx_event(&mut self, sfxevent: SoundSpec){
+    pub fn handle_sfx_event(&mut self, sfxevent: SoundSpec, dir: glm::Vec3, at_client: bool){
         let index = to_audio_asset(sfxevent.sound_id).unwrap();
         let sound = self.audio_scene.play_at(
             self.audio_assets[index as usize].0.clone().convert_samples(), 
@@ -101,6 +120,8 @@ impl Audio {
                     controller: sound,
                     position: sfxevent.position,
                     start: SystemTime::now(),
+                    initial_dir: dir,
+                    at_client: at_client,
                 });
             }
             None => {
@@ -110,6 +131,8 @@ impl Audio {
                         controller: sound,
                         position: sfxevent.position,
                         start: SystemTime::now(),
+                        initial_dir: dir,
+                        at_client: at_client,
                     }],
                 );
             }
@@ -118,26 +141,32 @@ impl Audio {
 
     pub fn handle_audio_updates(&mut self, game_state: Arc<Mutex<GameState>>, client_id: u8){
         loop {
+            let gs = game_state.lock().unwrap().clone();
+            let player_curr = gs.player(client_id as u32)
+                .ok_or_else(|| print!("")); //Player {} not found", client_id));
+            let mut cf = glm::Vec3::new(0.0,0.0,0.0);
+            let mut pos = glm::Vec3::new(0.0,0.0,0.0);
+
+            match player_curr{
+                Ok(player) => {
+                    cf = player_curr.unwrap().camera_forward;
+                    pos = player.transform.translation;
+                }
+                _ => {}
+            }
+
             let mut sfx_queue = self.sfx_queue.lock().unwrap().clone();
             if !sfx_queue.is_empty() {
                 for i in 0..sfx_queue.len() {
-                    self.handle_sfx_event(sfx_queue[i].clone());
+                    let se = sfx_queue[i].clone();
+                    let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
+                    self.handle_sfx_event(se, cf, at_client);
                 }
                 sfx_queue.clear();
                 *self.sfx_queue.lock().unwrap() = sfx_queue;
             }
 
-            let gs = game_state.lock().unwrap().clone();
-            let player_curr = gs.player(client_id as u32)
-                .ok_or_else(|| print!("")); //Player {} not found", client_id));
-
-            match player_curr{
-                Ok(player) => {
-                    let cf = player_curr.unwrap().camera_forward;
-                    self.update_sound_positions(player.transform.translation, cf); 
-                }
-                _ => {}
-            }
+            self.update_sound_positions(pos, cf); 
         }
     }
 }

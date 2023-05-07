@@ -15,6 +15,7 @@ pub enum GameEvent {
 pub struct SoundSpec {
     pub position: glm::Vec3,
     pub sound_id: String,
+    pub at_client: (u32, bool),
 }
 
 /// Particle specification

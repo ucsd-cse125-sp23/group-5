@@ -99,7 +99,7 @@ fn main() {
         let audio_config = from_file::<_, ConfigAudioAssets>(AUDIO_CONFIG_PATH).unwrap();
         let mut audio = Audio::from_config(&audio_config);
         
-        // audio.play_background_track([0.0, 10.0, 0.0]);
+        audio.play_background_track([0.0, 100.0, 0.0]); // add position of background to config?
 
         let sfx_queue= audio.sfx_queue.clone();
         thread::spawn(move || {

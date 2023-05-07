@@ -316,6 +316,7 @@ impl CommandHandler for MoveCommandHandler {
             GameEvent::SoundEvent(SoundSpec::new(
                 player_state.transform.translation,
                 "foot_step".to_string(),
+                (self.player_id, true),
             )),
             Recipients::One(self.player_id as u8),
         );
@@ -428,6 +429,7 @@ impl CommandHandler for AttackCommandHandler {
             GameEvent::SoundEvent(SoundSpec::new(
                 player_pos,
                 "wind".to_string(),
+                (self.player_id, false),
             )),
             Recipients::All,
         );
