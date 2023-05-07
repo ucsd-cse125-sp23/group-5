@@ -33,7 +33,7 @@ impl SoundQueue {
 
 pub struct Audio {
     audio_scene: ambisonic::Ambisonic,
-    audio_assets: Vec<(Buffered<Decoder<BufReader<File>>>, Duration)>,
+    audio_assets: Vec<(Buffered<Decoder<BufReader<File>>>, Duration, f32)>,
     sound_controllers_fx: HashMap<AudioAsset, Vec<SoundInstance>>,
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime,
@@ -80,6 +80,7 @@ impl Audio {
         for (asset, sound_instances) in self.sound_controllers_fx.iter_mut() {
             // for each sound event for each sound effect
             let sound_duration = self.audio_assets[*asset as usize].1;
+            let percent = self.audio_assets[*asset as usize].2;
             for i in 0..sound_instances.len() {
                 let time_elapsed = sound_instances[i].start.elapsed().unwrap_or(Duration::new(1,0));
                 if  time_elapsed >= sound_duration {
@@ -90,12 +91,12 @@ impl Audio {
                 }
                 else{
                     if true { // in case some sound effects shouldn't get quieter the farther they get
-                        let percent = 0.1; // changes how fast the sound moves away from original position --> add to sound-instance if this should vary across sound effects
-                        let mut offset = glm::Vec3::new(
-                                sound_instances[i].initial_dir.x * percent, 
-                                sound_instances[i].initial_dir.y * percent, 
-                                sound_instances[i].initial_dir.z * percent);
-                        // if offset != glm::Vec3::new(0.0,0.0,0.0) {offset = glm::normalize(&offset);}
+                        let mut offset = sound_instances[i].initial_dir;
+                        if offset != glm::Vec3::new(0.0,0.0,0.0) {offset = glm::normalize(&offset);}
+                        offset = glm::Vec3::new(
+                            offset.x * percent, 
+                            offset.y * percent, 
+                            offset.z * percent);
                         sound_instances[i].position = sound_instances[i].position + offset;
                         thread::sleep(Duration::from_millis(1));
                         //println!(""); // without this print_statement the sounds don't play; maybe need delay?
@@ -227,7 +228,7 @@ impl Audio {
             let file = BufReader::new(File::open(sound.path.clone()).unwrap());
             let source = Decoder::new(file).unwrap().buffered();
 
-            audio.audio_assets.push((source, Duration::new(sound.seconds, sound.nanoseconds)));
+            audio.audio_assets.push((source, Duration::new(sound.seconds, sound.nanoseconds), sound.fall_off_speed));
         }
         audio
     }
@@ -239,6 +240,7 @@ pub struct AudioElement {
     pub path: String,
     pub seconds: u64,
     pub nanoseconds: u32,
+    pub fall_off_speed: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

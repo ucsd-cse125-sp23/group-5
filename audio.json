@@ -4,19 +4,22 @@
         "name": "background",
         "path": "assets/audio/background/looping_bgd_quiet_start.mp3",
         "seconds": 128,
-        "nanoseconds": 0 
+        "nanoseconds": 0,
+        "fall_off_speed": 0.0
       },
       {
         "name": "wind_sound",
         "path": "assets/audio/sound_effects/woosh_sound.mp3",
         "seconds": 5,
-        "nanoseconds": 2500 
+        "nanoseconds": 2500,
+        "fall_off_speed": 0.25 
       },
       {
         "name": "step_sound",
         "path": "assets/audio/sound_effects/step_sound.mp3",
         "seconds": 0,
-        "nanoseconds": 500000000
+        "nanoseconds": 500000000,
+        "fall_off_speed": 0.0
       }
     ]
   }
