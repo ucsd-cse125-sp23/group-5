@@ -1,7 +1,6 @@
 use std::fs::{read, read_to_string};
 use std::io::{BufReader, Cursor};
 
-use cfg_if::cfg_if;
 use const_format::formatcp;
 use wgpu::util::DeviceExt;
 
@@ -12,7 +11,7 @@ use crate::{
 
 //assuming we run from root (group-5 folder)
 #[rustfmt::skip]
-const SEARCH_PATH : [&'static str; 4] = [
+const SEARCH_PATH : [&str; 4] = [
     formatcp!(""), 
     formatcp!("assets"), 
     formatcp!("client{}res", std::path::MAIN_SEPARATOR_STR), 
@@ -31,11 +30,9 @@ const SEARCH_PATH : [&'static str; 4] = [
 //     base.join(file_name).unwrap()
 // }
 
-
 pub fn find_in_search_path(file_name: &str) -> Option<std::path::PathBuf> {
-    for p in SEARCH_PATH{
-        let path = std::path::Path::new(p)
-            .join(file_name);
+    for p in SEARCH_PATH {
+        let path = std::path::Path::new(p).join(file_name);
         if path.exists() {
             return Some(path);
         }
@@ -47,16 +44,14 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
     let path = find_in_search_path(file_name)
         .ok_or_else(|| anyhow::Error::msg(format!("error finding {file_name}")))?;
 
-    read_to_string(path)
-        .map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
+    read_to_string(path).map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
 }
 
 pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
     let path = find_in_search_path(file_name)
         .ok_or_else(|| anyhow::Error::msg(format!("error finding {file_name}")))?;
 
-    read(path)
-        .map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
+    read(path).map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
 }
 
 pub async fn load_texture(
@@ -68,11 +63,7 @@ pub async fn load_texture(
     texture::Texture::from_bytes(device, queue, &data, file_name)
 }
 
-pub type ModelLoadingResources<'a> = (
-    &'a wgpu::Device,
-    &'a wgpu::Queue,
-    &'a wgpu::BindGroupLayout,
-);
+pub type ModelLoadingResources<'a> = (&'a wgpu::Device, &'a wgpu::Queue, &'a wgpu::BindGroupLayout);
 
 pub async fn load_model(
     file_path: &str,

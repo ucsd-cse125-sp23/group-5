@@ -1,6 +1,7 @@
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler, MoveCommandHandler, 
-    SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler,
+    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
+    MoveCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+    UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
@@ -9,7 +10,7 @@ use common::core::states::GameState;
 
 use crate::Recipients;
 use common::configs::from_file;
-use common::configs::scene_config::ConfigSceneGraph;
+
 use common::core::events::GameEvent;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
@@ -107,8 +108,8 @@ impl Executor {
                 client_command.client_id,
                 scene_config,
             )),
-            Command::Die => Box::new(DieCommandHandler::new
-                (client_command.client_id, 
+            Command::Die => Box::new(DieCommandHandler::new(
+                client_command.client_id,
                 scene_config,
             )),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
@@ -158,10 +159,7 @@ impl Executor {
             }
             None => {}
         }
-        game_state.previous_tick_winner = match game_state.has_single_winner() {
-            Some(id) => Some(id),
-            None => None,
-        }
+        game_state.previous_tick_winner = game_state.has_single_winner()
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
@@ -169,8 +167,7 @@ impl Executor {
     }
 
     pub(crate) fn update_dead_players(&self) -> Vec<u32> {
-        self
-            .game_state()
+        self.game_state()
             .players
             .iter()
             .filter(|(_, player)| {

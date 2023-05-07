@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use crate::model::{Material, Mesh, Model, StaticModel};
+use crate::resources::{find_in_search_path, ModelLoadingResources};
 use anyhow::Context;
 use derive_more::Constructor;
 use log::error;
-use crate::model::{Material, Mesh, Model, StaticModel};
-use crate::resources::{find_in_search_path, ModelLoadingResources};
+use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 
 type AnimationId = String;
 
@@ -62,30 +62,48 @@ impl AnimatedModel {
         }
     }
 
-    pub async fn load_animation(&mut self, path: &str, res: ModelLoadingResources<'_>) -> anyhow::Result<()> {
+    pub async fn load_animation(
+        &mut self,
+        path: &str,
+        res: ModelLoadingResources<'_>,
+    ) -> anyhow::Result<()> {
         let path_buf = find_in_search_path(path).context("Could not find animation file")?;
         // name is the filename without the extension
         let name = path_buf
-            .file_stem().context("Could not get animation name")?
-            .to_str().context("Could not convert animation name to string")?;
+            .file_stem()
+            .context("Could not get animation name")?
+            .to_str()
+            .context("Could not convert animation name to string")?;
 
         println!("Loading animation {} from {}", name, path);
 
-        let animation = Animation::load_from_dir(path_buf.to_str().context("Could not convert animation path to string")?, name, res).await?;
-
+        let animation = Animation::load_from_dir(
+            path_buf
+                .to_str()
+                .context("Could not convert animation path to string")?,
+            name,
+            res,
+        )
+        .await?;
 
         self.add_animation(animation);
         Ok(())
     }
 
-    pub async fn load_all_animations_from_dir(&mut self, path: &str, res: ModelLoadingResources<'_>) -> anyhow::Result<()> {
+    pub async fn load_all_animations_from_dir(
+        &mut self,
+        path: &str,
+        res: ModelLoadingResources<'_>,
+    ) -> anyhow::Result<()> {
         let dir = find_in_search_path(path).context("Could not find animation directory")?;
         let dir = std::fs::read_dir(dir).context("Could not read animation directory")?;
 
         for entry in dir {
             let entry = entry.context("Could not read animation directory entry")?;
             let path = entry.path();
-            let path = path.to_str().context("Could not convert animation path to string")?;
+            let path = path
+                .to_str()
+                .context("Could not convert animation path to string")?;
             if self.load_animation(path, res).await.is_err() {
                 error!("Skipping animation {}", path);
             }
@@ -106,8 +124,11 @@ impl Animation {
     }
 
     /// load all obj files in the directory as keyframes, sorted by name, using a default frame rate
-    pub async fn load_from_dir(path: &str, name: &str, res: ModelLoadingResources<'_>) -> anyhow::Result<Self> {
-
+    pub async fn load_from_dir(
+        path: &str,
+        name: &str,
+        res: ModelLoadingResources<'_>,
+    ) -> anyhow::Result<Self> {
         // read the directory
         let mut dir = std::fs::read_dir(path)?;
         let mut animation = Animation::new(path, name);
@@ -129,17 +150,20 @@ impl Animation {
 
         //load each file as a keyframe
         for entry in entries {
-            animation.load_keyframe(entry.path().to_str().unwrap(), time, res).await?;
+            animation
+                .load_keyframe(entry.path().to_str().unwrap(), time, res)
+                .await?;
             time += 1.0 / DEFAULT_FRAME_RATE;
         }
 
         Ok(animation)
     }
 
-    pub async fn load_keyframe(&mut self,
-                               path: &str,
-                               time: f32,
-                               res: ModelLoadingResources<'_>,
+    pub async fn load_keyframe(
+        &mut self,
+        path: &str,
+        time: f32,
+        res: ModelLoadingResources<'_>,
     ) -> anyhow::Result<()> {
         let frame_model = StaticModel::load(path, res).await?;
         let keyframe = Keyframe::new(frame_model, time);

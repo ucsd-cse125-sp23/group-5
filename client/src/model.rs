@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use std::ops::Range;
-use wgpu::{BindGroupLayout, Device, Queue};
 use crate::instance::Instance;
+
+use std::ops::Range;
+use wgpu::Device;
 
 use crate::instance;
 use crate::resources::{load_model, ModelLoadingResources};
@@ -45,11 +45,7 @@ pub struct InstancedModel<'a> {
 }
 
 impl<'a> InstancedModel<'a> {
-    pub fn new(
-        model: &'a dyn Model,
-        instances: &Vec<instance::Instance>,
-        device: &Device,
-    ) -> Self {
+    pub fn new(model: &'a dyn Model, instances: &Vec<instance::Instance>, device: &Device) -> Self {
         Self {
             model,
             num_instances: instances.len(),
@@ -177,8 +173,8 @@ pub trait DrawModel<'a> {
 }
 
 impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
-    where
-        'b: 'a,
+where
+    'b: 'a,
 {
     fn draw_model(
         &mut self,
@@ -200,7 +196,11 @@ impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
             let mat_id = mesh.material;
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            self.set_bind_group(0, &instanced_model.model.materials()[mat_id].bind_group, &[]);
+            self.set_bind_group(
+                0,
+                &instanced_model.model.materials()[mat_id].bind_group,
+                &[],
+            );
             // print!("model:154 {:?}\n", &instanced_model.model.materials[mat_id]);
             self.set_bind_group(1, camera_bind_group, &[]);
             self.draw_indexed(0..mesh.num_elements, 0, instances.clone());

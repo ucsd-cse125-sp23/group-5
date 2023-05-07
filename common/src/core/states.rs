@@ -5,11 +5,10 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
-use rapier3d::parry::transformation::utils::transform;
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::iter::Map;
-use std::ops::Deref;
+
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -41,12 +40,12 @@ impl PlayerState {
     // returns if the consumption is successful
     pub fn try_consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
         let consume_amount = consume_amount.unwrap_or(1);
-        return if self.wind_charge >= consume_amount {
+        if self.wind_charge >= consume_amount {
             self.wind_charge -= consume_amount;
             true
         } else {
             false
-        };
+        }
     }
 
     // add to refill command handlers, put NONE for refill all, won't exceed cap
@@ -138,9 +137,9 @@ impl GameState {
                     player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
                 )
             })
-            .filter(|(_, res)| *res == true)
+            .filter(|(_, res)| *res)
             .collect();
-        if valid_players.clone().len() != 1 {
+        if valid_players.len() != 1 {
             None
         } else {
             Some(*valid_players.keys().last().unwrap())
@@ -153,23 +152,23 @@ impl GameState {
             None => None,
             Some(id) => {
                 self.player_mut(id).unwrap().on_flag_time += delta_time;
-                return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
                     Some(id)
                 } else {
                     None
-                };
+                }
             }
         }
     }
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct ParticleQueue{
+pub struct ParticleQueue {
     pub particles: Vec<ParticleSpec>,
 }
 
-impl ParticleQueue{
-    pub fn add_particle(&mut self, particle: ParticleSpec){
+impl ParticleQueue {
+    pub fn add_particle(&mut self, particle: ParticleSpec) {
         self.particles.push(particle);
     }
 }

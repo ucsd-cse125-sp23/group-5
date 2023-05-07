@@ -94,7 +94,9 @@ pub mod prefix_len {
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid utf8"))
     }
 
-    pub fn extract_bincode<T: for<'a> serde::Deserialize<'a>>(buf: &mut impl Read) -> io::Result<T> {
+    pub fn extract_bincode<T: for<'a> serde::Deserialize<'a>>(
+        buf: &mut impl Read,
+    ) -> io::Result<T> {
         let bincode = extract_bytes(buf)?;
         let value = bincode::deserialize(&bincode)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;

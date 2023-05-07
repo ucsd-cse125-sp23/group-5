@@ -5,7 +5,7 @@ use std::f32::consts::PI;
 
 use crate::Recipients;
 use common::core::command::{Command, MoveDirection};
-use common::core::events::{GameEvent, SoundSpec, ParticleSpec, ParticleType};
+use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 
 use common::communication::commons::MAX_WIND_CHARGE;
 use common::configs::model_config::ConfigModels;
@@ -20,7 +20,7 @@ use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
-use std::fmt::{format, Debug};
+use std::fmt::Debug;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -90,8 +90,7 @@ impl CommandHandler for StartupCommandHandler {
 
             let decompose = node.decompose.unwrap_or(false);
 
-            let collider = rapier::ColliderBuilder::from_object_models(models, decompose)
-                .build();
+            let collider = rapier::ColliderBuilder::from_object_models(models, decompose).build();
 
             physics_state.insert_entity(scene_entity_id, Some(collider), Some(body)); // insert the collider into the physics world
             scene_entity_id += 1;
@@ -141,7 +140,7 @@ impl CommandHandler for SpawnCommandHandler {
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
-                if let Some(player_rigid_body) = 
+                if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
                     player_rigid_body.set_enabled(true);
@@ -180,7 +179,6 @@ impl CommandHandler for SpawnCommandHandler {
     }
 }
 
-
 #[derive(Constructor)]
 pub struct DieCommandHandler {
     player_id: u32,
@@ -202,9 +200,7 @@ impl CommandHandler for DieCommandHandler {
 
         // Teleport the player back to their spawn position and disable physics.
         let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
-        if let Some(player_rigid_body) =
-            physics_state.get_entity_rigid_body_mut(self.player_id)
-        {
+        if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
             player_rigid_body.set_position(new_position, true);
             player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
             player_rigid_body.set_enabled(false);
@@ -216,7 +212,6 @@ impl CommandHandler for DieCommandHandler {
         Ok(())
     }
 }
-
 
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
@@ -357,7 +352,7 @@ impl CommandHandler for JumpCommandHandler {
                 self.player_id
             )))?;
 
-        let player_rigid_body = physics_state
+        let _player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .ok_or(HandlerError::new(format!(
                 "Rigid body for player {} not found",
@@ -460,17 +455,15 @@ impl CommandHandler for AttackCommandHandler {
 
         player_state.insert_cooldown(Command::Attack, 5);
         game_events.add(
-            GameEvent::ParticleEvent(
-                ParticleSpec::new(
-                    ParticleType::ATTACK,
-                    player_pos.clone(),
-                    camera_forward.clone(),
-                    //TODO: placeholder for player color
-                    glm::vec3(0.0, 1.0, 0.0),
-                    glm::vec4(0.4, 0.9, 0.7, 1.0),
-                    format!("Attack from player {}", self.player_id)
-                )
-            ),
+            GameEvent::ParticleEvent(ParticleSpec::new(
+                ParticleType::ATTACK,
+                player_pos,
+                camera_forward,
+                //TODO: placeholder for player color
+                glm::vec3(0.0, 1.0, 0.0),
+                glm::vec4(0.4, 0.9, 0.7, 1.0),
+                format!("Attack from player {}", self.player_id),
+            )),
             Recipients::All,
         );
 

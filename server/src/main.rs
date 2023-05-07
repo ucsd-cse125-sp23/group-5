@@ -4,13 +4,13 @@ use common::core::states::GameState;
 use std::sync::atomic::AtomicU8;
 
 use clap::__derive_refs::once_cell::sync::Lazy;
+use log::info;
 use server::game_loop::GameLoop;
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{net::TcpListener, thread};
-use log::info;
 
-use common::communication::commons::{CSE125_SERVER_ADDR, DEFAULT_SERVER_ADDR};
+use common::communication::commons::CSE125_SERVER_ADDR;
 
 use server::executor::Executor;
 use threadpool::ThreadPool;

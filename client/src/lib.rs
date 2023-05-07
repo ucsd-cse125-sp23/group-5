@@ -6,13 +6,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use rand::{rngs::ThreadRng, Rng};
 use winit::event::*;
 
 mod model;
 
 use crate::model::DrawModel;
-use crate::instance::Instance;
 use model::Vertex;
 
 mod camera;
@@ -29,19 +27,19 @@ extern crate nalgebra_glm as glm;
 
 use common::configs::{from_file, model_config::ConfigModels};
 
+pub mod animation;
 pub mod event_loop;
 pub mod inputs;
-pub mod animation;
 
+use crate::animation::AnimatedModel;
+use crate::scene::InstanceBundle;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
-use common::core::states::{GameState, ParticleQueue};
 use common::core::events;
+use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use crate::animation::AnimatedModel;
-use crate::scene::InstanceBundle;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -273,20 +271,20 @@ impl State {
         // Scene
         let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 
-
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
 
         let mut korok_model = AnimatedModel::new("korok");
-        korok_model.load_all_animations_from_dir("assets/korok", model_loading_resources).await.unwrap();
+        korok_model
+            .load_all_animations_from_dir("assets/korok", model_loading_resources)
+            .await
+            .unwrap();
 
         println!("Korok model loaded {:?}", korok_model);
 
         let mut models = HashMap::new();
 
         for model_config in model_configs.models {
-            let model = resources::load_model(
-                &model_config.path,
-                model_loading_resources)
+            let model = resources::load_model(&model_config.path, model_loading_resources)
                 .await
                 .unwrap();
             models.insert(model_config.name, model);
@@ -326,7 +324,7 @@ impl State {
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
-        let render_pipeline_layout =
+        let _render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("3D Render Pipeline Layout"),
                 bind_group_layouts: &[
@@ -452,15 +450,15 @@ impl State {
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
         ))
-            .unwrap();
+        .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
-        let mut rng = rand::thread_rng();
+        let rng = rand::thread_rng();
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
             .await
             .unwrap();
-        let mut particle_renderer = particles::ParticleDrawer::new(
+        let particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
             &camera_state.camera_bind_group_layout,
@@ -548,7 +546,12 @@ impl State {
         }
     }
 
-    fn update(&mut self, game_state: Arc<Mutex<GameState>>, particle_queue: Arc<Mutex<ParticleQueue>>, dt: instant::Duration) {
+    fn update(
+        &mut self,
+        game_state: Arc<Mutex<GameState>>,
+        particle_queue: Arc<Mutex<ParticleQueue>>,
+        dt: instant::Duration,
+    ) {
         let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
         self.scene.load_game_state(
@@ -599,7 +602,10 @@ impl State {
                 let count = instances.len();
                 let instanced_obj = model::InstancedModel::new(
                     self.scene.objects.get(index).unwrap(),
-                    &instances.iter().map(InstanceBundle::instance).collect::<Vec<_>>(),
+                    &instances
+                        .iter()
+                        .map(InstanceBundle::instance)
+                        .collect::<Vec<_>>(),
                     &self.device,
                 );
                 instanced_objs.push((instanced_obj, count));
@@ -692,10 +698,10 @@ impl State {
                 screen_position: (30.0, 20.0),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![Text::new(
-                    &format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
+                    format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
                 )
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)],
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
                 ..Section::default()
             });
             // render ability cooldowns
@@ -705,10 +711,10 @@ impl State {
                     screen_position: (30.0, 60.0),
                     bounds: (size.width as f32, size.height as f32),
                     text: vec![Text::new(
-                        &format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
+                        format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
                     )
-                        .with_color([0.0, 0.0, 0.0, 1.0])
-                        .with_scale(40.0)],
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
                     ..Section::default()
                 });
             }
@@ -726,7 +732,7 @@ impl State {
                         Text::new("Respawning in ")
                             .with_color([1.0, 1.0, 0.0, 1.0])
                             .with_scale(60.0),
-                        Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
                             .with_color([1.0, 1.0, 1.0, 1.0])
                             .with_scale(60.0),
                         Text::new(" seconds")

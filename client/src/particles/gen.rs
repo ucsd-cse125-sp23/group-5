@@ -1,10 +1,7 @@
 extern crate nalgebra_glm as glm;
-use std::{
-    f32::consts::{FRAC_PI_2, PI},
-    ops::IndexMut,
-};
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Poisson, Uniform};
+use std::f32::consts::{FRAC_PI_2, PI};
 
 use crate::particles::Particle;
 
@@ -32,7 +29,7 @@ pub struct ConeGenerator {
     dir: glm::Vec3,
     up: glm::Vec3,
     right: glm::Vec3,
-    r: f32,  // radius of circle created by spread
+    r: f32, // radius of circle created by spread
     linear_speed: f32,
     linear_variance: f32,
     angular_velocity: f32,
@@ -43,12 +40,12 @@ pub struct ConeGenerator {
     poisson_generation: bool,
 }
 
-impl ConeGenerator{
+impl ConeGenerator {
     pub fn new(
         source: glm::Vec3,
         dir: glm::Vec3,
         up: glm::Vec3,
-        spread: f32,  // in degrees
+        spread: f32, // in degrees
         linear_speed: f32,
         linear_variance: f32,
         angular_velocity: f32,
@@ -57,16 +54,16 @@ impl ConeGenerator{
         size_variance: f32,
         size_growth: f32,
         poisson_generation: bool,
-    ) -> Self{
+    ) -> Self {
         let right = glm::normalize(&glm::cross(&dir, &up));
         let half_spread = spread.to_radians() / 2.0;
         let r = half_spread.tan();
-        Self { 
+        Self {
             source,
             dir: glm::normalize(&dir),
             up: glm::normalize(&glm::cross(&right, &dir)),
             right,
-            // half degree in radians = degree / 2 * 2pi / 360 
+            // half degree in radians = degree / 2 * 2pi / 360
             //  = degree * pi / 180 = degree * (pi/2) * 360
             r,
             linear_speed,
@@ -81,7 +78,7 @@ impl ConeGenerator{
     }
 }
 
-impl ParticleGenerator for ConeGenerator{
+impl ParticleGenerator for ConeGenerator {
     fn generate(
         &self,
         list: &mut Vec<Particle>,
@@ -129,7 +126,7 @@ impl ParticleGenerator for ConeGenerator{
                 false => 1.0 / spawn_rate,
             };
         }
-        return list.len() as u32;
+        list.len() as u32
     }
 }
 
@@ -138,7 +135,7 @@ pub struct FanGenerator {
     dir: glm::Vec3,
     up: glm::Vec3,
     right: glm::Vec3,
-    half_spread: f32,  // in radians
+    half_spread: f32, // in radians
     linear_speed: f32,
     linear_variance: f32,
     angular_velocity: f32,
@@ -149,12 +146,12 @@ pub struct FanGenerator {
     poisson_generation: bool,
 }
 
-impl FanGenerator{
+impl FanGenerator {
     pub fn new(
         source: glm::Vec3,
         dir: glm::Vec3,
         up: glm::Vec3,
-        spread: f32,  // in degrees
+        spread: f32, // in degrees
         linear_speed: f32,
         linear_variance: f32,
         angular_velocity: f32,
@@ -163,14 +160,14 @@ impl FanGenerator{
         size_variance: f32,
         size_growth: f32,
         poisson_generation: bool,
-    ) -> Self{
+    ) -> Self {
         let right = glm::normalize(&glm::cross(&dir, &up));
-        Self { 
+        Self {
             source,
             dir: glm::normalize(&dir),
             up: glm::normalize(&glm::cross(&right, &dir)),
             right,
-            // half degree in radians = degree / 2 * 2pi / 360 
+            // half degree in radians = degree / 2 * 2pi / 360
             //  = degree * pi / 180 = degree * (pi/2) * 360
             half_spread: (spread) / 360.0 * FRAC_PI_2,
             linear_speed,
@@ -185,7 +182,7 @@ impl FanGenerator{
     }
 }
 
-impl ParticleGenerator for FanGenerator{
+impl ParticleGenerator for FanGenerator {
     fn generate(
         &self,
         list: &mut Vec<Particle>,
@@ -210,12 +207,7 @@ impl ParticleGenerator for FanGenerator{
             list.push(Particle {
                 start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                 color: color.into(),
-                velocity: [
-                    v[0],
-                    v[1],
-                    v[2],
-                    ang_dist.sample(rng),
-                ],
+                velocity: [v[0], v[1], v[2], ang_dist.sample(rng)],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
@@ -230,7 +222,7 @@ impl ParticleGenerator for FanGenerator{
                 false => 1.0 / spawn_rate,
             };
         }
-        return list.len() as u32;
+        list.len() as u32
     }
 }
 
@@ -297,12 +289,7 @@ impl ParticleGenerator for LineGenerator {
             list.push(Particle {
                 start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                 color: color.into(),
-                velocity: [
-                    v[0],
-                    v[1],
-                    v[2],
-                    ang_dist.sample(rng),
-                ],
+                velocity: [v[0], v[1], v[2], ang_dist.sample(rng)],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as f32,
@@ -317,6 +304,6 @@ impl ParticleGenerator for LineGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        return list.len() as u32;
+        list.len() as u32
     }
 }
