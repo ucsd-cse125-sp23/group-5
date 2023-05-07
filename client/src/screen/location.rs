@@ -15,7 +15,7 @@ impl ScreenLocation{
         let aspect: f32 = (width as f32) / (height as f32);
         let w = self.horz_disp.1 + self.horz_disp.0 / aspect;
         let h = self.vert_disp.0 + self.vert_disp.1 * aspect;
-        [h, w]
+        [w, h]
     }
 
     pub fn get_width(
@@ -37,10 +37,13 @@ impl ScreenLocation{
         vertices: &mut [Vertex; 4],
     ){
         let center = self.to_absolute(screen_width, screen_height);
+        println!("Center: {center:?}");
         let width = Self::get_width(obj_height, aspect, screen_width, screen_height);
-        vertices[0].position = [center[0] - width/2.0, center[0] - obj_height/2.0];
-        vertices[1].position = [center[0] - width/2.0, center[0] + obj_height/2.0];
-        vertices[2].position = [center[0] + width/2.0, center[0] + obj_height/2.0];
-        vertices[3].position = [center[0] + width/2.0, center[0] - obj_height/2.0];
+        println!("width: {width:?}");
+        vertices[0].position = [center[0] - width/2.0, center[1] - obj_height/2.0];
+        vertices[1].position = [center[0] - width/2.0, center[1] + obj_height/2.0];
+        vertices[2].position = [center[0] + width/2.0, center[1] + obj_height/2.0];
+        vertices[3].position = [center[0] + width/2.0, center[1] - obj_height/2.0];
+        println!("vertices: {vertices:?}");
     }
 }

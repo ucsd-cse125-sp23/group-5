@@ -463,7 +463,7 @@ impl State {
         //TODO: for debugging -----
         let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
         screen::objects::get_display_groups(&device, scene, &mut groups);
-        let default_display_id = String::from("display:title");
+        let default_display_id = String::from("display:game");
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         // String::from("bkgd:title")

@@ -189,10 +189,11 @@ impl Screen{
             }
         };
         for i in &mut self.buttons{
-            i.resize(screen_width, screen_height);
+            println!("Buttons");
+            i.resize(screen_width, screen_height, queue);
         }
         for i in &mut self.icons{
-            i.resize(screen_width, screen_height);
+            i.resize(screen_width, screen_height, queue);
         }
     }
 }
@@ -243,6 +244,7 @@ impl Button{
         &mut self,
         screen_width: u32,
         screen_height: u32,
+        queue: &wgpu::Queue,
     ){
         self.location.get_coords(
             self.aspect,
@@ -250,6 +252,11 @@ impl Button{
             screen_width,
             screen_height,
             &mut self.vertices
+        );
+        queue.write_buffer(
+            &self.vbuf,
+            0,
+            bytemuck::cast_slice(&self.vertices),
         );
     }
 }
@@ -259,6 +266,7 @@ impl Icon{
         &mut self,
         screen_width: u32,
         screen_height: u32,
+        queue: &wgpu::Queue,
     ){
         self.location.get_coords(
             self.aspect,
@@ -266,6 +274,11 @@ impl Icon{
             screen_width,
             screen_height,
             &mut self.vertices
+        );
+        queue.write_buffer(
+            &self.vbuf,
+            0,
+            bytemuck::cast_slice(&self.vertices),
         );
     }
 }
@@ -303,7 +316,7 @@ pub fn get_display_groups(
     let button1 = Button{
         location: button1_loc,
         aspect: 1.0,
-        height: 0.463,
+        height: 0.463 * 2.0,
         vertices: b_vert,
         vbuf: b_vbuf,
         default_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
