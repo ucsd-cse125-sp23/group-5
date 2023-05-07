@@ -7,14 +7,16 @@ use crate::scene::Scene;
 use crate::screen;
 use crate::screen::location::ScreenLocation;
 
-static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map!{
+pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map!{
     "game_start" => game_start,
 };
 
-// Place click events here
+// Place click events here ----------------------
 fn game_start(display: &mut screen::Display){
-    display.current = String::from("display:game");
+    display.current = display.game_display.clone();
 }
+
+// end click events ----------------------
 
 // Vertex
 #[repr(C)]
@@ -138,7 +140,7 @@ pub struct Button{
     pub hover_tint: glm::Vec4,
     pub default_texture: String,
     pub hover_texture: String,
-    pub on_click: Option<String>,
+    pub on_click: String,
 }
 
 #[derive(Debug)]
@@ -188,7 +190,6 @@ impl Screen{
             }
         };
         for i in &mut self.buttons{
-            println!("Buttons");
             i.resize(screen_width, screen_height, queue);
         }
         for i in &mut self.icons{
@@ -337,7 +338,7 @@ pub fn get_display_groups(
         hover_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
         default_texture: String::from("btn:title"),
         hover_texture: String::from("btn:title_hover"),
-        on_click: Some(String::from("game_start")),
+        on_click: String::from("game_start"),
     };
     let title_screen = Screen{
         background: Some(bkgd1),

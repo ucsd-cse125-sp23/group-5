@@ -37,13 +37,10 @@ impl ScreenLocation{
         vertices: &mut [Vertex; 4],
     ){
         let center = self.to_absolute(screen_width, screen_height);
-        println!("Center: {center:?}");
         let width = Self::get_width(obj_height, aspect, screen_width, screen_height);
-        println!("width: {width:?}");
         vertices[0].position = [center[0] - width/2.0, center[1] - obj_height/2.0];
         vertices[1].position = [center[0] - width/2.0, center[1] + obj_height/2.0];
         vertices[2].position = [center[0] + width/2.0, center[1] + obj_height/2.0];
         vertices[3].position = [center[0] + width/2.0, center[1] - obj_height/2.0];
-        println!("vertices: {vertices:?}");
     }
 }

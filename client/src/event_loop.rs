@@ -102,18 +102,26 @@ impl PlayerLoop {
                             } => { 
                                 state.mouse_position[0] = 2.0 * (position.x as f32) / state.window_size[0] - 1.0;
                                 state.mouse_position[1] = -2.0 * (position.y as f32) / state.window_size[1] + 1.0;
-                            },
+                            }
+                            // NOTE: problematic code here
+                            WindowEvent::MouseInput { 
+                                button: MouseButton::Right,
+                                ..
+                            } => {
+                                println!("mouse click received!");
+                                state.display.click(&state.mouse_position);
+                            }
                             _ => {}
                         }
                     }
-                }
+                },
                 // event
                 Event::DeviceEvent {
                     event: DeviceEvent::MouseMotion{ delta, },
                     .. // We're not using device_id currently
                 } => {
                     state.player_controller.process_mouse(delta.0, delta.1)
-                }
+                },
                 Event::DeviceEvent { ref event, .. } => match event {
                     DeviceEvent::MouseWheel { .. }
                     | DeviceEvent::Button { .. } => {

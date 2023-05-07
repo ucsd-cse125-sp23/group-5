@@ -193,6 +193,27 @@ impl Display{
             };
         }
     }
+
+    pub fn click(&mut self, mouse: &[f32; 2]){
+        //iterate through buttons
+        let display_group = self.groups.get(&self.current).unwrap();
+        let screen;
+        match display_group.screen.as_ref() {
+            None => return,
+            Some(s) => screen = s
+        };
+        let mut to_call: Option<&str> = None;
+        for button in &screen.buttons{
+            if button.is_hover(mouse) {
+                to_call = Some(&button.on_click[..]);
+            }
+        }
+        println!("Clicked! calling: {:?}", to_call);
+        match to_call{
+            None => {},
+            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self)
+        };
+    }
 }
 
 pub trait DrawGUI<'a> {

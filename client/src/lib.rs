@@ -457,9 +457,6 @@ impl State {
         //TODO: for debugging -----
         let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
         screen::objects::get_display_groups(&device, scene, &mut groups);
-        #[cfg(not(feature = "debug-lobby"))]
-        let default_display_id = String::from("display:game");
-        #[cfg(feature = "debug-lobby")]
         let default_display_id = String::from("display:title");
 
         let game_display_id = String::from("display:game");
