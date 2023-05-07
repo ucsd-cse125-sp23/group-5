@@ -588,7 +588,18 @@ impl State {
                 button: MouseButton::Left,
                 state: _,
                 ..
-            } => true,
+            } => {
+                self.display.click(&self.mouse_position);
+                return true;
+            },
+            WindowEvent::CursorMoved { 
+                position,
+                ..
+            } => { 
+                self.mouse_position[0] =  2.0 * (position.x as f32) / self.window_size[0] - 1.0;
+                self.mouse_position[1] = -2.0 * (position.y as f32) / self.window_size[1] + 1.0;
+                return true;
+            },
             _ => false,
         }
     }

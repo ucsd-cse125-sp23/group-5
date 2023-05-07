@@ -208,7 +208,6 @@ impl Display{
                 to_call = Some(&button.on_click[..]);
             }
         }
-        println!("Clicked! calling: {:?}", to_call);
         match to_call{
             None => {},
             Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self)

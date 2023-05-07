@@ -96,21 +96,6 @@ impl PlayerLoop {
                                 // new_inner_size is &&mut so we have to dereference it twice
                                 state.resize(**new_inner_size);
                             }
-                            WindowEvent::CursorMoved { 
-                                position,
-                                ..
-                            } => { 
-                                state.mouse_position[0] = 2.0 * (position.x as f32) / state.window_size[0] - 1.0;
-                                state.mouse_position[1] = -2.0 * (position.y as f32) / state.window_size[1] + 1.0;
-                            }
-                            // NOTE: problematic code here
-                            WindowEvent::MouseInput { 
-                                button: MouseButton::Right,
-                                ..
-                            } => {
-                                println!("mouse click received!");
-                                state.display.click(&state.mouse_position);
-                            }
                             _ => {}
                         }
                     }
