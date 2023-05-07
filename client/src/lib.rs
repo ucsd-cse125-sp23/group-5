@@ -50,18 +50,10 @@ struct State {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     window: Window,
-    // depth_texture: texture::Texture,
-    // render_pipeline: wgpu::RenderPipeline,
-    // render_pipeline_2d: wgpu::RenderPipeline,
     player: player::Player,
     player_controller: player::PlayerController,
-    // scene: scene::Scene,
-    // light_state: lights::LightState,
     camera_state: camera::CameraState,
-    // screens: Vec<screen_objects::Screen>,
-    // screen_ind: usize,
     display: screen::Display,
-    // particle_renderer: particles::ParticleDrawer,
     rng: rand::rngs::ThreadRng,
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
@@ -463,12 +455,14 @@ impl State {
         //TODO: for debugging -----
         let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
         screen::objects::get_display_groups(&device, scene, &mut groups);
+        #[cfg(not(feature = "debug-lobby"))]
         let default_display_id = String::from("display:game");
+        #[cfg(feature = "debug-lobby")]
+        let default_display_id = String::from("display:title");
+
+        let game_display_id = String::from("display:game");
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        // String::from("bkgd:title")
-        // String::from("btn:title")
-        // String::from("btn:title_hover")
         //Assume there's always a texture
         screen::texture_config::load_screen_tex(
             &device,
@@ -511,6 +505,7 @@ impl State {
         let display = screen::Display::new(
             groups,
             default_display_id,
+            game_display_id,
             texture_map,
             light_state,
             render_pipeline,
@@ -531,20 +526,9 @@ impl State {
             queue,
             config,
             size,
-            // render_pipeline,
-            // render_pipeline_2d,
-            // scene,
             player,
             player_controller,
             camera_state,
-            // depth_texture,
-            // light_state,
-            // screens,
-            // #[cfg(not(feature = "debug-lobby"))]
-            // screen_ind: 0,
-            // #[cfg(feature = "debug-lobby")]
-            // screen_ind: 1,
-            // particle_renderer,
             display,
             rng,
             client_id,
@@ -610,7 +594,7 @@ impl State {
         // game state to scene graph conversion and update
         // TODO: hard coded!
         self.display.groups
-            .get_mut(&String::from("display:game"))
+            .get_mut(&self.display.game_display)
             .as_mut()
             .unwrap()
             .scene
@@ -628,7 +612,7 @@ impl State {
         self.load_particles(particle_queue);
 
         self.display.groups
-            .get_mut(&String::from("display:game"))
+            .get_mut(&self.display.game_display)
             .as_mut()
             .unwrap()
             .scene

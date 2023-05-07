@@ -14,6 +14,7 @@ pub mod texture_config;
 pub struct Display{
     pub groups: HashMap<String, objects::DisplayGroup>,
     pub current: String,
+    pub game_display: String,
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub light_state: lights::LightState, // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
@@ -28,6 +29,7 @@ impl Display{
     pub fn new(
         groups: HashMap<String, objects::DisplayGroup>,
         current: String,
+        game_display: String,
         texture_map: HashMap<String, wgpu::BindGroup>,
         light_state: lights::LightState,
         scene_pipeline: wgpu::RenderPipeline,
@@ -40,6 +42,7 @@ impl Display{
         Self {
             groups,
             current,
+            game_display,
             texture_map,
             light_state,
             scene_pipeline,
