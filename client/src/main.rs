@@ -2,7 +2,7 @@ extern crate queues;
 
 use std::env;
 
-use client::audio::{Audio, ConfigAudioAssets, SoundQueue};
+use client::audio::{Audio, SoundQueue};
 use common::configs::*;
 use log::{debug, error, info};
 use std::fs::File;
@@ -18,6 +18,7 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
+use common::configs::audio_config::ConfigAudioAssets;
 use common::core::events::GameEvent;
 
 use common::core::states::{GameState, ParticleQueue};
@@ -110,13 +111,22 @@ fn main() {
     });
 
     // thread for audio
-    // let game_state_clone1 = game_state.clone();
     thread::spawn(move || {
-        let audio_config = from_file::<_, ConfigAudioAssets>(AUDIO_CONFIG_PATH).unwrap();
-        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
+        // let configuration = get_configuration();
+        // let config = configuration.lock().unwrap();
+        // let config_ref = config.as_ref().expect("Configuration not loaded.").clone();
+        // let audio_config = config_ref.audio.clone();
 
-        audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
-        audio.handle_audio_updates(game_state_clone, client_id);
+        let configuration = get_configuration();
+        let audio_config;
+        {
+            let config = configuration.lock().unwrap();
+            let config_ref = config.as_ref().expect("Configuration not loaded.");
+            audio_config = config_ref.audio.clone();
+            let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
+            audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
+            audio.handle_audio_updates(game_state_clone, client_id);
+        }
     });
 
     pollster::block_on(player_loop.run());

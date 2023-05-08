@@ -134,6 +134,22 @@ mod tests {
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
+    use common::configs::*;
+    use common::configs::audio_config::ConfigAudioAssets;
+    use common::configs::model_config::ConfigModels;
+    use common::configs::scene_config::ConfigSceneGraph;
+
+    fn test_load_configuration() -> Result<(), Box<dyn std::error::Error>> {
+        let models: ConfigModels = from_file("../models.json")?;
+        let scene: ConfigSceneGraph = from_file("../scene.json")?;
+        let audio: ConfigAudioAssets = from_file("../audio.json")?;
+
+        let config = Config::new(models, scene, audio);
+        let mut instance = CONFIG_INSTANCE.lock().unwrap();
+        *instance = Some(config);
+
+        Ok(())
+    }
 
     #[test]
     fn test_game_loop() {
@@ -197,6 +213,7 @@ mod tests {
                 .unwrap();
         });
 
+        test_load_configuration().expect("TODO: panic message");
         game_loop.run(); // this should block until the game loop is stopped at 500ms
 
         assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned

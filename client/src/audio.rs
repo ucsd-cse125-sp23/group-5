@@ -6,7 +6,6 @@ use ambisonic::{
     },
     AmbisonicBuilder,
 };
-use common::core::{events::SoundSpec, states::GameState};
 use instant::{Duration, SystemTime};
 use nalgebra_glm as glm;
 use serde::{Deserialize, Serialize};
@@ -17,6 +16,9 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
+
+use common::core::{events::SoundSpec, states::GameState};
+use common::configs::audio_config::ConfigAudioAssets;
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
@@ -271,20 +273,6 @@ impl Audio {
         }
         audio
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AudioElement {
-    pub name: String,
-    pub path: String,
-    pub seconds: u64,
-    pub nanoseconds: u32,
-    pub fall_off_speed: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigAudioAssets {
-    pub sounds: Vec<AudioElement>,
 }
 
 // let side = glm::Vec3::new(1.0, 0.0, 0.0);
