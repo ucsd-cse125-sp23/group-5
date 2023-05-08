@@ -84,6 +84,14 @@ impl PlayerLoop {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::KeyboardInput { input, .. } => {
+                                // to toggle on/off the background track because it got annoying
+                                // match input {
+                                //     KeyboardInput {virtual_keycode: Some(VirtualKeyCode::M), ..} => {
+                                //         audio.toggle_background_track();
+                                //     },
+                                //      _ => {},
+                                // }
+                                
                                 match self
                                     .inputs
                                     .send(Input::Keyboard(*input))
