@@ -52,8 +52,10 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let handler =
-            StartupCommandHandler::new(self.config_instance.models.clone(), self.config_instance.scene.clone());
+        let handler = StartupCommandHandler::new(
+            self.config_instance.models.clone(),
+            self.config_instance.scene.clone(),
+        );
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);

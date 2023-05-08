@@ -1,18 +1,18 @@
+pub mod audio_config;
 pub mod model_config;
 pub mod physics_config;
 pub mod player_config;
 pub mod scene_config;
-pub mod audio_config;
 
+use crate::configs::audio_config::ConfigAudioAssets;
+use crate::configs::model_config::ConfigModels;
+use crate::configs::scene_config::ConfigSceneGraph;
+use once_cell::sync::Lazy as OnceCellLazy;
 use serde::Serialize;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::{Arc, RwLock};
-use crate::configs::model_config::ConfigModels;
-use crate::configs::scene_config::ConfigSceneGraph;
-use crate::configs::audio_config::ConfigAudioAssets;
-use once_cell::sync::Lazy as OnceCellLazy;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -28,7 +28,11 @@ pub struct Config {
 
 impl Config {
     pub fn new(models: ConfigModels, scene: ConfigSceneGraph, audio: ConfigAudioAssets) -> Self {
-        Config { models, scene, audio }
+        Config {
+            models,
+            scene,
+            audio,
+        }
     }
 }
 
@@ -46,11 +50,17 @@ impl ConfigurationManager {
     }
 
     pub fn get_configuration() -> Arc<Config> {
-        CONFIG_INSTANCE.read().unwrap().as_ref().expect("Configuration not loaded.").clone()
+        CONFIG_INSTANCE
+            .read()
+            .unwrap()
+            .as_ref()
+            .expect("Configuration not loaded.")
+            .clone()
     }
 }
 
-pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCellLazy::new(|| RwLock::new(None));
+pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> =
+    OnceCellLazy::new(|| RwLock::new(None));
 
 pub fn from_file<P: AsRef<Path>, S: serde::de::DeserializeOwned>(
     path: P,

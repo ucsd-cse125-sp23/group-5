@@ -31,6 +31,7 @@ pub mod audio;
 pub mod event_loop;
 pub mod inputs;
 
+use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
 use common::core::events;
@@ -38,7 +39,6 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use common::configs::model_config::ConfigModels;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";

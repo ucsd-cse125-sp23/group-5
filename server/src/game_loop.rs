@@ -130,14 +130,14 @@ mod tests {
     use super::*;
     use common::core::command::Command::UpdateCamera;
 
+    use common::configs::audio_config::ConfigAudioAssets;
+    use common::configs::model_config::ConfigModels;
+    use common::configs::scene_config::ConfigSceneGraph;
+    use common::configs::{from_file, Config, ConfigurationManager, CONFIG_INSTANCE};
     use common::core::states::GameState;
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
-    use common::configs::{Config, CONFIG_INSTANCE, ConfigurationManager, from_file};
-    use common::configs::audio_config::ConfigAudioAssets;
-    use common::configs::model_config::ConfigModels;
-    use common::configs::scene_config::ConfigSceneGraph;
 
     fn test_load_configuration() -> Result<(), Box<dyn std::error::Error>> {
         let models: ConfigModels = from_file("../models.json")?;
@@ -152,6 +152,7 @@ mod tests {
 
     #[test]
     fn test_game_loop() {
+        test_load_configuration().expect("TODO: panic message");
         let (tx, rx) = mpsc::channel();
         let game_state = Arc::new(Mutex::new(GameState::default()));
         let ext = Executor::new(game_state);
@@ -212,7 +213,6 @@ mod tests {
                 .unwrap();
         });
 
-        test_load_configuration().expect("TODO: panic message");
         game_loop.run(); // this should block until the game loop is stopped at 500ms
 
         assert_eq!(ext.game_state().players.len(), 1); // the player should have been spawned

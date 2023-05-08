@@ -17,8 +17,8 @@ use std::{
     thread,
 };
 
-use common::core::{events::SoundSpec, states::GameState};
 use common::configs::audio_config::ConfigAudioAssets;
+use common::core::{events::SoundSpec, states::GameState};
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
