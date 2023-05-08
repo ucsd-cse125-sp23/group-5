@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_game_loop() {
-        test_load_configuration().expect("TODO: panic message");
+        test_load_configuration().expect("test load failed");
         let (tx, rx) = mpsc::channel();
         let game_state = Arc::new(Mutex::new(GameState::default()));
         let ext = Executor::new(game_state);
