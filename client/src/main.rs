@@ -47,7 +47,7 @@ fn main() {
         .expect("server addr parse fails");
 
     // load configuration
-    match load_configuration() {
+    match ConfigurationManager::load_configuration() {
         Ok(_) => println!("Configuration loaded successfully."),
         Err(e) => panic!("Failed to load configuration: {}", e),
     }
@@ -112,21 +112,12 @@ fn main() {
 
     // thread for audio
     thread::spawn(move || {
-        // let configuration = get_configuration();
-        // let config = configuration.lock().unwrap();
-        // let config_ref = config.as_ref().expect("Configuration not loaded.").clone();
-        // let audio_config = config_ref.audio.clone();
+        let config_instance = ConfigurationManager::get_configuration();
+        let audio_config = config_instance.audio.clone();
 
-        let configuration = get_configuration();
-        let audio_config;
-        {
-            let config = configuration.lock().unwrap();
-            let config_ref = config.as_ref().expect("Configuration not loaded.");
-            audio_config = config_ref.audio.clone();
-            let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
-            audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
-            audio.handle_audio_updates(game_state_clone, client_id);
-        }
+        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
+        audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
+        audio.handle_audio_updates(game_state_clone, client_id);
     });
 
     pollster::block_on(player_loop.run());

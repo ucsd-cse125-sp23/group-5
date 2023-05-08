@@ -8,11 +8,11 @@ use serde::Serialize;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
-use structopt::lazy_static;
+use std::sync::{Arc, RwLock};
 use crate::configs::model_config::ConfigModels;
 use crate::configs::scene_config::ConfigSceneGraph;
 use crate::configs::audio_config::ConfigAudioAssets;
+use once_cell::sync::Lazy as OnceCellLazy;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -32,25 +32,25 @@ impl Config {
     }
 }
 
-lazy_static::lazy_static! {
-    pub static ref CONFIG_INSTANCE: Arc<Mutex<Option<Config>>> = Arc::new(Mutex::new(None));
+pub struct ConfigurationManager;
+
+impl ConfigurationManager {
+    pub fn load_configuration() -> Result<(), Box<dyn std::error::Error>> {
+        let models: ConfigModels = from_file(MODELS_CONFIG_PATH)?;
+        let scene: ConfigSceneGraph = from_file(SCENE_CONFIG_PATH)?;
+        let audio: ConfigAudioAssets = from_file(AUDIO_CONFIG_PATH)?;
+
+        let config = Config::new(models, scene, audio);
+        *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
+        Ok(())
+    }
+
+    pub fn get_configuration() -> Arc<Config> {
+        CONFIG_INSTANCE.read().unwrap().as_ref().expect("Configuration not loaded.").clone()
+    }
 }
 
-pub fn load_configuration() -> Result<(), Box<dyn std::error::Error>> {
-    let models: ConfigModels = from_file(MODELS_CONFIG_PATH)?;
-    let scene: ConfigSceneGraph = from_file(SCENE_CONFIG_PATH)?;
-    let audio: ConfigAudioAssets = from_file(AUDIO_CONFIG_PATH)?;
-
-    let config = Config::new(models, scene, audio);
-    let mut instance = CONFIG_INSTANCE.lock().unwrap();
-    *instance = Some(config);
-
-    Ok(())
-}
-
-pub fn get_configuration() -> Arc<Mutex<Option<Config>>> {
-    CONFIG_INSTANCE.clone()
-}
+pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCellLazy::new(|| RwLock::new(None));
 
 pub fn from_file<P: AsRef<Path>, S: serde::de::DeserializeOwned>(
     path: P,

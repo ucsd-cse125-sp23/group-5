@@ -262,12 +262,10 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
-        let config_instance = get_configuration();
-        let config_lock = config_instance.lock().unwrap();
-        let config_ref = config_lock.as_ref().expect("Configuration not loaded.");
+        let config_instance = ConfigurationManager::get_configuration();
         // Scene
-        let scene_config = config_ref.scene.clone();
-        let models_config = config_ref.models.clone();
+        let scene_config = config_instance.scene.clone();
+        let models_config = config_instance.models.clone();
 
         let mut models = HashMap::new();
 

@@ -134,7 +134,7 @@ mod tests {
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
-    use common::configs::*;
+    use common::configs::{Config, CONFIG_INSTANCE, ConfigurationManager, from_file};
     use common::configs::audio_config::ConfigAudioAssets;
     use common::configs::model_config::ConfigModels;
     use common::configs::scene_config::ConfigSceneGraph;
@@ -145,8 +145,7 @@ mod tests {
         let audio: ConfigAudioAssets = from_file("../audio.json")?;
 
         let config = Config::new(models, scene, audio);
-        let mut instance = CONFIG_INSTANCE.lock().unwrap();
-        *instance = Some(config);
+        *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
 
         Ok(())
     }

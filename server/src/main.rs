@@ -35,7 +35,7 @@ fn main() {
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
     // load configuration
-    match load_configuration() {
+    match ConfigurationManager::load_configuration(){
         Ok(_) => info!("Configuration loaded successfully."),
         Err(e) => panic!("Failed to load configuration: {}", e),
     }

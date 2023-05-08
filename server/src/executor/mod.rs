@@ -26,7 +26,7 @@ pub struct Executor {
     game_state: Arc<Mutex<GameState>>,
     physics_state: RefCell<PhysicsState>,
     game_events: RefCell<Vec<(GameEvent, Recipients)>>,
-    config_instance: Arc<Mutex<Option<Config>>>,
+    config_instance: Arc<Config>,
 }
 
 impl Executor {
@@ -43,7 +43,7 @@ impl Executor {
             game_state,
             physics_state: RefCell::new(PhysicsState::new()),
             game_events: RefCell::new(Vec::new()),
-            config_instance: get_configuration(),
+            config_instance: ConfigurationManager::get_configuration(),
         }
     }
 
@@ -52,11 +52,8 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let config = self.config_instance.lock().unwrap();
-        let config_ref = config.as_ref().expect("Configuration not loaded.");
-
         let handler =
-            StartupCommandHandler::new(config_ref.models.clone(), config_ref.scene.clone());
+            StartupCommandHandler::new(self.config_instance.models.clone(), self.config_instance.scene.clone());
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
@@ -100,9 +97,7 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let config = self.config_instance.lock().unwrap();
-        let config_ref = config.as_ref().expect("Configuration not loaded.");
-        let scene_config = config_ref.scene.clone();
+        let scene_config = self.config_instance.scene.clone();
 
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(
