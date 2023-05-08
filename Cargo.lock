@@ -594,6 +594,7 @@ dependencies = [
  "byteorder",
  "derive_more",
  "env_logger",
+ "lazy_static",
  "log",
  "nalgebra-glm",
  "rapier3d",

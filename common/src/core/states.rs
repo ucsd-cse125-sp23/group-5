@@ -5,12 +5,8 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
-use rapier3d::parry::transformation::utils::transform;
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
 use std::collections::HashMap;
-use std::iter::Map;
-use std::ops::Deref;
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

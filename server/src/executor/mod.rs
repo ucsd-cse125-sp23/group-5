@@ -9,13 +9,12 @@ use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
 
 use crate::Recipients;
-use common::configs::from_file;
-use common::configs::scene_config::ConfigSceneGraph;
+use common::configs::*;
 use common::core::events::GameEvent;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 mod command_handlers;
 
@@ -27,6 +26,7 @@ pub struct Executor {
     game_state: Arc<Mutex<GameState>>,
     physics_state: RefCell<PhysicsState>,
     game_events: RefCell<Vec<(GameEvent, Recipients)>>,
+    config_instance: Arc<Mutex<Option<Config>>>,
 }
 
 impl Executor {
@@ -43,6 +43,7 @@ impl Executor {
             game_state,
             physics_state: RefCell::new(PhysicsState::new()),
             game_events: RefCell::new(Vec::new()),
+            config_instance: get_configuration(),
         }
     }
 
@@ -51,10 +52,11 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let scene_config = from_file("scene.json").unwrap();
-        let models_config = from_file("models.json").unwrap();
+        let config = self.config_instance.lock().unwrap();
+        let config_ref = config.as_ref().expect("Configuration not loaded.");
 
-        let handler = StartupCommandHandler::new(models_config, scene_config);
+        let handler =
+            StartupCommandHandler::new(config_ref.models.clone(), config_ref.scene.clone());
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
@@ -94,14 +96,13 @@ impl Executor {
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
 
-        #[cfg(test)]
-        let scene_config = from_file("../scene.json").unwrap();
-        #[cfg(not(test))]
-        let scene_config = from_file("scene.json").unwrap();
-
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
+
+        let config = self.config_instance.lock().unwrap();
+        let config_ref = config.as_ref().expect("Configuration not loaded.");
+        let scene_config = config_ref.scene.clone();
 
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(

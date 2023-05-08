@@ -1,5 +1,4 @@
 use nalgebra_glm::{Quat, TVec3};
-use rapier3d::prelude;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

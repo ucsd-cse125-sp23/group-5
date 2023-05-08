@@ -18,6 +18,7 @@ use threadpool::ThreadPool;
 mod client_handler;
 
 use client_handler::ClientHandler;
+use common::configs::*;
 
 pub static CLIENT_ID_ASSIGNER: AtomicU8 = AtomicU8::new(1);
 pub static SESSION_ID: Lazy<u64> = Lazy::new(rand::random::<u64>);
@@ -32,6 +33,12 @@ fn main() {
 
     // game state
     let game_state = Arc::new(Mutex::new(GameState::default()));
+
+    // load configuration
+    match load_configuration() {
+        Ok(_) => info!("Configuration loaded successfully."),
+        Err(e) => panic!("Failed to load configuration: {}", e),
+    }
 
     // executor
     let executor = Executor::new(game_state.clone());

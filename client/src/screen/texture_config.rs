@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::resources;
 use crate::screen;
@@ -22,10 +22,18 @@ pub async fn load_screen_tex_config(
     layout: &wgpu::BindGroupLayout,
     file_name: &str,
     texture_map: &mut HashMap<String, wgpu::BindGroup>,
-){
+) {
     let screen_tex_config = configs::from_file::<_, ConfigTexture>(file_name).unwrap();
-    for tex in &screen_tex_config.textures{
-        load_screen_tex(device, queue, layout, tex.name.clone(), &tex.path, texture_map).await;
+    for tex in &screen_tex_config.textures {
+        load_screen_tex(
+            device,
+            queue,
+            layout,
+            tex.name.clone(),
+            &tex.path,
+            texture_map,
+        )
+        .await;
     }
 }
 
@@ -36,12 +44,8 @@ pub async fn load_screen_tex(
     id: String,
     file_name: &str,
     texture_map: &mut HashMap<String, wgpu::BindGroup>,
-){
-    let texture = match resources::load_texture(
-        file_name,
-        &device,
-        &queue
-    ).await {
+) {
+    let texture = match resources::load_texture(file_name, &device, &queue).await {
         Ok(tex) => tex,
         Err(e) => panic!("Failed to load screen texture {:?}\n", e),
     };

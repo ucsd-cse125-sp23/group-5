@@ -3,7 +3,7 @@ extern crate queues;
 use std::env;
 
 use client::audio::{Audio, ConfigAudioAssets, SoundQueue};
-use common::configs::from_file;
+use common::configs::*;
 use log::{debug, error, info};
 use std::fs::File;
 
@@ -44,6 +44,12 @@ fn main() {
     let dest: SocketAddr = DEFAULT_SERVER_ADDR
         .parse()
         .expect("server addr parse fails");
+
+    // load configuration
+    match load_configuration() {
+        Ok(_) => println!("Configuration loaded successfully."),
+        Err(e) => panic!("Failed to load configuration: {}", e),
+    }
 
     let protocol = Protocol::connect(dest).unwrap();
 
@@ -108,10 +114,10 @@ fn main() {
     thread::spawn(move || {
         let audio_config = from_file::<_, ConfigAudioAssets>(AUDIO_CONFIG_PATH).unwrap();
         let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
-        
+
         audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
         audio.handle_audio_updates(game_state_clone, client_id);
-    });      
+    });
 
     pollster::block_on(player_loop.run());
 }
