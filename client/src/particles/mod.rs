@@ -1,5 +1,7 @@
 use crate::model::Vertex;
 use crate::texture;
+
+use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
 //exports
