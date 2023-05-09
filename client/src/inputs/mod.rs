@@ -85,10 +85,6 @@ impl InputEventProcessor {
         let mut protocol = self.protocol.try_clone().unwrap();
         let client_id = self.client_id;
         let button_states = Arc::clone(&self.button_states);
-        /*
-        let camera_forward = Arc::clone(&self.camera_forward);
-        let camera_prelim_position = Arc::clone(&self.camera_prelim_position);
-        */ 
         let camera_info = Arc::clone(&self.camera_info); 
         let poller_signal = Arc::clone(&self.poller_signal);
 
@@ -108,8 +104,6 @@ impl InputEventProcessor {
 
                 let mut button_states = button_states.lock().unwrap();
                 let camera_info = camera_info.lock().unwrap(); 
-                //let camera_forward = camera_forward.lock().unwrap();
-                //let camera_prelim_position = camera_prelim_position.lock().unwrap();
 
                 button_states.retain(|key, state| {
                     if let Some((key_type, command)) = Self::map_key(*key) {
@@ -167,13 +161,6 @@ impl InputEventProcessor {
 
                 // receive camera update
                 Input::Camera {info} => {
-                    /*
-                    let mut camera_forward = self.camera_forward.lock().unwrap();
-                    *camera_forward = forward;
-
-                    let mut camera_prelim_position = self.camera_prelim_position.lock().unwrap();
-                    *camera_prelim_position = prelim_position;
-                    */ 
                     let mut camera_info = self.camera_info.lock().unwrap(); 
                     *camera_info = info;
                 }

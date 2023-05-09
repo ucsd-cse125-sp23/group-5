@@ -142,8 +142,6 @@ impl PlayerLoop {
                         info: CameraInfo {
                             forward: state.camera_state.camera.forward(),
                             prelim_position: state.camera_state.camera.prelim_position,
-                            width: state.camera_state.projection.width, 
-                            height: state.camera_state.projection.height,
                             aspect: state.camera_state.projection.aspect,
                             fovy: state.camera_state.projection.fovy, 
                             znear: state.camera_state.projection.znear,

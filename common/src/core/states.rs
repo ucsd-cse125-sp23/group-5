@@ -42,8 +42,6 @@ pub struct GameState {
 pub struct CameraInfo {
     pub forward: Vec3,
     pub prelim_position: Vec3,
-    pub width: u32, 
-    pub height: u32,
     pub aspect: f32,
     pub fovy: f32,
     pub znear: f32,
