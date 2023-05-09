@@ -1,20 +1,10 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+
 use crate::resources;
-use crate::screen;
-use common::configs;
+use common::configs::*;
+use common::configs::texture_config::ConfigTexture;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigTexture {
-    pub textures: Vec<ConfigTextureItem>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigTextureItem {
-    pub name: String,
-    pub path: String,
-}
 
 pub async fn load_screen_tex_config(
     device: &wgpu::Device,
@@ -23,7 +13,8 @@ pub async fn load_screen_tex_config(
     file_name: &str,
     texture_map: &mut HashMap<String, wgpu::BindGroup>,
 ) {
-    let screen_tex_config = configs::from_file::<_, ConfigTexture>(file_name).unwrap();
+    let config_instance = ConfigurationManager::get_configuration();
+    let screen_tex_config = config_instance.texture.clone();
     for tex in &screen_tex_config.textures {
         load_screen_tex(
             device,

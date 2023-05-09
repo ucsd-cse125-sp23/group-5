@@ -465,7 +465,7 @@ impl State {
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        screen::texture_config::load_screen_tex_config(
+        screen::texture_config_impl::load_screen_tex_config(
             &device,
             &queue,
             &texture_bind_group_layout_2d,

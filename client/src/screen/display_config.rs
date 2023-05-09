@@ -71,9 +71,6 @@ pub struct ConfigScreenTransform {
 impl ConfigDisplayGroup {
     pub fn unwrap_config(
         &self,
-        width: u32,
-        height: u32,
-        device: &wgpu::Device,
     ) -> objects::DisplayGroup {
         objects::DisplayGroup {
             id: self.id.clone(),

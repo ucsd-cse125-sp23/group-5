@@ -10,8 +10,8 @@ use self::objects::Screen;
 
 pub mod location;
 pub mod objects;
-pub mod objects_config;
-pub mod texture_config; // TODO later
+pub mod texture_config_impl;
+pub mod display_config;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -67,7 +67,7 @@ impl Display {
     }
 
     pub fn from_config(
-        config: &objects_config::ConfigDisplay,
+        config: &display_config::ConfigDisplay,
         texture_map: HashMap<String, wgpu::BindGroup>,
         scene_map: HashMap<String, Scene>,
         light_state: lights::LightState,
@@ -83,7 +83,7 @@ impl Display {
     ) -> Self {
         let mut groups = HashMap::new();
         for g in &config.displays {
-            let tmp = g.unwrap_config(screen_width, screen_height, device);
+            let tmp = g.unwrap_config();
             groups.insert(g.id.clone(), tmp);
         }
 
