@@ -4,6 +4,7 @@ use common::communication::message::*;
 
 use common::core::command::Command;
 use common::core::states::CameraInfo;
+use nalgebra_glm as glm;
 use glm::Vec3;
 use log::{debug, error, info};
 use queues::{IsQueue, Queue};
