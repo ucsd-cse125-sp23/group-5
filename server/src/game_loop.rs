@@ -133,11 +133,12 @@ mod tests {
     use common::configs::audio_config::ConfigAudioAssets;
     use common::configs::model_config::ConfigModels;
     use common::configs::scene_config::ConfigSceneGraph;
-    use common::configs::{from_file, Config, ConfigurationManager, CONFIG_INSTANCE};
+    use common::configs::{from_file, Config, CONFIG_INSTANCE};
     use common::core::states::GameState;
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
+    use common::configs::display_config::ConfigDisplay;
     use common::configs::texture_config::ConfigTexture;
     use common::configs::player_config::ConfigPlayer;
 
@@ -146,9 +147,10 @@ mod tests {
         let scene: ConfigSceneGraph = from_file("../scene.json")?;
         let audio: ConfigAudioAssets = from_file("../audio.json")?;
         let player: ConfigPlayer = from_file("../player.json")?;
-        let display: ConfigTexture = from_file("../texture.json")?;
+        let display: ConfigDisplay = from_file("../display.json")?;
+        let texture: ConfigTexture = from_file("../tex.json")?;
 
-        let config = Config::new(models, scene, audio, player, display);
+        let config = Config::new(models, scene, audio, player, display, texture);
         *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
 
         Ok(())

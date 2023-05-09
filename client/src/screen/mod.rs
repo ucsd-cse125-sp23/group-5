@@ -1,17 +1,19 @@
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
+use common::configs::display_config::ConfigDisplay;
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::Scene;
 use crate::{camera, lights, model, texture};
+use crate::screen::display_config_helper::{unwrap_config_display_group, unwrap_config_screen};
 
 use self::objects::Screen;
 
-pub mod location;
+pub mod location_helper;
 pub mod objects;
-pub mod texture_config_impl;
-pub mod display_config;
+pub mod texture_config_helper;
+pub mod display_config_helper;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -67,7 +69,7 @@ impl Display {
     }
 
     pub fn from_config(
-        config: &display_config::ConfigDisplay,
+        config: &ConfigDisplay,
         texture_map: HashMap<String, wgpu::BindGroup>,
         scene_map: HashMap<String, Scene>,
         light_state: lights::LightState,

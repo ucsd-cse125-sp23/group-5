@@ -3,6 +3,7 @@ pub mod model_config;
 pub mod physics_config;
 pub mod player_config;
 pub mod scene_config;
+pub mod display_config;
 pub mod texture_config;
 
 use once_cell::sync::Lazy as OnceCellLazy;
@@ -13,6 +14,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 use crate::configs::audio_config::ConfigAudioAssets;
+use crate::configs::display_config::ConfigDisplay;
 use crate::configs::model_config::ConfigModels;
 use crate::configs::player_config::ConfigPlayer;
 use crate::configs::scene_config::ConfigSceneGraph;
@@ -34,7 +36,7 @@ pub struct Config {
     pub scene: ConfigSceneGraph,
     pub audio: ConfigAudioAssets,
     pub player: ConfigPlayer,
-    //pub display: ConfigDisplay,
+    pub display: ConfigDisplay,
     pub texture: ConfigTexture,
 }
 
@@ -44,7 +46,7 @@ impl Config {
         scene: ConfigSceneGraph,
         audio: ConfigAudioAssets,
         player: ConfigPlayer,
-        //display: ConfigDisplay,
+        display: ConfigDisplay,
         texture: ConfigTexture
     ) -> Self {
         Config {
@@ -52,7 +54,7 @@ impl Config {
             scene,
             audio,
             player,
-            //display,
+            display,
             texture,
         }
     }
@@ -66,10 +68,10 @@ impl ConfigurationManager {
         let scene: ConfigSceneGraph = from_file(SCENE_CONFIG_PATH)?;
         let audio: ConfigAudioAssets = from_file(AUDIO_CONFIG_PATH)?;
         let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH)?;
-        //let display: ConfigDisplay = from_file(DISPLAY_CONFIG_PATH)?;
+        let display: ConfigDisplay = from_file(DISPLAY_CONFIG_PATH)?;
         let texture: ConfigTexture = from_file(TEXTURE_CONFIG_PATH)?;
 
-        let config = Config::new(models, scene, audio, player, texture);
+        let config = Config::new(models, scene, audio, player, display, texture);
         *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
         Ok(())
     }

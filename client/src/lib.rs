@@ -31,8 +31,7 @@ pub mod audio;
 pub mod event_loop;
 pub mod inputs;
 
-use common::configs::model_config::ConfigModels;
-use common::configs::scene_config::ConfigSceneGraph;
+use common::configs::*;
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::{GameState, ParticleQueue};
@@ -465,7 +464,7 @@ impl State {
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        screen::texture_config_impl::load_screen_tex_config(
+        screen::texture_config_helper::load_screen_tex_config(
             &device,
             &queue,
             &texture_bind_group_layout_2d,
@@ -485,8 +484,9 @@ impl State {
             contents: bytemuck::cast_slice(&[default_inst]),
             usage: wgpu::BufferUsages::VERTEX,
         });
-
-        let display_config = common::configs::from_file(screen::DISPLAY_CONFIG_PATH).unwrap();
+        
+        let config_instance = ConfigurationManager::get_configuration();
+        let display_config = config_instance.display.clone();
         let display = screen::Display::from_config(
             &display_config,
             texture_map,

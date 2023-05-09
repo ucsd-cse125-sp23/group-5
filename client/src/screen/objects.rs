@@ -2,10 +2,9 @@ use nalgebra_glm as glm;
 use phf::phf_map;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
+use common::configs::display_config::ScreenLocation;
 
-use crate::scene::Scene;
 use crate::screen;
-use crate::screen::location::ScreenLocation;
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map! {
     "game_start" => game_start,

@@ -1,14 +1,5 @@
-use serde::{Deserialize, Serialize};
-
 use crate::screen::objects::Vertex;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-pub struct ScreenLocation {
-    // each tuple represents (rel_width, rel_height)
-    // e.g. (0.5, 0.5) means a displacement of 1/4th the height + 1/4th the width
-    pub vert_disp: (f32, f32),
-    pub horz_disp: (f32, f32),
-}
 
 impl ScreenLocation {
     pub fn to_absolute(&self, width: u32, height: u32) -> [f32; 2] {
