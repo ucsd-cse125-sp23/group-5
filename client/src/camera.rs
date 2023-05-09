@@ -33,15 +33,19 @@ impl Camera {
 }
 
 pub struct Projection {
-    aspect: f32,
+    pub width: u32, 
+    pub height: u32,
+    pub aspect: f32,
     pub fovy: f32,
-    znear: f32,
+    pub znear: f32,
     zfar: f32,
 }
 
 impl Projection {
     pub fn new(width: u32, height: u32, fovy: f32, znear: f32, zfar: f32) -> Self {
         Self {
+            width,
+            height,
             aspect: width as f32 / height as f32,
             fovy: fovy.to_radians(),
             znear,

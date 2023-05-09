@@ -16,7 +16,7 @@ use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
-use common::core::states::{GameState, PlayerState};
+use common::core::states::{GameState, PlayerState, CameraInfo};
 
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
@@ -217,8 +217,7 @@ impl CommandHandler for DieCommandHandler {
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
     player_id: u32,
-    forward: Vec3,
-    prelim_position: Vec3,
+    camera_info: CameraInfo,
 }
 
 impl CommandHandler for UpdateCameraFacingCommandHandler {
@@ -229,10 +228,11 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Game state
+        
         let player = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
-
+        
         let player_collider_handle = physics_state
         .get_entity_handles(self.player_id)
         .ok_or(HandlerError::new(format!(
@@ -245,11 +245,47 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
             self.player_id
         )))?;
 
+        let h_near = 2.0 * (self.camera_info.fovy / 2.0).tan() * self.camera_info.znear;
+	    let w_near = h_near * self.camera_info.aspect;
         let max_toi = 5.0; // max attack distance
         let solid = false; // if we are inside an object, want to find boundary
         let filter =
             rapier::QueryFilter::default();
+        
+        let ray_origin = rapier::point![self.camera_info.prelim_position.x, self.camera_info.prelim_position.y, self.camera_info.prelim_position.z];
+        let ray_direction = rapier::vector![self.camera_info.forward.x, self.camera_info.forward.y, self.camera_info.forward.z];
+        let mut ray = rapier::Ray::new(
+            ray_origin,
+            ray_direction,
+        );
+        
+        let shape = rapier::Cuboid::new(rapier::vector![w_near / 2.0, h_near / 2.0, 0.01]); 
+        let mut shape_pos = Isometry::from_parts(ray_origin.into(), UnitQuaternion::face_towards(&ray_direction, &Vec3::y()));
+        let shape_vel = ray_direction;
 
+        while let Some((handle, hit)) = physics_state.query_pipeline.cast_shape(
+            &physics_state.bodies,
+            &physics_state.colliders,
+            &shape_pos,
+            &shape_vel,
+            &shape,
+            max_toi,
+            solid,
+            filter,
+        ) {
+            // if ray hit the correct target (the player), stop
+            if handle == player_collider_handle {
+                //player.camera_position = self.camera_info.prelim_position;
+                break;
+            } else { // otherwise, move ray up
+                //player.camera_position = glm::convert(shape_pos.translation.vector + (hit.toi + 0.1) * ray_direction); 
+                //println!("{} {} {}", hit.witness1.x, hit.witness1.y, hit.witness1.z);
+                //let new_origin = ray.point_at(hit.toi + 0.001);
+                shape_pos.translation = (shape_pos.translation.vector + (hit.toi + 0.1) * ray_direction).into();
+                //ray.origin = new_origin; 
+            }
+        }
+        /* 
         let mut ray = rapier::Ray::new(
             rapier::point![self.prelim_position.x, self.prelim_position.y, self.prelim_position.z],
             rapier::vector![self.forward.x, self.forward.y, self.forward.z],
@@ -269,9 +305,25 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
                 ray.origin = ray.point_at(toi + 0.001); 
             }
         }
+        */
+        /* 
+        let point = rapier::point![self.prelim_position.x, self.prelim_position.y, self.prelim_position.z];
+        if let Some((handle, projection)) = physics_state.query_pipeline.project_point(
+            &physics_state.bodies, 
+            &physics_state.colliders, 
+            &point, 
+            solid, 
+            filter
+        ) {
+            // The collider closest to the point has this `handle`.
+            if !projection.is_inside {
+                player.camera_position = self.prelim_position;
+            }
+        }
+        */
+        player.camera_forward = self.camera_info.forward;
+        player.camera_position = glm::convert(shape_pos.translation.vector); 
 
-        player.camera_forward = self.forward;
-        player.camera_position = glm::vec3(ray.origin.x, ray.origin.y, ray.origin.z);
 
         Ok(())
     }

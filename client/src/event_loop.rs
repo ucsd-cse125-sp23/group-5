@@ -1,6 +1,6 @@
 use crate::inputs::Input;
 use crate::State;
-use common::core::states::{GameState, ParticleQueue};
+use common::core::states::{GameState, CameraInfo, ParticleQueue};
 use log::{debug, warn};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -139,8 +139,17 @@ impl PlayerLoop {
 
                     // send camera position to input processor
                     self.inputs.send(Input::Camera {
-                        forward: state.camera_state.camera.forward(),
-                        prelim_position: state.camera_state.camera.prelim_position,
+                        info: CameraInfo {
+                            forward: state.camera_state.camera.forward(),
+                            prelim_position: state.camera_state.camera.prelim_position,
+                            width: state.camera_state.projection.width, 
+                            height: state.camera_state.projection.height,
+                            aspect: state.camera_state.projection.aspect,
+                            fovy: state.camera_state.projection.fovy, 
+                            znear: state.camera_state.projection.znear,
+                        }
+                        // forward: state.camera_state.camera.forward(),
+                        // prelim_position: state.camera_state.camera.prelim_position,
                     }).unwrap();
 
                     match state.render() {

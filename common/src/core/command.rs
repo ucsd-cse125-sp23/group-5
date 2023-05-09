@@ -4,6 +4,7 @@ use glm::Quat;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 use std::mem;
+use crate::core::states::CameraInfo;
 
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
@@ -42,7 +43,7 @@ pub enum Command {
     Move(MoveDirection),
     Turn(Quat),
     Jump,
-    UpdateCamera { forward: glm::Vec3, prelim_position: glm::Vec3},
+    UpdateCamera {camera_info: CameraInfo},
     Attack,
     Refill,
 }

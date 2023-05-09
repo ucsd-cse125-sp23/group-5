@@ -3,6 +3,7 @@ use common::communication::commons::*;
 use common::communication::message::*;
 
 use common::core::command::Command;
+use common::core::states::CameraInfo;
 use glm::Vec3;
 use log::{debug, error, info};
 use queues::{IsQueue, Queue};
@@ -16,12 +17,11 @@ pub enum GameKeyKind {
     PressRelease,
 }
 
-pub fn handle_camera_update(camera_forward: Vec3, camera_prelim_position: Vec3, protocol: &mut Protocol, client_id: u8) {
+pub fn handle_camera_update(camera_info: CameraInfo, protocol: &mut Protocol, client_id: u8) {
     let message: Message = Message::new(
         HostRole::Client(client_id),
         Payload::Command(Command::UpdateCamera {
-            forward: camera_forward,
-            prelim_position: camera_prelim_position,
+            camera_info,
         }),
     );
     protocol.send_message(&message).expect("send message fails");

@@ -38,6 +38,17 @@ pub struct GameState {
     pub previous_tick_winner: Option<u32>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default)]
+pub struct CameraInfo {
+    pub forward: Vec3,
+    pub prelim_position: Vec3,
+    pub width: u32, 
+    pub height: u32,
+    pub aspect: f32,
+    pub fovy: f32,
+    pub znear: f32,
+}
+
 impl PlayerState {
     // add to attack command handlers, put NONE for consume 1
     // returns if the consumption is successful

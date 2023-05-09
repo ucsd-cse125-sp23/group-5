@@ -130,7 +130,7 @@ mod tests {
     use super::*;
     use common::core::command::Command::UpdateCamera;
 
-    use common::core::states::GameState;
+    use common::core::states::{GameState, CameraInfo};
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
@@ -160,8 +160,12 @@ mod tests {
                 .send(ClientCommand::new(
                     1,
                     UpdateCamera {
-                        forward: nalgebra_glm::vec3(2., 0., 1.),
-                        prelim_position: nalgebra_glm::vec3(0., 0., 0.),
+                        camera_info: CameraInfo {
+                            forward: nalgebra_glm::vec3(2., 0., 1.),
+                            prelim_position: nalgebra_glm::vec3(0., 0., 0.),
+
+                            ..Default::default()
+                        },
                     },
                 ))
                 .unwrap();
