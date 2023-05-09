@@ -247,7 +247,7 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
 
         let h_near = 2.0 * (self.camera_info.fovy / 2.0).tan() * self.camera_info.znear;
 	    let w_near = h_near * self.camera_info.aspect;
-        let max_toi = 5.0; // max attack distance
+        let max_toi = 10.0; // max camera distance
         let solid = false; // if we are inside an object, want to find boundary
         let filter =
             rapier::QueryFilter::default();
