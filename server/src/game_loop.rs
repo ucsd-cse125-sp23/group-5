@@ -138,13 +138,15 @@ mod tests {
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
+    use common::configs::player_config::ConfigPlayer;
 
     fn test_load_configuration() -> Result<(), Box<dyn std::error::Error>> {
         let models: ConfigModels = from_file("../models.json")?;
         let scene: ConfigSceneGraph = from_file("../scene.json")?;
         let audio: ConfigAudioAssets = from_file("../audio.json")?;
+        let player: ConfigPlayer = from_file("../player.json")?;
 
-        let config = Config::new(models, scene, audio);
+        let config = Config::new(models, scene, audio, player);
         *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
 
         Ok(())

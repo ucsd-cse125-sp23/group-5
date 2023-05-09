@@ -193,22 +193,6 @@ fn recv_server_updates(
             } => {
                 sound_queue.lock().unwrap().add_sound(s);
             }
-            // Message {
-            //     host_role: HostRole::Server,
-            //     payload: Payload::ServerEvent(update_game_event),
-            //     ..
-            // } => {
-            //     debug!("Received game events: {:?}", update_game_event);
-
-            //     // update state
-            //     game_events
-            //         .broadcast(update_game_event);
-            //         // .try_broadcast(update_game_event)
-            //         // .map_err(|e| {
-            //         //     error!("Failed to broadcast game event: {:?}", e);
-            //         // })
-            //         // .unwrap();
-            // }
             _ => {}
         }
     }

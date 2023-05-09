@@ -92,17 +92,14 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let scene_config = self.config_instance.scene.clone();
+        let player_config = self.config_instance.player.clone();
 
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(
                 client_command.client_id,
-                scene_config,
+                player_config,
             )),
-            Command::Die => Box::new(DieCommandHandler::new(
-                client_command.client_id,
-                scene_config,
-            )),
+            Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
@@ -110,10 +107,7 @@ impl Executor {
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
-            Command::Refill => Box::new(RefillCommandHandler::new(
-                client_command.client_id,
-                scene_config,
-            )),
+            Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
                 return;

@@ -6,6 +6,7 @@ pub mod scene_config;
 
 use crate::configs::audio_config::ConfigAudioAssets;
 use crate::configs::model_config::ConfigModels;
+use crate::configs::player_config::ConfigPlayer;
 use crate::configs::scene_config::ConfigSceneGraph;
 use once_cell::sync::Lazy as OnceCellLazy;
 use serde::Serialize;
@@ -16,22 +17,30 @@ use std::sync::{Arc, RwLock};
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
+const AUDIO_CONFIG_PATH: &str = "audio.json";
+const PLAYER_CONFIG_PATH: &str = "player.json";
 const DISPLAY_CONFIG_PATH: &str = "display.json";
 const TEXTURE_CONFIG_PATH: &str = "tex.json";
-const AUDIO_CONFIG_PATH: &str = "audio.json";
 
 pub struct Config {
     pub models: ConfigModels,
     pub scene: ConfigSceneGraph,
     pub audio: ConfigAudioAssets,
+    pub player: ConfigPlayer,
 }
 
 impl Config {
-    pub fn new(models: ConfigModels, scene: ConfigSceneGraph, audio: ConfigAudioAssets) -> Self {
+    pub fn new(
+        models: ConfigModels,
+        scene: ConfigSceneGraph,
+        audio: ConfigAudioAssets,
+        player: ConfigPlayer,
+    ) -> Self {
         Config {
             models,
             scene,
             audio,
+            player,
         }
     }
 }
@@ -43,8 +52,9 @@ impl ConfigurationManager {
         let models: ConfigModels = from_file(MODELS_CONFIG_PATH)?;
         let scene: ConfigSceneGraph = from_file(SCENE_CONFIG_PATH)?;
         let audio: ConfigAudioAssets = from_file(AUDIO_CONFIG_PATH)?;
+        let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH)?;
 
-        let config = Config::new(models, scene, audio);
+        let config = Config::new(models, scene, audio, player);
         *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
         Ok(())
     }
