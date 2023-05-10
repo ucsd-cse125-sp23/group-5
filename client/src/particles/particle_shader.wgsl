@@ -34,7 +34,7 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
-const NUM_TEXTURES: f32 = 5.0;
+const NUM_TEXTURES: f32 = 6.0;
 
 @vertex
 fn vs_main(

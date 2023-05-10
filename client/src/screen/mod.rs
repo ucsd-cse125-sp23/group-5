@@ -155,13 +155,14 @@ impl Display {
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
                 to_draw.push(particles::Particle{
-                    start_pos: (glm::vec4(0.0, 2.5, 0.0, 0.0) + pos).into(),
+                    // -1 to cancel out 1.0 in pos
+                    start_pos: (glm::vec4(0.0, 2.5, 0.0, -1.0) + pos).into(),
                     velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
                     color: glm::vec4(1.0, 1.0, 0.0, 1.0).into(),
                     spawn_time: 0.0,
                     size: 75.0,
-                    tex_id: 4.0,
-                    z_pos: z_pos.into(),
+                    tex_id: 5.0,
+                    z_pos,
                     time_elapsed: 0.0,
                     size_growth: 0.0,
                     halflife: 1.0,
