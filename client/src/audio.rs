@@ -1,10 +1,24 @@
-use std::{io::BufReader, fs::File, sync::{Mutex, Arc}, thread};
-use ambisonic::{rodio::{self, Decoder, source::{Source, Buffered}}, AmbisonicBuilder};
-use instant::{SystemTime, Duration};
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use common::core::{events::SoundSpec, states::GameState};
+use ambisonic::{
+    rodio::{
+        self,
+        source::{Buffered, Source},
+        Decoder,
+    },
+    AmbisonicBuilder,
+};
+use instant::{Duration, SystemTime};
 use nalgebra_glm as glm;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::{
+    fs::File,
+    io::BufReader,
+    sync::{Arc, Mutex},
+    thread,
+};
+
+use common::configs::audio_config::ConfigAudioAssets;
+use common::core::{events::SoundSpec, states::GameState};
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
@@ -13,7 +27,7 @@ pub enum AudioAsset {
     STEP = 2,
 }
 
-pub struct SoundInstance{
+pub struct SoundInstance {
     controller: ambisonic::SoundController,
     position: glm::Vec3,
     start: SystemTime,
@@ -22,7 +36,7 @@ pub struct SoundInstance{
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct SoundQueue{
+pub struct SoundQueue {
     sound_queue: Vec<SoundSpec>,
 }
 
@@ -42,7 +56,7 @@ pub struct Audio {
 }
 
 impl Audio {
-    pub fn new(q: Arc<Mutex<SoundQueue>>) -> Self{        
+    pub fn new(q: Arc<Mutex<SoundQueue>>) -> Self {
         Audio {
             audio_scene: AmbisonicBuilder::default().build(),
             audio_assets: Vec::new(),
@@ -53,21 +67,23 @@ impl Audio {
         }
     }
 
-    pub fn play_background_track(&mut self, pos: [f32; 3]){
-        let source = self.audio_assets[AudioAsset::BACKGROUND as usize].0.clone().repeat_infinite();
+    pub fn play_background_track(&mut self, pos: [f32; 3]) {
+        let source = self.audio_assets[AudioAsset::BACKGROUND as usize]
+            .0
+            .clone()
+            .repeat_infinite();
         let sound = self.audio_scene.play_at(source.convert_samples(), pos);
         self.sound_controller_background = (Some(sound), false);
     }
 
     // function in case a button to mute music will be added in the future:
-    pub fn toggle_background_track(&mut self){
-        if self.time.elapsed().unwrap_or(Duration::new(1,0)) > Duration::new(0,250000000) {
+    pub fn toggle_background_track(&mut self) {
+        if self.time.elapsed().unwrap_or(Duration::new(1, 0)) > Duration::new(0, 250000000) {
             let (sound, paused) = &mut self.sound_controller_background;
             if *paused {
                 sound.as_ref().unwrap().resume();
                 *paused = false;
-            }
-            else{
+            } else {
                 sound.as_ref().unwrap().pause();
                 *paused = true;
             }
@@ -75,7 +91,7 @@ impl Audio {
         }
     }
 
-    pub fn update_sound_positions(&mut self, player_pos: glm::Vec3, dir: glm::Vec3){
+    pub fn update_sound_positions(&mut self, player_pos: glm::Vec3, dir: glm::Vec3) {
         let mut to_remove = Vec::new();
         // for each sound effect
         for (asset, sound_instances) in self.sound_controllers_fx.iter_mut() {
@@ -83,31 +99,41 @@ impl Audio {
             let sound_duration = self.audio_assets[*asset as usize].1;
             let percent = self.audio_assets[*asset as usize].2;
             for i in 0..sound_instances.len() {
-                let time_elapsed = sound_instances[i].start.elapsed().unwrap_or(Duration::new(1,0));
-                if  time_elapsed >= sound_duration {
+                let time_elapsed = sound_instances[i]
+                    .start
+                    .elapsed()
+                    .unwrap_or(Duration::new(1, 0));
+                if time_elapsed >= sound_duration {
                     to_remove.push(i);
-                }
-                else if sound_instances[i].at_client {
-                    sound_instances[i].controller.adjust_position([0.0, 10.0, 0.0]);
-                }
-                else{
-                    if true { // in case some sound effects shouldn't get quieter the farther they get
+                } else if sound_instances[i].at_client {
+                    sound_instances[i]
+                        .controller
+                        .adjust_position([0.0, 10.0, 0.0]);
+                } else {
+                    if true {
+                        // in case some sound effects shouldn't get quieter the farther they get
                         let mut offset = sound_instances[i].initial_dir;
-                        if offset != glm::Vec3::new(0.0,0.0,0.0) {offset = glm::normalize(&offset);}
+                        if offset != glm::Vec3::new(0.0, 0.0, 0.0) {
+                            offset = glm::normalize(&offset);
+                        }
                         offset = glm::Vec3::new(
-                            offset.x * percent, 
-                            offset.y * percent, 
-                            offset.z * percent);
+                            offset.x * percent,
+                            offset.y * percent,
+                            offset.z * percent,
+                        );
                         sound_instances[i].position = sound_instances[i].position + offset;
                         thread::sleep(Duration::from_millis(1));
                         //println!(""); // without this print_statement the sounds don't play; maybe need delay?
                     }
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
                     if !basically_zero(pos) {
-                        sound_instances[i].controller.adjust_position([pos.x, pos.z, 0.0]);
-                    }
-                    else {
-                        sound_instances[i].controller.adjust_position([0.0, 0.1, 0.0]);
+                        sound_instances[i]
+                            .controller
+                            .adjust_position([pos.x, pos.z, 0.0]);
+                    } else {
+                        sound_instances[i]
+                            .controller
+                            .adjust_position([0.0, 0.1, 0.0]);
                     }
                 }
             }
@@ -120,11 +146,18 @@ impl Audio {
         }
     }
 
-    pub fn handle_sfx_event(&mut self, sfxevent: SoundSpec, dir: glm::Vec3, at_client: bool){
+    pub fn handle_sfx_event(&mut self, sfxevent: SoundSpec, dir: glm::Vec3, at_client: bool) {
         let index = to_audio_asset(sfxevent.sound_id).unwrap();
         let sound = self.audio_scene.play_at(
-            self.audio_assets[index as usize].0.clone().convert_samples(), 
-            [sfxevent.position.x, sfxevent.position.z, sfxevent.position.y]
+            self.audio_assets[index as usize]
+                .0
+                .clone()
+                .convert_samples(),
+            [
+                sfxevent.position.x,
+                sfxevent.position.z,
+                sfxevent.position.y,
+            ],
         ); // double check y,z should be switched
 
         let sound_vec = self.sound_controllers_fx.get_mut(&index);
@@ -150,18 +183,17 @@ impl Audio {
                     }],
                 );
             }
-        }    
-    }           
+        }
+    }
 
-    pub fn handle_audio_updates(&mut self, game_state: Arc<Mutex<GameState>>, client_id: u8){
+    pub fn handle_audio_updates(&mut self, game_state: Arc<Mutex<GameState>>, client_id: u8) {
         loop {
             let gs = game_state.lock().unwrap().clone();
-            let player_curr = gs.player(client_id as u32)
-                .ok_or_else(|| print!("")); //Player {} not found", client_id));
-            let mut cf = glm::Vec3::new(0.0,0.0,0.0);
-            let mut pos = glm::Vec3::new(0.0,0.0,0.0);
+            let player_curr = gs.player(client_id as u32).ok_or_else(|| print!("")); //Player {} not found", client_id));
+            let mut cf = glm::Vec3::new(0.0, 0.0, 0.0);
+            let mut pos = glm::Vec3::new(0.0, 0.0, 0.0);
 
-            match player_curr{
+            match player_curr {
                 Ok(player) => {
                     cf = player_curr.unwrap().camera_forward;
                     pos = player.transform.translation;
@@ -180,7 +212,7 @@ impl Audio {
                 *self.sfx_queue.lock().unwrap() = sfx_queue;
             }
 
-            self.update_sound_positions(pos, cf); 
+            self.update_sound_positions(pos, cf);
         }
     }
 }
@@ -189,30 +221,34 @@ pub fn to_audio_asset(sound_id: String) -> Option<AudioAsset> {
     match sound_id.as_str() {
         "wind" => Some(AudioAsset::WIND),
         "foot_step" => Some(AudioAsset::STEP),
-        _ => None
+        _ => None,
     }
 }
 
-pub fn relative_position(sound_position: glm::Vec3, player_pos: glm::Vec3, dir: glm::Vec3) -> glm::Vec3{
+pub fn relative_position(
+    sound_position: glm::Vec3,
+    player_pos: glm::Vec3,
+    dir: glm::Vec3,
+) -> glm::Vec3 {
     let new_dir = glm::Vec3::new(dir.x, 0.0, dir.z);
     let rel_pos = sound_position - player_pos;
     let new_pos = glm::Vec3::new(rel_pos.x, 0.0, rel_pos.z);
     let up = glm::Vec3::new(0.0, 1.0, 0.0);
     let right_dir = glm::cross(&new_dir, &up);
 
-    let dot = right_dir.x*new_pos.x + right_dir.z*new_pos.z;
-    let det = right_dir.x*new_pos.z - right_dir.z*new_pos.x;
-    let angle = glm::atan2(&glm::Vec1::new(det), &glm::Vec1::new(dot)).x; // theta    
+    let dot = right_dir.x * new_pos.x + right_dir.z * new_pos.z;
+    let det = right_dir.x * new_pos.z - right_dir.z * new_pos.x;
+    let angle = glm::atan2(&glm::Vec1::new(det), &glm::Vec1::new(dot)).x; // theta
 
     let r = glm::magnitude(&rel_pos);
     let x = r * glm::cos(&glm::Vec1::new(-angle)).x;
     let z = r * glm::sin(&glm::Vec1::new(-angle)).x;
-    
+
     // println!("Position: {}", new_pos);
     // println!("x: {}, and z: {}", x, z);
     // println!("Determinant: {}", det);
     // println!("Angle: {}", glm::degrees(&glm::Vec1::new(angle)));
-    glm::Vec3::new(x, 0.0, z) 
+    glm::Vec3::new(x, 0.0, z)
 }
 
 pub fn basically_zero(position: glm::Vec3) -> bool {
@@ -229,24 +265,14 @@ impl Audio {
             let file = BufReader::new(File::open(sound.path.clone()).unwrap());
             let source = Decoder::new(file).unwrap().buffered();
 
-            audio.audio_assets.push((source, Duration::new(sound.seconds, sound.nanoseconds), sound.fall_off_speed));
+            audio.audio_assets.push((
+                source,
+                Duration::new(sound.seconds, sound.nanoseconds),
+                sound.fall_off_speed,
+            ));
         }
         audio
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AudioElement {
-    pub name: String,
-    pub path: String,
-    pub seconds: u64,
-    pub nanoseconds: u32,
-    pub fall_off_speed: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigAudioAssets {
-    pub sounds: Vec<AudioElement>,
 }
 
 // let side = glm::Vec3::new(1.0, 0.0, 0.0);

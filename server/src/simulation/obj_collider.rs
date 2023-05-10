@@ -3,7 +3,6 @@ use nalgebra::Point3;
 use once_cell::sync::Lazy;
 use rapier3d::geometry::ColliderBuilder;
 use rapier3d::math::Real;
-use std::hash::Hash;
 
 use common::utils::file_cache::{Cache, FileCache};
 use tobj;

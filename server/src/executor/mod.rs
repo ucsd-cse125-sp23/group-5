@@ -9,13 +9,12 @@ use common::core::command::{Command, MoveDirection};
 use common::core::states::GameState;
 
 use crate::Recipients;
-use common::configs::from_file;
-use common::configs::scene_config::ConfigSceneGraph;
+use common::configs::*;
 use common::core::events::GameEvent;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 mod command_handlers;
 
@@ -27,22 +26,17 @@ pub struct Executor {
     game_state: Arc<Mutex<GameState>>,
     physics_state: RefCell<PhysicsState>,
     game_events: RefCell<Vec<(GameEvent, Recipients)>>,
+    config_instance: Arc<Config>,
 }
 
 impl Executor {
     /// Creates a new Executor with default game state.
-    /// # Examples
-    /// ```
-    /// use std::sync::{Arc, Mutex};
-    /// use common::core::states::GameState;
-    /// use server::executor::Executor;
-    /// let game_state = Arc::new(Mutex::new(GameState::default()));
-    /// let executor = Executor::new(game_state);
     pub fn new(game_state: Arc<Mutex<GameState>>) -> Executor {
         Executor {
             game_state,
             physics_state: RefCell::new(PhysicsState::new()),
             game_events: RefCell::new(Vec::new()),
+            config_instance: ConfigurationManager::get_configuration(),
         }
     }
 
@@ -51,10 +45,10 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let scene_config = from_file("scene.json").unwrap();
-        let models_config = from_file("models.json").unwrap();
-
-        let handler = StartupCommandHandler::new(models_config, scene_config);
+        let handler = StartupCommandHandler::new(
+            self.config_instance.models.clone(),
+            self.config_instance.scene.clone(),
+        );
 
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
@@ -94,24 +88,18 @@ impl Executor {
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
 
-        #[cfg(test)]
-        let scene_config = from_file("../scene.json").unwrap();
-        #[cfg(not(test))]
-        let scene_config = from_file("scene.json").unwrap();
-
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
+        let player_config = self.config_instance.player.clone();
+
         let handler: Box<dyn CommandHandler> = match client_command.command {
             Command::Spawn => Box::new(SpawnCommandHandler::new(
                 client_command.client_id,
-                scene_config,
+                player_config,
             )),
-            Command::Die => Box::new(DieCommandHandler::new(
-                client_command.client_id,
-                scene_config,
-            )),
+            Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
             Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
             Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
                 client_command.client_id,
@@ -119,10 +107,7 @@ impl Executor {
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
-            Command::Refill => Box::new(RefillCommandHandler::new(
-                client_command.client_id,
-                scene_config,
-            )),
+            Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
                 return;
