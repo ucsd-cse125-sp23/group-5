@@ -131,16 +131,16 @@ mod tests {
     use common::core::command::Command::UpdateCamera;
 
     use common::configs::audio_config::ConfigAudioAssets;
+    use common::configs::display_config::ConfigDisplay;
     use common::configs::model_config::ConfigModels;
+    use common::configs::player_config::ConfigPlayer;
     use common::configs::scene_config::ConfigSceneGraph;
+    use common::configs::texture_config::ConfigTexture;
     use common::configs::{from_file, Config, CONFIG_INSTANCE};
     use common::core::states::GameState;
     use nalgebra_glm::{vec3, Vec3};
     use std::sync::mpsc;
     use std::time::Duration;
-    use common::configs::display_config::ConfigDisplay;
-    use common::configs::texture_config::ConfigTexture;
-    use common::configs::player_config::ConfigPlayer;
 
     fn test_load_configuration() -> Result<(), Box<dyn std::error::Error>> {
         let models: ConfigModels = from_file("../models.json")?;

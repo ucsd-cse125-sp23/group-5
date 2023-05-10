@@ -484,7 +484,7 @@ impl State {
             contents: bytemuck::cast_slice(&[default_inst]),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        
+
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
         let display = screen::Display::from_config(

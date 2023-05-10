@@ -1,9 +1,9 @@
 pub mod audio_config;
+pub mod display_config;
 pub mod model_config;
 pub mod physics_config;
 pub mod player_config;
 pub mod scene_config;
-pub mod display_config;
 pub mod texture_config;
 
 use once_cell::sync::Lazy as OnceCellLazy;
@@ -19,7 +19,6 @@ use crate::configs::model_config::ConfigModels;
 use crate::configs::player_config::ConfigPlayer;
 use crate::configs::scene_config::ConfigSceneGraph;
 use crate::configs::texture_config::ConfigTexture;
-
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -47,7 +46,7 @@ impl Config {
         audio: ConfigAudioAssets,
         player: ConfigPlayer,
         display: ConfigDisplay,
-        texture: ConfigTexture
+        texture: ConfigTexture,
     ) -> Self {
         Config {
             models,

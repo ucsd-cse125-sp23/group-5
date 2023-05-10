@@ -1,8 +1,8 @@
+use common::configs::display_config::ScreenLocation;
 use nalgebra_glm as glm;
 use phf::phf_map;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
-use common::configs::display_config::ScreenLocation;
 
 use crate::screen;
 use crate::screen::location_helper::get_coords;
@@ -272,7 +272,7 @@ pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, Di
         horz_disp: (0.0, 0.0),
     };
     let mut b_vert = TITLE_VERT;
-    get_coords(&button1_loc,1.0, 0.463, 1920, 1080, &mut b_vert);
+    get_coords(&button1_loc, 1.0, 0.463, 1920, 1080, &mut b_vert);
     let b_vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("title button Vertex Buffer"),
         contents: bytemuck::cast_slice(&TITLE_VERT),

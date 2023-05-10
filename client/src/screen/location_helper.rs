@@ -1,5 +1,5 @@
-use common::configs::display_config::ScreenLocation;
 use crate::screen::objects::Vertex;
+use common::configs::display_config::ScreenLocation;
 
 pub fn to_absolute(location: &ScreenLocation, width: u32, height: u32) -> [f32; 2] {
     let aspect: f32 = (width as f32) / (height as f32);
@@ -8,12 +8,7 @@ pub fn to_absolute(location: &ScreenLocation, width: u32, height: u32) -> [f32; 
     [w, h]
 }
 
-pub fn get_width(
-    height: f32,
-    object_aspect: f32,
-    screen_width: u32,
-    screen_height: u32,
-) -> f32 {
+pub fn get_width(height: f32, object_aspect: f32, screen_width: u32, screen_height: u32) -> f32 {
     let r_aspect: f32 = (screen_height as f32) / (screen_width as f32);
     return height * object_aspect * r_aspect;
 }

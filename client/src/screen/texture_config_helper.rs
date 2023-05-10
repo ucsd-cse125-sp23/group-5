@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-
 use crate::resources;
-use common::configs::*;
 use common::configs::texture_config::ConfigTexture;
-
+use common::configs::*;
 
 pub async fn load_screen_tex_config(
     device: &wgpu::Device,

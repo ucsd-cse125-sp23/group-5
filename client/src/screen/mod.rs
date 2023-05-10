@@ -1,23 +1,26 @@
-use std::collections::HashMap;
 use nalgebra_glm as glm;
+use std::collections::HashMap;
 
+use common::configs::display_config::{
+    ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
+    ScreenLocation,
+};
 use wgpu::util::DeviceExt;
-use common::configs::display_config::{ConfigDisplay, ConfigButton, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform, ScreenLocation};
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::Scene;
-use crate::{camera, lights, model, texture};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::location_helper::{get_coords, to_absolute};
 use crate::screen::objects::ScreenInstance;
+use crate::{camera, lights, model, texture};
 
 use self::objects::Screen;
 
+pub mod display_helper;
 pub mod location_helper;
 pub mod objects;
 pub mod texture_config_helper;
-pub mod display_helper;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -105,7 +108,6 @@ impl Display {
             default_inst_buf,
         }
     }
-
 
     pub fn render(
         &mut self,
