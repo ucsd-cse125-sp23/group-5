@@ -51,6 +51,7 @@ struct State {
     window: Window,
     player: player::Player,
     player_controller: player::PlayerController,
+    player_loc: Vec<(u32, glm::Vec4)>,
     camera_state: camera::CameraState,
     display: screen::Display,
     pub mouse_position: [f32; 2],
@@ -517,6 +518,7 @@ impl State {
             size,
             player,
             player_controller,
+            player_loc: Vec::new(),
             camera_state,
             display,
             mouse_position: [0.0, 0.0],
@@ -624,6 +626,12 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .draw_scene_dfs();
+
+            self.player_loc = self.display
+                .scene_map
+                .get(scene_id)
+                .unwrap()
+                .get_player_positions();
         }
 
         let particle_queue = particle_queue.lock().unwrap();
@@ -654,6 +662,7 @@ impl State {
         self.display.render(
             &self.mouse_position,
             &self.camera_state,
+            &self.player_loc,
             &self.device,
             &self.queue,
             &mut encoder,
