@@ -5,6 +5,7 @@ use wgpu::util::DeviceExt;
 use common::configs::display_config::ScreenLocation;
 
 use crate::screen;
+use crate::screen::location_helper::get_coords;
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map! {
     "game_start" => game_start,
@@ -213,7 +214,8 @@ impl ScreenBackground {
 
 impl Button {
     pub fn resize(&mut self, screen_width: u32, screen_height: u32, queue: &wgpu::Queue) {
-        self.location.get_coords(
+        get_coords(
+            &self.location,
             self.aspect,
             self.height,
             screen_width,
@@ -239,7 +241,8 @@ impl Button {
 
 impl Icon {
     pub fn resize(&mut self, screen_width: u32, screen_height: u32, queue: &wgpu::Queue) {
-        self.location.get_coords(
+        get_coords(
+            &self.location,
             self.aspect,
             self.height,
             screen_width,
@@ -269,7 +272,7 @@ pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, Di
         horz_disp: (0.0, 0.0),
     };
     let mut b_vert = TITLE_VERT;
-    button1_loc.get_coords(1.0, 0.463, 1920, 1080, &mut b_vert);
+    get_coords(&button1_loc,1.0, 0.463, 1920, 1080, &mut b_vert);
     let b_vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("title button Vertex Buffer"),
         contents: bytemuck::cast_slice(&TITLE_VERT),

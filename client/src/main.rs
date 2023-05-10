@@ -18,12 +18,10 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-use common::configs::audio_config::ConfigAudioAssets;
+
 use common::core::events::GameEvent;
 
 use common::core::states::{GameState, ParticleQueue};
-
-const AUDIO_CONFIG_PATH: &str = "audio.json";
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");

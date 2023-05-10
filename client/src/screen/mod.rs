@@ -1,19 +1,23 @@
 use std::collections::HashMap;
+use nalgebra_glm as glm;
+
 use wgpu::util::DeviceExt;
-use common::configs::display_config::ConfigDisplay;
+use common::configs::display_config::{ConfigDisplay, ConfigButton, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform, ScreenLocation};
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::Scene;
 use crate::{camera, lights, model, texture};
-use crate::screen::display_config_helper::{unwrap_config_display_group, unwrap_config_screen};
+use crate::screen::display_helper::{create_display_group, create_screen_map};
+use crate::screen::location_helper::{get_coords, to_absolute};
+use crate::screen::objects::ScreenInstance;
 
 use self::objects::Screen;
 
 pub mod location_helper;
 pub mod objects;
 pub mod texture_config_helper;
-pub mod display_config_helper;
+pub mod display_helper;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -83,18 +87,8 @@ impl Display {
         screen_height: u32,
         device: &wgpu::Device,
     ) -> Self {
-        let mut groups = HashMap::new();
-        for g in &config.displays {
-            let tmp = g.unwrap_config();
-            groups.insert(g.id.clone(), tmp);
-        }
-
-        let mut screen_map = HashMap::new();
-        for s in &config.screens {
-            let tmp = s.unwrap_config(screen_width, screen_height, device);
-            screen_map.insert(tmp.id.clone(), tmp);
-        }
-
+        let groups = create_display_group(config);
+        let screen_map = create_screen_map(config, device, screen_width, screen_height);
         Self {
             groups,
             current: config.default_display.clone(),
@@ -111,6 +105,7 @@ impl Display {
             default_inst_buf,
         }
     }
+
 
     pub fn render(
         &mut self,
