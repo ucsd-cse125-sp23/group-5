@@ -118,6 +118,7 @@ impl Display{
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
         output: &wgpu::SurfaceTexture,
+        color_bind_group_layout: &wgpu::BindGroupLayout,
     ){
         // inability to find the scene would be a major bug
         // panicking is fine
@@ -131,13 +132,13 @@ impl Display{
             Some(scene_id) => {
                 let scene = self.scene_map.get(scene_id).unwrap();
                 for (index, instances) in scene.objects_and_instances.iter() {
-                    let count = instances.len();
                     let instanced_obj = model::InstancedModel::new(
                         scene.objects.get(index).unwrap(),
                         instances,
                         device,
+                        color_bind_group_layout,
                     );
-                    instanced_objs.push((instanced_obj, count));
+                    instanced_objs.push(instanced_obj);
                 }
             }
         };
@@ -188,8 +189,8 @@ impl Display{
 
                 for obj in instanced_objs.iter() {
                     render_pass.draw_model_instanced(
-                        &obj.0,
-                        0..obj.1 as u32,
+                        &obj,
+                        0..obj.num_instances as u32,
                         &camera_state.camera_bind_group,
                     );
                 }

@@ -126,6 +126,9 @@ var t_shininess: texture_2d<f32>;
 @group(0) @binding(11)
 var s_shininess: sampler;
 
+@group(3) @binding(0)
+var<uniform> texture_color : vec3<f32>;
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var ambient = phong_mtl.ambient;
@@ -213,6 +216,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         //     color += light_col * specular * pow(max(nDotH, 0.0), s) * gloss; 
         // }
     }
+    
+    color = color * texture_color;
 
     // color = vec3<f32>(in.tex_coords, 0.0);
     return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;

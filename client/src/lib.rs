@@ -32,6 +32,7 @@ use common::configs::{from_file, model_config::ConfigModels};
 pub mod event_loop;
 pub mod inputs;
 pub mod audio;
+pub mod mesh_color;
 
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::Command;
@@ -61,6 +62,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
+    pub color_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl State {
@@ -236,6 +238,23 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
+            let color_bind_group_layout =
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        }
+                    ],
+                    label: Some("color_bind_group_layout"),
+                });
+
         let texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -321,6 +340,7 @@ impl State {
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
+                    &color_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -339,6 +359,7 @@ impl State {
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
+                    &color_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -525,6 +546,7 @@ impl State {
             client_id,
             staging_belt,
             glyph_brush,
+            color_bind_group_layout,
         }
     }
 
@@ -662,6 +684,7 @@ impl State {
             &mut encoder,
             &view,
             &output,
+            &self.color_bind_group_layout,
         );
 
         let size = &self.window.inner_size();

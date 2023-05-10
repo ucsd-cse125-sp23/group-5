@@ -1,5 +1,6 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
+use crate::mesh_color::MeshColor;
 use crate::model::{self, Model};
 use glm::TMat4;
 use log::debug;
@@ -39,8 +40,9 @@ impl Node {
 
 // #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scene {
+    pub test_player_colors: HashMap<u32, Vec<(String, MeshColor)>>,
     pub objects: HashMap<ModelIndex, model::Model>,
-    pub scene_graph: HashMap<NodeId, (Node, Transform)>,
+    pub scene_graph: HashMap<NodeId, (Node, Transform, Vec<(String, MeshColor)>)>,
     pub objects_and_instances: HashMap<ModelIndex, Vec<Instance>>,
 }
 
@@ -78,10 +80,16 @@ impl NodeKind {
 impl Scene {
     pub fn new(objs: HashMap<ModelIndex, Model>) -> Self {
         Scene {
+            test_player_colors: HashMap::from([
+                (1 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([218.0/255.0,34.0/255.0,218.0/255.0]))]),
+                (2 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([81.0/255.0,179.0/255.0,136.0/255.0]))]),
+                (3 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([255.0/255.0,179.0/255.0,0.0/255.0]))]),
+                (4 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([71.0/255.0,108.0/255.0,255.0/255.0]))]),
+            ]),
             objects: objs,
             scene_graph: HashMap::from([(
                 NodeKind::World.base_id(),
-                (Node::new(), glm::identity()),
+                (Node::new(), glm::identity(), Vec::new()),
             )]),
             objects_and_instances: HashMap::new(),
         }
@@ -89,8 +97,8 @@ impl Scene {
 
     pub fn add_node(&mut self, node_id: NodeId, transform: Transform) -> &mut Node {
         let node = Node::new();
-        self.scene_graph.insert(node_id.clone(), (node, transform));
-        let (node, _) = self.scene_graph.get_mut(&node_id).unwrap();
+        self.scene_graph.insert(node_id.clone(), (node, transform, Vec::new()));
+        let (node, _, _) = self.scene_graph.get_mut(&node_id).unwrap();
         node
     }
 
@@ -101,12 +109,12 @@ impl Scene {
         transform: Transform,
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
-        let (parent_node, _) = self.scene_graph.get_mut(&parent_node_id).unwrap();
+        let (parent_node, _, _) = self.scene_graph.get_mut(&parent_node_id).unwrap();
         parent_node.child_ids.push(child_node_id.clone());
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
-        let (child_node, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
+        let (child_node, _, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
         child_node
     }
 
@@ -116,7 +124,7 @@ impl Scene {
         transform: Transform,
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
-        let (parent_node, _) = self
+        let (parent_node, _, _) = self
             .scene_graph
             .get_mut(&NodeKind::World.base_id())
             .unwrap();
@@ -124,7 +132,7 @@ impl Scene {
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
-        let (child_node, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
+        let (child_node, _, _) = self.scene_graph.get_mut(&child_node_id).unwrap();
         child_node
     }
 
@@ -158,6 +166,7 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
+                self.scene_graph.get_mut(&node_id).unwrap().2 = self.test_player_colors.get(id).unwrap().to_vec();
             }
         }
     }
@@ -170,12 +179,15 @@ impl Scene {
         // stacks needed for DFS:
         let mut dfs_stack: Vec<&Node> = Vec::new();
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
+        let mut color_stack: Vec<Vec<(String, MeshColor)>> = Vec::new();
 
         // state needed for DFS:
         let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap().0;
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
+        let mut curr_color = Vec::new();
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
+        color_stack.push(curr_color);
 
         let mut total_number_of_edges: usize = 0;
         for n in self.scene_graph.iter() {
@@ -191,16 +203,23 @@ impl Scene {
             }
             cur_node = dfs_stack.pop().unwrap();
             current_view_matrix = matrix_stack.pop().unwrap();
+            curr_color = color_stack.pop().unwrap();
 
             // draw all models at curr_node
             for i in 0..cur_node.models.len() {
                 let model_view: TMat4<f32> = current_view_matrix * (cur_node.models[i].1);
                 let curr_model = self.objects_and_instances.get_mut(&cur_node.models[i].0);
+
+                let mut color_hash: HashMap<String, MeshColor>  = HashMap::new();
+                for (mesh_name, mesh_color) in curr_color.iter() {
+                    color_hash.insert(mesh_name.clone(), *mesh_color);
+                }
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
                         obj.push(Instance {
                             transform: model_view,
+                            mesh_colors: color_hash,
                         });
                     }
                     None => {
@@ -209,6 +228,7 @@ impl Scene {
                             cur_node.models[i].0.clone(),
                             vec![Instance {
                                 transform: model_view,
+                                mesh_colors: color_hash,
                             }],
                         );
                     }
@@ -216,9 +236,10 @@ impl Scene {
             }
 
             for node_id in cur_node.child_ids.iter() {
-                let (node, transform) = self.scene_graph.get(node_id).unwrap();
+                let (node, transform, color_vec) = self.scene_graph.get(node_id).unwrap();
                 dfs_stack.push(node);
                 matrix_stack.push(current_view_matrix * transform);
+                color_stack.push(color_vec.to_vec());
             }
         }
     }
