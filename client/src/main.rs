@@ -44,12 +44,6 @@ fn main() {
         .parse()
         .expect("server addr parse fails");
 
-    // load configuration
-    match ConfigurationManager::load_configuration() {
-        Ok(_) => println!("Configuration loaded successfully."),
-        Err(e) => panic!("Failed to load configuration: {}", e),
-    }
-
     let protocol = Protocol::connect(dest).unwrap();
 
     // need to clone the protocol to be able to receive events and game states from different threads

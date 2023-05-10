@@ -27,8 +27,23 @@ const PLAYER_CONFIG_PATH: &str = "player.json";
 const DISPLAY_CONFIG_PATH: &str = "display.json";
 const TEXTURE_CONFIG_PATH: &str = "tex.json";
 
-pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> =
-    OnceCellLazy::new(|| RwLock::new(None));
+// pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> =
+//     OnceCellLazy::new(|| RwLock::new(None));
+
+pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCellLazy::new(|| {
+    let models: ConfigModels = from_file(MODELS_CONFIG_PATH).expect("Failed to load models config");
+    let scene: ConfigSceneGraph =
+        from_file(SCENE_CONFIG_PATH).expect("Failed to load scene config");
+    let audio: ConfigAudioAssets =
+        from_file(AUDIO_CONFIG_PATH).expect("Failed to load audio config");
+    let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH).expect("Failed to load player config");
+    let display: ConfigDisplay =
+        from_file(DISPLAY_CONFIG_PATH).expect("Failed to load display config");
+    let texture: ConfigTexture =
+        from_file(TEXTURE_CONFIG_PATH).expect("Failed to load texture config");
+    let config = Config::new(models, scene, audio, player, display, texture);
+    RwLock::new(Some(Arc::new(config)))
+});
 
 pub struct Config {
     pub models: ConfigModels,
@@ -59,21 +74,21 @@ impl Config {
     }
 }
 
-pub struct ConfigurationManager;
+pub mod ConfigurationManager {
+    use super::*;
 
-impl ConfigurationManager {
-    pub fn load_configuration() -> Result<(), Box<dyn std::error::Error>> {
-        let models: ConfigModels = from_file(MODELS_CONFIG_PATH)?;
-        let scene: ConfigSceneGraph = from_file(SCENE_CONFIG_PATH)?;
-        let audio: ConfigAudioAssets = from_file(AUDIO_CONFIG_PATH)?;
-        let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH)?;
-        let display: ConfigDisplay = from_file(DISPLAY_CONFIG_PATH)?;
-        let texture: ConfigTexture = from_file(TEXTURE_CONFIG_PATH)?;
-
-        let config = Config::new(models, scene, audio, player, display, texture);
-        *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
-        Ok(())
-    }
+    // pub fn load_configuration() -> Result<(), Box<dyn std::error::Error>> {
+    //     let models: ConfigModels = from_file(MODELS_CONFIG_PATH)?;
+    //     let scene: ConfigSceneGraph = from_file(SCENE_CONFIG_PATH)?;
+    //     let audio: ConfigAudioAssets = from_file(AUDIO_CONFIG_PATH)?;
+    //     let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH)?;
+    //     let display: ConfigDisplay = from_file(DISPLAY_CONFIG_PATH)?;
+    //     let texture: ConfigTexture = from_file(TEXTURE_CONFIG_PATH)?;
+    //
+    //     let config = Config::new(models, scene, audio, player, display, texture);
+    //     *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
+    //     Ok(())
+    // }
 
     pub fn get_configuration() -> Arc<Config> {
         CONFIG_INSTANCE

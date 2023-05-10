@@ -34,12 +34,6 @@ fn main() {
     // game state
     let game_state = Arc::new(Mutex::new(GameState::default()));
 
-    // load configuration
-    match ConfigurationManager::load_configuration() {
-        Ok(_) => info!("Configuration loaded successfully."),
-        Err(e) => panic!("Failed to load configuration: {}", e),
-    }
-
     // executor
     let executor = Executor::new(game_state.clone());
     executor.init();
