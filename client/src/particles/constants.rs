@@ -10,7 +10,7 @@ pub const VTX_ATTRIBS: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
     0 => Float32x2,
 ];
 
-const NUM_TEXTURES: u32 = 6;
+const NUM_TEXTURES: u32 = 9;
 
 pub fn vtx_desc<'a>() -> wgpu::VertexBufferLayout<'a> {
     use std::mem;
