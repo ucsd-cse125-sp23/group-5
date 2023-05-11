@@ -627,7 +627,8 @@ impl State {
                 .unwrap()
                 .draw_scene_dfs();
 
-            self.player_loc = self.display
+            self.player_loc = self
+                .display
                 .scene_map
                 .get(scene_id)
                 .unwrap()

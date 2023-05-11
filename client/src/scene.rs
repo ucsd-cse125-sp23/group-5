@@ -165,9 +165,7 @@ impl Scene {
     /// function to get the player positions after model transforms
     /// assumes: each model is centered around the origin
     ///          the players have ids numerical ids < 10
-    pub fn get_player_positions(
-        &self
-    ) -> Vec<(u32, glm::Vec4)>{
+    pub fn get_player_positions(&self) -> Vec<(u32, glm::Vec4)> {
         let mut ret = Vec::new();
         for id in 0..10 {
             let node_id = NodeKind::Player.node_id(id.to_string());
@@ -176,7 +174,10 @@ impl Scene {
                 None => continue,
                 Some(n) => pos = n.1 * glm::vec4(0.0, 0.0, 0.0, 1.0),
             };
-            ret.push((id, glm::vec4(pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], 1.0)));
+            ret.push((
+                id,
+                glm::vec4(pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], 1.0),
+            ));
         }
         return ret;
     }
