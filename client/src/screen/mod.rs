@@ -150,13 +150,14 @@ impl Display {
             for (id, pos) in player_loc{
                 // TODO: use id to map
                 // for now, just generate the last type of particle
+                // -1 to cancel out 1.0 in pos, 2.5 to place above the player
+                let pos = pos + glm::vec4(0.0, 2.5, 0.0, -1.0);
                 let cam_dir: glm::Vec3 = glm::normalize(&(camera_state.camera.position - camera_state.camera.target));
                 let cpos = &camera_state.camera.position;
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
                 to_draw.push(particles::Particle{
-                    // -1 to cancel out 1.0 in pos
-                    start_pos: (glm::vec4(0.0, 2.5, 0.0, -1.0) + pos).into(),
+                    start_pos: pos.into(),
                     velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
                     color: glm::vec4(1.0, 1.0, 0.0, 1.0).into(),
                     spawn_time: 0.0,

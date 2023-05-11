@@ -763,7 +763,7 @@ impl State {
                         p.position,
                         p.direction,
                         p.up,
-                        std::f32::consts::FRAC_PI_3 * 180.0 / PI,
+                        std::f32::consts::FRAC_PI_3,
                         10.0,
                         0.3,
                         PI,

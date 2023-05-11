@@ -21,7 +21,10 @@ struct InstanceInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
-    @location(1) color: vec4<f32>
+    @location(1) color: vec4<f32>,
+    // for debugging
+    @location(2) expected: f32,
+    @location(3) z_pos: f32,
 };
 
 struct CameraUniform {
@@ -87,6 +90,9 @@ fn vs_main(
     position += time_alive * linear_v;
     // then project
     out.clip_position = camera.view * vec4<f32>(position, 1.0);
+    // for debugging
+    out.expected = out.clip_position[2];
+    out.z_pos = instance.z_pos;
     // set z, for ordering issues
     out.clip_position[2] = instance.z_pos;
     out.clip_position = camera.proj * out.clip_position;
