@@ -3,7 +3,7 @@ use common::core::states::PlayerState;
 use instant::Duration;
 use std::collections::HashMap;
 use std::f32::consts::FRAC_PI_2;
-use std::f32::consts::FRAC_PI_3;
+use std::f32::consts::FRAC_PI_6;
 use std::f32::consts::PI;
 use std::time::SystemTime;
 use winit::dpi::PhysicalPosition;
@@ -14,7 +14,7 @@ extern crate nalgebra_glm as glm;
 use crate::camera::CameraState;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.001;
-const SAFE_FRAC_PI_3: f32 = FRAC_PI_3 - 0.001;
+const SAFE_FRAC_PI_6: f32 = FRAC_PI_6 - 0.001;
 
 fn cartesian_to_spherical(cartesian: &glm::Vec3) -> glm::Vec3 {
     let r = glm::length(cartesian);
@@ -132,7 +132,7 @@ impl PlayerController {
         spherical_coords.y = (spherical_coords.y + delta_yaw) % (2.0 * PI);
         // keep the camera's angle from going too high/low
         spherical_coords.z =
-            (spherical_coords.z + delta_pitch).clamp(-SAFE_FRAC_PI_3, SAFE_FRAC_PI_2);
+            (spherical_coords.z + delta_pitch).clamp(-SAFE_FRAC_PI_6, SAFE_FRAC_PI_2);
 
         // If process_mouse isn't called every frame, these values
         // will not get set to zero, and the camera will rotate
