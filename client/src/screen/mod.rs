@@ -1,11 +1,12 @@
-use nalgebra_glm as glm;
 use std::collections::HashMap;
+
+use nalgebra_glm as glm;
+use wgpu::util::DeviceExt;
 
 use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
 };
-use wgpu::util::DeviceExt;
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
@@ -33,7 +34,8 @@ pub struct Display {
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
-    pub light_state: lights::LightState, // Grandfathered in, we don't really use lights
+    pub light_state: lights::LightState,
+    // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
     pub ui_pipeline: wgpu::RenderPipeline,
     pub particles: ParticleDrawer,
@@ -113,6 +115,7 @@ impl Display {
         &mut self,
         mouse: &[f32; 2],
         camera_state: &camera::CameraState,
+        player_loc: &Vec<(u32, glm::Vec4)>,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
@@ -144,6 +147,33 @@ impl Display {
 
         // generate particles
         let mut to_draw: Vec<particles::Particle> = Vec::new();
+        // conditionally add the player labels
+        if self.current == self.game_display {
+            for (id, pos) in player_loc {
+                // TODO: use id to map
+                // for now, just generate the last type of particle
+                // -1 to cancel out 1.0 in pos, 2.5 to place above the player
+                let pos = pos + glm::vec4(0.0, 2.5, 0.0, -1.0);
+                let cam_dir: glm::Vec3 =
+                    glm::normalize(&(camera_state.camera.position - camera_state.camera.target));
+                let cpos = &camera_state.camera.position;
+                let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
+                let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
+                to_draw.push(particles::Particle {
+                    start_pos: pos.into(),
+                    velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
+                    color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
+                    spawn_time: 0.0,
+                    size: 75.0,
+                    tex_id: *id as f32 + 4.0,
+                    z_pos,
+                    time_elapsed: 0.0,
+                    size_growth: 0.0,
+                    halflife: 1.0,
+                    _pad2: 0.0,
+                });
+            }
+        }
         self.particles
             .get_particles_to_draw(&camera_state.camera, &mut to_draw);
         // write buffer to gpu and set buffer
