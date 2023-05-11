@@ -1,11 +1,12 @@
-use nalgebra_glm as glm;
 use std::collections::HashMap;
+
+use nalgebra_glm as glm;
+use wgpu::util::DeviceExt;
 
 use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
 };
-use wgpu::util::DeviceExt;
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
@@ -33,7 +34,8 @@ pub struct Display {
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
-    pub light_state: lights::LightState, // Grandfathered in, we don't really use lights
+    pub light_state: lights::LightState,
+    // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
     pub ui_pipeline: wgpu::RenderPipeline,
     pub particles: ParticleDrawer,
@@ -160,7 +162,7 @@ impl Display {
                 to_draw.push(particles::Particle {
                     start_pos: pos.into(),
                     velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
-                    color: glm::vec4(1.0, 1.0, 0.0, 1.0).into(),
+                    color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
                     spawn_time: 0.0,
                     size: 75.0,
                     tex_id: *id as f32 + 4.0,
