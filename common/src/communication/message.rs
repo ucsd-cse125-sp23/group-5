@@ -4,7 +4,6 @@ use crate::core::events::GameEvent;
 use crate::core::states::GameState;
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::convert::From;
-use std::hash::Hasher;
 use std::io::{self, Read, Write};
 
 #[derive(Debug)]

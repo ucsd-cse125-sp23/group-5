@@ -91,7 +91,6 @@ impl PlayerLoop {
                                 //     },
                                 //      _ => {},
                                 // }
-                                
                                 match self
                                     .inputs
                                     .send(Input::Keyboard(*input))

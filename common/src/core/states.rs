@@ -5,13 +5,20 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
-use rapier3d::parry::transformation::utils::transform;
+use rapier3d::prelude::Vector;
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
 use std::collections::HashMap;
-use std::iter::Map;
-use std::ops::Deref;
 use std::time::Duration;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct WorldState {}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GameState {
+    pub world: WorldState,
+    pub players: HashMap<u32, PlayerState>,
+    pub previous_tick_winner: Option<u32>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerState {
@@ -26,16 +33,7 @@ pub struct PlayerState {
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
     pub on_flag_time: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct WorldState {}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct GameState {
-    pub world: WorldState,
-    pub players: HashMap<u32, PlayerState>,
-    pub previous_tick_winner: Option<u32>,
+    pub spawn_point: Vector<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default)]

@@ -1,5 +1,5 @@
 use glm::vec3;
-use screen::objects::DisplayGroup;
+
 use std::collections::HashMap;
 use std::sync::MutexGuard;
 use std::{
@@ -7,12 +7,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use rand::{rngs::ThreadRng, Rng};
 use winit::event::*;
 
 mod model;
 
-use crate::model::DrawModel;
 use model::Vertex;
 
 mod camera;
@@ -27,13 +25,13 @@ mod screen;
 mod texture;
 use nalgebra_glm as glm;
 
-use common::configs::{from_file, model_config::ConfigModels};
+use common::configs::*;
 
+pub mod audio;
 pub mod event_loop;
 pub mod inputs;
-pub mod audio;
 
-use common::configs::scene_config::ConfigSceneGraph;
+use common::configs::*;
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::{GameState, ParticleQueue};
@@ -263,12 +261,14 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
+        let config_instance = ConfigurationManager::get_configuration();
         // Scene
-        let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
+        let scene_config = config_instance.scene.clone();
+        let models_config = config_instance.models.clone();
 
         let mut models = HashMap::new();
 
-        for model_config in model_configs.models {
+        for model_config in models_config.models {
             let model = resources::load_model(
                 &model_config.path,
                 &device,
@@ -279,8 +279,6 @@ impl State {
             .unwrap();
             models.insert(model_config.name, model);
         }
-
-        let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -466,13 +464,14 @@ impl State {
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        screen::texture_config::load_screen_tex_config(
+        screen::texture_config_helper::load_screen_tex_config(
             &device,
             &queue,
             &texture_bind_group_layout_2d,
             screen::TEX_CONFIG_PATH,
-            &mut texture_map
-        ).await;
+            &mut texture_map,
+        )
+        .await;
 
         let rect_ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Const Rect Index Buffer"),
@@ -486,7 +485,8 @@ impl State {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let display_config = common::configs::from_file(screen::DISPLAY_CONFIG_PATH).unwrap();
+        let config_instance = ConfigurationManager::get_configuration();
+        let display_config = config_instance.display.clone();
         let display = screen::Display::from_config(
             &display_config,
             texture_map,
@@ -554,13 +554,8 @@ impl State {
                 bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
             );
 
-            for screen in self.display.screen_map.values_mut(){
-                screen.resize(
-                    new_size.width,
-                    new_size.height,
-                    &self.device,
-                    &self.queue,
-                );
+            for screen in self.display.screen_map.values_mut() {
+                screen.resize(new_size.width, new_size.height, &self.device, &self.queue);
             }
 
             self.display.depth_texture =
@@ -581,15 +576,12 @@ impl State {
             } => {
                 self.display.click(&self.mouse_position);
                 return true;
-            },
-            WindowEvent::CursorMoved { 
-                position,
-                ..
-            } => { 
-                self.mouse_position[0] =  2.0 * (position.x as f32) / self.window_size[0] - 1.0;
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.mouse_position[0] = 2.0 * (position.x as f32) / self.window_size[0] - 1.0;
                 self.mouse_position[1] = -2.0 * (position.y as f32) / self.window_size[1] + 1.0;
                 return true;
-            },
+            }
             _ => false,
         }
     }
@@ -602,35 +594,40 @@ impl State {
     ) {
         let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
-        {   // new block because we need to drop scene_id before continuing
+        {
+            // new block because we need to drop scene_id before continuing
             // it borrows self
-            let scene_id = self.display.groups
+            let scene_id = self
+                .display
+                .groups
                 .get(&self.display.game_display)
                 .unwrap()
                 .scene
                 .as_ref()
                 .unwrap();
 
-            self.display.scene_map
+            self.display
+                .scene_map
                 .get_mut(scene_id)
                 .unwrap()
                 .load_game_state(
-                game_state,
-                &mut self.player_controller,
-                &mut self.player,
-                &mut self.camera_state,
-                dt,
-                self.client_id,
-            );
+                    game_state,
+                    &mut self.player_controller,
+                    &mut self.player,
+                    &mut self.camera_state,
+                    dt,
+                    self.client_id,
+                );
 
-            self.display.scene_map
+            self.display
+                .scene_map
                 .get_mut(scene_id)
                 .unwrap()
                 .draw_scene_dfs();
         }
 
         let particle_queue = particle_queue.lock().unwrap();
-            self.load_particles(particle_queue);
+        self.load_particles(particle_queue);
 
         // camera update
         self.camera_state
@@ -653,7 +650,7 @@ impl State {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
-        
+
         self.display.render(
             &self.mouse_position,
             &self.camera_state,
@@ -779,8 +776,8 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
         particle_queue.particles.clear();
