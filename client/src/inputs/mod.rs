@@ -3,7 +3,7 @@ use common::communication::commons::Protocol;
 use common::core::command::Command;
 use common::core::command::Command::{Attack, Die, Jump, Refill, Spawn};
 use glm::{vec3, Vec3};
-use log::debug;
+use log::{debug, info, warn};
 use nalgebra_glm as glm;
 
 use std::collections::HashMap;
@@ -12,6 +12,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, VirtualKeyCode};
+use common::communication::message::{HostRole, Message, Payload};
 
 pub mod handlers;
 
@@ -20,6 +21,7 @@ pub enum Input {
     Keyboard(KeyboardInput),
     Mouse(DeviceEvent),
     Camera { forward: Vec3 },
+    Ready,
 }
 
 #[derive(Debug, Clone)]
@@ -150,11 +152,18 @@ impl InputEventProcessor {
                         cvar.notify_one(); // notify the poller to send data immediately
                     }
                 }
-
                 // receive camera update
                 Input::Camera { forward } => {
                     let mut camera_forward = self.camera_forward.lock().unwrap();
                     *camera_forward = forward;
+                }
+                Input::Ready => {
+                    let message: Message = Message::new(
+                        HostRole::Client(self.client_id),
+                        Payload::Command(Command::Ready),
+                    );
+                    self.protocol.send_message(&message).expect("send message fails");
+                    //warn!("command: ready sends successfully");
                 }
                 _ => {}
             }

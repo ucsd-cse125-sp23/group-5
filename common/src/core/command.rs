@@ -8,35 +8,10 @@ use std::mem;
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
 
-/*
-/// Game actions that can be performed by the player
-#[derive(Debug, Clone, Serialize, Deserialize)]
-
-pub enum GameAction {
-    Attack,
-    Jump,
-}
-
-
-impl PartialEq for GameAction {
-    fn eq(&self, other: &Self) -> bool {
-        mem::discriminant(self).eq(&mem::discriminant(other))
-    }
-}
-impl Eq for GameAction {}
-
-// /// Spawn type that can be issued by the client
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub enum SpawnType {
-//     NewSpawn,
-//     Respawn,
-//     Dead,
-// }
-*/
-
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
+    Ready,
     Spawn,
     Die,
     Move(MoveDirection),

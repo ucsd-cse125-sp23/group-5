@@ -2,7 +2,9 @@ use common::configs::display_config::ScreenLocation;
 use nalgebra_glm as glm;
 use phf::phf_map;
 use std::collections::HashMap;
+use log::{debug, info, warn};
 use wgpu::util::DeviceExt;
+use crate::inputs::Input;
 
 use crate::screen;
 use crate::screen::location_helper::get_coords;
@@ -13,6 +15,13 @@ pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_ma
 
 // Place click events here ----------------------
 fn game_start(display: &mut screen::Display) {
+    // once start game, send ready to the client main.
+    match display.sender.send(Input::Ready) {
+        Ok(_) => {}
+        Err(e) => {
+            warn!("Error sending command: {:?}", e);
+        }
+    }
     display.current = display.game_display.clone();
 }
 

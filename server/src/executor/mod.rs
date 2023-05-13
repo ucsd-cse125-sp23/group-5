@@ -1,12 +1,8 @@
-use crate::executor::command_handlers::{
-    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
-    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler,
-};
+use crate::executor::command_handlers::{AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler, MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::{Command, MoveDirection};
-use common::core::states::GameState;
+use common::core::states::{GameLifeCycleState, GameState};
 
 use crate::Recipients;
 use common::configs::*;
@@ -14,7 +10,10 @@ use common::core::events::GameEvent;
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
+use rapier3d::crossbeam::channel::internal::SelectHandle;
+use common::core::states::GameLifeCycleState::{Running, Waiting};
 
 mod command_handlers;
 
@@ -27,6 +26,8 @@ pub struct Executor {
     physics_state: RefCell<PhysicsState>,
     game_events: RefCell<Vec<(GameEvent, Recipients)>>,
     config_instance: Arc<Config>,
+    ready_players: RefCell<Vec<u32>>,
+    spawn_command_pushed: RefCell<bool>,
 }
 
 impl Executor {
@@ -37,10 +38,12 @@ impl Executor {
             physics_state: RefCell::new(PhysicsState::new()),
             game_events: RefCell::new(Vec::new()),
             config_instance: ConfigurationManager::get_configuration(),
+            ready_players: RefCell::new(Vec::new()),
+            spawn_command_pushed: RefCell::new(false),
         }
     }
 
-    pub fn init(&self) {
+    pub fn world_init(&self) {
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
@@ -53,6 +56,21 @@ impl Executor {
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
         }
+    }
+
+    pub fn game_init(&self, mut commands: Vec<ClientCommand>) -> Vec<ClientCommand> {
+        let gamestate_instance = self.game_state.lock().unwrap();
+        if gamestate_instance.life_cycle_state == Running {
+            // TODO: still have bugs when handling multiple game in a row without exiting
+            if !*self.spawn_command_pushed.borrow() {
+                let ready_players = self.ready_players.borrow();
+                for client_id in ready_players.iter() {
+                    commands.push(ClientCommand::new(*client_id, Command::Spawn));
+                }
+                *self.spawn_command_pushed.borrow_mut() = true;
+            }
+        }
+        commands
     }
 
     pub(crate) fn plan_and_execute(&self, commands: Vec<ClientCommand>) {
@@ -94,30 +112,41 @@ impl Executor {
 
         let player_config = self.config_instance.player.clone();
 
-        let handler: Box<dyn CommandHandler> = match client_command.command {
-            Command::Spawn => Box::new(SpawnCommandHandler::new(
-                client_command.client_id,
-                player_config,
-            )),
-            Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
-            Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
-            Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
-                client_command.client_id,
-                forward,
-            )),
-            Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
-            Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
-            Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
-            _ => {
-                warn!("Unsupported command: {:?}", client_command.command);
-                return;
+        if game_state.life_cycle_state == Waiting {
+            match client_command.command {
+                Command::Ready => {
+                    info!("ready's here");
+                    self.handle_ready(client_command).expect("Player is already ready");
+                },
+                _ => {}
             }
-        };
-
-        if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
-            error!("Failed to execute command: {:?}", e);
         }
-        //game_state.update_cooldowns();
+        else {
+            info!("shouldn't be here");
+            let handler: Box<dyn CommandHandler> = match client_command.command {
+                Command::Spawn => Box::new(SpawnCommandHandler::new(
+                    client_command.client_id,
+                    player_config,
+                )),
+                Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
+                Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
+                Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
+                    client_command.client_id,
+                    forward,
+                )),
+                Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
+                Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+                Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
+                _ => {
+                    warn!("Unsupported command: {:?}", client_command.command);
+                    return;
+                }
+            };
+
+            if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
+                error!("Failed to execute command: {:?}", e);
+            }
+        }
 
         info!("GameState: {:?}", game_state);
     }
@@ -152,6 +181,19 @@ impl Executor {
             Some(id) => Some(id),
             None => None,
         }
+    }
+
+    fn handle_ready(&self, client_command: ClientCommand) -> Result<(), &'static str> {
+        let mut ready_players = self.ready_players.borrow_mut();
+        if ready_players.contains(&client_command.client_id) {
+            return Err("Player is already ready");
+        }
+        let mut gamestate_instance = self.game_state.lock().unwrap();
+        ready_players.push(client_command.client_id);
+        if ready_players.len() == 1 {
+            gamestate_instance.life_cycle_state = Running;
+        }
+        Ok(())
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {

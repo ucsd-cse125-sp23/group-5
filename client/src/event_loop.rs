@@ -59,7 +59,7 @@ impl PlayerLoop {
             .build(&event_loop)
             .unwrap();
 
-        let mut state = State::new(window, self.client_id).await;
+        let mut state = State::new(window, self.client_id, self.inputs.clone(), self.game_state.clone()).await;
 
         //To check
         let mut last_render_time = instant::Instant::now();

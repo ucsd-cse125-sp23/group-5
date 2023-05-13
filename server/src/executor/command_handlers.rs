@@ -124,16 +124,6 @@ impl CommandHandler for SpawnCommandHandler {
         physics_state: &mut PhysicsState,
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        // Physics state
-        // let player_model = tobj::load_obj("assets/cube.obj", &tobj::GPU_LOAD_OPTIONS);
-        //
-        // let (models, materials) = player_model.unwrap();
-        //
-        // // Physics state
-        // let collider = rapier::ColliderBuilder::from_object_models(models)
-        //     .translation(rapier::vector![0.0, 2.0, 0.0])
-        //     .build();
-
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
@@ -167,7 +157,6 @@ impl CommandHandler for SpawnCommandHandler {
                 self.player_id,
                 PlayerState {
                     id: self.player_id,
-                    connected: true,
                     is_dead: false,
                     wind_charge: MAX_WIND_CHARGE,
                     on_flag_time: 0.0,

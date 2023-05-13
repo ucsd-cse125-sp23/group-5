@@ -18,6 +18,7 @@ pub struct GameState {
     pub world: WorldState,
     pub players: HashMap<u32, PlayerState>,
     pub previous_tick_winner: Option<u32>,
+    pub life_cycle_state: GameLifeCycleState,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -27,12 +28,23 @@ pub struct PlayerState {
     pub physics: Physics,
     pub jump_count: u32,
     pub camera_forward: Vec3,
-    pub connected: bool,
     pub is_dead: bool,
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
     pub on_flag_time: f32,
     pub spawn_point: Vector<f32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GameLifeCycleState {
+    Waiting,
+    Running,
+}
+
+impl Default for GameLifeCycleState {
+    fn default() -> Self {
+        GameLifeCycleState::Waiting
+    }
 }
 
 impl PlayerState {
@@ -191,6 +203,7 @@ mod tests {
             world: WorldState::default(),
             players: HashMap::default(),
             previous_tick_winner: None,
+            life_cycle_state: Default::default(),
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -202,6 +215,7 @@ mod tests {
             world: WorldState::default(),
             players: HashMap::default(),
             previous_tick_winner: None,
+            life_cycle_state: Default::default(),
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();

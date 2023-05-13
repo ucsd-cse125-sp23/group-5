@@ -36,7 +36,7 @@ fn main() {
 
     // executor
     let executor = Executor::new(game_state.clone());
-    executor.init();
+    executor.world_init();
 
     info!("World initialized");
 

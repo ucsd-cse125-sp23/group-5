@@ -9,6 +9,7 @@ use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use common::core::states::GameLifeCycleState::{Running, Waiting};
 
 const TICK_RATE: u64 = 30; // 30 fps
 
@@ -69,6 +70,9 @@ impl GameLoop<'_> {
 
             // consume and collect all messages in the channel
             let mut commands = self.commands.try_iter().collect::<Vec<_>>();
+
+            // automatically spawning the 4 players if gamestate is running now
+            let mut commands = self.executor.game_init(commands);
 
             // update list of dead players and issue die commands
             let dead_players = self.executor.update_dead_players();

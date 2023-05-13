@@ -1,7 +1,7 @@
 use glm::vec3;
 
 use std::collections::HashMap;
-use std::sync::MutexGuard;
+use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
@@ -38,9 +38,7 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-
-const MODELS_CONFIG_PATH: &str = "models.json";
-const SCENE_CONFIG_PATH: &str = "scene.json";
+use crate::inputs::Input;
 
 struct State {
     surface: wgpu::Surface,
@@ -64,7 +62,7 @@ struct State {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: Window, client_id: u8) -> Self {
+    async fn new(window: Window, client_id: u8, sender: mpsc::Sender<Input>, game_state: Arc<Mutex<GameState>>) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -488,6 +486,7 @@ impl State {
 
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
+
         let display = screen::Display::from_config(
             &display_config,
             texture_map,
@@ -504,6 +503,8 @@ impl State {
             1920,
             1080,
             &device,
+            sender,
+            game_state,
         );
 
         // let screens =
