@@ -40,9 +40,8 @@ impl Node {
 
 // #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Scene {
-    pub test_player_colors: HashMap<u32, Vec<(String, MeshColor)>>,
     pub objects: HashMap<ModelIndex, model::Model>,
-    pub scene_graph: HashMap<NodeId, (Node, Transform, Vec<(String, MeshColor)>)>,
+    pub scene_graph: HashMap<NodeId, (Node, Transform, HashMap<String, MeshColor>)>,
     pub objects_and_instances: HashMap<ModelIndex, Vec<Instance>>,
 }
 
@@ -80,16 +79,10 @@ impl NodeKind {
 impl Scene {
     pub fn new(objs: HashMap<ModelIndex, Model>) -> Self {
         Scene {
-            test_player_colors: HashMap::from([
-                (1 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([218.0/255.0,34.0/255.0,218.0/255.0]))]),
-                (2 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([81.0/255.0,179.0/255.0,136.0/255.0]))]),
-                (3 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([255.0/255.0,179.0/255.0,0.0/255.0]))]),
-                (4 as u32, vec![("Cube_Finished_Cube.001".to_owned(), MeshColor::new([71.0/255.0,108.0/255.0,255.0/255.0]))]),
-            ]),
             objects: objs,
             scene_graph: HashMap::from([(
                 NodeKind::World.base_id(),
-                (Node::new(), glm::identity(), Vec::new()),
+                (Node::new(), glm::identity(), HashMap::new()),
             )]),
             objects_and_instances: HashMap::new(),
         }
@@ -97,7 +90,7 @@ impl Scene {
 
     pub fn add_node(&mut self, node_id: NodeId, transform: Transform) -> &mut Node {
         let node = Node::new();
-        self.scene_graph.insert(node_id.clone(), (node, transform, Vec::new()));
+        self.scene_graph.insert(node_id.clone(), (node, transform, HashMap::new()));
         let (node, _, _) = self.scene_graph.get_mut(&node_id).unwrap();
         node
     }
@@ -166,7 +159,7 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
-                self.scene_graph.get_mut(&node_id).unwrap().2 = self.test_player_colors.get(id).unwrap().to_vec();
+                // self.scene_graph.get_mut(&node_id).unwrap().2 = self.test_player_colors.get(id).unwrap().to_vec();
             }
         }
     }
@@ -179,12 +172,12 @@ impl Scene {
         // stacks needed for DFS:
         let mut dfs_stack: Vec<&Node> = Vec::new();
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
-        let mut color_stack: Vec<Vec<(String, MeshColor)>> = Vec::new();
+        let mut color_stack: Vec<HashMap<String, MeshColor>> = Vec::new();
 
         // state needed for DFS:
         let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap().0;
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
-        let mut curr_color = Vec::new();
+        let mut curr_color = HashMap::new();
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
         color_stack.push(curr_color);
@@ -210,16 +203,16 @@ impl Scene {
                 let model_view: TMat4<f32> = current_view_matrix * (cur_node.models[i].1);
                 let curr_model = self.objects_and_instances.get_mut(&cur_node.models[i].0);
 
-                let mut color_hash: HashMap<String, MeshColor>  = HashMap::new();
-                for (mesh_name, mesh_color) in curr_color.iter() {
-                    color_hash.insert(mesh_name.clone(), *mesh_color);
-                }
+                // let mut color_hash: HashMap<String, MeshColor>  = HashMap::new();
+                // for (mesh_name, mesh_color) in curr_color.iter() {
+                //     color_hash.insert(mesh_name.clone(), *mesh_color);
+                // }
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
                         obj.push(Instance {
                             transform: model_view,
-                            mesh_colors: color_hash,
+                            mesh_colors: curr_color.clone(),
                         });
                     }
                     None => {
@@ -228,7 +221,7 @@ impl Scene {
                             cur_node.models[i].0.clone(),
                             vec![Instance {
                                 transform: model_view,
-                                mesh_colors: color_hash,
+                                mesh_colors: curr_color.clone(),
                             }],
                         );
                     }
@@ -239,7 +232,7 @@ impl Scene {
                 let (node, transform, color_vec) = self.scene_graph.get(node_id).unwrap();
                 dfs_stack.push(node);
                 matrix_stack.push(current_view_matrix * transform);
-                color_stack.push(color_vec.to_vec());
+                color_stack.push(color_vec.clone());
             }
         }
     }
@@ -249,7 +242,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-        .add_model("player".to_string());
+        .add_model("player".to_string()); // CHANGE MODEL HERE
     }
 }
 

@@ -42,8 +42,11 @@ var t_diffuse: texture_2d<f32>;
 @group(0) @binding(1)
 var s_diffuse: sampler;
 
+@group(1) @binding(0)
+var<uniform> texture_color : vec3<f32>;
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    return in.color * t;
+    return in.color * t * vec4(texture_color, 1.0);
 }

@@ -1,3 +1,5 @@
+use common::configs::model_config::ModelIndex;
+use mesh_color::MeshColor;
 use glm::vec3;
 use screen::objects::DisplayGroup;
 use std::collections::HashMap;
@@ -44,6 +46,7 @@ use winit::window::Window;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
+const LOBBY_SCENE_CONFIG_PATH: &str = "lobby_scene.json";
 
 struct State {
     surface: wgpu::Surface,
@@ -62,7 +65,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
-    pub color_bind_group_layout: wgpu::BindGroupLayout,
+    color_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl State {
@@ -348,7 +351,7 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d],
+                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -478,12 +481,37 @@ impl State {
 
         //TODO: for debugging -----
         // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
-        // screen::objects::get_display_groups(&device, scene, &mut groups);
+        // screen::objects::get_display_groups(&device, &color_bind_group_layout, scene, &mut groups);
         let default_display_id = String::from("display:title");
         let game_display_id = String::from("display:game");
 
+        // JUST FOR NOW
+        let model_configs_l = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
+
+        let mut models_lobby = HashMap::new();
+        for model_config in model_configs_l.models {
+            let model = resources::load_model(
+                &model_config.path,
+                &device,
+                &queue,
+                &texture_bind_group_layout,
+            )
+            .await
+            .unwrap();
+            models_lobby.insert(model_config.name, model);
+        }
+        let lobby_scene_config = from_file::<_, ConfigSceneGraph>(LOBBY_SCENE_CONFIG_PATH).unwrap();
+        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
+        lobby_scene.objects = models_lobby;
+        lobby_scene.draw_scene_dfs();
+        // lobby_scene.objects.insert("player".to_owned(), models.get("player").unwrap());
+        // lobby_scene.objects.insert("ferris".to_owned(), *models.get("ferris").unwrap());
+
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
+        scene_map.insert(String::from("scene:lobby"), lobby_scene);
+
+        
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -524,8 +552,9 @@ impl State {
             1920,
             1080,
             &device,
+            &color_bind_group_layout,
         );
-
+        // println!("{:#?}", display.screen_map);
         // let screens =
         //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
@@ -598,7 +627,7 @@ impl State {
             }
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
-                state: _,
+                state: crate::ElementState::Released,
                 ..
             } => {
                 self.display.click(&self.mouse_position);

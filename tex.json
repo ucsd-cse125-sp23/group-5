@@ -11,6 +11,22 @@
         {
             "name": "btn:title_hover",
             "path": "start_btn_hover.png"
+        },
+        {
+            "name": "btn:down_arrow",
+            "path": "down_arrow.png"
+        },
+        {
+            "name": "btn:down_arrow_hover",
+            "path": "down_arrow_hover.png"
+        },
+        {
+            "name": "btn:color_button",
+            "path": "button_icon.png"
+        },
+        {
+            "name": "btn:checkmark",
+            "path": "checkmark.png"
         }
     ]
 }

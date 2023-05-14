@@ -1,0 +1,16 @@
+{
+  "spawn_points": [
+  ],
+  "nodes": [
+    {
+      "id": "object:player_model",
+      "model": "cube",
+      "transform": {
+        "position": [4.0, -3.0, -4.0],
+        "rotation": [0, 0, 0, 1]
+      },
+      "children": [
+      ]
+    }
+  ]
+}

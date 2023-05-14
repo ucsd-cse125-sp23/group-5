@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
+use crate::mesh_color::{MeshColor, MeshColorInstance};
 use crate::screen::location::ScreenLocation;
 use crate::screen::objects;
 
@@ -35,6 +36,7 @@ pub struct ConfigScreen {
 pub struct ConfigScreenBackground{
     pub tex: String,
     pub aspect: f32,
+    pub color: Option<[f32; 3]>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -46,6 +48,7 @@ pub struct ConfigButton{
     pub hover_tint: [f32; 4],
     pub default_tex: String,
     pub hover_tex: String,
+    pub color: Option<[f32; 3]>,
     pub on_click: String,
 }
 
@@ -89,10 +92,11 @@ impl ConfigScreen{
         width: u32,
         height: u32,
         device: &wgpu::Device,
+        color_bind_group_layout: &wgpu::BindGroupLayout,
     ) -> objects::Screen{
         let background = match self.background.as_ref(){
             None => None,
-            Some(bg) => Some(bg.unwrap_config(device))
+            Some(bg) => Some(bg.unwrap_config(device, color_bind_group_layout))
         };
         let mut icons = Vec::new();
         for i in &self.icons{
@@ -100,14 +104,15 @@ impl ConfigScreen{
         }
         let mut buttons = Vec::new();
         for b in &self.buttons{
-            buttons.push(b.unwrap_config(width, height, device));
+            buttons.push(b.unwrap_config(width, height, device, color_bind_group_layout));
         }
 
         objects::Screen { 
             id: self.id.clone(),
             background,
             icons,
-            buttons
+            buttons,
+            default_color:  MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
         }
     }
 }
@@ -116,6 +121,7 @@ impl ConfigScreenBackground{
     pub fn unwrap_config(
         &self,
         device: &wgpu::Device,
+        color_bind_group_layout: &wgpu::BindGroupLayout,
     ) -> objects::ScreenBackground{
         // vertex buffer
         let vertices = objects::TITLE_VERT;
@@ -129,6 +135,7 @@ impl ConfigScreenBackground{
             aspect: self.aspect,
             vbuf,
             texture: self.tex.clone(),
+            color: match self.color {None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
         }
     }
 }
@@ -139,6 +146,7 @@ impl ConfigButton{
         width: u32,
         height: u32,
         device: &wgpu::Device,
+        color_bind_group_layout: &wgpu::BindGroupLayout,
     ) -> objects::Button {
         // vertices + buffer
         let mut vertices = objects::TITLE_VERT;
@@ -166,6 +174,7 @@ impl ConfigButton{
             hover_tint: glm::make_vec4(&self.hover_tint),
             default_texture: self.default_tex.clone(),
             hover_texture: self.hover_tex.clone(),
+            color: match self.color{None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
             on_click: self.on_click.clone(),
         }
     } 

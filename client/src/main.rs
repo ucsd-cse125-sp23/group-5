@@ -25,7 +25,7 @@ use common::core::states::{GameState, ParticleQueue};
 const AUDIO_CONFIG_PATH: &str = "audio.json";
 
 fn main() {
-    env::set_var("RUST_BACKTRACE", "1");
+    // env::set_var("RUST_BACKTRACE", "1");
     Builder::from_default_env().format_timestamp_micros().init();
 
     // input channel for communicating between event loop and input processor

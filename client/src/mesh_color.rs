@@ -20,6 +20,7 @@ impl MeshColor {
     }
 }
 
+#[derive(Debug)]
 pub struct MeshColorInstance {
     pub color: MeshColor,
     pub color_buffer: wgpu::Buffer,

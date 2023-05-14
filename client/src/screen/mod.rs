@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+use common::configs::model_config::ModelIndex;
 use wgpu::util::DeviceExt;
 
+use crate::mesh_color::MeshColor;
 use crate::model::DrawModel;
 use crate::particles::{ParticleDrawer, self};
 use crate::scene::Scene;
@@ -15,6 +17,24 @@ pub mod objects_config; // TODO later
 
 pub const TEX_CONFIG_PATH : &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH : &str = "display.json";
+
+#[derive(Debug)]
+pub struct CustomizationChoices {
+    pub color: HashMap<String, HashMap<String,MeshColor>>,
+    pub current_choice: String,
+    pub current_model: ModelIndex,
+}
+
+
+impl CustomizationChoices {
+    fn default() -> Self {
+        Self { // TODO: fix later, hard-coded for now
+            color: HashMap::new(),
+            current_choice: "leaf".to_owned(),
+            current_model: "cube".to_owned(),
+        }
+    }
+}
 
 // Should only be one of these in the entire game
 pub struct Display{
@@ -31,6 +51,7 @@ pub struct Display{
     pub rect_ibuf: wgpu::Buffer,
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
+    pub customization_choices: CustomizationChoices, // TODO: fix later, here for now until the code for sending these updates is finished
 }
 
 impl Display{
@@ -61,7 +82,8 @@ impl Display{
             ui_pipeline,
             particles,rect_ibuf,
             depth_texture,
-            default_inst_buf
+            default_inst_buf,
+            customization_choices: CustomizationChoices::default(),
         }
     }
 
@@ -79,6 +101,7 @@ impl Display{
         screen_width: u32,
         screen_height: u32,
         device: &wgpu::Device,
+        color_bind_group_layout: &wgpu::BindGroupLayout,
     ) -> Self{
         let mut groups = HashMap::new();
         for g in &config.displays{
@@ -88,7 +111,7 @@ impl Display{
 
         let mut screen_map = HashMap::new();
         for s in &config.screens{
-            let tmp = s.unwrap_config(screen_width, screen_height, device);
+            let tmp = s.unwrap_config(screen_width, screen_height, device, color_bind_group_layout);
             screen_map.insert(tmp.id.clone(), tmp);
         }
 
@@ -105,7 +128,8 @@ impl Display{
             particles,
             rect_ibuf,
             depth_texture,
-            default_inst_buf
+            default_inst_buf,
+            customization_choices: CustomizationChoices::default(),
         }
     }
 
@@ -221,7 +245,11 @@ impl Display{
                             ).unwrap(),
                             &bkgd.vbuf,
                             &self.default_inst_buf,
-                            0..1
+                            0..1,
+                            match &bkgd.color { 
+                                None =>&screen.default_color.color_bind_group,
+                                Some(c) => &c.color_bind_group,
+                            }
                         );
                     };
                     for button in &screen.buttons{
@@ -235,7 +263,11 @@ impl Display{
                             ).unwrap(),
                             &button.vbuf,
                             &self.default_inst_buf,
-                            0..1
+                            0..1,
+                            match &button.color { 
+                                None =>&screen.default_color.color_bind_group,
+                                Some(c) => &c.color_bind_group,
+                            }
                         );
                     }
                     for icon in &screen.icons{
@@ -245,7 +277,8 @@ impl Display{
                             ).unwrap(),
                             &icon.vbuf,
                             &self.default_inst_buf,
-                            0..1
+                            0..1,
+                            &screen.default_color.color_bind_group,
                         );
                     }
                 }
@@ -262,14 +295,16 @@ impl Display{
             Some(s) => screen = self.screen_map.get(s).unwrap()
         };
         let mut to_call: Option<&str> = None;
+        let mut color: Option<MeshColor> = None;
         for button in &screen.buttons{
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
+                color = match button.color.as_ref() {None => None, Some(c) => Some(c.color)};
             }
         }
         match to_call{
             None => {},
-            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self)
+            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self, color)
         };
     }
 }
@@ -281,6 +316,7 @@ pub trait DrawGUI<'a> {
         vbuf: &'a wgpu::Buffer,
         inst_buf: &'a wgpu::Buffer,
         instances: std::ops::Range<u32>,
+        color_bind_group: &'a wgpu::BindGroup,
     );
 }
 
@@ -294,10 +330,12 @@ where
             vbuf: &'a wgpu::Buffer,
             inst_buf: &'a wgpu::Buffer,
             instances: std::ops::Range<u32>,
+            color_bind_group: &'a wgpu::BindGroup,
         ) {
         self.set_vertex_buffer(0, vbuf.slice(..));
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);
+        self.set_bind_group(1, color_bind_group, &[]);
         self.draw_indexed(0..6, 0, instances);
     }
 }
