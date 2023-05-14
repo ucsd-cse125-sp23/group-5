@@ -159,7 +159,8 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
-                // self.scene_graph.get_mut(&node_id).unwrap().2 = self.test_player_colors.get(id).unwrap().to_vec();
+                // self.scene_graph.get_mut(&node_id).unwrap().2 --> change color
+                // self.scene_graph.get_mut(&node_id).unwrap().0.models[0] --> change model
             }
         }
     }
@@ -203,10 +204,6 @@ impl Scene {
                 let model_view: TMat4<f32> = current_view_matrix * (cur_node.models[i].1);
                 let curr_model = self.objects_and_instances.get_mut(&cur_node.models[i].0);
 
-                // let mut color_hash: HashMap<String, MeshColor>  = HashMap::new();
-                // for (mesh_name, mesh_color) in curr_color.iter() {
-                //     color_hash.insert(mesh_name.clone(), *mesh_color);
-                // }
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
@@ -242,7 +239,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-        .add_model("player".to_string()); // CHANGE MODEL HERE
+        .add_model("player".to_string());
     }
 }
 
