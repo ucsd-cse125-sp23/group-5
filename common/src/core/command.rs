@@ -8,10 +8,16 @@ use std::mem;
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
 
+/// Commands for ui interaction
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ServerSync {
+    Ready,
+}
+
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
-    Ready,
+    UI(ServerSync),
     Spawn,
     Die,
     Move(MoveDirection),

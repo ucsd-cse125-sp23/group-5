@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{Arc, mpsc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
@@ -16,15 +16,17 @@ use crate::scene::Scene;
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::location_helper::{get_coords, to_absolute};
 
-use crate::{camera, lights, model, texture};
 use crate::inputs::Input;
+use crate::screen::ui_interaction::BUTTON_MAP;
+use crate::{camera, lights, model, texture};
 
 use self::objects::Screen;
 
 pub mod display_helper;
 pub mod location_helper;
 pub mod objects;
-pub mod texture_config_helper;
+pub mod texture_helper;
+pub mod ui_interaction;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -304,7 +306,7 @@ impl Display {
         }
         match to_call {
             None => {}
-            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self),
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self),
         };
     }
 }

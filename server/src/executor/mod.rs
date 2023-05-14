@@ -1,19 +1,21 @@
-use crate::executor::command_handlers::{AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler, MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler, UpdateCameraFacingCommandHandler};
+use crate::executor::command_handlers::{
+    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
+    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+    UpdateCameraFacingCommandHandler,
+};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::{Command, MoveDirection};
-use common::core::states::{GameLifeCycleState, GameState};
+use common::core::command::{Command, MoveDirection, ServerSync};
+use common::core::states::GameState;
 
 use crate::Recipients;
 use common::configs::*;
 use common::core::events::GameEvent;
+use common::core::states::GameLifeCycleState::{Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
-use std::collections::HashSet;
-use std::sync::{Arc, Mutex, MutexGuard};
-use rapier3d::crossbeam::channel::internal::SelectHandle;
-use common::core::states::GameLifeCycleState::{Running, Waiting};
+use std::sync::{Arc, Mutex};
 
 mod command_handlers;
 
@@ -113,31 +115,37 @@ impl Executor {
 
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
-                Command::Ready => {
-                    if !self.ready_players.borrow().contains(&client_command.client_id) {
-                        self.ready_players.borrow_mut().push(client_command.client_id);
+                Command::UI(ServerSync::Ready) => {
+                    if !self
+                        .ready_players
+                        .borrow()
+                        .contains(&client_command.client_id)
+                    {
+                        self.ready_players
+                            .borrow_mut()
+                            .push(client_command.client_id);
                         if self.ready_players.borrow().len() == 4 {
                             game_state.life_cycle_state = Running;
                         }
                     } else {
                         warn!("player has already been ready!");
                     }
-                },
+                }
                 _ => {}
             }
-        }
-        else {
+        } else {
             let handler: Box<dyn CommandHandler> = match client_command.command {
                 Command::Spawn => Box::new(SpawnCommandHandler::new(
                     client_command.client_id,
                     player_config,
                 )),
                 Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
-                Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
-                Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
-                    client_command.client_id,
-                    forward,
-                )),
+                Command::Move(dir) => {
+                    Box::new(MoveCommandHandler::new(client_command.client_id, dir))
+                }
+                Command::UpdateCamera { forward } => Box::new(
+                    UpdateCameraFacingCommandHandler::new(client_command.client_id, forward),
+                ),
                 Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
                 Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
                 Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),

@@ -31,6 +31,7 @@ pub mod audio;
 pub mod event_loop;
 pub mod inputs;
 
+use crate::inputs::Input;
 use common::configs::*;
 use common::core::command::Command;
 use common::core::events;
@@ -38,7 +39,6 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use crate::inputs::Input;
 
 struct State {
     surface: wgpu::Surface,
@@ -62,7 +62,12 @@ struct State {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: Window, client_id: u8, sender: mpsc::Sender<Input>, game_state: Arc<Mutex<GameState>>) -> Self {
+    async fn new(
+        window: Window,
+        client_id: u8,
+        sender: mpsc::Sender<Input>,
+        game_state: Arc<Mutex<GameState>>,
+    ) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -463,7 +468,7 @@ impl State {
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        screen::texture_config_helper::load_screen_tex_config(
+        screen::texture_helper::load_screen_tex_config(
             &device,
             &queue,
             &texture_bind_group_layout_2d,

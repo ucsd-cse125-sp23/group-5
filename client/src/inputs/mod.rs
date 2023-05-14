@@ -1,18 +1,18 @@
 use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
 use common::communication::commons::Protocol;
-use common::core::command::Command;
 use common::core::command::Command::{Attack, Die, Jump, Refill, Spawn};
+use common::core::command::{Command, ServerSync};
 use glm::{vec3, Vec3};
 use log::{debug, info, warn};
 use nalgebra_glm as glm;
 
+use common::communication::message::{HostRole, Message, Payload};
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, VirtualKeyCode};
-use common::communication::message::{HostRole, Message, Payload};
 
 pub mod handlers;
 
@@ -21,6 +21,11 @@ pub enum Input {
     Keyboard(KeyboardInput),
     Mouse(DeviceEvent),
     Camera { forward: Vec3 },
+    UI(ClientSync),
+}
+
+#[derive(Debug, Clone)]
+pub enum ClientSync {
     Ready,
 }
 
@@ -157,13 +162,14 @@ impl InputEventProcessor {
                     let mut camera_forward = self.camera_forward.lock().unwrap();
                     *camera_forward = forward;
                 }
-                Input::Ready => {
+                Input::UI(ClientSync::Ready) => {
                     let message: Message = Message::new(
                         HostRole::Client(self.client_id),
-                        Payload::Command(Command::Ready),
+                        Payload::Command(Command::UI(ServerSync::Ready)),
                     );
-                    self.protocol.send_message(&message).expect("send message fails");
-                    //warn!("command: ready sends successfully");
+                    self.protocol
+                        .send_message(&message)
+                        .expect("send message fails");
                 }
                 _ => {}
             }
