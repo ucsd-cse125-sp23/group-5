@@ -69,7 +69,7 @@ impl GameLoop<'_> {
             let tick_start = Instant::now();
 
             // consume and collect all messages in the channel
-            let mut commands = self.commands.try_iter().collect::<Vec<_>>();
+            let commands = self.commands.try_iter().collect::<Vec<_>>();
 
             // automatically spawning the 4 players if gamestate is running now
             let mut commands = self.executor.game_init(commands);

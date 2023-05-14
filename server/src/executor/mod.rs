@@ -59,12 +59,11 @@ impl Executor {
     }
 
     pub fn game_init(&self, mut commands: Vec<ClientCommand>) -> Vec<ClientCommand> {
-        let gamestate_instance = self.game_state.lock().unwrap();
-        if gamestate_instance.life_cycle_state == Running {
+        if self.game_state().life_cycle_state == Running {
             // TODO: still have bugs when handling multiple game in a row without exiting
             if !*self.spawn_command_pushed.borrow() {
-                let ready_players = self.ready_players.borrow();
-                for client_id in ready_players.iter() {
+                for client_id in self.ready_players.borrow().iter() {
+                    info!("Ready Players: {:?}", *self.ready_players.borrow());
                     commands.push(ClientCommand::new(*client_id, Command::Spawn));
                 }
                 *self.spawn_command_pushed.borrow_mut() = true;
@@ -115,14 +114,19 @@ impl Executor {
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
                 Command::Ready => {
-                    info!("ready's here");
-                    self.handle_ready(client_command).expect("Player is already ready");
+                    if !self.ready_players.borrow().contains(&client_command.client_id) {
+                        self.ready_players.borrow_mut().push(client_command.client_id);
+                        if self.ready_players.borrow().len() == 4 {
+                            game_state.life_cycle_state = Running;
+                        }
+                    } else {
+                        warn!("player has already been ready!");
+                    }
                 },
                 _ => {}
             }
         }
         else {
-            info!("shouldn't be here");
             let handler: Box<dyn CommandHandler> = match client_command.command {
                 Command::Spawn => Box::new(SpawnCommandHandler::new(
                     client_command.client_id,
@@ -181,19 +185,6 @@ impl Executor {
             Some(id) => Some(id),
             None => None,
         }
-    }
-
-    fn handle_ready(&self, client_command: ClientCommand) -> Result<(), &'static str> {
-        let mut ready_players = self.ready_players.borrow_mut();
-        if ready_players.contains(&client_command.client_id) {
-            return Err("Player is already ready");
-        }
-        let mut gamestate_instance = self.game_state.lock().unwrap();
-        ready_players.push(client_command.client_id);
-        if ready_players.len() == 1 {
-            gamestate_instance.life_cycle_state = Running;
-        }
-        Ok(())
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
