@@ -59,7 +59,7 @@ impl ConeGenerator {
         poisson_generation: bool,
     ) -> Self {
         let right = glm::normalize(&glm::cross(&dir, &up));
-        let half_spread = spread.to_radians() / 2.0;
+        let half_spread = spread / 2.0;
         let r = half_spread.tan();
         Self {
             source,
@@ -172,7 +172,7 @@ impl FanGenerator {
             right,
             // half degree in radians = degree / 2 * 2pi / 360
             //  = degree * pi / 180 = degree * (pi/2) * 360
-            half_spread: (spread) / 360.0 * FRAC_PI_2,
+            half_spread: spread / 2.0,
             linear_speed,
             linear_variance,
             angular_velocity,

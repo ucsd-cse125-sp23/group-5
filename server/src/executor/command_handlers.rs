@@ -13,6 +13,7 @@ use rapier3d::prelude as rapier;
 
 use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE};
 use common::configs::model_config::ConfigModels;
+use common::configs::player_config::ConfigPlayer;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
@@ -113,7 +114,7 @@ impl CommandHandler for StartupCommandHandler {
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
-    config_scene_graph: ConfigSceneGraph,
+    config_player: ConfigPlayer,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -124,7 +125,6 @@ impl CommandHandler for SpawnCommandHandler {
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Physics state
-
         // let player_model = tobj::load_obj("assets/cube.obj", &tobj::GPU_LOAD_OPTIONS);
         //
         // let (models, materials) = player_model.unwrap();
@@ -133,9 +133,6 @@ impl CommandHandler for SpawnCommandHandler {
         // let collider = rapier::ColliderBuilder::from_object_models(models)
         //     .translation(rapier::vector![0.0, 2.0, 0.0])
         //     .build();
-
-        // get spawn-locations with corresponding id
-        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
 
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
@@ -151,6 +148,8 @@ impl CommandHandler for SpawnCommandHandler {
                 player.refill_wind_charge(Some(MAX_WIND_CHARGE));
             }
         } else {
+            // get spawn-locations with corresponding id
+            let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
             let ground_groups = InteractionGroups::new(1.into(), 1.into());
             let collider = rapier::ColliderBuilder::cuboid(1.0, 1.0, 1.0)
                 .collision_groups(ground_groups)
@@ -172,6 +171,7 @@ impl CommandHandler for SpawnCommandHandler {
                     is_dead: false,
                     wind_charge: MAX_WIND_CHARGE,
                     on_flag_time: 0.0,
+                    spawn_point: spawn_position,
                     ..Default::default()
                 },
             );
@@ -183,7 +183,6 @@ impl CommandHandler for SpawnCommandHandler {
 #[derive(Constructor)]
 pub struct DieCommandHandler {
     player_id: u32,
-    config_scene_graph: ConfigSceneGraph,
 }
 
 impl CommandHandler for DieCommandHandler {
@@ -197,7 +196,7 @@ impl CommandHandler for DieCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
+        let spawn_position = player_state.spawn_point;
 
         // Teleport the player back to their spawn position and disable physics.
         let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
@@ -547,7 +546,6 @@ impl CommandHandler for AttackCommandHandler {
 #[derive(Constructor)]
 pub struct RefillCommandHandler {
     player_id: u32,
-    config_scene_graph: ConfigSceneGraph,
 }
 
 impl CommandHandler for RefillCommandHandler {
@@ -557,7 +555,7 @@ impl CommandHandler for RefillCommandHandler {
         _: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
+        let spawn_position = game_state.player(self.player_id).unwrap().spawn_point;
         let player_state = game_state.player_mut(self.player_id).unwrap();
         if !player_state.is_in_circular_area(
             (spawn_position.x, spawn_position.z),

@@ -165,6 +165,26 @@ impl Scene {
         }
     }
 
+    /// function to get the player positions after model transforms
+    /// assumes: each model is centered around the origin
+    ///          the players have ids numerical ids < 10
+    pub fn get_player_positions(&self) -> Vec<(u32, glm::Vec4)> {
+        let mut ret = Vec::new();
+        for id in 0..10 {
+            let node_id = NodeKind::Player.node_id(id.to_string());
+            let pos;
+            match self.scene_graph.get(&node_id) {
+                None => continue,
+                Some(n) => pos = n.1 * glm::vec4(0.0, 0.0, 0.0, 1.0),
+            };
+            ret.push((
+                id,
+                glm::vec4(pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], 1.0),
+            ));
+        }
+        return ret;
+    }
+
     pub fn draw_scene_dfs(&mut self) {
         // get the view matrix from the camera
         self.objects_and_instances.clear();
@@ -241,9 +261,7 @@ impl Scene {
         )
         .add_model("player".to_string());
     }
-}
 
-impl Scene {
     pub fn from_config(json_scene_graph: &ConfigSceneGraph) -> Self {
         let mut scene = Self::new(HashMap::new());
 
@@ -287,12 +305,6 @@ mod test {
         // Define the JSON string
         let json_scene_graph_str = r#"
         {
-          "spawn_points": [
-            [10.0, 3.0, 0.0],
-            [-10.0, 3.0, 0.0],
-            [0.0, 3.0, 10.0],
-            [0.0, 3.0, -10.0]
-          ],
           "nodes": [
             {
               "id": "object:island",

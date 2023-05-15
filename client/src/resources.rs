@@ -1,5 +1,5 @@
-use std::io::{BufReader, Cursor};
 use nalgebra_glm as glm;
+use std::io::{BufReader, Cursor};
 
 use cfg_if::cfg_if;
 use const_format::formatcp;

@@ -1,19 +1,19 @@
+use common::configs::display_config::ScreenLocation;
 use nalgebra_glm as glm;
 use phf::phf_map;
-use wgpu::util::DeviceExt;
 use std::collections::HashMap;
-
-use crate::mesh_color::{MeshColor, MeshColorInstance};
+use wgpu::util::DeviceExt;
 use crate::screen::{self, FinalChoices};
-use crate::screen::location::ScreenLocation;
+use crate::screen::location_helper::get_coords;
+use crate::mesh_color::{MeshColor, MeshColorInstance};
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<MeshColor>, Option<String>)> = phf_map!{
-    "go_to_lobby" => go_to_lobby,
     "game_start" => game_start,
     "next_model" => next_model,
     "change_player_color" => change_player_color,
     "customize_body" => customize_body,
     "customize_leaf" => customize_leaf,
+    "go_to_lobby" => go_to_lobby,
 };
 
 // Place click events here ----------------------
@@ -271,7 +271,7 @@ pub struct Screen {
 }
 
 #[derive(Debug)]
-pub struct ScreenBackground{
+pub struct ScreenBackground {
     pub aspect: f32,
     pub vbuf: wgpu::Buffer,
     pub texture: String,
@@ -282,7 +282,7 @@ pub struct ScreenBackground{
 pub struct Button{
     pub id: Option<String>,
     pub location: ScreenLocation,
-    pub aspect: f32,    // both textures must be the same aspect ratio
+    pub aspect: f32, // both textures must be the same aspect ratio
     pub height: f32,
     pub vertices: [Vertex; 4],
     pub vbuf: wgpu::Buffer,
@@ -295,7 +295,7 @@ pub struct Button{
 }
 
 #[derive(Debug)]
-pub struct Icon{
+pub struct Icon {
     pub location: ScreenLocation,
     pub aspect: f32,
     pub height: f32,
@@ -308,41 +308,31 @@ pub struct Icon{
     pub inst_range: std::ops::Range<u32>,
 }
 
-impl Screen{
+impl Screen {
     pub fn resize(
         &mut self,
         screen_width: u32,
         screen_height: u32,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-    ){
+    ) {
         match self.background.as_mut() {
-            None => {},
-            Some(bkgd) => {bkgd.resize(
-                    screen_width,
-                    screen_height,
-                    device,
-                    queue,
-                );
+            None => {}
+            Some(bkgd) => {
+                bkgd.resize(screen_width, screen_height, device, queue);
             }
         };
-        for i in &mut self.buttons{
+        for i in &mut self.buttons {
             i.resize(screen_width, screen_height, queue);
         }
-        for i in &mut self.icons{
+        for i in &mut self.icons {
             i.resize(screen_width, screen_height, queue);
         }
     }
 }
 
-impl ScreenBackground{
-    pub fn resize(
-        &mut self,
-        width: u32,
-        height: u32,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue
-    ) {
+impl ScreenBackground {
+    pub fn resize(&mut self, width: u32, height: u32, device: &wgpu::Device, queue: &wgpu::Queue) {
         let aspect: f32 = (width as f32) / (height as f32);
         const TITLE_AR: f32 = 16.0 / 9.0;
         let title_x_span_half = (glm::clamp_scalar(aspect / TITLE_AR, 0.0, 1.0)) / 2.0;
@@ -368,70 +358,48 @@ impl ScreenBackground{
                 texture: [0.5 + title_x_span_half, 1.0],
             }, // D
         ];
-        queue.write_buffer(
-            &self.vbuf,
-            0,
-            bytemuck::cast_slice(&title_vert),
-        );
+        queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&title_vert));
     }
 }
 
-impl Button{
-    pub fn resize(
-        &mut self,
-        screen_width: u32,
-        screen_height: u32,
-        queue: &wgpu::Queue,
-    ){
-        self.location.get_coords(
+impl Button {
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32, queue: &wgpu::Queue) {
+        get_coords(
+            &self.location,
             self.aspect,
             self.height,
             screen_width,
             screen_height,
-            &mut self.vertices
+            &mut self.vertices,
         );
-        queue.write_buffer(
-            &self.vbuf,
-            0,
-            bytemuck::cast_slice(&self.vertices),
-        );
+        queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
     }
 
-    pub fn is_hover(&self, mouse: &[f32; 2]) -> bool{
+    pub fn is_hover(&self, mouse: &[f32; 2]) -> bool {
         // 1st vertex is lower left
         // 3rd is upper right
         // check x bound
-        if self.vertices[0].position[0] > mouse[0]
-            || self.vertices[2].position[0] < mouse[0] {
+        if self.vertices[0].position[0] > mouse[0] || self.vertices[2].position[0] < mouse[0] {
             return false;
         }
-        if self.vertices[0].position[1] > mouse[1]
-            || self.vertices[2].position[1] < mouse[1] {
+        if self.vertices[0].position[1] > mouse[1] || self.vertices[2].position[1] < mouse[1] {
             return false;
         }
         return true;
     }
 }
 
-impl Icon{
-    pub fn resize(
-        &mut self,
-        screen_width: u32,
-        screen_height: u32,
-        queue: &wgpu::Queue,
-    ){
-        self.location.get_coords(
+impl Icon {
+    pub fn resize(&mut self, screen_width: u32, screen_height: u32, queue: &wgpu::Queue) {
+        get_coords(
+            &self.location,
             self.aspect,
             self.height,
             screen_width,
             screen_height,
-            &mut self.vertices
+            &mut self.vertices,
         );
-        queue.write_buffer(
-            &self.vbuf,
-            0,
-            bytemuck::cast_slice(&self.vertices),
-        );
+        queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
     }
 }
 
@@ -448,18 +416,18 @@ pub fn get_display_groups(
         contents: bytemuck::cast_slice(&TITLE_VERT),
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     });
-    let bkgd1 = ScreenBackground{
-        aspect: 16.0/9.0,
+    let bkgd1 = ScreenBackground {
+        aspect: 16.0 / 9.0,
         vbuf,
         texture: String::from("bkgd:title"),
         color: None,
     };
-    let button1_loc = ScreenLocation{
+    let button1_loc = ScreenLocation {
         vert_disp: (0.0, -0.5),
-        horz_disp: (0.0,  0.0)
+        horz_disp: (0.0, 0.0),
     };
     let mut b_vert = TITLE_VERT;
-    button1_loc.get_coords(1.0, 0.463, 1920, 1080, &mut b_vert);
+    get_coords(&button1_loc, 1.0, 0.463, 1920, 1080, &mut b_vert);
     let b_vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("title button Vertex Buffer"),
         contents: bytemuck::cast_slice(&TITLE_VERT),
@@ -479,23 +447,23 @@ pub fn get_display_groups(
         color: None,
         on_click: String::from("game_start"),
     };
-    let title_screen = Screen{
+    let title_screen = Screen {
         id: String::from("screen:title"),
         background: Some(bkgd1),
         buttons: vec![button1],
         icons: vec![],
         default_color:  MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
     };
-    let title_dg = DisplayGroup{
+    let title_dg = DisplayGroup {
         id: id1.clone(),
         screen: Some(String::from("screen:title")),
         scene: None,
     };
     groups.insert(id1, title_dg);
-    
+
     // game group
     let id2 = String::from("display:game");
-    let game_dg = DisplayGroup{
+    let game_dg = DisplayGroup {
         id: id2.clone(),
         screen: None,
         scene: Some(String::from("scene:game")),

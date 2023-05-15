@@ -2,8 +2,8 @@ extern crate queues;
 
 use std::env;
 
-use client::audio::{Audio, ConfigAudioAssets, SoundQueue};
-use common::configs::from_file;
+use client::audio::{Audio, SoundQueue};
+use common::configs::*;
 use log::{debug, error, info};
 use std::fs::File;
 
@@ -18,11 +18,10 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
+
 use common::core::events::GameEvent;
 
 use common::core::states::{GameState, ParticleQueue};
-
-const AUDIO_CONFIG_PATH: &str = "audio.json";
 
 fn main() {
     // env::set_var("RUST_BACKTRACE", "1");
@@ -104,14 +103,14 @@ fn main() {
     });
 
     // thread for audio
-    // let game_state_clone1 = game_state.clone();
     thread::spawn(move || {
-        let audio_config = from_file::<_, ConfigAudioAssets>(AUDIO_CONFIG_PATH).unwrap();
+        let config_instance = ConfigurationManager::get_configuration();
+        let audio_config = config_instance.audio.clone();
+
         let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
-        
         audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
         audio.handle_audio_updates(game_state_clone, client_id);
-    });      
+    });
 
     pollster::block_on(player_loop.run());
 }
@@ -186,22 +185,6 @@ fn recv_server_updates(
             } => {
                 sound_queue.lock().unwrap().add_sound(s);
             }
-            // Message {
-            //     host_role: HostRole::Server,
-            //     payload: Payload::ServerEvent(update_game_event),
-            //     ..
-            // } => {
-            //     debug!("Received game events: {:?}", update_game_event);
-
-            //     // update state
-            //     game_events
-            //         .broadcast(update_game_event);
-            //         // .try_broadcast(update_game_event)
-            //         // .map_err(|e| {
-            //         //     error!("Failed to broadcast game event: {:?}", e);
-            //         // })
-            //         // .unwrap();
-            // }
             _ => {}
         }
     }

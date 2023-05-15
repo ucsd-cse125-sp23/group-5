@@ -126,7 +126,7 @@
                     "height": 0.25,
                     "default_tint": [1.0, 1.0, 1.0, 1.0],
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:leaf",
+                    "default_tex": "btn:checkmark",
                     "hover_tex": "btn:checkmark",
                     "on_click": "customize_leaf"
                 },

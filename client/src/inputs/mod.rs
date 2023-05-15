@@ -2,9 +2,9 @@ use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameK
 use common::communication::commons::Protocol;
 use common::core::command::Command;
 use common::core::command::Command::{Attack, Die, Jump, Refill, Spawn};
-use nalgebra_glm as glm;
 use glm::{vec3, Vec3};
 use log::debug;
+use nalgebra_glm as glm;
 
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
