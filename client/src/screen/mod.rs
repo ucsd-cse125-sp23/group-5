@@ -20,9 +20,28 @@ pub const DISPLAY_CONFIG_PATH : &str = "display.json";
 
 #[derive(Debug)]
 pub struct CustomizationChoices {
-    pub color: HashMap<String, HashMap<String,MeshColor>>,
-    pub current_choice: String,
+    pub color: HashMap<String, MeshColor>,
     pub current_model: ModelIndex,
+    pub prev_color_selection: (String, String), // (btn_name, default_texture)
+    pub prev_type_selection: (String, String),
+    pub cur_leaf_color: String,
+    pub cur_body_color: String,
+    pub current_type_choice: String,
+}
+
+#[derive(Debug)]
+pub struct FinalChoices{
+    pub color: HashMap<String, MeshColor>,
+    pub model: ModelIndex,
+}
+
+impl FinalChoices{
+    fn new(choices: &CustomizationChoices) -> Self {
+        Self {
+            color: choices.color.clone(),
+            model: choices.current_model.clone(),
+        }
+    }
 }
 
 
@@ -30,8 +49,12 @@ impl CustomizationChoices {
     fn default() -> Self {
         Self { // TODO: fix later, hard-coded for now
             color: HashMap::new(),
-            current_choice: "leaf".to_owned(),
             current_model: "cube".to_owned(),
+            current_type_choice: "leaf".to_owned(),
+            prev_color_selection: (String::new(), String::new()),
+            prev_type_selection: (String::new(), String::new()),
+            cur_leaf_color: String::new(),
+            cur_body_color: String::new(),
         }
     }
 }
@@ -296,15 +319,17 @@ impl Display{
         };
         let mut to_call: Option<&str> = None;
         let mut color: Option<MeshColor> = None;
+        let mut button_id: Option<String> = None;
         for button in &screen.buttons{
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
                 color = match button.color.as_ref() {None => None, Some(c) => Some(c.color)};
+                button_id = button.id.clone();
             }
         }
         match to_call{
             None => {},
-            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self, color)
+            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self, color, button_id)
         };
     }
 }

@@ -41,6 +41,7 @@ pub struct ConfigScreenBackground{
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigButton{
+    pub id: Option<String>,
     pub location: ScreenLocation,
     pub aspect: f32,    // both textures must be the same aspect ratio
     pub height: f32,    // relative to screen height
@@ -164,7 +165,8 @@ impl ConfigButton{
         });
 
         // return
-        objects::Button { 
+        objects::Button {
+            id: self.id.clone(), 
             location: self.location,
             aspect: self.aspect,
             height: self.height,

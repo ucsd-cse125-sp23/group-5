@@ -27,6 +27,14 @@
         {
             "name": "btn:checkmark",
             "path": "checkmark.png"
+        },
+        {
+            "name": "btn:leaf",
+            "path": "leaf_btn.png"
+        },
+        {
+            "name": "btn:body",
+            "path": "body_btn.png"
         }
     ]
 }

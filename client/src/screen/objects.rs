@@ -4,11 +4,10 @@ use wgpu::util::DeviceExt;
 use std::collections::HashMap;
 
 use crate::mesh_color::{MeshColor, MeshColorInstance};
-use crate::scene::Scene;
-use crate::screen;
+use crate::screen::{self, FinalChoices};
 use crate::screen::location::ScreenLocation;
 
-pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<MeshColor>)> = phf_map!{
+pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<MeshColor>, Option<String>)> = phf_map!{
     "go_to_lobby" => go_to_lobby,
     "game_start" => game_start,
     "next_model" => next_model,
@@ -18,20 +17,28 @@ pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<Me
 };
 
 // Place click events here ----------------------
-fn game_start(display: &mut screen::Display, _color: Option<MeshColor>){
-    println!("{:#?}", display.customization_choices);
+fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+    let final_choices = FinalChoices::new(&display.customization_choices);
+    println!("{:#?}", final_choices);
+    // TODO: sened final customization choices to server
     display.current = display.game_display.clone();
 }
 
-fn customize_body(display: &mut screen::Display, _color: Option<MeshColor>){
-    display.customization_choices.current_choice = "body".to_owned();
+fn customize_body(display: &mut screen::Display,_: Option<MeshColor>, button_id : Option<String>){
+    curr_type_selection(display, button_id);
+    curr_color_selections(display, Some(display.customization_choices.cur_body_color.clone()));
+    display.customization_choices.current_type_choice = "body".to_owned();
 }
 
-fn customize_leaf(display: &mut screen::Display, _color: Option<MeshColor>){
-    display.customization_choices.current_choice = "leaf".to_owned();
+fn customize_leaf(display: &mut screen::Display, _: Option<MeshColor>, button_id: Option<String>){
+    curr_type_selection(display, button_id);
+    curr_color_selections(display, Some(display.customization_choices.cur_leaf_color.clone()));
+    display.customization_choices.current_type_choice = "leaf".to_owned();
 }
 
-fn change_player_color(display: &mut screen::Display, color: Option<MeshColor>){
+fn change_player_color(display: &mut screen::Display, color: Option<MeshColor>, button_id: Option<String>){
+    curr_color_selections(display, button_id.clone());
+
     let actual_color = match color {None => MeshColor::default(), Some(c) => c};
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     match curr_group.scene.clone() {
@@ -40,37 +47,20 @@ fn change_player_color(display: &mut screen::Display, color: Option<MeshColor>){
             match display.scene_map.get_mut(&scene_id){
                 None => {},
                 Some(scene) => {
+                    // TODO: fix later, hard-coded for now
                     match scene.scene_graph.get_mut("object:player_model") {
                         None => {},
                         Some((_, _, color)) => {
-                            let curr_choice = display.customization_choices.current_choice.clone();
-                            match display.customization_choices.color.get_mut(&curr_choice){
-                                Some(c) => {
-                                    if curr_choice == "leaf".to_owned(){
-                                        c.insert("eyes_eyes_mesh".to_owned(), actual_color);
-                                    }
-                                    else if curr_choice == "body".to_owned() {
-                                       c.insert("leg0R_leg0R_mesh".to_owned(), actual_color);
-                                    } 
-                                },
-                                None => {
-                                    let mut h = HashMap::new();
-                                    if curr_choice == "leaf".to_owned(){
-                                        h.insert("eyes_eyes_mesh".to_owned(), actual_color);
-                                    }
-                                    else if curr_choice == "body".to_owned() {
-                                       h.insert("leg0R_leg0R_mesh".to_owned(), actual_color);
-                                    } 
-                                    display.customization_choices.color.insert(curr_choice, h);
-                                }
+                            let curr_choice = display.customization_choices.current_type_choice.clone();
+                            if curr_choice == "leaf".to_owned(){
+                                display.customization_choices.cur_leaf_color = button_id.clone().unwrap();
+                                display.customization_choices.color.insert("eyes_eyes_mesh".to_owned(), actual_color);
                             }
-                            let mut hash = HashMap::new();
-                            for (k,v) in display.customization_choices.color.clone() {
-                                for (k1,v1) in v{
-                                    hash.insert(k1,v1);
-                                }
-                            }
-                            *color = hash;
+                            else if curr_choice == "body".to_owned() {
+                                display.customization_choices.cur_body_color = button_id.clone().unwrap();
+                                display.customization_choices.color.insert("leg0R_leg0R_mesh".to_owned(), actual_color);
+                            } 
+                            *color = display.customization_choices.color.clone();
                         }
                     }
                     scene.draw_scene_dfs();
@@ -80,11 +70,11 @@ fn change_player_color(display: &mut screen::Display, color: Option<MeshColor>){
     }
 }
 
-fn go_to_lobby(display: &mut screen::Display, _color: Option<MeshColor>){
+fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
     display.current = "display:lobby".to_owned();
 }
 
-fn next_model(display: &mut screen::Display, _color: Option<MeshColor>){
+fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     match curr_group.scene.clone() {
         None => {},
@@ -116,6 +106,64 @@ fn next_model(display: &mut screen::Display, _color: Option<MeshColor>){
 }
 // end click events ----------------------
 
+// TODO: merge these two functions into one
+fn curr_color_selections(display: &mut screen::Display, button_id: Option<String>){
+    let display_group = display.groups.get_mut(&display.current).unwrap();
+    let screen: &mut Screen;
+    match display_group.screen.as_ref() {
+        None => return,
+        Some(s) => screen = display.screen_map.get_mut(s).unwrap()
+    };
+    
+    let mut btn = None;
+    for button in &mut screen.buttons{
+        if button.id.clone().unwrap_or("DNE".to_string()) == display.customization_choices.prev_color_selection.0 {
+            button.default_texture = display.customization_choices.prev_color_selection.1.clone();
+        }
+        if button.id.clone().unwrap_or("DNE".to_string()) == button_id.clone().unwrap_or("dne ".to_string()) {
+            btn = Some(button);
+        }
+    }
+
+    match btn {
+        None => {},
+        Some(b) => {
+            let prev_id = b.id.clone().unwrap().clone();
+            let prev_tex = b.default_texture.clone();
+            display.customization_choices.prev_color_selection = (prev_id, prev_tex);
+            b.default_texture = b.hover_texture.clone();
+        }
+    }
+}
+
+fn curr_type_selection(display: &mut screen::Display, button_id: Option<String>){
+    let display_group = display.groups.get_mut(&display.current).unwrap();
+    let screen: &mut Screen;
+    match display_group.screen.as_ref() {
+        None => return,
+        Some(s) => screen = display.screen_map.get_mut(s).unwrap()
+    };
+    
+    let mut btn = None;
+    for button in &mut screen.buttons{
+        if button.id.clone().unwrap_or("DNE".to_string()) == display.customization_choices.prev_type_selection.0 {
+            button.default_texture = display.customization_choices.prev_type_selection.1.clone();
+        }
+        if button.id.clone().unwrap_or("DNE".to_string()) == button_id.clone().unwrap_or("dne ".to_string()) {
+            btn = Some(button);
+        }
+    }
+
+    match btn {
+        None => {},
+        Some(b) => {
+            let prev_id = b.id.clone().unwrap().clone();
+            let prev_tex = b.default_texture.clone();
+            display.customization_choices.prev_type_selection = (prev_id, prev_tex);
+            b.default_texture = b.hover_texture.clone();
+        }
+    }
+}
 // Vertex
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -232,6 +280,7 @@ pub struct ScreenBackground{
 
 #[derive(Debug)]
 pub struct Button{
+    pub id: Option<String>,
     pub location: ScreenLocation,
     pub aspect: f32,    // both textures must be the same aspect ratio
     pub height: f32,
@@ -417,6 +466,7 @@ pub fn get_display_groups(
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     });
     let button1 = Button{
+        id: None,
         location: button1_loc,
         aspect: 1.0,
         height: 0.463 * 2.0,
