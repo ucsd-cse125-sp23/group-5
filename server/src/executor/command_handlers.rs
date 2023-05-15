@@ -11,7 +11,7 @@ use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
 
-use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE};
+use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE, ATTACK_IMPULSE, ATTACK_COEFF};
 use common::configs::model_config::ConfigModels;
 use common::configs::player_config::ConfigPlayer;
 use common::configs::scene_config::ConfigSceneGraph;
@@ -453,15 +453,18 @@ impl CommandHandler for AttackCommandHandler {
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
+        
 
-        let camera_forward = Vec3::new(
+        
+        let camera_forward = player_state.camera_forward; 
+        let horizontal_camera_forward = Vec3::new(
             player_state.camera_forward.x,
             0.0,
             player_state.camera_forward.z,
         );
 
         // turn player towards attack direction (camera_forward)
-        let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
+        let rotation = UnitQuaternion::face_towards(&horizontal_camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
         player_state.insert_cooldown(Command::Attack, 1.0);
@@ -525,11 +528,10 @@ impl CommandHandler for AttackCommandHandler {
 
                     // if ray hit the correct target (the other player), apply force
                     if handle == other_player_collider_handle {
-                        const ATTACK_IMPULSE: f32 = 40.0; // parameter to tune
                         let other_player_rigid_body = physics_state
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
-                        let impulse_vec = vec_to_other * ATTACK_IMPULSE * 2.0 / toi;
+                        let impulse_vec = vec_to_other * ATTACK_IMPULSE *  ATTACK_COEFF/ toi;
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,

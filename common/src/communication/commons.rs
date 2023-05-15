@@ -8,6 +8,9 @@ pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
 
 pub const MAX_WIND_CHARGE: u32 = 10;
 pub const ONE_CHARGE: u32 = 1;
+pub const ATTACK_IMPULSE: f32 = 40.0; // attack impulse force
+pub const ATTACK_COEFF: f32 = 2.0; // how strong attack is as distance falls off (higher = distance matters less)
+
 
 pub const FLAG_XZ: (f32, f32) = (0.0, 0.0);
 pub const FLAG_RADIUS: f32 = 2.0;
