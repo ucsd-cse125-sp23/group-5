@@ -3,18 +3,22 @@ use crate::model::{Material, Mesh, Model, StaticModel};
 use crate::resources::{find_in_search_path, ModelLoadingResources};
 use anyhow::{anyhow, Context};
 use derive_more::Constructor;
-use log::error;
+use log::{error, info};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::fs::File;
+use std::io::BufReader;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::time::Duration;
 use glm::scale;
+use serde::{Deserialize, Serialize};
 use common::configs::model_config::ModelIndex;
 use common::core::states::GameState;
 use crate::scene::{Node, NodeId, NodeKind, Scene};
 
 #[derive(Debug, Clone)]
-enum AnimationState {
+pub enum AnimationState {
     Playing { animation_id: AnimationId, time: f32 },
     Stopped,
 }
@@ -30,22 +34,13 @@ impl AnimationController {
         let animation_state = self.animation_states.get(node_id)?;
         let model = object;
         if let Some(animated_model) = model.as_any_mut().downcast_mut::<AnimatedModel>() {
-            return match animation_state {
-                AnimationState::Playing { animation_id, time } => {
-                    animated_model.set_active_animation(animation_id);
-                    animated_model.set_active_animation_time(*time);
-                    Some(())
-                }
-                AnimationState::Stopped => {
-                    animated_model.remove_active_animation();
-                    Some(())
-                }
-            };
+            animated_model.set_active_animation_state(animation_state.clone());
         }
         None
     }
 
     pub fn play_animation(&mut self, animation_id: AnimationId, node_id: NodeId) {
+
         // if already player, do nothing
         if let Some(AnimationState::Playing { animation_id: playing_animation_id, .. }) = self.animation_states.get(&node_id) {
             if playing_animation_id == &animation_id {
@@ -73,13 +68,18 @@ impl AnimationController {
         }
     }
 
-    pub fn load_game_state(&mut self, game_state: impl Deref<Target = GameState>,) {
-        for player_state in game_state.players.values() {
-            let node_id =  NodeKind::Player.node_id(player_state.id.to_string());
+    pub fn load_game_state(&mut self, game_state: impl Deref<Target=GameState>) {
 
-            if let Some(animation_id) = player_state.animation_id.as_ref() {
-                println!("Playing animation {:?} for {:?}", animation_id, node_id);
-                self.play_animation(animation_id.to_string(), node_id);
+        println!("{:?}", game_state.players);
+
+        for player_state in game_state.players.values() {
+            let node_id = NodeKind::Player.node_id(player_state.id.to_string());
+
+            let action_state = player_state.active_action_states.iter().map(|(action_state, _)|
+                action_state).max_by_key(|action_state| action_state.priority());
+
+            if let Some(action_state) = action_state {
+                self.play_animation(action_state.animation_id().to_string(), node_id);
             } else {
                 self.stop_animation(node_id);
             }
@@ -94,7 +94,7 @@ pub struct AnimatedModel {
     path: String,
     animations: HashMap<AnimationId, Animation>,
     default_animation: Option<AnimationId>,
-    active_animation: Option<AnimationId>,
+    active_animation: AnimationState,
 }
 
 #[derive(Constructor, Clone)]
@@ -112,12 +112,28 @@ impl Debug for Keyframe {
     }
 }
 
+// some thing like {"attack": {
+//   "cyclic": true,
+// },
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnimationDesc {
+    cyclic: bool,
+}
+
+impl Default for AnimationDesc {
+    fn default() -> Self {
+        Self { cyclic: true }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Animation {
     path: String,
     name: String,
     keyframes: Vec<Keyframe>,
-    current_time: f32,
+    cyclic: bool,
+    state: AnimationState,
 }
 
 impl AnimatedModel {
@@ -126,7 +142,7 @@ impl AnimatedModel {
             path: path.to_string(),
             animations: HashMap::new(),
             default_animation: None,
-            active_animation: None,
+            active_animation: AnimationState::Stopped,
         }
     }
     pub fn default_animation(&self) -> &Animation {
@@ -143,32 +159,31 @@ impl AnimatedModel {
         self.animations.insert(animation.name.clone(), animation);
     }
 
-    pub fn set_active_animation(&mut self, animation_id: &str) {
-        self.active_animation = Some(animation_id.to_string());
+    pub fn set_active_animation_state(&mut self, animation_state: AnimationState) {
+        self.active_animation = animation_state;
     }
 
-    pub fn remove_active_animation(&mut self) {
-        self.set_active_animation_time(0.0);
-        self.active_animation = None;
-    }
-
-    pub fn get_active_animation(&self) -> Option<&Animation> {
+    pub fn active_animation(&self) -> Option<&Animation> {
         match &self.active_animation {
-            Some(animation_id) => self.animations.get(animation_id),
-            None => self.animations.get(self.default_animation.as_ref().unwrap()),
+            AnimationState::Playing { animation_id, .. } => {
+                self.animations.get(animation_id)
+            }
+            AnimationState::Stopped => {
+                self.default_animation().into()
+            }
         }
     }
 
-    pub fn get_active_animation_mut(&mut self) -> Option<&mut Animation> {
-        match &self.active_animation {
-            Some(animation_id) => self.animations.get_mut(animation_id),
-            None => self.animations.get_mut(self.default_animation.as_ref().unwrap()),
-        }
-    }
+    pub fn get_active_key_frame(&self) -> Option<&Keyframe> {
+        if let Some(animation) = self.active_animation() {
+            let time = match &self.active_animation {
+                AnimationState::Playing { time, .. } => *time,
+                AnimationState::Stopped => 0.0,
+            };
 
-    pub fn set_active_animation_time(&mut self, time: f32) {
-        if let Some(animation) = self.get_active_animation_mut() {
-            animation.current_time = time % animation.duration();
+            Some(animation.get_keyframe(time))
+        } else {
+            None
         }
     }
 
@@ -176,6 +191,7 @@ impl AnimatedModel {
         &mut self,
         path: &str,
         res: ModelLoadingResources<'_>,
+        desc: &AnimationDesc,
     ) -> anyhow::Result<()> {
         let path_buf = find_in_search_path(path).context("Could not find animation file")?;
         // name is the filename without the extension
@@ -185,7 +201,7 @@ impl AnimatedModel {
             .to_str()
             .context("Could not convert animation name to string")?;
 
-        println!("Loading animation {} from {}", name, path);
+        info!("Loading animation {} from {}", name, path);
 
         let animation = Animation::load_from_dir(
             path_buf
@@ -193,10 +209,13 @@ impl AnimatedModel {
                 .context("Could not convert animation path to string")?,
             name,
             res,
+            desc,
         )
             .await?;
 
         self.add_animation(animation);
+
+
         Ok(())
     }
 
@@ -208,14 +227,38 @@ impl AnimatedModel {
         let dir = find_in_search_path(path).context("Could not find animation directory")?;
         let dir = std::fs::read_dir(dir).context("Could not read animation directory")?;
 
+        // read desc.json into hashmap of animation desc (key is the
+
+        // {"attack": {
+        //     "cyclic": true,
+        // }, ...
+
+        let mut animation_descs = HashMap::new();
+        let desc_path = format!("{}/desc.json", path);
+
+        if let Ok(desc_file) = File::open(desc_path) {
+            let reader = BufReader::new(desc_file);
+            let desc: HashMap<String, AnimationDesc> = serde_json::from_reader(reader).context("Could not parse animation desc file")?;
+            animation_descs = desc;
+        }
+
         for entry in dir {
             let entry = entry.context("Could not read animation directory entry")?;
             let path = entry.path();
             let path = path
                 .to_str()
                 .context("Could not convert animation path to string")?;
-            if self.load_animation(path, res).await.is_err() {
-                error!("Skipping animation {}", path);
+
+
+            let path_buf = PathBuf::from(path);
+            let name = path_buf
+                .file_stem()
+                .context("Could not get animation name")?
+                .to_str()
+                .context("Could not convert animation name to string")?;
+
+            if let Err(e) = self.load_animation(path, res, animation_descs.get(name).unwrap_or(&AnimationDesc::default())).await {
+                error!("Skipping animation {}: {}", path, e);
             }
         }
 
@@ -238,7 +281,8 @@ impl Animation {
             path: path.to_string(),
             name: name.to_string(),
             keyframes: Vec::new(),
-            current_time: 0.0,
+            state: AnimationState::Stopped,
+            cyclic: true,
         }
     }
 
@@ -252,10 +296,13 @@ impl Animation {
         path: &str,
         name: &str,
         res: ModelLoadingResources<'_>,
+        desc: &AnimationDesc,
     ) -> anyhow::Result<Self> {
         // read the directory
         let mut dir = std::fs::read_dir(path)?;
         let mut animation = Animation::new(path, name);
+
+        animation.cyclic = desc.cyclic;
 
         const DEFAULT_FRAME_RATE: f32 = 24.0;
         let mut time = 0.0;
@@ -312,10 +359,10 @@ impl Animation {
         self.keyframes.push(keyframe);
     }
 
-    pub fn get_current_keyframe(&self) -> &Keyframe {
+    pub fn get_keyframe(&self, time: f32) -> &Keyframe {
         let mut current_keyframe = &self.keyframes[0];
         for keyframe in &self.keyframes {
-            if keyframe.time > self.current_time {
+            if keyframe.time > time {
                 break;
             }
             current_keyframe = keyframe;
@@ -326,15 +373,15 @@ impl Animation {
 
 impl Model for AnimatedModel {
     fn meshes(&self) -> &[Mesh] {
-        match self.get_active_animation() {
-            Some(animation) => animation.get_current_keyframe().frame_model.meshes(),
+        match self.get_active_key_frame() {
+            Some(key_frame) => key_frame.frame_model.meshes(),
             None => &[],
         }
     }
 
     fn materials(&self) -> &[Material] {
-        match self.get_active_animation() {
-            Some(animation) => animation.get_current_keyframe().frame_model.materials(),
+        match self.get_active_key_frame() {
+            Some(key_frame) => key_frame.frame_model.materials(),
             None => &[],
         }
     }

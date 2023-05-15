@@ -16,6 +16,7 @@ use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 mod command_handlers;
 
@@ -152,12 +153,10 @@ impl Executor {
         }
 
         game_state.update_cooldowns(delta_time);
+        game_state.update_action_states(Duration::from_secs_f32(delta_time));
 
-        match game_state.update_player_on_flag_time(delta_time) {
-            Some(id) => {
-                panic!("Winner is {}, game finished!", id)
-            }
-            None => {}
+        if let Some(id) = game_state.update_player_on_flag_time(delta_time) {
+            panic!("Winner is {}, game finished!", id)
         }
         game_state.previous_tick_winner = game_state.has_single_winner()
     }

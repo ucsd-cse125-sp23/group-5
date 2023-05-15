@@ -1,6 +1,7 @@
 use std::fs::{read, read_to_string};
 use std::io::{BufReader, Cursor};
 use std::sync::Arc;
+use anyhow::Context;
 
 use const_format::formatcp;
 use wgpu::util::DeviceExt;
@@ -60,7 +61,7 @@ pub async fn load_texture(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
 ) -> anyhow::Result<texture::Texture> {
-    let data = load_binary(file_name).await?;
+    let data = load_binary(file_name).await.context(format!("error loading texture binary {file_name}"))?;
     texture::Texture::from_bytes(device, queue, &data, file_name)
 }
 
@@ -96,7 +97,7 @@ pub async fn load_model(
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },
     )
-    .await?;
+    .await.context("error loading obj file")?;
 
     let mut materials = Vec::new();
     for m in obj_materials? {

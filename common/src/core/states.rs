@@ -7,9 +7,14 @@ use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::ops::{Add, AddAssign};
 
 use std::time::Duration;
+use crate::core::action_states::ActionState;
+
+
+
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerState {
@@ -23,7 +28,7 @@ pub struct PlayerState {
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
     pub on_flag_time: f32,
-    pub animation_id: Option<String>,
+    pub active_action_states: HashSet<(ActionState, Duration)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -104,6 +109,23 @@ impl PlayerState {
         }
         (p_x - c_x).powi(2) + (p_z - c_z).powi(2) < radius.powi(2)
     }
+
+    pub fn add_action_state(&mut self, action_state: ActionState, duration: Duration) {
+        self.active_action_states.insert((action_state, duration));
+    }
+
+    pub fn sweep_action_states(&mut self, delta_time: Duration) {
+
+        let updated_action_states: HashSet<(ActionState, Duration)> = self
+            .active_action_states
+            .iter()
+            .filter_map(|(action_state, duration)| {
+                let new_duration = duration.checked_sub(delta_time)?;
+                Some((*action_state, new_duration))
+            })
+            .collect();
+        self.active_action_states = updated_action_states;
+    }
 }
 
 impl GameState {
@@ -124,6 +146,12 @@ impl GameState {
                 .map(|(key, cooldown)| (key, cooldown - delta_time))
                 .filter(|(_key, cooldown)| *cooldown > 0.0)
                 .collect();
+        }
+    }
+
+    pub fn update_action_states(&mut self, delta_time: Duration) {
+        for (_, player_state) in self.players.iter_mut() {
+            player_state.sweep_action_states(delta_time);
         }
     }
 
