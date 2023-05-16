@@ -1,6 +1,7 @@
 use phf::phf_map;
 use serde::{Deserialize, Serialize};
 
+use rand::distributions::Uniform;
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
@@ -32,14 +33,17 @@ impl PowerUp {
 }
 
 impl Distribution<PowerUp> for Standard {
+    // adjusted ratios
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PowerUp {
-        match rng.gen_range(1..=5) {
+        let between = Uniform::from(1..12);
+        match between.sample(rng) {
             1 => PowerUp::Lightning,
-            2 => PowerUp::WindEnhancement,
-            3 => PowerUp::Dash,
-            4 => PowerUp::Flash,
-            5 => PowerUp::Invisible,
-            _ => PowerUp::TripleJump,
+            2 | 3 => PowerUp::WindEnhancement,
+            4 | 5 => PowerUp::Dash,
+            6 | 7 => PowerUp::Flash,
+            8 | 9 => PowerUp::Invisible,
+            10 | 11 => PowerUp::TripleJump,
+            _ => PowerUp::Invincible,
         }
     }
 }

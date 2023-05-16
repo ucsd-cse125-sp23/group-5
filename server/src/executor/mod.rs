@@ -169,7 +169,7 @@ impl Executor {
         game_state.previous_tick_winner = match game_state.has_single_winner() {
             Some(id) => Some(id),
             None => None,
-        }
+        };
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {

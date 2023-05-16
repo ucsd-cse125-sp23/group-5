@@ -11,22 +11,23 @@ use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
 
+use common::configs::constants::{
+    DASH_IMPULSE, FLASH_DISTANCE_SCALAR, INVINCIBLE_EFFECTIVE_DISTANCE,
+    INVINCIBLE_EFFECTIVE_IMPULSE, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
+    POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, WIND_ENHANCEMENT_SCALAR,
+};
 use common::configs::model_config::ConfigModels;
 use common::configs::player_config::ConfigPlayer;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 use common::core::powerup_system::{PowerUp, StatusEffect, POWER_UP_TO_EFFECT_MAP};
-use common::core::states::{GameState, PlayerState};
+use common::core::states::{calculate_distance, GameState, PlayerState};
 
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
-use common::communication::commons::{
-    DASH_IMPULSE, FLASH_DISTANCE_SCALAR, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
-    POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, WIND_ENHANCEMENT_SCALAR,
-};
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -176,7 +177,7 @@ impl CommandHandler for SpawnCommandHandler {
                     wind_charge: MAX_WIND_CHARGE,
                     on_flag_time: 0.0,
                     spawn_point: spawn_position,
-                    power_up: None,
+                    power_up: Some(PowerUp::Invincible),
                     ..Default::default()
                 },
             );
@@ -230,9 +231,11 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
     fn handle(
         &self,
         game_state: &mut GameState,
-        _: &mut PhysicsState,
+        physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         // Game state
         let player_state = game_state
             .player_mut(self.player_id)
@@ -264,6 +267,8 @@ impl CommandHandler for MoveCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         // Physics state
         if self.direction.eq(&MoveDirection::zeros()) {
             return Ok(());
@@ -437,6 +442,8 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         Ok(())
     }
 }
@@ -453,6 +460,8 @@ impl CommandHandler for AttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         let player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
@@ -616,9 +625,11 @@ impl CommandHandler for RefillCommandHandler {
     fn handle(
         &self,
         game_state: &mut GameState,
-        _: &mut PhysicsState,
+        physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         let spawn_position = game_state.player(self.player_id).unwrap().spawn_point;
         let player_state = game_state.player_mut(self.player_id).unwrap();
 
@@ -653,9 +664,11 @@ impl CommandHandler for CastPowerUpCommandHandler {
     fn handle(
         &self,
         game_state: &mut GameState,
-        _: &mut PhysicsState,
+        physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         let game_state_clone = game_state.clone();
         let player_state = game_state
             .player_mut(self.player_id)
@@ -819,6 +832,7 @@ impl CommandHandler for DashCommandHandler {
             ],
             true,
         );
+        handle_invincible_players(game_state, physics_state, self.player_id);
 
         Ok(())
     }
@@ -917,6 +931,128 @@ impl CommandHandler for FlashCommandHandler {
         let new_position = Isometry::new(new_coordinates, zero());
         player_rigid_body.set_position(new_position, true);
 
+        handle_invincible_players(game_state, physics_state, self.player_id);
+
         Ok(())
+    }
+}
+
+fn handle_invincible_players(
+    game_state: &mut GameState,
+    physics_state: &mut PhysicsState,
+    command_casting_player_id: u32,
+) {
+    if game_state.players.get(&command_casting_player_id).is_none() {
+        return;
+    }
+    if !game_state
+        .players
+        .get(&command_casting_player_id)
+        .unwrap()
+        .status_effects
+        .contains_key(&StatusEffect::Invincible)
+    {
+        return;
+    }
+    let game_state_clone = game_state.clone();
+    for (id, player_state) in game_state.players.iter_mut() {
+        if player_state
+            .status_effects
+            .contains_key(&StatusEffect::Invincible)
+        {
+            for (other_player_id, other_player_state) in game_state_clone.players.iter() {
+                if !other_player_state
+                    .status_effects
+                    .contains_key(&StatusEffect::Invisible)
+                    && *other_player_id != *id
+                    && calculate_distance(
+                        player_state.transform.translation,
+                        other_player_state.transform.translation,
+                    ) < INVINCIBLE_EFFECTIVE_DISTANCE
+                {
+                    // get launched
+                    let player_pos = player_state.transform.translation;
+
+                    // Bling bling sound?
+                    // TODO: replace this example with actual implementation of collision
+                    // game_events.add(
+                    //     GameEvent::SoundEvent(SoundSpec::new(
+                    //         player_pos,
+                    //         "wind".to_string(),
+                    //         (self.player_id, false),
+                    //     )),
+                    //     Recipients::All,
+                    // );
+
+                    let player_collider_handle = physics_state
+                        .get_entity_handles(command_casting_player_id)
+                        .ok_or(HandlerError::new(format!(
+                            "Player {} not found",
+                            command_casting_player_id
+                        )))
+                        .unwrap()
+                        .collider
+                        .ok_or(HandlerError::new(format!(
+                            "Player {} does not have a collider",
+                            command_casting_player_id
+                        )))
+                        .unwrap();
+
+                    let player_rigid_body = physics_state
+                        .get_entity_rigid_body_mut(command_casting_player_id)
+                        .unwrap();
+
+                    let camera_forward = Vec3::new(
+                        player_state.camera_forward.x,
+                        0.0,
+                        player_state.camera_forward.z,
+                    );
+
+                    // collision/launch sound
+                    // game_events.add(
+                    //     GameEvent::ParticleEvent(ParticleSpec::new(
+                    //         ParticleType::ATTACK,
+                    //         player_pos.clone(),
+                    //         camera_forward.clone(),
+                    //         //TODO: placeholder for player color
+                    //         glm::vec3(0.0, 1.0, 0.0),
+                    //         glm::vec4(0.4, 0.9, 0.7, 1.0),
+                    //         format!("Attack from player {}", self.player_id),
+                    //     )),
+                    //     Recipients::All,
+                    // );
+
+                    // get direction from this player to other player
+                    let other_player_pos = other_player_state.transform.translation;
+                    let vec_to_other = glm::normalize(&(other_player_pos - player_pos));
+
+                    // check dot product between direction to other player and attack direction
+
+                    // if object in attack range
+                    let other_player_collider_handle = physics_state
+                        .get_entity_handles(*other_player_id)
+                        .ok_or(HandlerError::new(format!(
+                            "Player {} not found",
+                            command_casting_player_id
+                        )))
+                        .unwrap()
+                        .collider
+                        .ok_or(HandlerError::new(format!(
+                            "Player {} does not have a collider",
+                            command_casting_player_id
+                        )))
+                        .unwrap();
+
+                    let other_player_rigid_body = physics_state
+                        .get_entity_rigid_body_mut(*other_player_id)
+                        .unwrap();
+                    let impulse_vec = vec_to_other * INVINCIBLE_EFFECTIVE_IMPULSE * 2.0;
+                    other_player_rigid_body.apply_impulse(
+                        rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
+                        true,
+                    );
+                }
+            }
+        }
     }
 }

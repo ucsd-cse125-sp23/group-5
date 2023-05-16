@@ -6,7 +6,7 @@ use phf::phf_map;
 use rapier3d::prelude::Vector;
 use serde::{Deserialize, Serialize};
 
-use crate::communication::commons::{
+use crate::configs::constants::{
     DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
     POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
 };
@@ -235,14 +235,16 @@ impl GameState {
                 for (_, player_state) in self.players.iter_mut() {
                     let power_up_location =
                         POWER_UP_LOCATIONS.get(&loc_id.value()).unwrap().clone();
-                    if player_state.is_in_circular_area(
-                        (power_up_location.0, power_up_location.2),
-                        POWER_UP_RADIUS,
-                        (
-                            Some(power_up_location.1 - POWER_UP_RADIUS),
-                            Some(power_up_location.1 + POWER_UP_RADIUS),
-                        ),
-                    ) {
+                    if player_state.power_up.is_none()
+                        && player_state.is_in_circular_area(
+                            (power_up_location.0, power_up_location.2),
+                            POWER_UP_RADIUS,
+                            (
+                                Some(power_up_location.1 - POWER_UP_RADIUS),
+                                Some(power_up_location.1 + POWER_UP_RADIUS),
+                            ),
+                        )
+                    {
                         // player should get it, powerup is gone
                         player_state.power_up = powerup.clone();
                         *vacancy_time = POWER_UP_RESPAWN_COOLDOWN;
@@ -307,7 +309,7 @@ impl GameState {
     }
 }
 
-fn calculate_distance(lhs: Vec3, rhs: Vec3) -> f32 {
+pub fn calculate_distance(lhs: Vec3, rhs: Vec3) -> f32 {
     ((lhs.x - rhs.x).powi(2) + (lhs.y - rhs.y).powi(2) + (lhs.z - rhs.z).powi(2)).sqrt()
 }
 

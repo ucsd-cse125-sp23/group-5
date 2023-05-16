@@ -1,4 +1,5 @@
 pub mod audio_config;
+pub mod constants;
 pub mod display_config;
 pub mod model_config;
 pub mod physics_config;

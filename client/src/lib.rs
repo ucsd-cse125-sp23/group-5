@@ -1,5 +1,3 @@
-use glm::vec3;
-
 use std::collections::{HashMap, HashSet};
 use std::sync::MutexGuard;
 use std::{
@@ -7,11 +5,21 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use glm::vec3;
+use nalgebra_glm as glm;
+use wgpu::util::DeviceExt;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::event::*;
+use winit::window::Window;
+
+use common::configs::*;
+use common::core::command::Command;
+use common::core::events;
+use common::core::powerup_system::StatusEffect;
+use common::core::states::{GameState, ParticleQueue};
+use model::Vertex;
 
 mod model;
-
-use model::Vertex;
 
 mod camera;
 mod instance;
@@ -23,22 +31,10 @@ mod scene;
 // mod screen_objects;
 mod screen;
 mod texture;
-use nalgebra_glm as glm;
-
-use common::configs::*;
 
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
-
-use common::configs::*;
-use common::core::command::Command;
-use common::core::events;
-use common::core::powerup_system::StatusEffect;
-use common::core::states::{GameState, ParticleQueue};
-use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
-use winit::window::Window;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -713,6 +709,28 @@ impl State {
                     ..Section::default()
                 });
             }
+
+            // render status effect and powerup held
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 20.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    &format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 60.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    &format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
         } else {
             // render respawn cooldown
             if self.player.on_cooldown.contains_key(&Command::Spawn) {

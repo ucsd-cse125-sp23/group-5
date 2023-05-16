@@ -1,4 +1,5 @@
 use common::core::command::Command;
+use common::core::powerup_system::{PowerUp, StatusEffect};
 use common::core::states::PlayerState;
 use instant::Duration;
 use std::collections::HashMap;
@@ -44,6 +45,8 @@ pub struct Player {
     pub is_dead: bool,
     pub wind_charge: u32,
     pub on_cooldown: HashMap<Command, f32>,
+    pub power_up: Option<PowerUp>,
+    pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
 }
 
 impl Player {
@@ -153,5 +156,9 @@ impl PlayerController {
 
         // update ammo count
         player.wind_charge = incoming_player_state.wind_charge;
+
+        // update the powerup and status effects
+        player.status_effects = incoming_player_state.status_effects.clone();
+        player.power_up = incoming_player_state.power_up.clone();
     }
 }

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
-use common::communication::commons::POWER_UP_LOCATIONS;
+use common::configs::constants::POWER_UP_LOCATIONS;
 use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
