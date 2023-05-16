@@ -45,6 +45,9 @@ pub enum Command {
     UpdateCamera { forward: glm::Vec3 },
     Attack,
     Refill,
+    CastPowerUp,
+    Dash,
+    Flash
 }
 
 impl Command {

@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
+use common::communication::commons::POWER_UP_LOCATIONS;
 use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
@@ -116,11 +117,14 @@ impl Display {
         mouse: &[f32; 2],
         camera_state: &camera::CameraState,
         player_loc: &Vec<(u32, glm::Vec4)>,
+        invisible_players: &HashSet<u32>,
+        existing_powerups: &HashSet<u32>,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
         output: &wgpu::SurfaceTexture,
+        client_id: u32,
     ) {
         // inability to find the scene would be a major bug
         // panicking is fine
@@ -149,14 +153,19 @@ impl Display {
         let mut to_draw: Vec<particles::Particle> = Vec::new();
         // conditionally add the player labels
         if self.current == self.game_display {
+            let cam_dir: glm::Vec3 =
+                glm::normalize(&(camera_state.camera.position - camera_state.camera.target));
+            let cpos = &camera_state.camera.position;
+
             for (id, pos) in player_loc {
+                if (*id != client_id) && invisible_players.contains(id) {
+                    // skip if player invisible
+                    continue;
+                }
                 // TODO: use id to map
                 // for now, just generate the last type of particle
                 // -1 to cancel out 1.0 in pos, 2.5 to place above the player
                 let pos = pos + glm::vec4(0.0, 2.5, 0.0, -1.0);
-                let cam_dir: glm::Vec3 =
-                    glm::normalize(&(camera_state.camera.position - camera_state.camera.target));
-                let cpos = &camera_state.camera.position;
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
                 to_draw.push(particles::Particle {
@@ -166,6 +175,29 @@ impl Display {
                     spawn_time: 0.0,
                     size: 75.0,
                     tex_id: *id as f32 + 4.0,
+                    z_pos,
+                    time_elapsed: 0.0,
+                    size_growth: 0.0,
+                    halflife: 1.0,
+                    _pad2: 0.0,
+                });
+            }
+
+            // draw the powerups if they exist
+            for id in existing_powerups.iter() {
+                let _pos = POWER_UP_LOCATIONS.get(id).unwrap().clone();
+                let pos = glm::vec4(_pos.0, _pos.1, _pos.2, 0.0);
+                let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
+                let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
+                to_draw.push(particles::Particle {
+                    start_pos: pos.into(),
+                    velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
+                    color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
+                    spawn_time: 0.0,
+                    size: 75.0,
+                    tex_id: 9.0, // TODO: Find more icons for powerup
+                    // prob need a system to link each powerup to each icon
+                    // (Or perhaps we can just use one Icon and show players what they get after they have obtained it, adds a little bit of randomness on top)
                     z_pos,
                     time_elapsed: 0.0,
                     size_growth: 0.0,

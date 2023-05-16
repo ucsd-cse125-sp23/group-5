@@ -32,7 +32,7 @@ fn main() {
     let broadcast = Arc::new(Mutex::new(Bus::new(1)));
 
     // game state
-    let game_state = Arc::new(Mutex::new(GameState::default()));
+    let game_state = Arc::new(Mutex::new(GameState::new()));
 
     // executor
     let executor = Executor::new(game_state.clone());

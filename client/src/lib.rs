@@ -1,6 +1,6 @@
 use glm::vec3;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::MutexGuard;
 use std::{
     f32::consts::PI,
@@ -34,6 +34,7 @@ pub mod inputs;
 use common::configs::*;
 use common::core::command::Command;
 use common::core::events;
+use common::core::powerup_system::StatusEffect;
 use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
@@ -52,6 +53,8 @@ struct State {
     player: player::Player,
     player_controller: player::PlayerController,
     player_loc: Vec<(u32, glm::Vec4)>,
+    invisible_players: HashSet<u32>,
+    existing_powerups: HashSet<u32>,
     camera_state: camera::CameraState,
     display: screen::Display,
     pub mouse_position: [f32; 2],
@@ -519,6 +522,8 @@ impl State {
             player,
             player_controller,
             player_loc: Vec::new(),
+            invisible_players: HashSet::default(),
+            existing_powerups: HashSet::default(),
             camera_state,
             display,
             mouse_position: [0.0, 0.0],
@@ -595,6 +600,7 @@ impl State {
         dt: instant::Duration,
     ) {
         let game_state = game_state.lock().unwrap();
+        let game_state_clone = game_state.clone();
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -633,6 +639,9 @@ impl State {
                 .get(scene_id)
                 .unwrap()
                 .get_player_positions();
+
+            self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);
+            self.existing_powerups = game_state_clone.get_existing_powerups();
         }
 
         let particle_queue = particle_queue.lock().unwrap();
@@ -664,11 +673,14 @@ impl State {
             &self.mouse_position,
             &self.camera_state,
             &self.player_loc,
+            &self.invisible_players,
+            &self.existing_powerups,
             &self.device,
             &self.queue,
             &mut encoder,
             &view,
             &output,
+            self.client_id as u32,
         );
 
         let size = &self.window.inner_size();

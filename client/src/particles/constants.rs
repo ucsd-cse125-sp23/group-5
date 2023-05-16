@@ -1,5 +1,5 @@
 #[rustfmt::skip]
-pub const VTXS : &[[f32; 2];4] = &[
+pub const VTXS: &[[f32; 2]; 4] = &[
     [0.0, 1.0],
     [0.0, 0.0],
     [1.0, 0.0],
@@ -10,7 +10,7 @@ pub const VTX_ATTRIBS: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
     0 => Float32x2,
 ];
 
-const NUM_TEXTURES: u32 = 9;
+const NUM_TEXTURES: u32 = 10;
 
 pub fn vtx_desc<'a>() -> wgpu::VertexBufferLayout<'a> {
     use std::mem;
@@ -22,7 +22,7 @@ pub fn vtx_desc<'a>() -> wgpu::VertexBufferLayout<'a> {
 }
 
 #[rustfmt::skip]
-pub const INDS : &[u16; 6] = &[
+pub const INDS: &[u16; 6] = &[
     0, 1, 2,
     0, 2, 3,
 ];
