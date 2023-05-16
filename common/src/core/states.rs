@@ -13,7 +13,18 @@ use crate::configs::constants::{
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
+
 use crate::core::powerup_system::{PowerUp, PowerUpLocations, StatusEffect};
+use nalgebra_glm::Vec3;
+use rapier3d::prelude::Vector;
+
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::ops::{Add, AddAssign};
+
+use crate::core::action_states::ActionState;
+use std::time::Duration;
+
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {}
@@ -25,6 +36,7 @@ pub struct GameState {
     pub previous_tick_winner: Option<u32>,
     pub active_power_ups:
         HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
+    pub life_cycle_state: GameLifeCycleState,
 }
 
 impl GameState {
@@ -41,6 +53,7 @@ impl GameState {
             ..Default::default()
         }
     }
+    
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -50,7 +63,6 @@ pub struct PlayerState {
     pub physics: Physics,
     pub jump_count: u32,
     pub camera_forward: Vec3,
-    pub connected: bool,
     pub is_dead: bool,
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
@@ -58,6 +70,19 @@ pub struct PlayerState {
     pub spawn_point: Vector<f32>,
     pub power_up: Option<PowerUp>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
+    pub active_action_states: HashSet<(ActionState, Duration)>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GameLifeCycleState {
+    Waiting,
+    Running,
+}
+
+impl Default for GameLifeCycleState {
+    fn default() -> Self {
+        GameLifeCycleState::Waiting
+    }
 }
 
 // Notes to be removed:
@@ -73,12 +98,12 @@ impl PlayerState {
     // returns if the consumption is successful
     pub fn try_consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
         let consume_amount = consume_amount.unwrap_or(1);
-        return if self.wind_charge >= consume_amount {
+        if self.wind_charge >= consume_amount {
             self.wind_charge -= consume_amount;
             true
         } else {
             false
-        };
+        }
     }
 
     // add to refill command handlers, put NONE for refill all, won't exceed cap
@@ -139,6 +164,21 @@ impl PlayerState {
 
     pub fn reset_status_effects(&mut self) {
         self.status_effects.clear();
+
+    pub fn add_action_state(&mut self, action_state: ActionState, duration: Duration) {
+        self.active_action_states.insert((action_state, duration));
+    }
+
+    pub fn sweep_action_states(&mut self, delta_time: Duration) {
+        let updated_action_states: HashSet<(ActionState, Duration)> = self
+            .active_action_states
+            .iter()
+            .filter_map(|(action_state, duration)| {
+                let new_duration = duration.checked_sub(delta_time)?;
+                Some((*action_state, new_duration))
+            })
+            .collect();
+        self.active_action_states = updated_action_states;
     }
 }
 
@@ -163,6 +203,12 @@ impl GameState {
         }
     }
 
+    pub fn update_action_states(&mut self, delta_time: Duration) {
+        for (_, player_state) in self.players.iter_mut() {
+            player_state.sweep_action_states(delta_time);
+        }
+    }
+
     pub fn has_single_winner(&self) -> Option<u32> {
         let valid_players: HashMap<u32, bool> = self
             .clone()
@@ -174,9 +220,9 @@ impl GameState {
                     player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
                 )
             })
-            .filter(|(_, res)| *res == true)
+            .filter(|(_, res)| *res)
             .collect();
-        if valid_players.clone().len() != 1 {
+        if valid_players.len() != 1 {
             None
         } else {
             Some(*valid_players.keys().last().unwrap())
@@ -333,6 +379,7 @@ mod tests {
             players: HashMap::default(),
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
+            life_cycle_state: Default::default(),
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -345,6 +392,7 @@ mod tests {
             players: HashMap::default(),
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
+            life_cycle_state: Default::default(),
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();

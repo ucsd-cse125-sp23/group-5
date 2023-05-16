@@ -5,7 +5,7 @@ use instant::Duration;
 use std::collections::HashMap;
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
-use std::time::SystemTime;
+
 use winit::dpi::PhysicalPosition;
 use winit::event::*;
 

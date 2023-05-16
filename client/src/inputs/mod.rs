@@ -1,11 +1,14 @@
 use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
 use common::communication::commons::Protocol;
-use common::core::command::Command;
+
+use common::core::command::{Command, ServerSync};
 use common::core::command::Command::{Attack, CastPowerUp, Dash, Die, Flash, Jump, Refill, Spawn};
+
 use glm::{vec3, Vec3};
-use log::debug;
+use log::{debug, info, warn};
 use nalgebra_glm as glm;
 
+use common::communication::message::{HostRole, Message, Payload};
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Condvar, Mutex};
@@ -20,6 +23,12 @@ pub enum Input {
     Keyboard(KeyboardInput),
     Mouse(DeviceEvent),
     Camera { forward: Vec3 },
+    UI(ClientSync),
+}
+
+#[derive(Debug, Clone)]
+pub enum ClientSync {
+    Ready,
 }
 
 #[derive(Debug, Clone)]
@@ -73,6 +82,7 @@ impl InputEventProcessor {
             // match PressRelease keys
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
             VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
+            VirtualKeyCode::E => Some((GameKeyKind::PressRelease, AreaAttack)),
             _ => None,
         }
     }
@@ -154,11 +164,19 @@ impl InputEventProcessor {
                         cvar.notify_one(); // notify the poller to send data immediately
                     }
                 }
-
                 // receive camera update
                 Input::Camera { forward } => {
                     let mut camera_forward = self.camera_forward.lock().unwrap();
                     *camera_forward = forward;
+                }
+                Input::UI(ClientSync::Ready) => {
+                    let message: Message = Message::new(
+                        HostRole::Client(self.client_id),
+                        Payload::Command(Command::UI(ServerSync::Ready)),
+                    );
+                    self.protocol
+                        .send_message(&message)
+                        .expect("send message fails");
                 }
                 _ => {}
             }

@@ -5,7 +5,7 @@ use itertools::Itertools;
 use log::{debug, error, info, warn};
 
 use common::configs::*;
-use common::core::command::{Command, MoveDirection};
+use common::core::command::{Command, MoveDirection, ServerSync};
 use common::core::events::GameEvent;
 use common::core::states::GameState;
 
@@ -18,6 +18,14 @@ use crate::executor::command_handlers::{
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
+
+use common::configs::*;
+use common::core::states::GameLifeCycleState::{Running, Waiting};
+use itertools::Itertools;
+use log::{debug, error, info, warn};
+use std::cell::{RefCell, RefMut};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 pub mod command_handlers;
 
@@ -32,6 +40,8 @@ pub struct Executor {
     physics_state: RefCell<PhysicsState>,
     game_events: RefCell<Vec<(GameEvent, Recipients)>>,
     config_instance: Arc<Config>,
+    ready_players: RefCell<Vec<u32>>,
+    spawn_command_pushed: RefCell<bool>,
 }
 
 impl Executor {
@@ -42,10 +52,12 @@ impl Executor {
             physics_state: RefCell::new(PhysicsState::new()),
             game_events: RefCell::new(Vec::new()),
             config_instance: ConfigurationManager::get_configuration(),
+            ready_players: RefCell::new(Vec::new()),
+            spawn_command_pushed: RefCell::new(false),
         }
     }
 
-    pub fn init(&self) {
+    pub fn world_init(&self) {
         let mut game_state = self.game_state.lock().unwrap();
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
@@ -58,6 +70,20 @@ impl Executor {
         if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
             panic!("Failed init executor game/physics states: {:?}", e);
         }
+    }
+
+    pub fn game_init(&self, mut commands: Vec<ClientCommand>) -> Vec<ClientCommand> {
+        if self.game_state().life_cycle_state == Running {
+            // TODO: still have bugs when handling multiple game in a row without exiting
+            if !*self.spawn_command_pushed.borrow() {
+                for client_id in self.ready_players.borrow().iter() {
+                    info!("Ready Players: {:?}", *self.ready_players.borrow());
+                    commands.push(ClientCommand::new(*client_id, Command::Spawn));
+                }
+                *self.spawn_command_pushed.borrow_mut() = true;
+            }
+        }
+        commands
     }
 
     pub(crate) fn plan_and_execute(&self, commands: Vec<ClientCommand>) {
@@ -99,35 +125,66 @@ impl Executor {
 
         let player_config = self.config_instance.player.clone();
 
-        let handler: Box<dyn CommandHandler> = match client_command.command {
-            Command::Spawn => Box::new(SpawnCommandHandler::new(
-                client_command.client_id,
-                player_config,
-            )),
-            Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
-            Command::Move(dir) => Box::new(MoveCommandHandler::new(client_command.client_id, dir)),
-            Command::UpdateCamera { forward } => Box::new(UpdateCameraFacingCommandHandler::new(
-                client_command.client_id,
-                forward,
-            )),
-            Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
-            Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
-            Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
-            Command::CastPowerUp => {
-                Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
-            }
-            Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
-            Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
-            _ => {
-                warn!("Unsupported command: {:?}", client_command.command);
-                return;
-            }
-        };
 
-        if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
-            error!("Failed to execute command: {:?}", e);
+        #[cfg(not(feature = "debug-ready-sync"))]
+        let player_upper_bound = 4;
+
+        #[cfg(feature = "debug-ready-sync")]
+        let player_upper_bound = 1;
+
+        if game_state.life_cycle_state == Waiting {
+            match client_command.command {
+                Command::UI(ServerSync::Ready) => {
+                    if !self
+                        .ready_players
+                        .borrow()
+                        .contains(&client_command.client_id)
+                    {
+                        self.ready_players
+                            .borrow_mut()
+                            .push(client_command.client_id);
+                        // change the 1 to 4 for working correctly
+                        // here I just change it to 1 for testing purpose
+                        if self.ready_players.borrow().len() == player_upper_bound {
+                            game_state.life_cycle_state = Running;
+                        }
+                    } else {
+                        warn!("player has already been ready!");
+                    }
+                }
+                _ => {}
+            }
+        } else {
+            let handler: Box<dyn CommandHandler> = match client_command.command {
+                Command::Spawn => Box::new(SpawnCommandHandler::new(
+                    client_command.client_id,
+                    player_config,
+                )),
+                Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
+                Command::Move(dir) => {
+                    Box::new(MoveCommandHandler::new(client_command.client_id, dir))
+                }
+                Command::UpdateCamera { forward } => Box::new(
+                    UpdateCameraFacingCommandHandler::new(client_command.client_id, forward),
+                ),
+                Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
+                Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+                Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
+                Command::CastPowerUp => {
+                    Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
+                }
+                Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
+                Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
+                _ => {
+                    warn!("Unsupported command: {:?}", client_command.command);
+                    return;
+                }
+            };
+
+            if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
+                error!("Failed to execute command: {:?}", e);
+            }
         }
-        //game_state.update_cooldowns();
 
         info!("GameState: {:?}", game_state);
     }
@@ -152,24 +209,18 @@ impl Executor {
 
         // update the cooldowns
         game_state.update_cooldowns(delta_time);
+        game_state.update_action_states(Duration::from_secs_f32(delta_time));
 
         // update the powerup counters for players
         game_state.update_player_status_effect(delta_time);
 
         // update the powerup for each server location
         game_state.update_powerup_locations(delta_time);
-
-        // Calculate whose points should increment and update accordingly
-        match game_state.update_player_on_flag_times(delta_time) {
-            Some(id) => {
-                panic!("Winner is {}, game finished!", id)
-            }
-            None => {}
+        
+        if let Some(id) = game_state.update_player_on_flag_times(delta_time) {
+            panic!("Winner is {}, game finished!", id)
         }
-        game_state.previous_tick_winner = match game_state.has_single_winner() {
-            Some(id) => Some(id),
-            None => None,
-        };
+        game_state.previous_tick_winner = game_state.has_single_winner();
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
