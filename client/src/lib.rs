@@ -779,39 +779,34 @@ impl State {
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
-            match p.p_type {
-                //TODO: move to config
-                // generator
-                events::ParticleType::ATTACK => {
-                    println!("adding particle: {:?}", p);
-                    let atk_gen = particles::gen::ConeGenerator::new(
-                        p.position,
-                        p.direction,
-                        p.up,
-                        std::f32::consts::FRAC_PI_3 * 180.0 / PI,
-                        10.0,
-                        0.3,
-                        PI,
-                        0.5,
-                        75.0,
-                        10.0,
-                        7.0,
-                        false,
-                    );
-                    // System
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(0.2),
-                        0.5,
-                        2000.0,
-                        p.color,
-                        atk_gen,
-                        (1, 4),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.particle_renderer.systems.push(atk);
-                }
-                _ => {}
+            if p.p_type == events::ParticleType::ATTACK {
+                println!("adding particle: {:?}", p);
+                let atk_gen = particles::gen::ConeGenerator::new(
+                    p.position,
+                    p.direction,
+                    p.up,
+                    std::f32::consts::FRAC_PI_3 * 180.0 * 0.5 / PI,
+                    20.0,
+                    0.2,
+                    PI,
+                    0.5,
+                    75.0,
+                    10.0,
+                    7.0,
+                    false,
+                );
+                // System
+                let atk = particles::ParticleSystem::new(
+                    std::time::Duration::from_secs_f32(0.2),
+                    0.3,
+                    2000.0,
+                    p.color,
+                    atk_gen,
+                    (1, 4),
+                    &self.device,
+                    &mut self.rng,
+                );
+                self.particle_renderer.systems.push(atk);
             }
         }
         particle_queue.particles.clear();

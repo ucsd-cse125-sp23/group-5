@@ -215,7 +215,7 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, 3);
+        player_state.insert_cooldown(Command::Spawn, 3.);
 
         Ok(())
     }
@@ -332,7 +332,7 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
-        player_state.active_action_states.insert((ActionState::Walking, Duration::from_secs_f32(0.3)));
+        player_state.active_action_states.insert((ActionState::Walking, Duration::from_secs_f32(0.5)));
 
         Ok(())
     }
@@ -408,7 +408,13 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
-        player_state.active_action_states.insert((ActionState::Jumping, Duration::from_secs_f32(0.5)));
+        player_state.active_action_states.insert((ActionState::Jumping, Duration::from_secs_f32(
+            if player_state.jump_count == 2 {
+                1.4
+            } else {
+                0.9
+            }
+        )));
         Ok(())
     }
 }
@@ -464,7 +470,7 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Attack, 5);
+        player_state.insert_cooldown(Command::Attack, 1.);
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::ATTACK,
@@ -477,7 +483,7 @@ impl CommandHandler for AttackCommandHandler {
             )),
             Recipients::All,
         );
-        player_state.active_action_states.insert((ActionState::Attacking, Duration::from_secs_f32(0.5)));
+        player_state.active_action_states.insert((ActionState::Attacking, Duration::from_secs_f32(1.5)));
 
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {

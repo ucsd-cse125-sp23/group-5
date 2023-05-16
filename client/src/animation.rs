@@ -34,7 +34,26 @@ impl AnimationController {
         let animation_state = self.animation_states.get(node_id)?;
         let model = object;
         if let Some(animated_model) = model.as_any_mut().downcast_mut::<AnimatedModel>() {
-            animated_model.set_active_animation_state(animation_state.clone());
+
+            let next_state = if let AnimationState::Playing { animation_id, time } = animation_state {
+                let animation = animated_model.animations.get(animation_id)?;
+                let animation_duration = animation.duration();
+                let cyclic = animation.cyclic;
+
+                if *time > animation_duration {
+                    if cyclic {
+                        AnimationState::Playing { animation_id: animation_id.clone(), time: *time % animation_duration }
+                    } else {
+                        AnimationState::Stopped
+                    }
+                } else {
+                    AnimationState::Playing { animation_id: animation_id.clone(), time: *time }
+                }
+            } else {
+                AnimationState::Stopped
+            };
+
+            animated_model.set_active_animation_state(next_state);
         }
         None
     }
@@ -69,8 +88,6 @@ impl AnimationController {
     }
 
     pub fn load_game_state(&mut self, game_state: impl Deref<Target=GameState>) {
-
-        println!("{:?}", game_state.players);
 
         for player_state in game_state.players.values() {
             let node_id = NodeKind::Player.node_id(player_state.id.to_string());

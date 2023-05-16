@@ -164,8 +164,6 @@ fn recv_server_updates(
                 payload: Payload::ServerEvent(update_game_event),
                 ..
             } => {
-                println!("Received game events: {:?}", update_game_event);
-
                 // update state
                 game_events
                     .try_broadcast(update_game_event)
