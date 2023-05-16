@@ -1,34 +1,86 @@
+use std::any::Any;
+use std::fmt::{Debug, Formatter};
+use crate::instance::Instance;
+
 use std::ops::Range;
+use std::sync::Arc;
+use wgpu::Device;
 
 use crate::instance;
+use crate::resources::{load_model, ModelLoadingResources};
 
 use crate::texture;
 
-pub struct Model {
-    pub path: String,
-    pub meshes: Vec<Mesh>,
-    pub materials: Vec<Material>,
+
+pub trait Model: Any + Debug {
+    fn meshes(&self) -> &[Mesh];
+    fn materials(&self) -> &[Material];
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn clone_box(&self) -> Box<dyn Model>;
 }
 
-pub struct InstancedModel<'a> {
+
+#[derive(Clone)]
+pub struct StaticModel {
+    pub path: String,
+    pub meshes: Arc<Vec<Mesh>>,
+    pub materials: Arc<Vec<Material>>,
+}
+
+impl Debug for StaticModel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StaticModel")
+            .field("path", &self.path)
+            .field("meshes_len", &self.meshes.len())
+            .field("materials", &self.materials)
+            .finish()
+    }
+}
+
+impl Model for StaticModel {
+    fn meshes(&self) -> &[Mesh] {
+        &self.meshes
+    }
+
+    fn materials(&self) -> &[Material] {
+        &self.materials
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn clone_box(&self) -> Box<dyn Model> {
+        Box::new(self.clone())
+    }
+}
+
+impl StaticModel {
+    pub async fn load(file_path: &str, res: ModelLoadingResources<'_>) -> anyhow::Result<Self> {
+        load_model(file_path, res).await
+    }
+}
+
+pub struct InstancedModel {
     // want instances and instanceState to always be synced
     // can only be created, cannot be edited
     // TODO: enforce that somehow?
-    pub model: &'a Model,
+    pub model: Box<dyn Model>,
     pub num_instances: usize,
     pub instance_state: instance::InstanceState,
 }
 
-impl<'a> InstancedModel<'a> {
-    pub fn new(
-        model: &'a Model,
-        instances: &Vec<instance::Instance>,
-        device: &wgpu::Device,
-    ) -> Self {
+impl InstancedModel {
+    pub fn new(model: Box<dyn Model>, instances: &Vec<Instance>, device: &Device) -> Self {
         Self {
             model,
             num_instances: instances.len(),
-            instance_state: instance::Instance::make_buffer(instances, device),
+            instance_state: Instance::make_buffer(instances, device),
         }
     }
 }
@@ -137,21 +189,21 @@ impl Vertex for ModelVertex {
     }
 }
 
-pub trait DrawModel<'a> {
+pub trait DrawModel<'a, 'b> {
     fn draw_model(
         &mut self,
         instanced_model: &'a InstancedModel,
-        camera_bind_group: &'a wgpu::BindGroup,
+        camera_bind_group: &'b wgpu::BindGroup,
     );
     fn draw_model_instanced(
         &mut self,
         instanced_model: &'a InstancedModel,
         instances: Range<u32>,
-        camera_bind_group: &'a wgpu::BindGroup,
+        camera_bind_group: &'b wgpu::BindGroup,
     );
 }
 
-impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
+impl<'a, 'b> DrawModel<'a, 'b> for wgpu::RenderPass<'a>
 where
     'b: 'a,
 {
@@ -170,12 +222,16 @@ where
         camera_bind_group: &'b wgpu::BindGroup,
     ) {
         self.set_vertex_buffer(1, instanced_model.instance_state.buffer.slice(..));
-        for mesh in &instanced_model.model.meshes {
+        for mesh in instanced_model.model.meshes() {
             // assume each mesh has a material
             let mat_id = mesh.material;
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
             self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            self.set_bind_group(0, &instanced_model.model.materials[mat_id].bind_group, &[]);
+            self.set_bind_group(
+                0,
+                &instanced_model.model.materials()[mat_id].bind_group,
+                &[],
+            );
             // print!("model:154 {:?}\n", &instanced_model.model.materials[mat_id]);
             self.set_bind_group(1, camera_bind_group, &[]);
             self.draw_indexed(0..mesh.num_elements, 0, instances.clone());

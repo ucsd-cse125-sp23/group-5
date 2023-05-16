@@ -23,6 +23,7 @@ mod scene;
 // mod screen_objects;
 mod screen;
 mod texture;
+
 use nalgebra_glm as glm;
 
 use common::configs::*;
@@ -30,6 +31,7 @@ use common::configs::*;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
+mod animation;
 
 use common::configs::*;
 use common::core::command::Command;
@@ -38,6 +40,11 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use common::configs::model_config::ConfigModels;
+use common::configs::scene_config::ConfigSceneGraph;
+use crate::animation::AnimatedModel;
+use crate::model::{Model, StaticModel};
+use crate::scene::InstanceBundle;
 
 const MODELS_CONFIG_PATH: &str = "models.json";
 const SCENE_CONFIG_PATH: &str = "scene.json";
@@ -60,6 +67,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
+    animation_controller: animation::AnimationController,
 }
 
 impl State {
@@ -262,24 +270,23 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
-        let config_instance = ConfigurationManager::get_configuration();
         // Scene
-        let scene_config = config_instance.scene.clone();
-        let models_config = config_instance.models.clone();
+        let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 
-        let mut models = HashMap::new();
+        let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
 
-        for model_config in models_config.models {
-            let model = resources::load_model(
-                &model_config.path,
-                &device,
-                &queue,
-                &texture_bind_group_layout,
-            )
-            .await
-            .unwrap();
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+
+        for model_config in model_configs.models {
+            let model: Box<dyn Model> = if model_config.animated() {
+                Box::new(AnimatedModel::load(&model_config.path, model_loading_resources).await.unwrap())
+            } else {
+                Box::new(StaticModel::load(&model_config.path, model_loading_resources).await.unwrap())
+            };
             models.insert(model_config.name, model);
         }
+
+        let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -301,6 +308,8 @@ impl State {
         );
 
         scene.draw_scene_dfs();
+
+        let animation_controller = animation::AnimationController::default();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -439,15 +448,15 @@ impl State {
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
         ))
-        .unwrap();
+            .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
-        let mut rng = rand::thread_rng();
+        let rng = rand::thread_rng();
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
             .await
             .unwrap();
-        let mut particle_renderer = particles::ParticleDrawer::new(
+        let particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
             &camera_state.camera_bind_group_layout,
@@ -472,7 +481,7 @@ impl State {
             screen::TEX_CONFIG_PATH,
             &mut texture_map,
         )
-        .await;
+            .await;
 
         let rect_ibuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Const Rect Index Buffer"),
@@ -527,6 +536,7 @@ impl State {
             client_id,
             staging_belt,
             glyph_brush,
+            animation_controller,
         }
     }
 
@@ -594,7 +604,6 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
-        let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -613,7 +622,7 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .load_game_state(
-                    game_state,
+                    game_state.lock().unwrap(),
                     &mut self.player_controller,
                     &mut self.player,
                     &mut self.camera_state,
@@ -638,6 +647,11 @@ impl State {
         let particle_queue = particle_queue.lock().unwrap();
         self.load_particles(particle_queue);
 
+
+        // animation update
+        self.animation_controller.update(dt);
+        self.animation_controller.load_game_state(game_state.lock().unwrap());
+
         // camera update
         self.camera_state
             .camera_uniform
@@ -660,96 +674,98 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        self.display.render(
-            &self.mouse_position,
-            &self.camera_state,
-            &self.player_loc,
-            &self.device,
-            &self.queue,
-            &mut encoder,
-            &view,
-            &output,
-        );
 
-        let size = &self.window.inner_size();
-
-        // TODO: maybe refactor later?
-        // if player is alive
-        if !self.player.is_dead {
-            // render ammo remaining
-            self.glyph_brush.queue(Section {
-                screen_position: (30.0, 20.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    &format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
-            // render ability cooldowns
-            if self.player.on_cooldown.contains_key(&Command::Attack) {
-                let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
-                self.glyph_brush.queue(Section {
-                    screen_position: (30.0, 60.0),
-                    bounds: (size.width as f32, size.height as f32),
-                    text: vec![Text::new(
-                        &format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
-                    )
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)],
-                    ..Section::default()
-                });
-            }
-        } else {
-            // render respawn cooldown
-            if self.player.on_cooldown.contains_key(&Command::Spawn) {
-                let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-                self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-                    bounds: (size.width as f32, size.height as f32),
-                    text: vec![
-                        Text::new("You died!\n")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(100.0),
-                        Text::new("Respawning in ")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(60.0),
-                        Text::new(&format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(60.0),
-                        Text::new(" seconds")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(60.0),
-                    ],
-                    layout: Layout::default().h_align(HorizontalAlign::Center),
-                    ..Section::default()
-                });
-            }
-        }
-
-        // Draw the text!
-        self.glyph_brush
-            .draw_queued(
+            self.display.render(
+                &self.mouse_position,
+                &self.camera_state,
+                &self.player_loc,
                 &self.device,
-                &mut self.staging_belt,
+                &self.queue,
                 &mut encoder,
                 &view,
-                size.width,
-                size.height,
-            )
-            .expect("Draw queued");
+                &mut self.animation_controller,
+                &output,
+            );
 
-        // Submit the work!
-        self.staging_belt.finish();
+            let size = &self.window.inner_size();
 
-        // submit will accept anything that implements IntoIter
-        self.queue.submit(std::iter::once(encoder.finish()));
-        output.present();
+            // TODO: maybe refactor later?
+            // if player is alive
+            if !self.player.is_dead {
+                // render ammo remaining
+                self.glyph_brush.queue(Section {
+                    screen_position: (30.0, 20.0),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![Text::new(
+                        format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
+                    )
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(40.0)],
+                    ..Section::default()
+                });
+                // render ability cooldowns
+                if self.player.on_cooldown.contains_key(&Command::Attack) {
+                    let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
+                    self.glyph_brush.queue(Section {
+                        screen_position: (30.0, 60.0),
+                        bounds: (size.width as f32, size.height as f32),
+                        text: vec![Text::new(
+                            format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
+                        )
+                            .with_color([0.0, 0.0, 0.0, 1.0])
+                            .with_scale(40.0)],
+                        ..Section::default()
+                    });
+                }
+            } else {
+                // render respawn cooldown
+                if self.player.on_cooldown.contains_key(&Command::Spawn) {
+                    let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+                    self.glyph_brush.queue(Section {
+                        screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                        bounds: (size.width as f32, size.height as f32),
+                        text: vec![
+                            Text::new("You died!\n")
+                                .with_color([1.0, 1.0, 0.0, 1.0])
+                                .with_scale(100.0),
+                            Text::new("Respawning in ")
+                                .with_color([1.0, 1.0, 0.0, 1.0])
+                                .with_scale(60.0),
+                            Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                                .with_color([1.0, 1.0, 1.0, 1.0])
+                                .with_scale(60.0),
+                            Text::new(" seconds")
+                                .with_color([1.0, 1.0, 0.0, 1.0])
+                                .with_scale(60.0),
+                        ],
+                        layout: Layout::default().h_align(HorizontalAlign::Center),
+                        ..Section::default()
+                    });
+                }
+            }
 
-        // Recall unused staging buffers
-        self.staging_belt.recall();
-        Ok(())
+            // Draw the text!
+            self.glyph_brush
+                .draw_queued(
+                    &self.device,
+                    &mut self.staging_belt,
+                    &mut encoder,
+                    &view,
+                    size.width,
+                    size.height,
+                )
+                .expect("Draw queued");
+
+            // Submit the work!
+            self.staging_belt.finish();
+
+            // submit will accept anything that implements IntoIter
+            self.queue.submit(std::iter::once(encoder.finish()));
+            output.present();
+
+            // Recall unused staging buffers
+            self.staging_belt.recall();
+            Ok(())
     }
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
@@ -787,7 +803,6 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
                 }
-                _ => {}
             }
         }
         particle_queue.particles.clear();

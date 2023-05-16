@@ -69,7 +69,7 @@ impl ParticleSystem {
         color: glm::Vec4,
         gen: impl gen::ParticleGenerator,
         tex_range: (u32, u32),
-        device: &wgpu::Device,
+        _device: &wgpu::Device,
         rng: &mut rand::rngs::ThreadRng,
     ) -> Self {
         let mut particles = vec![];
@@ -99,16 +99,16 @@ impl ParticleSystem {
         }
     }
 
-    pub fn regen(mut self) -> Option<Self> {
+    pub fn regen(self) -> Option<Self> {
         if self.start_time.elapsed() < self.last_particle_death {
             return Some(self);
         }
         //TODO if necessary: comtinued generation
-        return None;
+        None
     }
 
     pub fn not_done(&self) -> bool {
-        return self.start_time.elapsed() < self.last_particle_death;
+        self.start_time.elapsed() < self.last_particle_death
     }
 }
 
@@ -285,11 +285,11 @@ impl ParticleDrawer {
         camera_bind_group: &'a wgpu::BindGroup,
         inst_num: u32,
         inst_buf: &'a wgpu::Buffer,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        _device: &wgpu::Device,
+        _queue: &wgpu::Queue,
     ) {
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &camera_bind_group, &[]);
+        render_pass.set_bind_group(0, camera_bind_group, &[]);
 
         //set up constant buffers
         // 1. Vertex buffer

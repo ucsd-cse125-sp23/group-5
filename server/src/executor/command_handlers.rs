@@ -1,15 +1,6 @@
 use std::f32::consts::PI;
-use std::fmt::{format, Debug};
-
-use derive_more::{Constructor, Display, Error};
-use itertools::Itertools;
-use nalgebra::UnitQuaternion;
-use nalgebra::{zero, Isometry3, Vector3};
-use nalgebra_glm as glm;
-use nalgebra_glm::Vec3;
-use rapier3d::geometry::InteractionGroups;
-use rapier3d::math::Isometry;
-use rapier3d::prelude as rapier;
+use std::fmt::Debug;
+use std::time::Duration;
 
 use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE};
 use common::configs::model_config::ConfigModels;
@@ -18,6 +9,17 @@ use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 use common::core::states::{GameState, PlayerState};
+use common::core::action_states::ActionState;
+
+use derive_more::{Constructor, Display, Error};
+use itertools::Itertools;
+use nalgebra::{Point, UnitQuaternion, zero, Isometry3, Vector3};
+use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
+use rapier3d::geometry::InteractionGroups;
+use rapier3d::math::{AngVector, Isometry};
+use rapier3d::dynamics::MassProperties;
+use rapier3d::prelude as rapier;
 
 use crate::executor::GameEventCollector;
 use crate::simulation::obj_collider::FromObject;
@@ -125,6 +127,7 @@ impl CommandHandler for SpawnCommandHandler {
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // Physics state
+
         // let player_model = tobj::load_obj("assets/cube.obj", &tobj::GPU_LOAD_OPTIONS);
         //
         // let (models, materials) = player_model.unwrap();
@@ -134,11 +137,14 @@ impl CommandHandler for SpawnCommandHandler {
         //     .translation(rapier::vector![0.0, 2.0, 0.0])
         //     .build();
 
+        // get spawn-locations with corresponding id
+        let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
+
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
-                if let Some(player_rigid_body) =
+                if let Some(player_rigid_body) = 
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
                     player_rigid_body.set_enabled(true);
@@ -148,16 +154,19 @@ impl CommandHandler for SpawnCommandHandler {
                 player.refill_wind_charge(Some(MAX_WIND_CHARGE));
             }
         } else {
-            // get spawn-locations with corresponding id
-            let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
-            let ground_groups = InteractionGroups::new(1.into(), 1.into());
-            let collider = rapier::ColliderBuilder::cuboid(1.0, 1.0, 1.0)
-                .collision_groups(ground_groups)
+            let collider = rapier::ColliderBuilder::capsule_y(0.5, 0.25)
+                .mass(0.0)
                 .build();
 
             let rigid_body = rapier3d::prelude::RigidBodyBuilder::dynamic()
                 .translation(spawn_position)
                 .ccd_enabled(true)
+                // add additional mass to the lower half of the player so that it doesn't tip over
+                .additional_mass_properties(MassProperties::new(
+                    Point::from_slice(&[0.0, -0.7, 0.0]),
+                    15.0,
+                    AngVector::new(1.425, 1.425, 0.45)
+                ))
                 .build();
 
             physics_state.insert_entity(self.player_id, Some(collider), Some(rigid_body));
@@ -207,11 +216,12 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, 3.0);
+        player_state.insert_cooldown(Command::Spawn, 3.);
 
         Ok(())
     }
 }
+
 
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
@@ -259,7 +269,7 @@ impl CommandHandler for MoveCommandHandler {
         let dir_vec = self.direction.normalize();
 
         let player_state = game_state
-            .player(self.player_id)
+            .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // rotate the direction vector to face the camera (only take the x and z components)
@@ -297,7 +307,7 @@ impl CommandHandler for MoveCommandHandler {
 
         // rotation parameters to tune (balance them to get the best results)
         const DAMPING: f32 = 10.0;
-        const GAIN: f32 = 0.8;
+        const GAIN: f32 = 0.1;
 
         player_rigid_body.set_angular_damping(DAMPING);
         let current_angular_velocity = player_rigid_body.angvel();
@@ -324,6 +334,8 @@ impl CommandHandler for MoveCommandHandler {
             )),
             Recipients::One(self.player_id as u8),
         );
+
+        player_state.active_action_states.insert((ActionState::Walking, Duration::from_secs_f32(0.5)));
 
         Ok(())
     }
@@ -353,7 +365,7 @@ impl CommandHandler for JumpCommandHandler {
                 self.player_id
             )))?;
 
-        let player_rigid_body = physics_state
+        let _player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .ok_or(HandlerError::new(format!(
                 "Rigid body for player {} not found",
@@ -383,7 +395,7 @@ impl CommandHandler for JumpCommandHandler {
             player_state.jump_count = 0;
         }
 
-        const MAX_JUMP_COUNT: u32 = 2; // allow double jump
+        const MAX_JUMP_COUNT: u32 = 2; // allow double idle
 
         if player_state.jump_count >= MAX_JUMP_COUNT {
             return Ok(());
@@ -392,13 +404,20 @@ impl CommandHandler for JumpCommandHandler {
         player_state.jump_count += 1;
 
         // apply upward impulse to the player's rigid body
-        const JUMP_IMPULSE: f32 = 40.0; // parameter to tune
+        const JUMP_IMPULSE: f32 = 70.0; // parameter to tune
 
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
+        player_state.active_action_states.insert((ActionState::Jumping, Duration::from_secs_f32(
+            if player_state.jump_count == 2 {
+                1.4
+            } else {
+                0.9
+            }
+        )));
         Ok(())
     }
 }
@@ -477,6 +496,7 @@ impl CommandHandler for AttackCommandHandler {
             )),
             Recipients::All,
         );
+        player_state.active_action_states.insert((ActionState::Attacking, Duration::from_secs_f32(1.5)));
 
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {
@@ -534,6 +554,7 @@ impl CommandHandler for AttackCommandHandler {
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,
                         );
+
                     }
                 }
             }
