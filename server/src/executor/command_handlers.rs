@@ -177,7 +177,7 @@ impl CommandHandler for SpawnCommandHandler {
                     wind_charge: MAX_WIND_CHARGE,
                     on_flag_time: 0.0,
                     spawn_point: spawn_position,
-                    power_up: Some(PowerUp::Invincible),
+                    power_up: None,
                     ..Default::default()
                 },
             );
