@@ -84,6 +84,13 @@ impl PlayerLoop {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::KeyboardInput { input, .. } => {
+                                // to toggle on/off the background track because it got annoying
+                                // match input {
+                                //     KeyboardInput {virtual_keycode: Some(VirtualKeyCode::M), ..} => {
+                                //         audio.toggle_background_track();
+                                //     },
+                                //      _ => {},
+                                // }
                                 match self
                                     .inputs
                                     .send(Input::Keyboard(*input))
@@ -104,14 +111,14 @@ impl PlayerLoop {
                             _ => {}
                         }
                     }
-                }
+                },
                 // event
                 Event::DeviceEvent {
                     event: DeviceEvent::MouseMotion{ delta, },
                     .. // We're not using device_id currently
                 } => {
                     state.player_controller.process_mouse(delta.0, delta.1)
-                }
+                },
                 Event::DeviceEvent { ref event, .. } => match event {
                     DeviceEvent::MouseWheel { .. }
                     | DeviceEvent::Button { .. } => {

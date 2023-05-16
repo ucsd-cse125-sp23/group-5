@@ -1,29 +1,30 @@
-use crate::executor::GameEventCollector;
-use crate::simulation::obj_collider::FromObject;
-use crate::simulation::physics_state::PhysicsState;
 use std::f32::consts::PI;
+use std::fmt::Debug;
+use std::time::Duration;
 
-use crate::Recipients;
+use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE};
+use common::configs::model_config::ConfigModels;
+use common::configs::player_config::ConfigPlayer;
+use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
-
-use common::communication::commons::MAX_WIND_CHARGE;
-use common::configs::model_config::ConfigModels;
-use common::configs::scene_config::ConfigSceneGraph;
 use common::core::states::{GameState, PlayerState};
 use common::core::action_states::ActionState;
+
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
-use nalgebra::{Point, UnitQuaternion};
-use nalgebra::{zero, Isometry3, Vector3};
+use nalgebra::{Point, UnitQuaternion, zero, Isometry3, Vector3};
 use nalgebra_glm as glm;
 use nalgebra_glm::Vec3;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::{AngVector, Isometry};
-use rapier3d::prelude as rapier;
-use std::fmt::Debug;
-use std::time::Duration;
 use rapier3d::dynamics::MassProperties;
+use rapier3d::prelude as rapier;
+
+use crate::executor::GameEventCollector;
+use crate::simulation::obj_collider::FromObject;
+use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -115,7 +116,7 @@ impl CommandHandler for StartupCommandHandler {
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
-    config_scene_graph: ConfigSceneGraph,
+    config_player: ConfigPlayer,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -137,13 +138,13 @@ impl CommandHandler for SpawnCommandHandler {
         //     .build();
 
         // get spawn-locations with corresponding id
-        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
+        let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
 
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
-                if let Some(player_rigid_body) =
+                if let Some(player_rigid_body) = 
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
                     player_rigid_body.set_enabled(true);
@@ -179,6 +180,7 @@ impl CommandHandler for SpawnCommandHandler {
                     is_dead: false,
                     wind_charge: MAX_WIND_CHARGE,
                     on_flag_time: 0.0,
+                    spawn_point: spawn_position,
                     ..Default::default()
                 },
             );
@@ -190,7 +192,6 @@ impl CommandHandler for SpawnCommandHandler {
 #[derive(Constructor)]
 pub struct DieCommandHandler {
     player_id: u32,
-    config_scene_graph: ConfigSceneGraph,
 }
 
 impl CommandHandler for DieCommandHandler {
@@ -204,7 +205,7 @@ impl CommandHandler for DieCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        let spawn_position = self.config_scene_graph.spawn_points[self.player_id as usize - 1];
+        let spawn_position = player_state.spawn_point;
 
         // Teleport the player back to their spawn position and disable physics.
         let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
@@ -220,6 +221,7 @@ impl CommandHandler for DieCommandHandler {
         Ok(())
     }
 }
+
 
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
@@ -328,6 +330,7 @@ impl CommandHandler for MoveCommandHandler {
             GameEvent::SoundEvent(SoundSpec::new(
                 player_state.transform.translation,
                 "foot_step".to_string(),
+                (self.player_id, true),
             )),
             Recipients::One(self.player_id as u8),
         );
@@ -444,6 +447,16 @@ impl CommandHandler for AttackCommandHandler {
 
         let player_pos = player_state.transform.translation;
 
+        // TODO: replace this example with actual implementation
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                player_pos,
+                "wind".to_string(),
+                (self.player_id, false),
+            )),
+            Recipients::All,
+        );
+
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
             .ok_or(HandlerError::new(format!(
@@ -470,12 +483,12 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Attack, 1.);
+        player_state.insert_cooldown(Command::Attack, 1.0);
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::ATTACK,
-                player_pos,
-                camera_forward,
+                player_pos.clone(),
+                camera_forward.clone(),
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
                 glm::vec4(0.4, 0.9, 0.7, 1.0),
@@ -547,6 +560,35 @@ impl CommandHandler for AttackCommandHandler {
             }
         }
 
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
+pub struct RefillCommandHandler {
+    player_id: u32,
+}
+
+impl CommandHandler for RefillCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        _: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
+        let spawn_position = game_state.player(self.player_id).unwrap().spawn_point;
+        let player_state = game_state.player_mut(self.player_id).unwrap();
+        if !player_state.is_in_circular_area(
+            (spawn_position.x, spawn_position.z),
+            2.0,
+            (None, None),
+        ) || player_state.command_on_cooldown(Command::Refill)
+        {
+            // signal player that he/she is not in refill area
+            return Ok(());
+        }
+        player_state.refill_wind_charge(Some(ONE_CHARGE));
+        player_state.insert_cooldown(Command::Refill, 0.5);
         Ok(())
     }
 }

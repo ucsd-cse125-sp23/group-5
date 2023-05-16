@@ -1,5 +1,7 @@
 use crate::model::Vertex;
 use crate::texture;
+
+use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
 //exports
@@ -16,17 +18,17 @@ pub mod gen;
 /// size: diameter in cm
 pub struct Particle {
     // use last f32 as angluar position/velocity
-    start_pos: [f32; 4],
-    velocity: [f32; 4],
-    color: [f32; 4],
-    spawn_time: f32,
-    size: f32,
-    tex_id: f32,
-    z_pos: f32,
-    time_elapsed: f32,
-    size_growth: f32,
-    halflife: f32,
-    _pad2: f32,
+    pub start_pos: [f32; 4],
+    pub velocity: [f32; 4],
+    pub color: [f32; 4],
+    pub spawn_time: f32,
+    pub size: f32,
+    pub tex_id: f32,
+    pub z_pos: f32,
+    pub time_elapsed: f32,
+    pub size_growth: f32,
+    pub halflife: f32,
+    pub _pad2: f32,
 }
 
 impl Particle {

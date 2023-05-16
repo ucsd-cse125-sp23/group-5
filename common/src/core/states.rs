@@ -1,10 +1,11 @@
 use crate::communication::commons::{
-    FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, WINNING_THRESHOLD,
+    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, WINNING_THRESHOLD,
 };
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
+use rapier3d::prelude::Vector;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -15,6 +16,16 @@ use crate::core::action_states::ActionState;
 
 
 
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct WorldState {}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct GameState {
+    pub world: WorldState,
+    pub players: HashMap<u32, PlayerState>,
+    pub previous_tick_winner: Option<u32>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerState {
@@ -28,17 +39,8 @@ pub struct PlayerState {
     pub on_cooldown: HashMap<Command, f32>,
     pub wind_charge: u32,
     pub on_flag_time: f32,
+    pub spawn_point: Vector<f32>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct WorldState {}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct GameState {
-    pub world: WorldState,
-    pub players: HashMap<u32, PlayerState>,
-    pub previous_tick_winner: Option<u32>,
 }
 
 impl PlayerState {
@@ -176,16 +178,26 @@ impl GameState {
     }
 
     // returns winner if winner is decided
-    pub fn update_player_on_flag_time(&mut self, delta_time: f32) -> Option<u32> {
+    pub fn update_player_on_flag_times(&mut self, delta_time: f32) -> Option<u32> {
+        // decay
+        for (_, player_state) in self.players.iter_mut() {
+            let provisional_on_flag_time = player_state.on_flag_time - delta_time * DECAY_RATE;
+            player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
+                provisional_on_flag_time
+            } else {
+                0.0
+            };
+        }
+
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time += delta_time;
-                if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
+                return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
                     Some(id)
                 } else {
                     None
-                }
+                };
             }
         }
     }

@@ -2,6 +2,8 @@ extern crate queues;
 
 use std::env;
 
+use client::audio::{Audio, SoundQueue};
+use common::configs::*;
 use log::{debug, error, info};
 use std::fs::File;
 
@@ -16,17 +18,20 @@ use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
+
 use common::core::events::GameEvent;
 
 use common::core::states::{GameState, ParticleQueue};
 
 fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
     Builder::from_default_env().format_timestamp_micros().init();
 
     // input channel for communicating between event loop and input processor
     let (tx, rx) = mpsc::channel::<Input>();
     let game_state = Arc::new(Mutex::new(GameState::default()));
     let particle_queue = Arc::new(Mutex::new(ParticleQueue::default()));
+    let sound_queue = Arc::new(Mutex::new(SoundQueue::default()));
 
     let game_events_bus = Bus::new(1);
     // let mut particle_rcvr = game_events_bus.add_rx();
@@ -85,13 +90,26 @@ fn main() {
     });
 
     // spawn a thread to handle game state updates and events
+    let game_state_clone = game_state.clone();
+    let sound_queue_clone = sound_queue.clone();
     thread::spawn(move || {
         recv_server_updates(
             protocol.try_clone().unwrap(),
-            game_state,
+            game_state.clone(),
             particle_queue,
+            sound_queue.clone(),
             game_events_bus,
         );
+    });
+
+    // thread for audio
+    thread::spawn(move || {
+        let config_instance = ConfigurationManager::get_configuration();
+        let audio_config = config_instance.audio.clone();
+
+        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
+        audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
+        audio.handle_audio_updates(game_state_clone, client_id);
     });
 
     pollster::block_on(player_loop.run());
@@ -134,6 +152,7 @@ fn recv_server_updates(
     mut protocol: Protocol,
     game_state: Arc<Mutex<GameState>>,
     particle_queue: Arc<Mutex<ParticleQueue>>,
+    sound_queue: Arc<Mutex<SoundQueue>>,
     mut game_events: Bus<GameEvent>,
 ) {
     // check for new state & update local game state
@@ -161,16 +180,10 @@ fn recv_server_updates(
             }
             Message {
                 host_role: HostRole::Server,
-                payload: Payload::ServerEvent(update_game_event),
+                payload: Payload::ServerEvent(GameEvent::SoundEvent(s)),
                 ..
             } => {
-                // update state
-                game_events
-                    .try_broadcast(update_game_event)
-                    .map_err(|e| {
-                        error!("Failed to broadcast game event: {:?}", e);
-                    })
-                    .unwrap();
+                sound_queue.lock().unwrap().add_sound(s);
             }
             _ => {}
         }

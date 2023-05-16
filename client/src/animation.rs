@@ -11,7 +11,7 @@ use std::io::BufReader;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::time::Duration;
-use glm::scale;
+extern crate nalgebra_glm as glm;
 use serde::{Deserialize, Serialize};
 use common::configs::model_config::ModelIndex;
 use common::core::states::GameState;
@@ -59,6 +59,8 @@ impl AnimationController {
     }
 
     pub fn play_animation(&mut self, animation_id: AnimationId, node_id: NodeId) {
+
+        println!("Playing animation {:?}", animation_id);
 
         // if already player, do nothing
         if let Some(AnimationState::Playing { animation_id: playing_animation_id, .. }) = self.animation_states.get(&node_id) {
