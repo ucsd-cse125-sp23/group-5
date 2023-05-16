@@ -47,7 +47,7 @@ pub enum Command {
     Refill,
     CastPowerUp,
     Dash,
-    Flash
+    Flash,
 }
 
 impl Command {
