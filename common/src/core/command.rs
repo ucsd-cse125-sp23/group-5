@@ -13,7 +13,6 @@ pub type MoveDirection = glm::Vec3;
 pub enum ServerSync {
     Ready,
 }
-
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
@@ -25,6 +24,7 @@ pub enum Command {
     Jump,
     UpdateCamera { forward: glm::Vec3 },
     Attack,
+    AreaAttack,
     Refill,
 }
 

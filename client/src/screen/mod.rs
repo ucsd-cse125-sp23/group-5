@@ -12,7 +12,7 @@ use common::core::states::GameState;
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
-use crate::scene::Scene;
+use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::location_helper::{get_coords, to_absolute};
 
@@ -134,6 +134,7 @@ impl Display {
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
+        animation_controller: &mut crate::animation::AnimationController,
         output: &wgpu::SurfaceTexture,
     ) {
         // inability to find the scene would be a major bug
@@ -149,12 +150,19 @@ impl Display {
                 let scene = self.scene_map.get(scene_id).unwrap();
                 for (index, instances) in scene.objects_and_instances.iter() {
                     let count = instances.len();
-                    let instanced_obj = model::InstancedModel::new(
-                        scene.objects.get(index).unwrap(),
-                        instances,
-                        device,
-                    );
-                    instanced_objs.push((instanced_obj, count));
+
+                    for instance in instances.iter() {
+                        let mut model = scene.objects.get(index).unwrap().clone_box();
+                        animation_controller
+                            .update_animated_model_state(&mut model, &instance.node_id);
+
+                        let instanced_obj = model::InstancedModel::new(
+                            model,
+                            &vec![InstanceBundle::instance(instance)],
+                            device,
+                        );
+                        instanced_objs.push((instanced_obj, 1));
+                    }
                 }
             }
         };

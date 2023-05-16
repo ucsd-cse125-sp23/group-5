@@ -23,15 +23,22 @@ mod scene;
 // mod screen_objects;
 mod screen;
 mod texture;
+
 use nalgebra_glm as glm;
 
 use common::configs::*;
 
+mod animation;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
 
 use crate::inputs::Input;
+use crate::animation::AnimatedModel;
+use crate::model::{Model, StaticModel};
+use crate::scene::InstanceBundle;
+use common::configs::model_config::ConfigModels;
+use common::configs::scene_config::ConfigSceneGraph;
 use common::configs::*;
 use common::core::command::Command;
 use common::core::events;
@@ -58,6 +65,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
+    animation_controller: animation::AnimationController,
 }
 
 impl State {
@@ -265,24 +273,31 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
-        let config_instance = ConfigurationManager::get_configuration();
         // Scene
-        let scene_config = config_instance.scene.clone();
-        let models_config = config_instance.models.clone();
+        let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
 
-        let mut models = HashMap::new();
+        let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
 
-        for model_config in models_config.models {
-            let model = resources::load_model(
-                &model_config.path,
-                &device,
-                &queue,
-                &texture_bind_group_layout,
-            )
-            .await
-            .unwrap();
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+
+        for model_config in model_configs.models {
+            let model: Box<dyn Model> = if model_config.animated() {
+                Box::new(
+                    AnimatedModel::load(&model_config.path, model_loading_resources)
+                        .await
+                        .unwrap(),
+                )
+            } else {
+                Box::new(
+                    StaticModel::load(&model_config.path, model_loading_resources)
+                        .await
+                        .unwrap(),
+                )
+            };
             models.insert(model_config.name, model);
         }
+
+        let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -304,6 +319,8 @@ impl State {
         );
 
         scene.draw_scene_dfs();
+
+        let animation_controller = animation::AnimationController::default();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
@@ -446,11 +463,11 @@ impl State {
 
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
-        let mut rng = rand::thread_rng();
+        let rng = rand::thread_rng();
         let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
             .await
             .unwrap();
-        let mut particle_renderer = particles::ParticleDrawer::new(
+        let particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
             &camera_state.camera_bind_group_layout,
@@ -533,6 +550,7 @@ impl State {
             client_id,
             staging_belt,
             glyph_brush,
+            animation_controller,
         }
     }
 
@@ -600,7 +618,6 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
-        let game_state = game_state.lock().unwrap();
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -619,7 +636,7 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .load_game_state(
-                    game_state,
+                    game_state.lock().unwrap(),
                     &mut self.player_controller,
                     &mut self.player,
                     &mut self.camera_state,
@@ -643,6 +660,11 @@ impl State {
 
         let particle_queue = particle_queue.lock().unwrap();
         self.load_particles(particle_queue);
+
+        // animation update
+        self.animation_controller.update(dt);
+        self.animation_controller
+            .load_game_state(game_state.lock().unwrap());
 
         // camera update
         self.camera_state
@@ -674,6 +696,7 @@ impl State {
             &self.queue,
             &mut encoder,
             &view,
+            &mut self.animation_controller,
             &output,
         );
 
@@ -687,10 +710,34 @@ impl State {
                 screen_position: (30.0, 20.0),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![Text::new(
-                    &format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
+                    format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],
+                ..Section::default()
+            });
+        }
+        // render respawn cooldown
+        if self.player.on_cooldown.contains_key(&Command::Spawn) {
+            let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+            self.glyph_brush.queue(Section {
+                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![
+                    Text::new("You died!\n")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(100.0),
+                    Text::new("Respawning in ")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([1.0, 1.0, 1.0, 1.0])
+                        .with_scale(60.0),
+                    Text::new(" seconds")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                ],
+                layout: Layout::default().h_align(HorizontalAlign::Center),
                 ..Section::default()
             });
             // render ability cooldowns
@@ -700,7 +747,21 @@ impl State {
                     screen_position: (30.0, 60.0),
                     bounds: (size.width as f32, size.height as f32),
                     text: vec![Text::new(
-                        &format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
+                        format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
+                    )
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
+                    ..Section::default()
+                });
+            }
+            if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
+                let area_attack_cooldown =
+                    self.player.on_cooldown.get(&Command::AreaAttack).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (30.0, 100.0),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![Text::new(
+                        &format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
                     )
                     .with_color([0.0, 0.0, 0.0, 1.0])
                     .with_scale(40.0)],
@@ -721,7 +782,7 @@ impl State {
                         Text::new("Respawning in ")
                             .with_color([1.0, 1.0, 0.0, 1.0])
                             .with_scale(60.0),
-                        Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
                             .with_color([1.0, 1.0, 1.0, 1.0])
                             .with_scale(60.0),
                         Text::new(" seconds")
@@ -793,7 +854,6 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
                 }
-                _ => {}
             }
         }
         particle_queue.particles.clear();
