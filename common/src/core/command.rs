@@ -44,6 +44,7 @@ pub enum Command {
     Jump,
     UpdateCamera { forward: glm::Vec3 },
     Attack,
+    AreaAttack,
     Refill,
 }
 

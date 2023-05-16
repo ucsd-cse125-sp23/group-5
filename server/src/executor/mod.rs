@@ -1,5 +1,5 @@
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
+    AreaAttackCommandHandler, AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
     MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
     UpdateCameraFacingCommandHandler,
 };
@@ -107,6 +107,7 @@ impl Executor {
             )),
             Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
             Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+            Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(client_command.client_id)),
             Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
             _ => {
                 warn!("Unsupported command: {:?}", client_command.command);
