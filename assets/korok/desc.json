@@ -1,0 +1,1 @@
+{"attack": {"cyclic": false}, "jump": {"cyclic": false}, "power_up": {"cyclic": true}, "special_attack": {"cyclic": true}, "walk": {"cyclic": true}}

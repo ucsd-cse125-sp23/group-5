@@ -525,6 +525,7 @@ dependencies = [
  "cfg-if",
  "common",
  "const_format",
+ "derive_more",
  "env_logger",
  "fs_extra",
  "glob",

@@ -6,9 +6,16 @@ use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use nalgebra_glm::Vec3;
 use rapier3d::prelude::Vector;
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::ops::{Add, AddAssign};
+
 use std::time::Duration;
+use crate::core::action_states::ActionState;
+
+
+
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {}
@@ -33,6 +40,7 @@ pub struct PlayerState {
     pub wind_charge: u32,
     pub on_flag_time: f32,
     pub spawn_point: Vector<f32>,
+    pub active_action_states: HashSet<(ActionState, Duration)>,
 }
 
 impl PlayerState {
@@ -40,12 +48,12 @@ impl PlayerState {
     // returns if the consumption is successful
     pub fn try_consume_wind_charge(&mut self, consume_amount: Option<u32>) -> bool {
         let consume_amount = consume_amount.unwrap_or(1);
-        return if self.wind_charge >= consume_amount {
+        if self.wind_charge >= consume_amount {
             self.wind_charge -= consume_amount;
             true
         } else {
             false
-        };
+        }
     }
 
     // add to refill command handlers, put NONE for refill all, won't exceed cap
@@ -103,6 +111,23 @@ impl PlayerState {
         }
         (p_x - c_x).powi(2) + (p_z - c_z).powi(2) < radius.powi(2)
     }
+
+    pub fn add_action_state(&mut self, action_state: ActionState, duration: Duration) {
+        self.active_action_states.insert((action_state, duration));
+    }
+
+    pub fn sweep_action_states(&mut self, delta_time: Duration) {
+
+        let updated_action_states: HashSet<(ActionState, Duration)> = self
+            .active_action_states
+            .iter()
+            .filter_map(|(action_state, duration)| {
+                let new_duration = duration.checked_sub(delta_time)?;
+                Some((*action_state, new_duration))
+            })
+            .collect();
+        self.active_action_states = updated_action_states;
+    }
 }
 
 impl GameState {
@@ -126,6 +151,12 @@ impl GameState {
         }
     }
 
+    pub fn update_action_states(&mut self, delta_time: Duration) {
+        for (_, player_state) in self.players.iter_mut() {
+            player_state.sweep_action_states(delta_time);
+        }
+    }
+
     pub fn has_single_winner(&self) -> Option<u32> {
         let valid_players: HashMap<u32, bool> = self
             .clone()
@@ -137,9 +168,9 @@ impl GameState {
                     player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
                 )
             })
-            .filter(|(_, res)| *res == true)
+            .filter(|(_, res)| *res)
             .collect();
-        if valid_players.clone().len() != 1 {
+        if valid_players.len() != 1 {
             None
         } else {
             Some(*valid_players.keys().last().unwrap())

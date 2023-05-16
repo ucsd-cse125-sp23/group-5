@@ -1,10 +1,7 @@
 extern crate nalgebra_glm as glm;
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Poisson, Uniform};
-use std::{
-    f32::consts::{FRAC_PI_2, PI},
-    ops::IndexMut,
-};
+use std::f32::consts::{FRAC_PI_2, PI};
 
 use crate::particles::Particle;
 
@@ -59,7 +56,7 @@ impl ConeGenerator {
         poisson_generation: bool,
     ) -> Self {
         let right = glm::normalize(&glm::cross(&dir, &up));
-        let half_spread = spread / 2.0;
+        let half_spread = spread.to_radians() / 2.0;
         let r = half_spread.tan();
         Self {
             source,
@@ -129,7 +126,7 @@ impl ParticleGenerator for ConeGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        return list.len() as u32;
+        list.len() as u32
     }
 }
 
@@ -172,7 +169,7 @@ impl FanGenerator {
             right,
             // half degree in radians = degree / 2 * 2pi / 360
             //  = degree * pi / 180 = degree * (pi/2) * 360
-            half_spread: spread / 2.0,
+            half_spread: (spread) / 360.0 * FRAC_PI_2,
             linear_speed,
             linear_variance,
             angular_velocity,
@@ -225,7 +222,7 @@ impl ParticleGenerator for FanGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        return list.len() as u32;
+        list.len() as u32
     }
 }
 
@@ -307,6 +304,6 @@ impl ParticleGenerator for LineGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        return list.len() as u32;
+        list.len() as u32
     }
 }
