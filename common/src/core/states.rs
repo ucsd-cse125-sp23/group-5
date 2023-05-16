@@ -11,11 +11,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::ops::{Add, AddAssign};
 
-use std::time::Duration;
 use crate::core::action_states::ActionState;
-
-
-
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {}
@@ -117,7 +114,6 @@ impl PlayerState {
     }
 
     pub fn sweep_action_states(&mut self, delta_time: Duration) {
-
         let updated_action_states: HashSet<(ActionState, Duration)> = self
             .active_action_states
             .iter()

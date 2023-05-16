@@ -133,19 +133,14 @@ impl Display {
         match &display_group.scene {
             None => {}
             Some(scene_id) => {
-
-
-
-
-
                 let scene = self.scene_map.get(scene_id).unwrap();
                 for (index, instances) in scene.objects_and_instances.iter() {
                     let count = instances.len();
 
-
                     for instance in instances.iter() {
                         let mut model = scene.objects.get(index).unwrap().clone_box();
-                        animation_controller.update_animated_model_state(&mut model, &instance.node_id);
+                        animation_controller
+                            .update_animated_model_state(&mut model, &instance.node_id);
 
                         let instanced_obj = model::InstancedModel::new(
                             model,

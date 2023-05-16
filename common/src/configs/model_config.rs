@@ -6,7 +6,7 @@ pub type ModelIndex = String;
 pub struct ConfigModel {
     pub name: ModelIndex,
     pub path: String,
-    pub animated: Option<bool> 
+    pub animated: Option<bool>,
 }
 
 impl ConfigModel {
@@ -19,7 +19,6 @@ impl ConfigModel {
 pub struct ConfigModels {
     pub models: Vec<ConfigModel>,
 }
-
 
 impl ConfigModels {
     pub fn model(&self, name: String) -> Option<&ConfigModel> {

@@ -1,9 +1,9 @@
-use std::cell::RefCell;
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
 use crate::model::{self, Model, StaticModel};
 use glm::TMat4;
 use log::debug;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -31,7 +31,7 @@ impl Node {
             id,
             child_ids: Vec::new(),
             model: None,
-            transform: Transform::default()
+            transform: Transform::default(),
         }
     }
 
@@ -253,7 +253,10 @@ impl Scene {
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
-                        obj.push(InstanceBundle::from_transform(&model_view, cur_node.id.clone()));
+                        obj.push(InstanceBundle::from_transform(
+                            &model_view,
+                            cur_node.id.clone(),
+                        ));
                     }
                     None => {
                         // add the new model to the hashmap

@@ -2,24 +2,27 @@ use std::f32::consts::PI;
 use std::fmt::Debug;
 use std::time::Duration;
 
-use common::communication::commons::{MAX_WIND_CHARGE, ONE_CHARGE, MAX_ATTACK_DIST, ATTACK_IMPULSE, ATTACK_COEFF, 
-    MAX_AREA_ATTACK_DIST, AREA_ATTACK_IMPULSE, AREA_ATTACK_COEFF, MAX_ATTACK_ANGLE, AREA_ATTACK_COST, ATTACK_COOLDOWN, ATTACK_COST, AREA_ATTACK_COOLDOWN};
+use common::communication::commons::{
+    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE, ATTACK_COEFF,
+    ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE, MAX_AREA_ATTACK_DIST, MAX_ATTACK_ANGLE,
+    MAX_ATTACK_DIST, MAX_WIND_CHARGE, ONE_CHARGE,
+};
 use common::configs::model_config::ConfigModels;
 use common::configs::player_config::ConfigPlayer;
 use common::configs::scene_config::ConfigSceneGraph;
+use common::core::action_states::ActionState;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 use common::core::states::{GameState, PlayerState};
-use common::core::action_states::ActionState;
 
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
-use nalgebra::{Point, UnitQuaternion, zero, Isometry3, Vector3};
+use nalgebra::{zero, Isometry3, Point, UnitQuaternion, Vector3};
 use nalgebra_glm as glm;
 use nalgebra_glm::Vec3;
+use rapier3d::dynamics::MassProperties;
 use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::{AngVector, Isometry};
-use rapier3d::dynamics::MassProperties;
 use rapier3d::prelude as rapier;
 
 use crate::executor::GameEventCollector;
@@ -145,7 +148,7 @@ impl CommandHandler for SpawnCommandHandler {
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
             if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
-                if let Some(player_rigid_body) = 
+                if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
                     player_rigid_body.set_enabled(true);
@@ -166,7 +169,7 @@ impl CommandHandler for SpawnCommandHandler {
                 .additional_mass_properties(MassProperties::new(
                     Point::from_slice(&[0.0, -0.7, 0.0]),
                     15.0,
-                    AngVector::new(1.425, 1.425, 0.45)
+                    AngVector::new(1.425, 1.425, 0.45),
                 ))
                 .build();
 
@@ -222,7 +225,6 @@ impl CommandHandler for DieCommandHandler {
         Ok(())
     }
 }
-
 
 #[derive(Constructor)]
 pub struct UpdateCameraFacingCommandHandler {
@@ -336,7 +338,9 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
-        player_state.active_action_states.insert((ActionState::Walking, Duration::from_secs_f32(0.5)));
+        player_state
+            .active_action_states
+            .insert((ActionState::Walking, Duration::from_secs_f32(0.5)));
 
         Ok(())
     }
@@ -412,13 +416,14 @@ impl CommandHandler for JumpCommandHandler {
             .unwrap();
         player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
 
-        player_state.active_action_states.insert((ActionState::Jumping, Duration::from_secs_f32(
-            if player_state.jump_count == 2 {
+        player_state.active_action_states.insert((
+            ActionState::Jumping,
+            Duration::from_secs_f32(if player_state.jump_count == 2 {
                 1.4
             } else {
                 0.9
-            }
-        )));
+            }),
+        ));
         Ok(())
     }
 }
@@ -463,9 +468,8 @@ impl CommandHandler for AttackCommandHandler {
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
-        
 
-        let camera_forward = player_state.camera_forward; 
+        let camera_forward = player_state.camera_forward;
         let horizontal_camera_forward = Vec3::new(
             player_state.camera_forward.x,
             0.0,
@@ -500,7 +504,9 @@ impl CommandHandler for AttackCommandHandler {
             )),
             Recipients::All,
         );
-        player_state.active_action_states.insert((ActionState::Attacking, Duration::from_secs_f32(1.5)));
+        player_state
+            .active_action_states
+            .insert((ActionState::Attacking, Duration::from_secs_f32(1.5)));
 
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {
@@ -556,7 +562,6 @@ impl CommandHandler for AttackCommandHandler {
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,
                         );
-
                     }
                 }
             }
@@ -606,7 +611,7 @@ impl CommandHandler for AreaAttackCommandHandler {
         player_state.insert_cooldown(Command::AreaAttack, AREA_ATTACK_COOLDOWN);
 
         // TODO: add sound/particles for area attack
-        /* 
+        /*
         game_events.add(
             GameEvent::SoundEvent(SoundSpec::new(
                 player_pos,
@@ -627,7 +632,7 @@ impl CommandHandler for AreaAttackCommandHandler {
             )),
             Recipients::All,
         );
-        */ 
+        */
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {
             if &self.player_id == other_player_id {
@@ -640,8 +645,7 @@ impl CommandHandler for AreaAttackCommandHandler {
 
             // send ray to other player (may need multiple later)
             let solid = true;
-            let filter =
-                rapier::QueryFilter::default().exclude_collider(player_collider_handle);
+            let filter = rapier::QueryFilter::default().exclude_collider(player_collider_handle);
 
             let ray = rapier::Ray::new(
                 rapier::point![player_pos.x, player_pos.y, player_pos.z],
@@ -672,7 +676,8 @@ impl CommandHandler for AreaAttackCommandHandler {
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec = vec_to_other * (AREA_ATTACK_IMPULSE - (AREA_ATTACK_COEFF * toi));
+                    let impulse_vec =
+                        vec_to_other * (AREA_ATTACK_IMPULSE - (AREA_ATTACK_COEFF * toi));
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

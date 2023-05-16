@@ -1,6 +1,6 @@
+use crate::instance::Instance;
 use std::any::Any;
 use std::fmt::{Debug, Formatter};
-use crate::instance::Instance;
 
 use std::ops::Range;
 use std::sync::Arc;
@@ -11,7 +11,6 @@ use crate::resources::{load_model, ModelLoadingResources};
 
 use crate::texture;
 
-
 pub trait Model: Any + Debug {
     fn meshes(&self) -> &[Mesh];
     fn materials(&self) -> &[Material];
@@ -19,7 +18,6 @@ pub trait Model: Any + Debug {
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn clone_box(&self) -> Box<dyn Model>;
 }
-
 
 #[derive(Clone)]
 pub struct StaticModel {

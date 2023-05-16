@@ -1,9 +1,9 @@
-use std::any::Any;
 use crate::model::{Material, Mesh, Model, StaticModel};
 use crate::resources::{find_in_search_path, ModelLoadingResources};
 use anyhow::{anyhow, Context};
 use derive_more::Constructor;
 use log::{error, info};
+use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
@@ -12,14 +12,17 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::time::Duration;
 extern crate nalgebra_glm as glm;
-use serde::{Deserialize, Serialize};
+use crate::scene::{Node, NodeId, NodeKind, Scene};
 use common::configs::model_config::ModelIndex;
 use common::core::states::GameState;
-use crate::scene::{Node, NodeId, NodeKind, Scene};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub enum AnimationState {
-    Playing { animation_id: AnimationId, time: f32 },
+    Playing {
+        animation_id: AnimationId,
+        time: f32,
+    },
     Stopped,
 }
 
@@ -30,24 +33,34 @@ pub struct AnimationController {
 }
 
 impl AnimationController {
-    pub fn update_animated_model_state(&mut self, object: &mut Box<dyn Model>, node_id: &NodeId) -> Option<()> {
+    pub fn update_animated_model_state(
+        &mut self,
+        object: &mut Box<dyn Model>,
+        node_id: &NodeId,
+    ) -> Option<()> {
         let animation_state = self.animation_states.get(node_id)?;
         let model = object;
         if let Some(animated_model) = model.as_any_mut().downcast_mut::<AnimatedModel>() {
-
-            let next_state = if let AnimationState::Playing { animation_id, time } = animation_state {
+            let next_state = if let AnimationState::Playing { animation_id, time } = animation_state
+            {
                 let animation = animated_model.animations.get(animation_id)?;
                 let animation_duration = animation.duration();
                 let cyclic = animation.cyclic;
 
                 if *time > animation_duration {
                     if cyclic {
-                        AnimationState::Playing { animation_id: animation_id.clone(), time: *time % animation_duration }
+                        AnimationState::Playing {
+                            animation_id: animation_id.clone(),
+                            time: *time % animation_duration,
+                        }
                     } else {
                         AnimationState::Stopped
                     }
                 } else {
-                    AnimationState::Playing { animation_id: animation_id.clone(), time: *time }
+                    AnimationState::Playing {
+                        animation_id: animation_id.clone(),
+                        time: *time,
+                    }
                 }
             } else {
                 AnimationState::Stopped
@@ -59,23 +72,32 @@ impl AnimationController {
     }
 
     pub fn play_animation(&mut self, animation_id: AnimationId, node_id: NodeId) {
-
         println!("Playing animation {:?}", animation_id);
 
         // if already player, do nothing
-        if let Some(AnimationState::Playing { animation_id: playing_animation_id, .. }) = self.animation_states.get(&node_id) {
+        if let Some(AnimationState::Playing {
+            animation_id: playing_animation_id,
+            ..
+        }) = self.animation_states.get(&node_id)
+        {
             if playing_animation_id == &animation_id {
                 return;
             }
         }
 
-
         println!("Playing animation {:?}", animation_id);
-        self.animation_states.insert(node_id, AnimationState::Playing { animation_id, time: 0.0 });
+        self.animation_states.insert(
+            node_id,
+            AnimationState::Playing {
+                animation_id,
+                time: 0.0,
+            },
+        );
     }
 
     pub fn stop_animation(&mut self, node_id: NodeId) {
-        self.animation_states.insert(node_id, AnimationState::Stopped);
+        self.animation_states
+            .insert(node_id, AnimationState::Stopped);
     }
 
     pub fn update(&mut self, dt: Duration) {
@@ -89,13 +111,15 @@ impl AnimationController {
         }
     }
 
-    pub fn load_game_state(&mut self, game_state: impl Deref<Target=GameState>) {
-
+    pub fn load_game_state(&mut self, game_state: impl Deref<Target = GameState>) {
         for player_state in game_state.players.values() {
             let node_id = NodeKind::Player.node_id(player_state.id.to_string());
 
-            let action_state = player_state.active_action_states.iter().map(|(action_state, _)|
-                action_state).max_by_key(|action_state| action_state.priority());
+            let action_state = player_state
+                .active_action_states
+                .iter()
+                .map(|(action_state, _)| action_state)
+                .max_by_key(|action_state| action_state.priority());
 
             if let Some(action_state) = action_state {
                 self.play_animation(action_state.animation_id().to_string(), node_id);
@@ -165,11 +189,12 @@ impl AnimatedModel {
         }
     }
     pub fn default_animation(&self) -> &Animation {
-        self.animations.get(self.default_animation.as_ref().unwrap()).unwrap()
+        self.animations
+            .get(self.default_animation.as_ref().unwrap())
+            .unwrap()
     }
 
     pub fn add_animation(&mut self, animation: Animation) {
-
         // if there is no idle animation, set the first animation as the idle
         if self.default_animation.is_none() || animation.name == "idle" {
             self.default_animation = Some(animation.name.clone());
@@ -184,12 +209,8 @@ impl AnimatedModel {
 
     pub fn active_animation(&self) -> Option<&Animation> {
         match &self.active_animation {
-            AnimationState::Playing { animation_id, .. } => {
-                self.animations.get(animation_id)
-            }
-            AnimationState::Stopped => {
-                self.default_animation().into()
-            }
+            AnimationState::Playing { animation_id, .. } => self.animations.get(animation_id),
+            AnimationState::Stopped => self.default_animation().into(),
         }
     }
 
@@ -230,10 +251,9 @@ impl AnimatedModel {
             res,
             desc,
         )
-            .await?;
+        .await?;
 
         self.add_animation(animation);
-
 
         Ok(())
     }
@@ -257,7 +277,8 @@ impl AnimatedModel {
 
         if let Ok(desc_file) = File::open(desc_path) {
             let reader = BufReader::new(desc_file);
-            let desc: HashMap<String, AnimationDesc> = serde_json::from_reader(reader).context("Could not parse animation desc file")?;
+            let desc: HashMap<String, AnimationDesc> =
+                serde_json::from_reader(reader).context("Could not parse animation desc file")?;
             animation_descs = desc;
         }
 
@@ -268,7 +289,6 @@ impl AnimatedModel {
                 .to_str()
                 .context("Could not convert animation path to string")?;
 
-
             let path_buf = PathBuf::from(path);
             let name = path_buf
                 .file_stem()
@@ -276,7 +296,16 @@ impl AnimatedModel {
                 .to_str()
                 .context("Could not convert animation name to string")?;
 
-            if let Err(e) = self.load_animation(path, res, animation_descs.get(name).unwrap_or(&AnimationDesc::default())).await {
+            if let Err(e) = self
+                .load_animation(
+                    path,
+                    res,
+                    animation_descs
+                        .get(name)
+                        .unwrap_or(&AnimationDesc::default()),
+                )
+                .await
+            {
                 error!("Skipping animation {}: {}", path, e);
             }
         }
@@ -284,12 +313,11 @@ impl AnimatedModel {
         Ok(())
     }
 
-    pub async fn load(
-        path: &str,
-        res: ModelLoadingResources<'_>,
-    ) -> anyhow::Result<Self> {
+    pub async fn load(path: &str, res: ModelLoadingResources<'_>) -> anyhow::Result<Self> {
         let mut animated_model = Self::new(path);
-        animated_model.load_all_animations_from_dir(path, res).await?;
+        animated_model
+            .load_all_animations_from_dir(path, res)
+            .await?;
         Ok(animated_model)
     }
 }
@@ -337,12 +365,18 @@ impl Animation {
             .collect();
         //sort the files by the numerical part of the name
         entries.sort_by(|a, b| {
-            let a = a.file_name().to_str().unwrap()
+            let a = a
+                .file_name()
+                .to_str()
+                .unwrap()
                 .trim_start_matches(|c: char| !c.is_numeric())
                 .trim_end_matches(|c: char| !c.is_numeric())
                 .parse::<i32>()
                 .unwrap();
-            let b = b.file_name().to_str().unwrap()
+            let b = b
+                .file_name()
+                .to_str()
+                .unwrap()
                 .trim_start_matches(|c: char| !c.is_numeric())
                 .trim_end_matches(|c: char| !c.is_numeric())
                 .parse::<i32>()

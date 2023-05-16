@@ -24,7 +24,7 @@ impl ActionState {
             ActionState::Attacking => 3,
         }
     }
-    
+
     pub fn animation_id(&self) -> &str {
         match self {
             ActionState::Idle => "idle",
