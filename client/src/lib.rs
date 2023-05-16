@@ -33,8 +33,8 @@ pub mod audio;
 pub mod event_loop;
 pub mod inputs;
 
-use crate::inputs::Input;
 use crate::animation::AnimatedModel;
+use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
 use crate::scene::InstanceBundle;
 use common::configs::model_config::ConfigModels;
@@ -46,6 +46,9 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+
+const MODELS_CONFIG_PATH: &str = "models.json";
+const SCENE_CONFIG_PATH: &str = "scene.json";
 
 struct State {
     surface: wgpu::Surface,

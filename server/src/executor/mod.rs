@@ -114,6 +114,12 @@ impl Executor {
 
         let player_config = self.config_instance.player.clone();
 
+        #[cfg(not(feature = "debug-ready-sync"))]
+        let player_upper_bound = 4;
+
+        #[cfg(feature = "debug-ready-sync")]
+        let player_upper_bound = 1;
+
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
                 Command::UI(ServerSync::Ready) => {
@@ -127,7 +133,7 @@ impl Executor {
                             .push(client_command.client_id);
                         // change the 1 to 4 for working correctly
                         // here I just change it to 1 for testing purpose
-                        if self.ready_players.borrow().len() == 1 {
+                        if self.ready_players.borrow().len() == player_upper_bound {
                             game_state.life_cycle_state = Running;
                         }
                     } else {

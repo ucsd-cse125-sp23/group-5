@@ -1,8 +1,8 @@
 use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
 use common::communication::commons::Protocol;
 
-use common::core::command::{Command, ServerSync};
 use common::core::command::Command::{AreaAttack, Attack, Die, Jump, Refill, Spawn};
+use common::core::command::{Command, ServerSync};
 
 use glm::{vec3, Vec3};
 use log::{debug, info, warn};
