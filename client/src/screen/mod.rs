@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::{mpsc, Arc, Mutex};
 
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
@@ -7,13 +8,16 @@ use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
 };
+use common::core::states::GameState;
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::location_helper::{get_coords, to_absolute};
-use crate::screen::objects::ScreenInstance;
+
+use crate::inputs::Input;
+use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
 
 use self::objects::Screen;
@@ -21,7 +25,8 @@ use self::objects::Screen;
 pub mod display_helper;
 pub mod location_helper;
 pub mod objects;
-pub mod texture_config_helper;
+pub mod texture_helper;
+pub mod ui_interaction;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -42,40 +47,45 @@ pub struct Display {
     pub rect_ibuf: wgpu::Buffer,
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
+    // for sending command
+    pub sender: mpsc::Sender<Input>,
+    pub game_state: Arc<Mutex<GameState>>,
 }
 
 impl Display {
-    pub fn new(
-        groups: HashMap<String, objects::DisplayGroup>,
-        current: String,
-        game_display: String,
-        texture_map: HashMap<String, wgpu::BindGroup>,
-        screen_map: HashMap<String, Screen>,
-        scene_map: HashMap<String, Scene>,
-        light_state: lights::LightState,
-        scene_pipeline: wgpu::RenderPipeline,
-        ui_pipeline: wgpu::RenderPipeline,
-        particles: ParticleDrawer,
-        rect_ibuf: wgpu::Buffer,
-        depth_texture: texture::Texture,
-        default_inst_buf: wgpu::Buffer,
-    ) -> Self {
-        Self {
-            groups,
-            current,
-            game_display,
-            texture_map,
-            screen_map,
-            scene_map,
-            light_state,
-            scene_pipeline,
-            ui_pipeline,
-            particles,
-            rect_ibuf,
-            depth_texture,
-            default_inst_buf,
-        }
-    }
+    // pub fn new(
+    //     groups: HashMap<String, objects::DisplayGroup>,
+    //     current: String,
+    //     game_display: String,
+    //     texture_map: HashMap<String, wgpu::BindGroup>,
+    //     screen_map: HashMap<String, Screen>,
+    //     scene_map: HashMap<String, Scene>,
+    //     light_state: lights::LightState,
+    //     scene_pipeline: wgpu::RenderPipeline,
+    //     ui_pipeline: wgpu::RenderPipeline,
+    //     particles: ParticleDrawer,
+    //     rect_ibuf: wgpu::Buffer,
+    //     depth_texture: texture::Texture,
+    //     default_inst_buf: wgpu::Buffer,
+    //     sender: mpsc::Sender<Input>,
+    // ) -> Self {
+    //     Self {
+    //         groups,
+    //         current,
+    //         game_display,
+    //         texture_map,
+    //         screen_map,
+    //         scene_map,
+    //         light_state,
+    //         scene_pipeline,
+    //         ui_pipeline,
+    //         particles,
+    //         rect_ibuf,
+    //         depth_texture,
+    //         default_inst_buf,
+    //         sender,
+    //     }
+    // }
 
     pub fn from_config(
         config: &ConfigDisplay,
@@ -91,6 +101,8 @@ impl Display {
         screen_width: u32,
         screen_height: u32,
         device: &wgpu::Device,
+        sender: mpsc::Sender<Input>,
+        game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         let groups = create_display_group(config);
         let screen_map = create_screen_map(config, device, screen_width, screen_height);
@@ -108,6 +120,8 @@ impl Display {
             rect_ibuf,
             depth_texture,
             default_inst_buf,
+            sender,
+            game_state,
         }
     }
 
@@ -300,7 +314,7 @@ impl Display {
         }
         match to_call {
             None => {}
-            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self),
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self),
         };
     }
 }

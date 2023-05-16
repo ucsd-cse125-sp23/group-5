@@ -1,7 +1,7 @@
 use glm::vec3;
 
 use std::collections::HashMap;
-use std::sync::MutexGuard;
+use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
@@ -34,6 +34,7 @@ pub mod event_loop;
 pub mod inputs;
 
 use crate::animation::AnimatedModel;
+use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
 use crate::scene::InstanceBundle;
 use common::configs::model_config::ConfigModels;
@@ -72,7 +73,12 @@ struct State {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: Window, client_id: u8) -> Self {
+    async fn new(
+        window: Window,
+        client_id: u8,
+        sender: mpsc::Sender<Input>,
+        game_state: Arc<Mutex<GameState>>,
+    ) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -482,7 +488,7 @@ impl State {
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
-        screen::texture_config_helper::load_screen_tex_config(
+        screen::texture_helper::load_screen_tex_config(
             &device,
             &queue,
             &texture_bind_group_layout_2d,
@@ -505,6 +511,7 @@ impl State {
 
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
+
         let display = screen::Display::from_config(
             &display_config,
             texture_map,
@@ -521,6 +528,8 @@ impl State {
             1920,
             1080,
             &device,
+            sender,
+            game_state,
         );
 
         // let screens =

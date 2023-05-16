@@ -3,6 +3,7 @@ use crate::outgoing_request::{OutgoingRequest, RequestKind};
 use crate::Recipients;
 use bus::Bus;
 use common::core::command::Command;
+use common::core::states::GameLifeCycleState::{Running, Waiting};
 use log::debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
@@ -68,7 +69,10 @@ impl GameLoop<'_> {
             let tick_start = Instant::now();
 
             // consume and collect all messages in the channel
-            let mut commands = self.commands.try_iter().collect::<Vec<_>>();
+            let commands = self.commands.try_iter().collect::<Vec<_>>();
+
+            // automatically spawning the 4 players if gamestate is running now
+            let mut commands = self.executor.game_init(commands);
 
             // update list of dead players and issue die commands
             let dead_players = self.executor.update_dead_players();

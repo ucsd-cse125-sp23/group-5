@@ -1,22 +1,12 @@
 use common::configs::display_config::ScreenLocation;
 use nalgebra_glm as glm;
-use phf::phf_map;
+
+use log::{debug, info, warn};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 
 use crate::screen;
 use crate::screen::location_helper::get_coords;
-
-pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map! {
-    "game_start" => game_start,
-};
-
-// Place click events here ----------------------
-fn game_start(display: &mut screen::Display) {
-    display.current = display.game_display.clone();
-}
-
-// end click events ----------------------
 
 // Vertex
 #[repr(C)]
