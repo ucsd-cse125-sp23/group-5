@@ -699,8 +699,46 @@ impl State {
                     text: vec![Text::new(
                         format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
                     )
-                        .with_color([0.0, 0.0, 0.0, 1.0])
-                        .with_scale(40.0)],
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
+                    ..Section::default()
+                });
+            }
+            if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
+                let area_attack_cooldown = self.player.on_cooldown.get(&Command::AreaAttack).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (30.0, 100.0),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![Text::new(
+                        &format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
+                    )
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0)],
+                    ..Section::default()
+                });
+            }
+        } else {
+            // render respawn cooldown
+            if self.player.on_cooldown.contains_key(&Command::Spawn) {
+                let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![
+                        Text::new("You died!\n")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(100.0),
+                        Text::new("Respawning in ")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                        Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                            .with_color([1.0, 1.0, 1.0, 1.0])
+                            .with_scale(60.0),
+                        Text::new(" seconds")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                    ],
+                    layout: Layout::default().h_align(HorizontalAlign::Center),
                     ..Section::default()
                 });
                 // render ability cooldowns
