@@ -88,13 +88,14 @@ fn create_icon(
                 .iter()
                 .map(|instance_info| {
                     let mut inst_matrix: glm::Mat4 = glm::identity();
-                    glm::scale(
+                    inst_matrix = glm::scale(
                         &inst_matrix,
                         &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
                     );
-                    glm::rotate_z(&inst_matrix, instance_info.rotation);
+                    inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
                     let t = to_absolute(&instance_info.translation, screen_width, screen_height);
-                    glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
+                    inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
+                    println!("inst: {:?}", &inst_matrix);
                     objects::ScreenInstance {
                         transform: inst_matrix.into(),
                     }

@@ -281,8 +281,8 @@ impl Display {
                         render_pass.draw_ui_instanced(
                             &self.texture_map.get(&icon.texture).unwrap(),
                             &icon.vbuf,
-                            &self.default_inst_buf,
-                            0..1,
+                            &icon.inst_buf,
+                            icon.inst_range.clone(),
                         );
                     }
                 }

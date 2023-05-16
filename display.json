@@ -44,10 +44,183 @@
         {
             "id": "screen:game",
             "buttons": [],
-            "icons": []
+            "icons": [
+                {
+                    "location": {
+                        "vert_disp": [0.0, 0.87],
+                        "horz_disp": [0.0, 0.0]
+                    },
+                    "aspect": 6.5,
+                    "height": 0.14,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:score_back",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "location": {
+                        "vert_disp": [0.0, -0.93],
+                        "horz_disp": [0.0, 0.0]
+                    },
+                    "aspect": 12.5,
+                    "height": 0.1482,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:atk_back",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "location": {
+                        "vert_disp": [0.0, -0.919],
+                        "horz_disp": [0.0, -0.859]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.074,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:place_circle",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.096]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.193]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.289]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.385]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.481]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.578]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.674]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.770]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.867]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "location": {
+                        "vert_disp": [0.0, -0.852],
+                        "horz_disp": [0.0, 0.237]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:place_circle",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.267]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        },
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.533]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                }
+            ]
         },
         {
             "id": "screen:end",
+            "background":  {
+                "tex": "bkgd:end",
+                "aspect": 1.77777778
+            },
             "buttons": [],
             "icons": []
         }

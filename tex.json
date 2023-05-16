@@ -5,12 +5,28 @@
             "path": "start_screen_without_btn.jpg"
         },
         {
+            "name": "bkgd:end",
+            "path": "overlay.png"
+        },
+        {
             "name": "btn:title",
             "path": "start_btn_default.png"
         },
         {
             "name": "btn:title_hover",
             "path": "start_btn_hover.png"
+        },
+        {
+            "name": "icon:score_back",
+            "path": "score_back.png"
+        },
+        {
+            "name": "icon:atk_back",
+            "path": "atk_back.png"
+        },
+        {
+            "name": "icon:place_circle",
+            "path": "placehold_circle.png"
         }
     ]
 }
