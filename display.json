@@ -8,7 +8,13 @@
         },
         {
             "id": "display:game",
-            "scene":"scene:game"
+            "screen": "screen:game",
+            "scene": "scene:game"
+        },
+        {
+            "id": "display:end",
+            "screen": "screen:end",
+            "scene": "scene:game"
         }
     ],
     "screens": [
@@ -33,6 +39,16 @@
                     "on_click": "game_start"
                 }
             ],
+            "icons": []
+        },
+        {
+            "id": "screen:game",
+            "buttons": [],
+            "icons": []
+        },
+        {
+            "id": "screen:end",
+            "buttons": [],
             "icons": []
         }
     ]
