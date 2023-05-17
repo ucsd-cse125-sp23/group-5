@@ -28,6 +28,9 @@ pub enum Command {
     Attack,
     AreaAttack,
     Refill,
+    CastPowerUp,
+    Dash,
+    Flash,
 }
 
 impl Command {

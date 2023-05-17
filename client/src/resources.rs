@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 extern crate nalgebra_glm as glm;
 
-use cfg_if::cfg_if;
 use const_format::formatcp;
 use wgpu::util::DeviceExt;
 
@@ -324,7 +323,7 @@ pub async fn load_model(
             });
 
             model::Mesh {
-                name: file_path.to_string(),
+                name: m.name,
                 vertex_buffer,
                 index_buffer,
                 num_elements: m.mesh.indices.len() as u32,

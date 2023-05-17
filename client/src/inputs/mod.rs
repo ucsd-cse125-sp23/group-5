@@ -1,11 +1,13 @@
 use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
 use common::communication::commons::Protocol;
 
-use common::core::command::Command::{AreaAttack, Attack, Die, Jump, Refill, Spawn};
+use common::core::command::Command::{
+    AreaAttack, Attack, CastPowerUp, Dash, Die, Flash, Jump, Refill, Spawn,
+};
 use common::core::command::{Command, ServerSync};
 
 use glm::{vec3, Vec3};
-use log::{debug, info, warn};
+use log::debug;
 use nalgebra_glm as glm;
 
 use common::communication::message::{HostRole, Message, Payload};
@@ -75,10 +77,14 @@ impl InputEventProcessor {
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),
             VirtualKeyCode::RShift => Some((GameKeyKind::Pressable, Die)),
+            VirtualKeyCode::X => Some((GameKeyKind::Pressable, CastPowerUp)), // TODO: Change
+            VirtualKeyCode::Q => Some((GameKeyKind::Pressable, Dash)),        // TODO: Change
+            VirtualKeyCode::E => Some((GameKeyKind::Pressable, Flash)),       // TODO: Change
+
             // match PressRelease keys
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
             VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
-            VirtualKeyCode::E => Some((GameKeyKind::PressRelease, AreaAttack)),
+            VirtualKeyCode::G => Some((GameKeyKind::PressRelease, AreaAttack)),
             _ => None,
         }
     }

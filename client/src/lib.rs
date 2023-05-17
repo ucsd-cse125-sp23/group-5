@@ -1,17 +1,21 @@
+use common::configs::model_config::ModelIndex;
+use mesh_color::MeshColor;
 use glm::vec3;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, MutexGuard};
+
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
 };
 
+use common::configs::*;
+use common::core::powerup_system::StatusEffect;
+use model::Vertex;
 use winit::event::*;
 
 mod model;
-
-use model::Vertex;
 
 mod camera;
 mod instance;
@@ -26,17 +30,16 @@ mod texture;
 
 use nalgebra_glm as glm;
 
-use common::configs::*;
-
 mod animation;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
+pub mod mesh_color;
 
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
-use crate::scene::InstanceBundle;
+
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::configs as configs;
@@ -57,6 +60,8 @@ struct State {
     player: player::Player,
     player_controller: player::PlayerController,
     player_loc: Vec<(u32, glm::Vec4)>,
+    invisible_players: HashSet<u32>,
+    existing_powerups: HashSet<u32>,
     camera_state: camera::CameraState,
     display: screen::Display,
     pub mouse_position: [f32; 2],
@@ -65,6 +70,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
+    color_bind_group_layout: wgpu::BindGroupLayout,
     animation_controller: animation::AnimationController,
 }
 
@@ -246,6 +252,23 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
+            let color_bind_group_layout =
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        }
+                    ],
+                    label: Some("color_bind_group_layout"),
+                });
+
         let texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -273,8 +296,9 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
+        let config_instance = ConfigurationManager::get_configuration();
         // Scene
-        let model_configs = from_file::<_, ConfigModels>(configs::MODELS_CONFIG_PATH).unwrap();
+        let model_configs = config_instance.models.clone();
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
 
@@ -297,7 +321,7 @@ impl State {
             models.insert(model_config.name, model);
         }
 
-        let scene_config = from_file::<_, ConfigSceneGraph>(configs::SCENE_CONFIG_PATH).unwrap();
+        let scene_config = config_instance.scene.clone();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -333,13 +357,14 @@ impl State {
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
-        let render_pipeline_layout =
+        let _render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("3D Render Pipeline Layout"),
                 bind_group_layouts: &[
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
+                    &color_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -347,7 +372,7 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d],
+                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -358,6 +383,7 @@ impl State {
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
+                    &color_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -477,11 +503,41 @@ impl State {
         //TODO: for debugging -----
         // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
         // screen::objects::get_display_groups(&device, scene, &mut groups);
-        let default_display_id = String::from("display:title");
-        let game_display_id = String::from("display:game");
+        let _default_display_id = String::from("display:title");
+        let _game_display_id = String::from("display:game");
+
+        // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
+        let model_configs = config_instance.models.clone();
+        let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+
+        for model_config in model_configs.models {
+            if model_config.animated() {
+                // TODO: skipping animated models for now for lobby scene
+                continue;
+            } else {
+                let model: Box<dyn Model> =  Box::new(
+                    StaticModel::load(&model_config.path, model_loading_resources)
+                        .await
+                        .unwrap(),
+                );
+                models.insert(model_config.name, model);
+            }
+        }
+        
+        let lobby_scene_config = config_instance.lobby_scene.clone();
+        
+        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
+        lobby_scene.objects = models;
+        lobby_scene.draw_scene_dfs();
+        // lobby_scene.objects.insert("player".to_owned(), models.get("player").unwrap());
+        // lobby_scene.objects.insert("ferris".to_owned(), *models.get("ferris").unwrap());
 
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
+        scene_map.insert(String::from("scene:lobby"), lobby_scene);
+
+        
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -525,10 +581,11 @@ impl State {
             1920,
             1080,
             &device,
+            &color_bind_group_layout,
             sender,
             game_state,
         );
-
+        // println!("{:#?}", display.screen_map);
         // let screens =
         //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
@@ -542,6 +599,8 @@ impl State {
             player,
             player_controller,
             player_loc: Vec::new(),
+            invisible_players: HashSet::default(),
+            existing_powerups: HashSet::default(),
             camera_state,
             display,
             mouse_position: [0.0, 0.0],
@@ -550,6 +609,7 @@ impl State {
             client_id,
             staging_belt,
             glyph_brush,
+            color_bind_group_layout,
             animation_controller,
         }
     }
@@ -597,16 +657,16 @@ impl State {
             }
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
-                state: _,
+                state: crate::ElementState::Released,
                 ..
             } => {
                 self.display.click(&self.mouse_position);
-                return true;
+                true
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_position[0] = 2.0 * (position.x as f32) / self.window_size[0] - 1.0;
                 self.mouse_position[1] = -2.0 * (position.y as f32) / self.window_size[1] + 1.0;
-                return true;
+                true
             }
             _ => false,
         }
@@ -618,6 +678,8 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
+        let game_state_clone = game_state.lock().unwrap().clone();
+
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -675,7 +737,7 @@ impl State {
                 let mut tint;
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::communication::commons::ATTACK_COOLDOWN;
+                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
                     // use smmoothstep?
                     screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
                     tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
@@ -691,7 +753,7 @@ impl State {
                 let ind = screen.icon_id_map.get("icon:atk_wave_overlay").unwrap().clone();
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::communication::commons::AREA_ATTACK_COOLDOWN;
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::AREA_ATTACK_COOLDOWN;
                     // use smmoothstep?
                     screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
                     tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
@@ -717,6 +779,9 @@ impl State {
                 .get(scene_id)
                 .unwrap()
                 .get_player_positions();
+
+            self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);
+            self.existing_powerups = game_state_clone.get_existing_powerups();
         }
 
         let particle_queue = particle_queue.lock().unwrap();
@@ -754,12 +819,16 @@ impl State {
             &self.camera_state,
             // &self.player,
             &self.player_loc,
+            &self.invisible_players,
+            &self.existing_powerups,
             &self.device,
             &self.queue,
             &mut encoder,
             &view,
             &mut self.animation_controller,
+            &self.color_bind_group_layout,
             &output,
+            self.client_id as u32,
         );
 
         let size = &self.window.inner_size();
@@ -788,60 +857,78 @@ impl State {
                 layout: Layout::default().h_align(HorizontalAlign::Center),
                 ..Section::default()
             });
-            // render ability cooldowns
-            if self.player.on_cooldown.contains_key(&Command::Attack) {
-                let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
-                self.glyph_brush.queue(Section {
-                    screen_position: (30.0, 60.0),
-                    bounds: (size.width as f32, size.height as f32),
-                    text: vec![Text::new(
-                        format!("Attack cooldown: {:.1}\n", attack_cooldown).as_str(),
-                    )
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)],
-                    ..Section::default()
-                });
-            }
-            if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                let area_attack_cooldown =
-                    self.player.on_cooldown.get(&Command::AreaAttack).unwrap();
-                self.glyph_brush.queue(Section {
-                    screen_position: (30.0, 100.0),
-                    bounds: (size.width as f32, size.height as f32),
-                    text: vec![Text::new(
-                        &format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
-                    )
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0)],
-                    ..Section::default()
-                });
-            }
-        } else {
-            // render respawn cooldown
-            if self.player.on_cooldown.contains_key(&Command::Spawn) {
-                let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-                self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-                    bounds: (size.width as f32, size.height as f32),
-                    text: vec![
-                        Text::new("You died!\n")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(100.0),
-                        Text::new("Respawning in ")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(60.0),
-                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(60.0),
-                        Text::new(" seconds")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(60.0),
-                    ],
-                    layout: Layout::default().h_align(HorizontalAlign::Center),
-                    ..Section::default()
-                });
-            }
         }
+
+            // render status effect and powerup held
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 20.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 60.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+        // // render respawn cooldown
+        // if self.player.on_cooldown.contains_key(&Command::Spawn) {
+        //     let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+        //     self.glyph_brush.queue(Section {
+        //         screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+        //         bounds: (size.width as f32, size.height as f32),
+        //         text: vec![
+        //             Text::new("You died!\n")
+        //                 .with_color([1.0, 1.0, 0.0, 1.0])
+        //                 .with_scale(100.0),
+        //             Text::new("Respawning in ")
+        //                 .with_color([1.0, 1.0, 0.0, 1.0])
+        //                 .with_scale(60.0),
+        //             Text::new(format!("{:.1}", spawn_cooldown).as_str())
+        //                 .with_color([1.0, 1.0, 1.0, 1.0])
+        //                 .with_scale(60.0),
+        //             Text::new(" seconds")
+        //                 .with_color([1.0, 1.0, 0.0, 1.0])
+        //                 .with_scale(60.0),
+        //         ],
+        //         layout: Layout::default().h_align(HorizontalAlign::Center),
+        //         ..Section::default()
+        //     });
+        // } else {
+        //     // render respawn cooldown
+        //     if self.player.on_cooldown.contains_key(&Command::Spawn) {
+        //         let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+        //         self.glyph_brush.queue(Section {
+        //             screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+        //             bounds: (size.width as f32, size.height as f32),
+        //             text: vec![
+        //                 Text::new("You died!\n")
+        //                     .with_color([1.0, 1.0, 0.0, 1.0])
+        //                     .with_scale(100.0),
+        //                 Text::new("Respawning in ")
+        //                     .with_color([1.0, 1.0, 0.0, 1.0])
+        //                     .with_scale(60.0),
+        //                 Text::new(format!("{:.1}", spawn_cooldown).as_str())
+        //                     .with_color([1.0, 1.0, 1.0, 1.0])
+        //                     .with_scale(60.0),
+        //                 Text::new(" seconds")
+        //                     .with_color([1.0, 1.0, 0.0, 1.0])
+        //                     .with_scale(60.0),
+        //             ],
+        //             layout: Layout::default().h_align(HorizontalAlign::Center),
+        //             ..Section::default()
+        //         });
+        //     }
+        // }
 
         // Draw the text!
         self.glyph_brush

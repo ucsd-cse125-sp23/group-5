@@ -599,6 +599,8 @@ dependencies = [
  "log",
  "nalgebra-glm",
  "once_cell",
+ "phf",
+ "rand",
  "rapier3d",
  "serde",
  "serde_json",

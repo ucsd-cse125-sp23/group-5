@@ -1,15 +1,17 @@
-use crate::communication::commons::{
-    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, WINNING_THRESHOLD,
+use crate::configs::parameters::{
+    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
+    POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
 };
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
+
+use crate::core::powerup_system::{PowerUp, PowerUpLocations, StatusEffect};
 use nalgebra_glm::Vec3;
 use rapier3d::prelude::Vector;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::ops::{Add, AddAssign};
 
 use crate::core::action_states::ActionState;
 use std::time::Duration;
@@ -22,7 +24,25 @@ pub struct GameState {
     pub world: WorldState,
     pub players: HashMap<u32, PlayerState>,
     pub previous_tick_winner: Option<u32>,
+    pub active_power_ups:
+        HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
     pub life_cycle_state: GameLifeCycleState,
+}
+
+impl GameState {
+    pub fn new() -> Self {
+        let mut active_power_ups: HashMap<PowerUpLocations, (f32, Option<PowerUp>)> =
+            HashMap::new();
+        active_power_ups.insert(PowerUpLocations::PowerUp1XYZ, (0.0, Some(rand::random())));
+        active_power_ups.insert(PowerUpLocations::PowerUp2XYZ, (0.0, Some(rand::random())));
+        active_power_ups.insert(PowerUpLocations::PowerUp3XYZ, (0.0, Some(rand::random())));
+        active_power_ups.insert(PowerUpLocations::PowerUp4XYZ, (0.0, Some(rand::random())));
+
+        Self {
+            active_power_ups,
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -37,20 +57,25 @@ pub struct PlayerState {
     pub wind_charge: u32,
     pub on_flag_time: f32,
     pub spawn_point: Vector<f32>,
+    pub power_up: Option<PowerUp>,
+    pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub enum GameLifeCycleState {
+    #[default]
     Waiting,
     Running,
 }
 
-impl Default for GameLifeCycleState {
-    fn default() -> Self {
-        GameLifeCycleState::Waiting
-    }
-}
+// Notes to be removed:
+//      1. Update who should get the powerup
+//          - need to update the powerup counter, and the player's state
+//      2. Implement Powerup Effects ***
+//          - perhaps use fake keybinds for now, for testing
+//      3. Implement Powerup Casting
+//      4. Refactoring
 
 impl PlayerState {
     // add to attack command handlers, put NONE for consume 1
@@ -119,6 +144,10 @@ impl PlayerState {
             (None, None) => {}
         }
         (p_x - c_x).powi(2) + (p_z - c_z).powi(2) < radius.powi(2)
+    }
+
+    pub fn reset_status_effects(&mut self) {
+        self.status_effects.clear();
     }
 
     pub fn add_action_state(&mut self, action_state: ActionState, duration: Duration) {
@@ -201,14 +230,114 @@ impl GameState {
             None => None,
             Some(id) => {
                 self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
-                return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
                     Some(id)
                 } else {
                     None
-                };
+                }
             }
         }
     }
+
+    pub fn update_player_status_effect(&mut self, delta_time: f32) {
+        for (_, player_state) in self.players.iter_mut() {
+            player_state.status_effects = player_state
+                .status_effects
+                .clone()
+                .into_iter()
+                .map(|(key, time_remaining)| (key, time_remaining - delta_time))
+                .filter(|(_, time_remaining)| (*time_remaining > 0.0))
+                .collect();
+        }
+    }
+
+    pub fn update_powerup_locations(&mut self, delta_time: f32) {
+        for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
+            if powerup.clone().is_none() {
+                // case where the powerup is empty, we need to refill the powerup for the map
+                *vacancy_time -= delta_time;
+                if *vacancy_time <= 0.0 {
+                    // refill
+                    *vacancy_time = 0.0;
+                    *powerup = Some(rand::random());
+                }
+            } else {
+                // check if a player should get the powerup now
+                for (_, player_state) in self.players.iter_mut() {
+                    let power_up_location = *POWER_UP_LOCATIONS.get(&loc_id.value()).unwrap();
+                    if player_state.power_up.is_none()
+                        && player_state.is_in_circular_area(
+                            (power_up_location.0, power_up_location.2),
+                            POWER_UP_RADIUS,
+                            (
+                                Some(power_up_location.1 - POWER_UP_RADIUS),
+                                Some(power_up_location.1 + POWER_UP_RADIUS),
+                            ),
+                        )
+                    {
+                        // player should get it, powerup is gone
+                        player_state.power_up = powerup.clone();
+                        *vacancy_time = POWER_UP_RESPAWN_COOLDOWN;
+                        *powerup = None;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn find_closest_player(&self, id_to_find: u32) -> Option<u32> {
+        let mut min: Option<(u32, f32)> = None;
+
+        for (id, player_state) in self.players.iter() {
+            if *id == id_to_find {
+                continue;
+            }
+            if !player_state.is_dead {
+                if min.is_none() {
+                    min = Some((
+                        *id,
+                        calculate_distance(
+                            player_state.transform.translation,
+                            self.players.get(id).unwrap().transform.translation,
+                        ),
+                    ));
+                } else {
+                    let temp = calculate_distance(
+                        player_state.transform.translation,
+                        self.players.get(id).unwrap().transform.translation,
+                    );
+                    if temp < min.unwrap().1 {
+                        min = Some((*id, temp));
+                    }
+                }
+            }
+        }
+        min.map(|(id, _)| id)
+    }
+
+    pub fn get_affected_players(&self, effect: StatusEffect) -> HashSet<u32> {
+        let mut res = HashSet::new();
+        for (id, player_state) in self.players.iter() {
+            if player_state.status_effects.contains_key(&effect) {
+                res.insert(*id);
+            }
+        }
+        res
+    }
+
+    pub fn get_existing_powerups(&self) -> HashSet<u32> {
+        let mut res = HashSet::new();
+        for (id, (_, powerup)) in self.active_power_ups.iter() {
+            if powerup.is_some() {
+                res.insert(id.value());
+            }
+        }
+        res
+    }
+}
+
+pub fn calculate_distance(lhs: Vec3, rhs: Vec3) -> f32 {
+    ((lhs.x - rhs.x).powi(2) + (lhs.y - rhs.y).powi(2) + (lhs.z - rhs.z).powi(2)).sqrt()
 }
 
 #[derive(Debug, Clone, Default)]
@@ -230,6 +359,7 @@ mod tests {
             world: WorldState::default(),
             players: HashMap::default(),
             previous_tick_winner: None,
+            active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
         };
         assert_eq!(state.players.len(), 0);
@@ -242,6 +372,7 @@ mod tests {
             world: WorldState::default(),
             players: HashMap::default(),
             previous_tick_winner: None,
+            active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
         };
         let serialized = bincode::serialize(&state).unwrap();

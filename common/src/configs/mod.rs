@@ -1,6 +1,7 @@
 pub mod audio_config;
 pub mod display_config;
 pub mod model_config;
+pub mod parameters;
 pub mod physics_config;
 pub mod player_config;
 pub mod scene_config;
@@ -22,6 +23,7 @@ use crate::configs::texture_config::ConfigTexture;
 
 pub const MODELS_CONFIG_PATH: &str = "models.json";
 pub const SCENE_CONFIG_PATH: &str = "scene.json";
+pub const LOBBY_SCENE_CONFIG_PATH: &str = "lobby_scene.json";
 pub const AUDIO_CONFIG_PATH: &str = "audio.json";
 pub const PLAYER_CONFIG_PATH: &str = "player.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -34,6 +36,8 @@ pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCell
     let models: ConfigModels = from_file(MODELS_CONFIG_PATH).expect("Failed to load models config");
     let scene: ConfigSceneGraph =
         from_file(SCENE_CONFIG_PATH).expect("Failed to load scene config");
+    let lobby_scene: ConfigSceneGraph =
+        from_file(LOBBY_SCENE_CONFIG_PATH).expect("Failed to load scene config");
     let audio: ConfigAudioAssets =
         from_file(AUDIO_CONFIG_PATH).expect("Failed to load audio config");
     let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH).expect("Failed to load player config");
@@ -41,13 +45,14 @@ pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCell
         from_file(DISPLAY_CONFIG_PATH).expect("Failed to load display config");
     let texture: ConfigTexture =
         from_file(TEXTURE_CONFIG_PATH).expect("Failed to load texture config");
-    let config = Config::new(models, scene, audio, player, display, texture);
+    let config = Config::new(models, scene, lobby_scene, audio, player, display, texture);
     RwLock::new(Some(Arc::new(config)))
 });
 
 pub struct Config {
     pub models: ConfigModels,
     pub scene: ConfigSceneGraph,
+    pub lobby_scene: ConfigSceneGraph,
     pub audio: ConfigAudioAssets,
     pub player: ConfigPlayer,
     pub display: ConfigDisplay,
@@ -58,6 +63,7 @@ impl Config {
     pub fn new(
         models: ConfigModels,
         scene: ConfigSceneGraph,
+        lobby_scene: ConfigSceneGraph,
         audio: ConfigAudioAssets,
         player: ConfigPlayer,
         display: ConfigDisplay,
@@ -66,6 +72,7 @@ impl Config {
         Config {
             models,
             scene,
+            lobby_scene,
             audio,
             player,
             display,

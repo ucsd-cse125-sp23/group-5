@@ -2,12 +2,14 @@ use wgpu::util::DeviceExt;
 extern crate nalgebra_glm as glm;
 
 pub type Transform = nalgebra_glm::TMat4<f32>;
-
+use crate::mesh_color::MeshColor;
+use std::collections::HashMap;
 // Instances
 // Lets us duplicate objects in a scene with less cost
 #[derive(Debug, Clone)]
 pub struct Instance {
     pub transform: Transform,
+    pub mesh_colors: Option<HashMap<String, MeshColor>>,
 }
 
 pub struct InstanceState {
@@ -19,6 +21,7 @@ impl Default for Instance {
     fn default() -> Self {
         Self {
             transform: glm::identity(),
+            mesh_colors: None,
         }
     }
 }
@@ -38,6 +41,7 @@ impl Instance {
     pub fn from_transform(transform: &nalgebra_glm::TMat4<f32>) -> Self {
         Self {
             transform: *transform,
+            mesh_colors: None,
         }
     }
 
@@ -50,6 +54,24 @@ impl Instance {
         });
         InstanceState { data, buffer }
     }
+
+    pub fn make_buffers(instances: &Vec<Instance>, device: &wgpu::Device) -> Vec<InstanceState> {
+        let mut instance_states = Vec::new();
+        for instance in instances.iter(){
+            let data = instance.to_raw();
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&[data]),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+            instance_states.push(InstanceState { data: vec![data], buffer});
+        }
+        instance_states
+    }
+
+    // pub fn add_color(&mut self, colors: HashMap<String, MeshColor>) {
+    //     self.mesh_colors = Some(colors);
+    // }
 }
 
 #[repr(C)]

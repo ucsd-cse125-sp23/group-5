@@ -10,15 +10,16 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
 use std::{net::TcpListener, thread};
 
-use common::communication::commons::{CSE125_SERVER_ADDR, DEFAULT_SERVER_ADDR};
+use common::communication::commons::CSE125_SERVER_ADDR;
+use common::communication::commons::DEFAULT_SERVER_ADDR;
 
+use common::configs::*;
 use server::executor::Executor;
 use threadpool::ThreadPool;
 
 mod client_handler;
 
 use client_handler::ClientHandler;
-use common::configs::*;
 
 pub static CLIENT_ID_ASSIGNER: AtomicU8 = AtomicU8::new(1);
 pub static SESSION_ID: Lazy<u64> = Lazy::new(rand::random::<u64>);
@@ -32,7 +33,7 @@ fn main() {
     let broadcast = Arc::new(Mutex::new(Bus::new(1)));
 
     // game state
-    let game_state = Arc::new(Mutex::new(GameState::default()));
+    let game_state = Arc::new(Mutex::new(GameState::new()));
 
     // executor
     let executor = Executor::new(game_state.clone());

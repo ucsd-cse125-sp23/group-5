@@ -1,19 +1,22 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
+use crate::mesh_color::MeshColor;
 use crate::model::{self, Model, StaticModel};
+
 use glm::TMat4;
 use log::debug;
-use std::cell::RefCell;
+
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::MutexGuard;
 
-use crate::player::{Player, PlayerController};
+use nalgebra_glm as glm;
+
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
+use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
-use nalgebra_glm as glm;
+
+use crate::player::{Player, PlayerController};
 
 pub type NodeId = String;
 
@@ -23,6 +26,7 @@ pub struct Node {
     pub child_ids: Vec<NodeId>,
     pub model: Option<ModelIndex>,
     pub transform: Transform,
+    pub colors: Option<HashMap<String, MeshColor>>,
 }
 
 impl Node {
@@ -32,6 +36,7 @@ impl Node {
             child_ids: Vec::new(),
             model: None,
             transform: Transform::default(),
+            colors: None,
         }
     }
 
@@ -41,14 +46,20 @@ impl Node {
             child_ids: Vec::new(),
             model: None,
             transform,
+            colors: None,
         }
     }
 
     pub fn add_model(&mut self, model_index: ModelIndex) {
         self.model = Some(model_index);
     }
+
+    pub fn add_color(&mut self, colors: HashMap<String, MeshColor>) {
+        self.colors = Some(colors);
+    }
 }
 
+#[derive(Clone)]
 pub struct InstanceBundle {
     pub instance: Instance,
     pub node_id: NodeId,
@@ -64,6 +75,11 @@ impl InstanceBundle {
             instance: Instance::from_transform(transform),
             node_id,
         }
+    }
+
+    pub fn add_color(&mut self, colors: Option<HashMap<String, MeshColor>>) -> Self {
+        self.instance.mesh_colors = colors;
+        self.clone()
     }
 
     pub fn instance(&self) -> Instance {
@@ -136,8 +152,12 @@ impl Scene {
         transform: Transform,
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
+
         let parent_node = self.scene_graph.get_mut(&parent_node_id).unwrap();
-        parent_node.child_ids.push(child_node_id.clone());
+        // don't want to add duplicates, as we may have removed it for invisibility
+        if !parent_node.child_ids.contains(&child_node_id.clone()) {
+            parent_node.child_ids.push(child_node_id.clone());
+        }
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
@@ -155,7 +175,11 @@ impl Scene {
             .scene_graph
             .get_mut(&NodeKind::World.base_id())
             .unwrap();
-        parent_node.child_ids.push(child_node_id.clone());
+
+        // don't want to add duplicates, as we may have removed it for invisibility
+        if !parent_node.child_ids.contains(&child_node_id.clone()) {
+            parent_node.child_ids.push(child_node_id.clone());
+        }
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
@@ -176,9 +200,11 @@ impl Scene {
 
         // only render when i'm there
         if game_state.players.contains_key(&player_id) {
+            let invisible_players = game_state.get_affected_players(StatusEffect::Invisible);
+
             game_state.players.iter().for_each(|(id, _player_state)| {
                 let node_id = NodeKind::Player.node_id(id.to_string());
-                if !self.scene_graph.contains_key(&node_id) {
+                if !self.scene_graph.contains_key(&node_id) && !invisible_players.contains(id) {
                     self.add_player_node(node_id);
                 }
             });
@@ -188,11 +214,21 @@ impl Scene {
             player_controller.update(player, camera_state, player_state, dt);
 
             for (id, player_state) in game_state.players.iter() {
+                // take out invisible players
+                if (*id != player_id) && invisible_players.contains(id) {
+                    self.scene_graph
+                        .remove(&NodeKind::Player.node_id(id.to_string()));
+                    continue;
+                }
                 let node_id = NodeKind::Player.node_id(id.to_string());
                 self.scene_graph.get_mut(&node_id).unwrap().transform = Player::calc_transf_matrix(
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
+                
+                // TODO: possibly change model and color with player choices here
+                // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
+                // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
             }
         }
     }
@@ -204,17 +240,17 @@ impl Scene {
         let mut ret = Vec::new();
         for id in 0..10 {
             let node_id = NodeKind::Player.node_id(id.to_string());
-            let pos;
-            match self.scene_graph.get(&node_id) {
+
+            let pos = match self.scene_graph.get(&node_id) {
                 None => continue,
-                Some(n) => pos = n.transform * glm::vec4(0.0, 0.0, 0.0, 1.0),
+                Some(n) => n.transform * glm::vec4(0.0, 0.0, 0.0, 1.0),
             };
             ret.push((
                 id,
                 glm::vec4(pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], 1.0),
             ));
         }
-        return ret;
+        ret
     }
 
     pub fn draw_scene_dfs(&mut self) {
@@ -225,12 +261,15 @@ impl Scene {
         // stacks needed for DFS:
         let mut dfs_stack: Vec<&Node> = Vec::new();
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
+        let mut color_stack: Vec<Option<HashMap<String, MeshColor>>> = Vec::new();
 
         // state needed for DFS:
-        let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
+        let mut cur_node: &Node = self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
+        let mut curr_color = None;
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
+        color_stack.push(curr_color);
 
         let mut total_number_of_edges: usize = 0;
         for n in self.scene_graph.iter() {
@@ -246,6 +285,7 @@ impl Scene {
             }
             cur_node = dfs_stack.pop().unwrap();
             current_view_matrix = matrix_stack.pop().unwrap();
+            curr_color = color_stack.pop().unwrap();
 
             if let Some(model_index) = cur_node.model.clone() {
                 let model_view: TMat4<f32> = current_view_matrix;
@@ -256,7 +296,7 @@ impl Scene {
                         obj.push(InstanceBundle::from_transform(
                             &model_view,
                             cur_node.id.clone(),
-                        ));
+                        ).add_color(curr_color));
                     }
                     None => {
                         // add the new model to the hashmap
@@ -265,16 +305,18 @@ impl Scene {
                             vec![InstanceBundle::from_transform(
                                 &model_view,
                                 cur_node.id.clone(),
-                            )],
+                            ).add_color(curr_color)],
                         );
                     }
                 }
             }
 
             for node_id in cur_node.child_ids.iter() {
-                let node = self.scene_graph.get(node_id).unwrap();
-                dfs_stack.push(node);
-                matrix_stack.push(current_view_matrix * node.transform);
+                if let Some(node) = self.scene_graph.get(node_id) {
+                    dfs_stack.push(node);
+                    matrix_stack.push(current_view_matrix * node.transform);
+                    color_stack.push(node.colors.clone());
+                } // else it is invisible
             }
         }
     }
@@ -321,8 +363,9 @@ impl Scene {
 
 #[cfg(test)]
 mod test {
-    use super::Scene;
     use common::configs::scene_config::ConfigSceneGraph;
+
+    use super::Scene;
 
     // Test reading a scene graph from an inline JSON string
     #[test]

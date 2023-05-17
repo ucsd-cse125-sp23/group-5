@@ -7,6 +7,11 @@
             "screen": "screen:title"
         },
         {
+            "id": "display:lobby",
+            "screen": "screen:lobby",
+            "scene":"scene:lobby"
+        },
+        {
             "id": "display:game",
             "screen": "screen:game",
             "scene": "scene:game"
@@ -36,6 +41,126 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:title",
                     "hover_tex": "btn:title_hover",
+                    "on_click": "go_to_lobby"
+                }
+            ],
+            "icons": []
+        },
+        {
+            "id": "screen:lobby",
+            "buttons": [
+                {
+                    "location": {
+                        "vert_disp": [0.0,-0.5],
+                        "horz_disp": [-0.5, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.5,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:down_arrow",
+                    "hover_tex": "btn:down_arrow_hover",
+                    "on_click": "next_model"
+                },
+                {
+                    "id": "color_btn_1",
+                    "location": {
+                        "vert_disp": [0.0,0.5],
+                        "horz_disp": [0.0, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:color_button",
+                    "hover_tex": "btn:checkmark",
+                    "color": [1.0,0.0,0.0],
+                    "on_click": "change_player_color"
+                },
+                {
+                    "id": "color_btn_2",
+                    "location": {
+                        "vert_disp": [0.0,0.5],
+                        "horz_disp": [0.25, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:color_button",
+                    "hover_tex": "btn:checkmark",
+                    "color": [0.0,1.0,0.0],
+                    "on_click": "change_player_color"
+                },
+                {
+                    "id": "color_btn_3",
+                    "location": {
+                        "vert_disp": [0.0,0.5],
+                        "horz_disp": [0.5, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:color_button",
+                    "hover_tex": "btn:checkmark",
+                    "color": [0.0,0.0,1.0],
+                    "on_click": "change_player_color"
+                },
+                {
+                    "id": "color_btn_4",
+                    "location": {
+                        "vert_disp": [0.0,0.5],
+                        "horz_disp": [0.75, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:color_button",
+                    "hover_tex": "btn:checkmark",
+                    "color": [1.0,1.0,0.0],
+                    "on_click": "change_player_color"
+                },
+                {
+                    "id": "cust_leaf",
+                    "location": {
+                        "vert_disp": [0.0,0.75],
+                        "horz_disp": [0.18, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:checkmark",
+                    "hover_tex": "btn:checkmark",
+                    "on_click": "customize_leaf"
+                },
+                {
+                    "id": "cust_body",
+                    "location": {
+                        "vert_disp": [0.0,0.75],
+                        "horz_disp": [0.54, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:body",
+                    "hover_tex": "btn:checkmark",
+                    "on_click": "customize_body"
+                },
+                {
+                    "location": {
+                        "vert_disp": [0.0,-0.5],
+                        "horz_disp": [0.5, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.25,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:color_button",
+                    "hover_tex": "btn:checkmark",
                     "on_click": "game_start"
                 }
             ],

@@ -24,7 +24,7 @@ use common::core::events::GameEvent;
 use common::core::states::{GameState, ParticleQueue};
 
 fn main() {
-    env::set_var("RUST_BACKTRACE", "1");
+    // env::set_var("RUST_BACKTRACE", "1");
     Builder::from_default_env().format_timestamp_micros().init();
 
     // input channel for communicating between event loop and input processor
@@ -153,7 +153,7 @@ fn recv_server_updates(
     game_state: Arc<Mutex<GameState>>,
     particle_queue: Arc<Mutex<ParticleQueue>>,
     sound_queue: Arc<Mutex<SoundQueue>>,
-    mut game_events: Bus<GameEvent>,
+    _game_events: Bus<GameEvent>,
 ) {
     // check for new state & update local game state
     while let Ok(msg) = protocol.read_message::<Message>() {
