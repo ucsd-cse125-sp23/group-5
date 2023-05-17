@@ -45,6 +45,7 @@ pub struct ConfigButton {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigIcon {
+    pub id: String,
     pub location: ScreenLocation,
     pub aspect: f32,
     pub height: f32,

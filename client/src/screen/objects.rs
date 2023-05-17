@@ -111,6 +111,7 @@ pub struct Screen {
     pub background: Option<ScreenBackground>,
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
+    pub icon_id_map: HashMap<String, u32>,
 }
 
 #[derive(Debug)]
@@ -241,65 +242,4 @@ impl Icon {
         );
         queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
     }
-}
-
-// For testing
-pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, DisplayGroup>) {
-    // title screen
-    let id1 = String::from("display:title");
-    let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("title background Obj Vertex Buffer"),
-        contents: bytemuck::cast_slice(&TITLE_VERT),
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    });
-    let bkgd1 = ScreenBackground {
-        aspect: 16.0 / 9.0,
-        vbuf,
-        texture: String::from("bkgd:title"),
-    };
-    let button1_loc = ScreenLocation {
-        vert_disp: (0.0, -0.5),
-        horz_disp: (0.0, 0.0),
-    };
-    let mut b_vert = TITLE_VERT;
-    get_coords(&button1_loc, 1.0, 0.463, 1920, 1080, &mut b_vert);
-    let b_vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("title button Vertex Buffer"),
-        contents: bytemuck::cast_slice(&TITLE_VERT),
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    });
-    let button1 = Button {
-        location: button1_loc,
-        aspect: 1.0,
-        height: 0.463 * 2.0,
-        vertices: b_vert,
-        vbuf: b_vbuf,
-        default_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
-        hover_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
-        default_texture: String::from("btn:title"),
-        hover_texture: String::from("btn:title_hover"),
-        on_click: String::from("game_start"),
-    };
-    let title_screen = Screen {
-        id: String::from("screen:title"),
-        background: Some(bkgd1),
-        buttons: vec![button1],
-        icons: vec![],
-    };
-    let title_dg = DisplayGroup {
-        id: id1.clone(),
-        screen: Some(String::from("screen:title")),
-        scene: None,
-    };
-    groups.insert(id1, title_dg);
-
-    // game group
-    let id2 = String::from("display:game");
-    let game_dg = DisplayGroup {
-        id: id2.clone(),
-        screen: None,
-        scene: Some(String::from("scene:game")),
-    };
-    groups.insert(id2, game_dg);
-    return;
 }

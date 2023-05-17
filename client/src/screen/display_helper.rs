@@ -28,13 +28,15 @@ pub fn create_screen_map(
     let mut screen_map = HashMap::new();
     for s in &config.screens {
         let background = create_background(s, device);
-        let icons = create_icon(s, device, screen_width, screen_height);
+        let mut icon_id_map : HashMap<String, u32> = HashMap::new();
+        let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
         let buttons = create_button(s, device, screen_width, screen_height);
 
         let screen = objects::Screen {
             id: s.id.clone(),
             background,
             icons,
+            icon_id_map,
             buttons,
         };
         screen_map.insert(s.id.clone(), screen);
@@ -62,12 +64,16 @@ fn create_background(s: &ConfigScreen, device: &wgpu::Device) -> Option<objects:
 fn create_icon(
     s: &ConfigScreen,
     device: &wgpu::Device,
+    map: &mut HashMap<String, u32>,
     screen_width: u32,
     screen_height: u32,
 ) -> Vec<objects::Icon> {
+    let mut ind = 0;
     s.icons
         .iter()
         .map(|i| {
+            map.insert(i.id.clone(), ind);
+            ind += 1;
             let mut vertices = objects::TITLE_VERT;
             get_coords(
                 &i.location,
@@ -95,7 +101,6 @@ fn create_icon(
                     inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
                     let t = to_absolute(&instance_info.translation, screen_width, screen_height);
                     inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
-                    println!("inst: {:?}", &inst_matrix);
                     objects::ScreenInstance {
                         transform: inst_matrix.into(),
                     }

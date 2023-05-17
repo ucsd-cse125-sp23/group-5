@@ -46,6 +46,7 @@
             "buttons": [],
             "icons": [
                 {
+                    "id": "icon:score_back",
                     "location": {
                         "vert_disp": [0.0, 0.87],
                         "horz_disp": [0.0, 0.0]
@@ -66,6 +67,7 @@
                     ]
                 },
                 {
+                    "id": "icon:atk_back",
                     "location": {
                         "vert_disp": [0.0, -0.93],
                         "horz_disp": [0.0, 0.0]
@@ -86,6 +88,7 @@
                     ]
                 },
                 {
+                    "id": "icon:charge",
                     "location": {
                         "vert_disp": [0.0, -0.919],
                         "horz_disp": [0.0, -0.859]
@@ -178,6 +181,7 @@
                     ]
                 },
                 {
+                    "id": "icon:atk_forward",
                     "location": {
                         "vert_disp": [0.0, -0.852],
                         "horz_disp": [0.0, 0.237]
@@ -194,7 +198,20 @@
                             },
                             "rotation": 0.0,
                             "scale": [1.0, 1.0]
-                        },
+                        }
+                    ]
+                },
+                {
+                    "id": "icon:atk_wave",
+                    "location": {
+                        "vert_disp": [0.0, -0.852],
+                        "horz_disp": [0.0, 0.237]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:place_circle",
+                    "instances": [
                         {
                             "translation": {
                                 "vert_disp": [0.0, 0.0],
@@ -202,7 +219,20 @@
                             },
                             "rotation": 0.0,
                             "scale": [1.0, 1.0]
-                        },
+                        }
+                    ]
+                },
+                {
+                    "id": "icon:atk_ult",
+                    "location": {
+                        "vert_disp": [0.0, -0.852],
+                        "horz_disp": [0.0, 0.237]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:place_circle",
+                    "instances": [
                         {
                             "translation": {
                                 "vert_disp": [0.0, 0.0],
