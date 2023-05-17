@@ -72,7 +72,7 @@ impl AnimationController {
     }
 
     pub fn play_animation(&mut self, animation_id: AnimationId, node_id: NodeId) {
-        println!("Playing animation {:?}", animation_id);
+        // println!("Playing animation {:?}", animation_id);
 
         // if already player, do nothing
         if let Some(AnimationState::Playing {
@@ -85,7 +85,7 @@ impl AnimationController {
             }
         }
 
-        println!("Playing animation {:?}", animation_id);
+        // println!("Playing animation {:?}", animation_id);
         self.animation_states.insert(
             node_id,
             AnimationState::Playing {
