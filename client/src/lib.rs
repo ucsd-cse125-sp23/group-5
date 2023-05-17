@@ -489,7 +489,7 @@ impl State {
             &device,
             &queue,
             &texture_bind_group_layout_2d,
-            screen::TEX_CONFIG_PATH,
+            configs::TEXTURE_CONFIG_PATH,
             &mut texture_map,
         )
         .await;
@@ -643,6 +643,20 @@ impl State {
                     dt,
                     self.client_id,
                 );
+            
+            // update player number of charges
+            {
+                let screen_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .screen
+                .as_ref()
+                .unwrap();
+
+                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
+                screen.icons[ind].inst_range = 0..self.player.wind_charge;
+            }
 
             self.display
                 .scene_map
@@ -691,6 +705,7 @@ impl State {
         self.display.render(
             &self.mouse_position,
             &self.camera_state,
+            &self.player,
             &self.player_loc,
             &self.device,
             &self.queue,
@@ -704,19 +719,19 @@ impl State {
 
         // TODO: maybe refactor later?
         // if player is alive
-        if !self.player.is_dead {
-            // render ammo remaining
-            self.glyph_brush.queue(Section {
-                screen_position: (30.0, 20.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
-        }
+        // if !self.player.is_dead {
+        //     // render ammo remaining
+        //     self.glyph_brush.queue(Section {
+        //         screen_position: (30.0, 20.0),
+        //         bounds: (size.width as f32, size.height as f32),
+        //         text: vec![Text::new(
+        //             format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
+        //         )
+        //         .with_color([0.0, 0.0, 0.0, 1.0])
+        //         .with_scale(40.0)],
+        //         ..Section::default()
+        //     });
+        // }
         // render respawn cooldown
         if self.player.on_cooldown.contains_key(&Command::Spawn) {
             let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();

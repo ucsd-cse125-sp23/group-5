@@ -111,7 +111,7 @@ pub struct Screen {
     pub background: Option<ScreenBackground>,
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
-    pub icon_id_map: HashMap<String, u32>,
+    pub icon_id_map: HashMap<String, usize>,
 }
 
 #[derive(Debug)]

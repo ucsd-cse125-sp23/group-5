@@ -8,7 +8,6 @@ use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
 };
-use common::core::states::GameState;
 
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
@@ -20,6 +19,8 @@ use crate::inputs::Input;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
 
+use common::core::states::GameState;
+
 use self::objects::Screen;
 
 pub mod display_helper;
@@ -28,8 +29,8 @@ pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
 
-pub const TEX_CONFIG_PATH: &str = "tex.json";
-pub const DISPLAY_CONFIG_PATH: &str = "display.json";
+// pub const TEX_CONFIG_PATH: &str = "tex.json";
+// pub const DISPLAY_CONFIG_PATH: &str = "display.json";
 
 // Should only be one of these in the entire game
 pub struct Display {
@@ -53,40 +54,6 @@ pub struct Display {
 }
 
 impl Display {
-    // pub fn new(
-    //     groups: HashMap<String, objects::DisplayGroup>,
-    //     current: String,
-    //     game_display: String,
-    //     texture_map: HashMap<String, wgpu::BindGroup>,
-    //     screen_map: HashMap<String, Screen>,
-    //     scene_map: HashMap<String, Scene>,
-    //     light_state: lights::LightState,
-    //     scene_pipeline: wgpu::RenderPipeline,
-    //     ui_pipeline: wgpu::RenderPipeline,
-    //     particles: ParticleDrawer,
-    //     rect_ibuf: wgpu::Buffer,
-    //     depth_texture: texture::Texture,
-    //     default_inst_buf: wgpu::Buffer,
-    //     sender: mpsc::Sender<Input>,
-    // ) -> Self {
-    //     Self {
-    //         groups,
-    //         current,
-    //         game_display,
-    //         texture_map,
-    //         screen_map,
-    //         scene_map,
-    //         light_state,
-    //         scene_pipeline,
-    //         ui_pipeline,
-    //         particles,
-    //         rect_ibuf,
-    //         depth_texture,
-    //         default_inst_buf,
-    //         sender,
-    //     }
-    // }
-
     pub fn from_config(
         config: &ConfigDisplay,
         texture_map: HashMap<String, wgpu::BindGroup>,
@@ -129,6 +96,7 @@ impl Display {
         &mut self,
         mouse: &[f32; 2],
         camera_state: &camera::CameraState,
+        player: &crate::player::Player,
         player_loc: &Vec<(u32, glm::Vec4)>,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -285,6 +253,7 @@ impl Display {
                             0..1,
                         );
                     }
+
                     for icon in &screen.icons {
                         render_pass.draw_ui_instanced(
                             &self.texture_map.get(&icon.texture).unwrap(),

@@ -28,7 +28,7 @@ pub fn create_screen_map(
     let mut screen_map = HashMap::new();
     for s in &config.screens {
         let background = create_background(s, device);
-        let mut icon_id_map : HashMap<String, u32> = HashMap::new();
+        let mut icon_id_map : HashMap<String, usize> = HashMap::new();
         let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
         let buttons = create_button(s, device, screen_width, screen_height);
 
@@ -64,7 +64,7 @@ fn create_background(s: &ConfigScreen, device: &wgpu::Device) -> Option<objects:
 fn create_icon(
     s: &ConfigScreen,
     device: &wgpu::Device,
-    map: &mut HashMap<String, u32>,
+    map: &mut HashMap<String, usize>,
     screen_width: u32,
     screen_height: u32,
 ) -> Vec<objects::Icon> {
