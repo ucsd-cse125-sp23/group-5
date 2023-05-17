@@ -143,6 +143,12 @@ impl Display {
         }
     }
 
+    /// Takes care of any cleanup switching displays might need
+    pub fn change_to(&mut self, new: String){
+        self.particles.systems.clear();
+        self.current = new;
+    }
+
     pub fn render(
         &mut self,
         mouse: &[f32; 2],
