@@ -270,4 +270,20 @@ impl Icon {
                 .collect();
         queue.write_buffer(&self.inst_buf, 0, bytemuck::cast_slice(&instances));
     }
+
+    pub fn relocate(&mut self, location: common::configs::display_config::ScreenLocation, screen_width: u32, screen_height: u32, queue: &wgpu::Queue){
+        get_coords(
+            &location,
+            self.aspect,
+            self.height,
+            screen_width,
+            screen_height,
+            &mut self.vertices,
+        );
+        for v in &mut self.vertices{
+            v.color = self.tint.into();
+        }
+        queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
+        self.location = location;
+    }
 }

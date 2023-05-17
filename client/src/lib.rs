@@ -706,6 +706,33 @@ impl State {
                     self.client_id,
                 );
             
+            // update player scores
+            // PLACEHOLDER FOR NOW
+            {
+                let screen_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .screen
+                .as_ref()
+                .unwrap();
+
+                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                for i in 1..5{
+                    let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
+                    let score : f32 = ((i as f32) - 1.0) / 3.0;
+                    println!("Player {} has score {}", i, score);
+                    let mut location = screen.icons[ind].location.clone();
+                    location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
+                    println!("Location: {:?}", location);
+                    screen.icons[ind].relocate(
+                        location,
+                        self.config.width,
+                        self.config.height,
+                        &self.queue
+                    );
+                }
+            }
+
             // update player number of charges
             {
                 let screen_id = self.display.groups
@@ -859,76 +886,27 @@ impl State {
             });
         }
 
-            // render status effect and powerup held
-            self.glyph_brush.queue(Section {
-                screen_position: (600.0, 20.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
-            self.glyph_brush.queue(Section {
-                screen_position: (600.0, 60.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
-        // // render respawn cooldown
-        // if self.player.on_cooldown.contains_key(&Command::Spawn) {
-        //     let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-        //     self.glyph_brush.queue(Section {
-        //         screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-        //         bounds: (size.width as f32, size.height as f32),
-        //         text: vec![
-        //             Text::new("You died!\n")
-        //                 .with_color([1.0, 1.0, 0.0, 1.0])
-        //                 .with_scale(100.0),
-        //             Text::new("Respawning in ")
-        //                 .with_color([1.0, 1.0, 0.0, 1.0])
-        //                 .with_scale(60.0),
-        //             Text::new(format!("{:.1}", spawn_cooldown).as_str())
-        //                 .with_color([1.0, 1.0, 1.0, 1.0])
-        //                 .with_scale(60.0),
-        //             Text::new(" seconds")
-        //                 .with_color([1.0, 1.0, 0.0, 1.0])
-        //                 .with_scale(60.0),
-        //         ],
-        //         layout: Layout::default().h_align(HorizontalAlign::Center),
-        //         ..Section::default()
-        //     });
-        // } else {
-        //     // render respawn cooldown
-        //     if self.player.on_cooldown.contains_key(&Command::Spawn) {
-        //         let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-        //         self.glyph_brush.queue(Section {
-        //             screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-        //             bounds: (size.width as f32, size.height as f32),
-        //             text: vec![
-        //                 Text::new("You died!\n")
-        //                     .with_color([1.0, 1.0, 0.0, 1.0])
-        //                     .with_scale(100.0),
-        //                 Text::new("Respawning in ")
-        //                     .with_color([1.0, 1.0, 0.0, 1.0])
-        //                     .with_scale(60.0),
-        //                 Text::new(format!("{:.1}", spawn_cooldown).as_str())
-        //                     .with_color([1.0, 1.0, 1.0, 1.0])
-        //                     .with_scale(60.0),
-        //                 Text::new(" seconds")
-        //                     .with_color([1.0, 1.0, 0.0, 1.0])
-        //                     .with_scale(60.0),
-        //             ],
-        //             layout: Layout::default().h_align(HorizontalAlign::Center),
-        //             ..Section::default()
-        //         });
-        //     }
-        // }
+        // render status effect and powerup held
+        self.glyph_brush.queue(Section {
+            screen_position: (600.0, 20.0),
+            bounds: (size.width as f32, size.height as f32),
+            text: vec![Text::new(
+                format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+            )
+            .with_color([0.0, 0.0, 0.0, 1.0])
+            .with_scale(40.0)],
+            ..Section::default()
+        });
+        self.glyph_brush.queue(Section {
+            screen_position: (600.0, 60.0),
+            bounds: (size.width as f32, size.height as f32),
+            text: vec![Text::new(
+                format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+            )
+            .with_color([0.0, 0.0, 0.0, 1.0])
+            .with_scale(40.0)],
+            ..Section::default()
+        });
 
         // Draw the text!
         self.glyph_brush
