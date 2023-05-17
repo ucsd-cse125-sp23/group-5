@@ -1,7 +1,7 @@
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::Input;
 use crate::screen;
-use log::{debug, info, warn};
+use log::warn;
 use phf::phf_map;
 use crate::mesh_color::MeshColor;
 use crate::screen::FinalChoices;

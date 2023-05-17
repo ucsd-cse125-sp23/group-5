@@ -1,6 +1,5 @@
 use ambisonic::{
     rodio::{
-        self,
         source::{Buffered, Source},
         Decoder,
     },
@@ -8,7 +7,7 @@ use ambisonic::{
 };
 use instant::{Duration, SystemTime};
 use nalgebra_glm as glm;
-use serde::{Deserialize, Serialize};
+
 use std::collections::HashMap;
 use std::{
     fs::File,
@@ -121,7 +120,7 @@ impl Audio {
                             offset.y * percent,
                             offset.z * percent,
                         );
-                        sound_instances[i].position = sound_instances[i].position + offset;
+                        sound_instances[i].position += offset;
                         thread::sleep(Duration::from_millis(1));
                         //println!(""); // without this print_statement the sounds don't play; maybe need delay?
                     }
@@ -168,7 +167,7 @@ impl Audio {
                     position: sfxevent.position,
                     start: SystemTime::now(),
                     initial_dir: dir,
-                    at_client: at_client,
+                    at_client,
                 });
             }
             None => {
@@ -179,7 +178,7 @@ impl Audio {
                         position: sfxevent.position,
                         start: SystemTime::now(),
                         initial_dir: dir,
-                        at_client: at_client,
+                        at_client,
                     }],
                 );
             }

@@ -1,9 +1,9 @@
 use common::configs::display_config::ScreenLocation;
 use nalgebra_glm as glm;
 
-use log::{debug, info, warn};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
+
 use crate::screen::location_helper::get_coords;
 use crate::mesh_color::{MeshColor, MeshColorInstance};
 
@@ -175,7 +175,7 @@ impl Screen {
 }
 
 impl ScreenBackground {
-    pub fn resize(&mut self, width: u32, height: u32, device: &wgpu::Device, queue: &wgpu::Queue) {
+    pub fn resize(&mut self, width: u32, height: u32, _device: &wgpu::Device, queue: &wgpu::Queue) {
         let aspect: f32 = (width as f32) / (height as f32);
         const TITLE_AR: f32 = 16.0 / 9.0;
         let title_x_span_half = (glm::clamp_scalar(aspect / TITLE_AR, 0.0, 1.0)) / 2.0;
@@ -228,7 +228,7 @@ impl Button {
         if self.vertices[0].position[1] > mouse[1] || self.vertices[2].position[1] < mouse[1] {
             return false;
         }
-        return true;
+        true
     }
 }
 
@@ -290,7 +290,7 @@ pub fn get_display_groups(
         color: None,
         on_click: String::from("game_start"),
     };
-    let title_screen = Screen {
+    let _title_screen = Screen {
         id: String::from("screen:title"),
         background: Some(bkgd1),
         buttons: vec![button1],
@@ -312,5 +312,4 @@ pub fn get_display_groups(
         scene: Some(String::from("scene:game")),
     };
     groups.insert(id2, game_dg);
-    return;
 }

@@ -2,18 +2,20 @@ use common::configs::model_config::ModelIndex;
 use mesh_color::MeshColor;
 use glm::vec3;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, MutexGuard};
+
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
 };
 
+use common::configs::*;
+use common::core::powerup_system::StatusEffect;
+use model::Vertex;
 use winit::event::*;
 
 mod model;
-
-use model::Vertex;
 
 mod camera;
 mod instance;
@@ -28,8 +30,6 @@ mod texture;
 
 use nalgebra_glm as glm;
 
-use common::configs::*;
-
 mod animation;
 pub mod audio;
 pub mod event_loop;
@@ -39,10 +39,10 @@ pub mod mesh_color;
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
-use crate::scene::InstanceBundle;
+
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
-use common::configs::*;
+
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::{GameState, ParticleQueue};
@@ -60,6 +60,8 @@ struct State {
     player: player::Player,
     player_controller: player::PlayerController,
     player_loc: Vec<(u32, glm::Vec4)>,
+    invisible_players: HashSet<u32>,
+    existing_powerups: HashSet<u32>,
     camera_state: camera::CameraState,
     display: screen::Display,
     pub mouse_position: [f32; 2],
@@ -355,7 +357,7 @@ impl State {
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
-        let render_pipeline_layout =
+        let _render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("3D Render Pipeline Layout"),
                 bind_group_layouts: &[
@@ -500,9 +502,9 @@ impl State {
 
         //TODO: for debugging -----
         // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
-        // screen::objects::get_display_groups(&device, &color_bind_group_layout, scene, &mut groups);
-        let default_display_id = String::from("display:title");
-        let game_display_id = String::from("display:game");
+        // screen::objects::get_display_groups(&device, scene, &mut groups);
+        let _default_display_id = String::from("display:title");
+        let _game_display_id = String::from("display:game");
 
         // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
         let model_configs = config_instance.models.clone();
@@ -597,6 +599,8 @@ impl State {
             player,
             player_controller,
             player_loc: Vec::new(),
+            invisible_players: HashSet::default(),
+            existing_powerups: HashSet::default(),
             camera_state,
             display,
             mouse_position: [0.0, 0.0],
@@ -657,12 +661,12 @@ impl State {
                 ..
             } => {
                 self.display.click(&self.mouse_position);
-                return true;
+                true
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_position[0] = 2.0 * (position.x as f32) / self.window_size[0] - 1.0;
                 self.mouse_position[1] = -2.0 * (position.y as f32) / self.window_size[1] + 1.0;
-                return true;
+                true
             }
             _ => false,
         }
@@ -674,6 +678,8 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
+        let game_state_clone = game_state.lock().unwrap().clone();
+
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -712,6 +718,9 @@ impl State {
                 .get(scene_id)
                 .unwrap()
                 .get_player_positions();
+
+            self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);
+            self.existing_powerups = game_state_clone.get_existing_powerups();
         }
 
         let particle_queue = particle_queue.lock().unwrap();
@@ -748,13 +757,16 @@ impl State {
             &self.mouse_position,
             &self.camera_state,
             &self.player_loc,
+            &self.invisible_players,
+            &self.existing_powerups,
             &self.device,
             &self.queue,
             &mut encoder,
             &view,
             &mut self.animation_controller,
-            &output,
             &self.color_bind_group_layout,
+            &output,
+            self.client_id as u32,
         );
 
         let size = &self.window.inner_size();
@@ -771,30 +783,6 @@ impl State {
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],
-                ..Section::default()
-            });
-        }
-        // render respawn cooldown
-        if self.player.on_cooldown.contains_key(&Command::Spawn) {
-            let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-            self.glyph_brush.queue(Section {
-                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![
-                    Text::new("You died!\n")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(100.0),
-                    Text::new("Respawning in ")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
-                        .with_color([1.0, 1.0, 1.0, 1.0])
-                        .with_scale(60.0),
-                    Text::new(" seconds")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                ],
-                layout: Layout::default().h_align(HorizontalAlign::Center),
                 ..Section::default()
             });
             // render ability cooldowns
@@ -818,13 +806,59 @@ impl State {
                     screen_position: (30.0, 100.0),
                     bounds: (size.width as f32, size.height as f32),
                     text: vec![Text::new(
-                        &format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
+                        format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
                     )
                     .with_color([0.0, 0.0, 0.0, 1.0])
                     .with_scale(40.0)],
                     ..Section::default()
                 });
             }
+
+            // render status effect and powerup held
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 20.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 60.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+        }
+        // render respawn cooldown
+        if self.player.on_cooldown.contains_key(&Command::Spawn) {
+            let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+            self.glyph_brush.queue(Section {
+                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![
+                    Text::new("You died!\n")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(100.0),
+                    Text::new("Respawning in ")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                    Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([1.0, 1.0, 1.0, 1.0])
+                        .with_scale(60.0),
+                    Text::new(" seconds")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                ],
+                layout: Layout::default().h_align(HorizontalAlign::Center),
+                ..Section::default()
+            });
         } else {
             // render respawn cooldown
             if self.player.on_cooldown.contains_key(&Command::Spawn) {

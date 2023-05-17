@@ -1,26 +1,31 @@
+use std::sync::{Arc, Mutex};
+
+use common::configs::*;
+use common::core::command::{Command, MoveDirection, ServerSync};
+use common::core::events::GameEvent;
+use common::core::states::GameState;
+
 use crate::executor::command_handlers::{
-    AreaAttackCommandHandler, AttackCommandHandler, CommandHandler, DieCommandHandler,
-    JumpCommandHandler, MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler,
-    StartupCommandHandler, UpdateCameraFacingCommandHandler,
+    AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler, DashCommandHandler,
+    DieCommandHandler, FlashCommandHandler, JumpCommandHandler, MoveCommandHandler,
+    RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+    UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
-use common::core::command::{Command, MoveDirection, ServerSync};
-use common::core::states::GameState;
-
 use crate::Recipients;
-use common::configs::*;
-use common::core::events::GameEvent;
+
 use common::core::states::GameLifeCycleState::{Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-mod command_handlers;
+pub mod command_handlers;
 
-pub const DEFAULT_RESPAWN_LIMIT: f32 = -20.0; // 5ms
+pub const DEFAULT_RESPAWN_LIMIT: f32 = -20.0;
+
+// 5ms
 /// Executor is a struct that is used to execute a command issued by a client.
 /// It maintains the state of the game and is responsible for updating it.
 pub struct Executor {
@@ -158,6 +163,11 @@ impl Executor {
                 Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
                 Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
                 Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
+                Command::CastPowerUp => {
+                    Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
+                }
+                Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
+                Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;
@@ -190,13 +200,20 @@ impl Executor {
             player.transform.rotation = rigid_body.position().rotation.coords.into();
         }
 
+        // update the cooldowns
         game_state.update_cooldowns(delta_time);
         game_state.update_action_states(Duration::from_secs_f32(delta_time));
+
+        // update the powerup counters for players
+        game_state.update_player_status_effect(delta_time);
+
+        // update the powerup for each server location
+        game_state.update_powerup_locations(delta_time);
 
         if let Some(id) = game_state.update_player_on_flag_times(delta_time) {
             panic!("Winner is {}, game finished!", id)
         }
-        game_state.previous_tick_winner = game_state.has_single_winner()
+        game_state.previous_tick_winner = game_state.has_single_winner();
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {

@@ -153,7 +153,7 @@ fn recv_server_updates(
     game_state: Arc<Mutex<GameState>>,
     particle_queue: Arc<Mutex<ParticleQueue>>,
     sound_queue: Arc<Mutex<SoundQueue>>,
-    mut game_events: Bus<GameEvent>,
+    _game_events: Bus<GameEvent>,
 ) {
     // check for new state & update local game state
     while let Ok(msg) = protocol.read_message::<Message>() {
