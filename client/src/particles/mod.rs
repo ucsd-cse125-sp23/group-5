@@ -23,7 +23,7 @@ pub struct Particle {
     pub color: [f32; 4],
     pub spawn_time: f32,
     pub size: f32,
-    pub tex_id: f32,
+    pub tex_id: i32,
     pub z_pos: f32,
     pub time_elapsed: f32,
     pub size_growth: f32,
@@ -34,7 +34,7 @@ pub struct Particle {
 impl Particle {
     const ATTRIBS: [wgpu::VertexAttribute; 11] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
-        4 => Float32 ,  5 => Float32,   6 => Float32,
+        4 => Float32 ,  5 => Float32,   6 => Sint32,
         7 => Float32,   8 => Float32,   9 => Float32,
         10 => Float32, 11 => Float32,
     ];
@@ -152,7 +152,7 @@ impl ParticleDrawer {
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
                         count: None,

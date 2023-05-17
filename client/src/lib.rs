@@ -490,7 +490,7 @@ impl State {
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let rng = rand::thread_rng();
-        let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
+        let particle_tex = texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
             .await
             .unwrap();
         let particle_renderer = particles::ParticleDrawer::new(
@@ -499,12 +499,6 @@ impl State {
             &camera_state.camera_bind_group_layout,
             particle_tex,
         );
-
-        //TODO: for debugging -----
-        // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
-        // screen::objects::get_display_groups(&device, scene, &mut groups);
-        let _default_display_id = String::from("display:title");
-        let _game_display_id = String::from("display:game");
 
         // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
         let model_configs = config_instance.models.clone();
@@ -585,9 +579,6 @@ impl State {
             sender,
             game_state,
         );
-        // println!("{:#?}", display.screen_map);
-        // let screens =
-        //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
         Self {
             window,
@@ -720,10 +711,8 @@ impl State {
                 for i in 1..5{
                     let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
                     let score : f32 = ((i as f32) - 1.0) / 3.0;
-                    println!("Player {} has score {}", i, score);
                     let mut location = screen.icons[ind].location.clone();
                     location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
-                    println!("Location: {:?}", location);
                     screen.icons[ind].relocate(
                         location,
                         self.config.width,
