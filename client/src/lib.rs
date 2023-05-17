@@ -1,6 +1,7 @@
 use common::configs::model_config::ModelIndex;
 use mesh_color::MeshColor;
 use glm::vec3;
+use other_players::OtherPlayer;
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, MutexGuard};
@@ -22,9 +23,9 @@ mod instance;
 mod lights;
 mod particles;
 mod player;
+mod other_players;
 mod resources;
 mod scene;
-// mod screen_objects;
 mod screen;
 mod texture;
 
@@ -59,7 +60,7 @@ struct State {
     window: Window,
     player: player::Player,
     player_controller: player::PlayerController,
-    player_loc: Vec<(u32, glm::Vec4)>,
+    other_players: Vec<OtherPlayer>,
     invisible_players: HashSet<u32>,
     existing_powerups: HashSet<u32>,
     camera_state: camera::CameraState,
@@ -589,6 +590,15 @@ impl State {
         // let screens =
         //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
+
         Self {
             window,
             surface,
@@ -598,7 +608,7 @@ impl State {
             size,
             player,
             player_controller,
-            player_loc: Vec::new(),
+            other_players,
             invisible_players: HashSet::default(),
             existing_powerups: HashSet::default(),
             camera_state,
@@ -800,12 +810,17 @@ impl State {
                 .unwrap()
                 .draw_scene_dfs();
 
-            self.player_loc = self
+            let player_loc = self
                 .display
                 .scene_map
                 .get(scene_id)
                 .unwrap()
                 .get_player_positions();
+
+            // ASSUME: Ids should always be 1-4
+            for (i, loc) in player_loc{
+                self.other_players[i as usize].location = loc;
+            }
 
             self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);
             self.existing_powerups = game_state_clone.get_existing_powerups();
@@ -845,7 +860,7 @@ impl State {
             &self.mouse_position,
             &self.camera_state,
             // &self.player,
-            &self.player_loc,
+            &self.other_players,
             &self.invisible_players,
             &self.existing_powerups,
             &self.device,
