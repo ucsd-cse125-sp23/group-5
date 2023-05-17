@@ -15,6 +15,11 @@
     {
       "name": "ferris",
       "path": "assets/ferris.obj"
+    },
+    {
+      "name": "korok",
+      "path": "assets/korok",
+      "animated": true
     }
   ]
 }

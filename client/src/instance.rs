@@ -9,7 +9,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct Instance {
     pub transform: Transform,
-    pub mesh_colors: HashMap<String, MeshColor>,
+    pub mesh_colors: Option<HashMap<String, MeshColor>>,
 }
 
 pub struct InstanceState {
@@ -21,7 +21,7 @@ impl Default for Instance {
     fn default() -> Self {
         Self {
             transform: glm::identity(),
-            mesh_colors: HashMap::new(),
+            mesh_colors: None,
         }
     }
 }
@@ -41,11 +41,11 @@ impl Instance {
     pub fn from_transform(transform: &nalgebra_glm::TMat4<f32>) -> Self {
         Self {
             transform: *transform,
-            mesh_colors: HashMap::new(),
+            mesh_colors: None,
         }
     }
 
-    pub fn make_buffer(instances: &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
+    pub fn make_buffer(instances: &[Instance], device: &wgpu::Device) -> InstanceState {
         let data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
@@ -69,8 +69,8 @@ impl Instance {
         instance_states
     }
 
-    // pub fn update_mesh_color(&mut self, mesh_name: String, rgb_color: [f32; 3]){
-    //     self.mesh_colors.insert(mesh_name, MeshColor { rgb_color: rgb_color });
+    // pub fn add_color(&mut self, colors: HashMap<String, MeshColor>) {
+    //     self.mesh_colors = Some(colors);
     // }
 }
 

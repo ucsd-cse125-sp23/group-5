@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use common::configs::model_config::ModelIndex;
 use wgpu::util::DeviceExt;
+use std::sync::{mpsc, Arc, Mutex};
 
 use crate::mesh_color::MeshColor;
 use nalgebra_glm as glm;
@@ -9,12 +10,16 @@ use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
 };
+use common::core::states::GameState;
+
 use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
-use crate::scene::Scene;
+use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::location_helper::{get_coords, to_absolute};
-use crate::screen::objects::ScreenInstance;
+
+use crate::inputs::Input;
+use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
 
 use self::objects::Screen;
@@ -22,7 +27,8 @@ use self::objects::Screen;
 pub mod display_helper;
 pub mod location_helper;
 pub mod objects;
-pub mod texture_config_helper;
+pub mod texture_helper;
+pub mod ui_interaction;
 
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -85,41 +91,46 @@ pub struct Display {
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
     pub customization_choices: CustomizationChoices, // TODO: fix later, here for now until the code for sending these updates is finished
+    // for sending command
+    pub sender: mpsc::Sender<Input>,
+    pub game_state: Arc<Mutex<GameState>>,
 }
 
 impl Display {
-    pub fn new(
-        groups: HashMap<String, objects::DisplayGroup>,
-        current: String,
-        game_display: String,
-        texture_map: HashMap<String, wgpu::BindGroup>,
-        screen_map: HashMap<String, Screen>,
-        scene_map: HashMap<String, Scene>,
-        light_state: lights::LightState,
-        scene_pipeline: wgpu::RenderPipeline,
-        ui_pipeline: wgpu::RenderPipeline,
-        particles: ParticleDrawer,
-        rect_ibuf: wgpu::Buffer,
-        depth_texture: texture::Texture,
-        default_inst_buf: wgpu::Buffer,
-    ) -> Self {
-        Self {
-            groups,
-            current,
-            game_display,
-            texture_map,
-            screen_map,
-            scene_map,
-            light_state,
-            scene_pipeline,
-            ui_pipeline,
-            particles,
-            rect_ibuf,
-            depth_texture,
-            default_inst_buf,
-            customization_choices: CustomizationChoices::default(),
-        }
-    }
+    // pub fn new(
+    //     groups: HashMap<String, objects::DisplayGroup>,
+    //     current: String,
+    //     game_display: String,
+    //     texture_map: HashMap<String, wgpu::BindGroup>,
+    //     screen_map: HashMap<String, Screen>,
+    //     scene_map: HashMap<String, Scene>,
+    //     light_state: lights::LightState,
+    //     scene_pipeline: wgpu::RenderPipeline,
+    //     ui_pipeline: wgpu::RenderPipeline,
+    //     particles: ParticleDrawer,
+    //     rect_ibuf: wgpu::Buffer,
+    //     depth_texture: texture::Texture,
+    //     default_inst_buf: wgpu::Buffer,
+    //     sender: mpsc::Sender<Input>,
+    // ) -> Self {
+    //     Self {
+    //         groups,
+    //         current,
+    //         game_display,
+    //         texture_map,
+    //         screen_map,
+    //         scene_map,
+    //         light_state,
+    //         scene_pipeline,
+    //         ui_pipeline,
+    //         particles,
+    //         rect_ibuf,
+    //         depth_texture,
+    //         default_inst_buf,
+    //         sender,
+    //         customization_choices: CustomizationChoices::default(),
+    //     }
+    // }
 
     pub fn from_config(
         config: &ConfigDisplay,
@@ -136,6 +147,8 @@ impl Display {
         screen_height: u32,
         device: &wgpu::Device,
         color_bind_group_layout: &wgpu::BindGroupLayout,
+        sender: mpsc::Sender<Input>,
+        game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         let groups = create_display_group(config);
         let screen_map = create_screen_map(config, device, screen_width, screen_height, color_bind_group_layout);
@@ -154,6 +167,8 @@ impl Display {
             depth_texture,
             default_inst_buf,
             customization_choices: CustomizationChoices::default(),
+            sender,
+            game_state,
         }
     }
 
@@ -166,6 +181,7 @@ impl Display {
         queue: &wgpu::Queue,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
+        animation_controller: &mut crate::animation::AnimationController,
         output: &wgpu::SurfaceTexture,
         color_bind_group_layout: &wgpu::BindGroupLayout,
     ) {
@@ -181,13 +197,19 @@ impl Display {
             Some(scene_id) => {
                 let scene = self.scene_map.get(scene_id).unwrap();
                 for (index, instances) in scene.objects_and_instances.iter() {
-                    let instanced_obj = model::InstancedModel::new(
-                        scene.objects.get(index).unwrap(),
-                        instances,
-                        device,
-                        color_bind_group_layout,
-                    );
-                    instanced_objs.push(instanced_obj);
+                    for instance in instances.iter() {
+                        let mut model = scene.objects.get(index).unwrap().clone_box();
+                        animation_controller
+                            .update_animated_model_state(&mut model, &instance.node_id);
+
+                        let instanced_obj = model::InstancedModel::new(
+                            model,
+                            &vec![InstanceBundle::instance(instance)],
+                            device,
+                            color_bind_group_layout,
+                        );
+                        instanced_objs.push(instanced_obj);
+                    }
                 }
             }
         };
@@ -352,7 +374,7 @@ impl Display {
         }
         match to_call{
             None => {},
-            Some(id) => objects::BUTTON_MAP.get(id).unwrap()(self, color, button_id)
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id)
         };
     }
 }
