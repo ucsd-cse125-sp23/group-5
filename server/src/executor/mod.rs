@@ -1,7 +1,7 @@
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CommandHandler, DieCommandHandler, JumpCommandHandler,
-    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler,
+    AreaAttackCommandHandler, AttackCommandHandler, CommandHandler, DieCommandHandler,
+    JumpCommandHandler, MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler,
+    StartupCommandHandler, UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
@@ -16,6 +16,7 @@ use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 mod command_handlers;
 
@@ -113,6 +114,12 @@ impl Executor {
 
         let player_config = self.config_instance.player.clone();
 
+        #[cfg(not(feature = "debug-ready-sync"))]
+        let player_upper_bound = 4;
+
+        #[cfg(feature = "debug-ready-sync")]
+        let player_upper_bound = 1;
+
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
                 Command::UI(ServerSync::Ready) => {
@@ -124,7 +131,9 @@ impl Executor {
                         self.ready_players
                             .borrow_mut()
                             .push(client_command.client_id);
-                        if self.ready_players.borrow().len() == 4 {
+                        // change the 1 to 4 for working correctly
+                        // here I just change it to 1 for testing purpose
+                        if self.ready_players.borrow().len() == player_upper_bound {
                             game_state.life_cycle_state = Running;
                         }
                     } else {
@@ -182,17 +191,12 @@ impl Executor {
         }
 
         game_state.update_cooldowns(delta_time);
+        game_state.update_action_states(Duration::from_secs_f32(delta_time));
 
-        match game_state.update_player_on_flag_times(delta_time) {
-            Some(id) => {
-                panic!("Winner is {}, game finished!", id)
-            }
-            None => {}
+        if let Some(id) = game_state.update_player_on_flag_times(delta_time) {
+            panic!("Winner is {}, game finished!", id)
         }
-        game_state.previous_tick_winner = match game_state.has_single_winner() {
-            Some(id) => Some(id),
-            None => None,
-        }
+        game_state.previous_tick_winner = game_state.has_single_winner()
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {

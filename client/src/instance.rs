@@ -41,7 +41,7 @@ impl Instance {
         }
     }
 
-    pub fn make_buffer(instances: &Vec<Instance>, device: &wgpu::Device) -> InstanceState {
+    pub fn make_buffer(instances: &[Instance], device: &wgpu::Device) -> InstanceState {
         let data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),

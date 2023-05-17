@@ -1,5 +1,9 @@
-use nalgebra_glm as glm;
+use anyhow::Context;
+use std::fs::{read, read_to_string};
 use std::io::{BufReader, Cursor};
+use std::sync::Arc;
+
+extern crate nalgebra_glm as glm;
 
 use cfg_if::cfg_if;
 use const_format::formatcp;
@@ -12,7 +16,7 @@ use crate::{
 
 //assuming we run from root (group-5 folder)
 #[rustfmt::skip]
-const SEARCH_PATH : [&'static str; 4] = [
+const SEARCH_PATH : [&str; 4] = [
     formatcp!(""), 
     formatcp!("assets"), 
     formatcp!("client{}res", std::path::MAIN_SEPARATOR_STR), 
@@ -31,55 +35,28 @@ const SEARCH_PATH : [&'static str; 4] = [
 //     base.join(file_name).unwrap()
 // }
 
-pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
-    cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            let url = format_url(file_name);
-            let txt = reqwest::get(url)
-                .await?
-                .text()
-                .await?;
-            return Ok(txt);
-        } else {
-            for p in SEARCH_PATH{
-                let path = std::path::Path::new(p)
-                    .join(file_name);
-                println!("trying: {path:?}");
-                match std::fs::read_to_string(path){
-                    Ok(txt) => return Ok(txt),
-                    Err(e) => continue,
-                };
-            }
-            // NOTE: consider actually using the error value somehow...
-            return Err(anyhow::Error::msg(format!("error finding {file_name}")));
+pub fn find_in_search_path(file_name: &str) -> Option<std::path::PathBuf> {
+    for p in SEARCH_PATH {
+        let path = std::path::Path::new(p).join(file_name);
+        if path.exists() {
+            return Some(path);
         }
     }
+    None
+}
+
+pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
+    let path = find_in_search_path(file_name)
+        .ok_or_else(|| anyhow::Error::msg(format!("error finding {file_name}")))?;
+
+    read_to_string(path).map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
 }
 
 pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
-    cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            let url = format_url(file_name);
-            let data = reqwest::get(url)
-                .await?
-                .bytes()
-                .await?
-                .to_vec();
-            return Ok(data);
-        } else {
-            for p in SEARCH_PATH{
-                let path = std::path::Path::new(p)
-                    .join(file_name);
-                println!("trying: {path:?}");
-                match std::fs::read(path){
-                    Ok(d) => return Ok(d),
-                    Err(e) => continue,
-                };
-            }
-            // NOTE: consider actually using the error value somehow...
-            return Err(anyhow::Error::msg(format!("error finding {file_name}")));
-        }
-    }
+    let path = find_in_search_path(file_name)
+        .ok_or_else(|| anyhow::Error::msg(format!("error finding {file_name}")))?;
+
+    read(path).map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
 }
 
 pub async fn load_texture(
@@ -87,17 +64,20 @@ pub async fn load_texture(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
 ) -> anyhow::Result<texture::Texture> {
-    let data = load_binary(file_name).await?;
+    let data = load_binary(file_name)
+        .await
+        .context(format!("error loading texture binary {file_name}"))?;
     texture::Texture::from_bytes(device, queue, &data, file_name)
 }
 
+pub type ModelLoadingResources<'a> = (&'a wgpu::Device, &'a wgpu::Queue, &'a wgpu::BindGroupLayout);
+
 pub async fn load_model(
     file_path: &str,
-    device: &wgpu::Device,
-    queue: &wgpu::Queue,
-    layout: &wgpu::BindGroupLayout,
-) -> anyhow::Result<model::Model> {
+    resources: ModelLoadingResources<'_>,
+) -> anyhow::Result<model::StaticModel> {
     println!("loading {file_path:?}");
+    let (device, queue, layout) = resources;
     let obj_text = load_string(file_path).await?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
@@ -122,7 +102,8 @@ pub async fn load_model(
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },
     )
-    .await?;
+    .await
+    .context("error loading obj file")?;
 
     let mut materials = Vec::new();
     for m in obj_materials? {
@@ -352,9 +333,9 @@ pub async fn load_model(
         })
         .collect::<Vec<_>>();
 
-    Ok(model::Model {
-        meshes,
-        materials,
+    Ok(model::StaticModel {
+        meshes: Arc::new(meshes),
+        materials: Arc::new(materials),
         path: file_path.to_string(),
     })
 }

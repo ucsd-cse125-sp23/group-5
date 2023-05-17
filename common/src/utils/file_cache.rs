@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use bincode::{deserialize, serialize};
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::hash::Hash;
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn test_insert_and_get() {
         let file_path = "test_cache.bin";
-        let mut cache = FileCache::<Key, Value>::new(file_path);
+        let cache = FileCache::<Key, Value>::new(file_path);
 
         let key = Key("key".to_string());
         let value = Value(42);
@@ -120,17 +120,17 @@ mod tests {
 
         // First run - insert value
         {
-            let mut cache = FileCache::<Key, Value>::new(file_path);
+            let cache = FileCache::<Key, Value>::new(file_path);
             let key = Key("key".to_string());
             let value = Value(42);
 
             assert!(cache.get(&key).is_none());
-            cache.insert(key.clone(), value.clone());
+            cache.insert(key, value);
         }
 
         // Second run - read value from cache
         {
-            let mut cache = FileCache::<Key, Value>::new(file_path);
+            let cache = FileCache::<Key, Value>::new(file_path);
             let key = Key("key".to_string());
             let value = Value(42);
 
