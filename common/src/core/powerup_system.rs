@@ -1,11 +1,10 @@
 use phf::phf_map;
-use serde::{Deserialize, Serialize};
-
 use rand::distributions::Uniform;
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum PowerUp {
@@ -35,7 +34,7 @@ impl PowerUp {
 impl Distribution<PowerUp> for Standard {
     // adjusted ratios
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PowerUp {
-        let between = Uniform::from(1..12);
+        let between = Uniform::from(1..13);
         match between.sample(rng) {
             1 => PowerUp::Lightning,
             2 | 3 => PowerUp::WindEnhancement,

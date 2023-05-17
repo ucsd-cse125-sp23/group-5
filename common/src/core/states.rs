@@ -1,6 +1,6 @@
 use phf::phf_map;
 
-use crate::configs::constants::{
+use crate::configs::parameters::{
     DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
     POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
 };

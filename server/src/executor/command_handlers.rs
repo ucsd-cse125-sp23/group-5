@@ -13,14 +13,16 @@ use rapier3d::dynamics::MassProperties;
 use rapier3d::math::{AngVector, Isometry};
 use rapier3d::prelude as rapier;
 
-use common::configs::constants::{
-    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE, ATTACK_COEFF,
-    ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE, DASH_IMPULSE, FLASH_DISTANCE_SCALAR,
-    INVINCIBLE_EFFECTIVE_DISTANCE, INVINCIBLE_EFFECTIVE_IMPULSE, MAX_AREA_ATTACK_DIST,
-    MAX_ATTACK_ANGLE, MAX_ATTACK_DIST, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
-    POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, WIND_ENHANCEMENT_SCALAR,
-};
 use common::configs::model_config::ConfigModels;
+use common::configs::parameters::{
+    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE,
+    ATTACKING_COOLDOWN, ATTACK_COEFF, ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE, DAMPING,
+    DASH_IMPULSE, FLASH_DISTANCE_SCALAR, GAIN, INVINCIBLE_EFFECTIVE_DISTANCE,
+    INVINCIBLE_EFFECTIVE_IMPULSE, JUMP_IMPULSE, MAX_AREA_ATTACK_DIST, MAX_ATTACK_ANGLE,
+    MAX_ATTACK_DIST, MAX_JUMP_COUNT, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
+    POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, REFILL_RADIUS, REFILL_RATE_LIMIT, SPAWN_COOLDOWN,
+    SPECIAL_MOVEMENT_COOLDOWN, STEP_SIZE, WALKING_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
+};
 use common::configs::player_config::ConfigPlayer;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
@@ -214,7 +216,7 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, 3.);
+        player_state.insert_cooldown(Command::Spawn, SPAWN_COOLDOWN);
 
         Ok(())
     }
@@ -322,10 +324,6 @@ impl CommandHandler for MoveCommandHandler {
 
         // Step 3: Calculate the difference between the current and desired angular velocities
 
-        // rotation parameters to tune (balance them to get the best results)
-        const DAMPING: f32 = 10.0;
-        const GAIN: f32 = 0.1;
-
         player_rigid_body.set_angular_damping(DAMPING);
         let current_angular_velocity = player_rigid_body.angvel();
         let angular_velocity_difference = desired_angular_velocity - current_angular_velocity;
@@ -335,9 +333,6 @@ impl CommandHandler for MoveCommandHandler {
 
         // Step 5: Apply the torque to the player's rigid body
         player_rigid_body.apply_torque_impulse(required_torque, true);
-
-        // movement parameter
-        const STEP_SIZE: f32 = 0.1;
 
         let dir_vec = rotation * dir_vec;
         physics_state.move_character_with_velocity(self.player_id, dir_vec * STEP_SIZE);
@@ -352,9 +347,10 @@ impl CommandHandler for MoveCommandHandler {
             Recipients::One(self.player_id as u8),
         );
 
-        player_state
-            .active_action_states
-            .insert((ActionState::Walking, Duration::from_secs_f32(0.5)));
+        player_state.active_action_states.insert((
+            ActionState::Walking,
+            Duration::from_secs_f32(WALKING_COOLDOWN),
+        ));
 
         Ok(())
     }
@@ -421,7 +417,6 @@ impl CommandHandler for JumpCommandHandler {
             player_state.jump_count = 0;
         }
 
-        const MAX_JUMP_COUNT: u32 = 2; // allow double jump
         let jump_limit = if player_state
             .status_effects
             .contains_key(&StatusEffect::TripleJump)
@@ -436,9 +431,6 @@ impl CommandHandler for JumpCommandHandler {
         }
 
         player_state.jump_count += 1;
-
-        // apply upward impulse to the player's rigid body
-        const JUMP_IMPULSE: f32 = 70.0; // parameter to tune
 
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
@@ -557,9 +549,10 @@ impl CommandHandler for AttackCommandHandler {
             1.0
         };
 
-        player_state
-            .active_action_states
-            .insert((ActionState::Attacking, Duration::from_secs_f32(1.5)));
+        player_state.active_action_states.insert((
+            ActionState::Attacking,
+            Duration::from_secs_f32(ATTACKING_COOLDOWN),
+        ));
 
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {
@@ -781,7 +774,7 @@ impl CommandHandler for RefillCommandHandler {
 
         if !player_state.is_in_circular_area(
             (spawn_position.x, spawn_position.z),
-            2.0,
+            REFILL_RADIUS,
             (None, None),
         ) || player_state.command_on_cooldown(Command::Refill)
         {
@@ -789,7 +782,7 @@ impl CommandHandler for RefillCommandHandler {
             return Ok(());
         }
         player_state.refill_wind_charge(Some(ONE_CHARGE));
-        player_state.insert_cooldown(Command::Refill, 0.5);
+        player_state.insert_cooldown(Command::Refill, REFILL_RATE_LIMIT);
         Ok(())
     }
 }
@@ -947,7 +940,7 @@ impl CommandHandler for DashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Dash, 0.5);
+        player_state.insert_cooldown(Command::Dash, SPECIAL_MOVEMENT_COOLDOWN);
 
         // TODO::
         // some particle at the end would be cool, but probably different
@@ -1038,7 +1031,7 @@ impl CommandHandler for FlashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Flash, 0.5);
+        player_state.insert_cooldown(Command::Flash, SPECIAL_MOVEMENT_COOLDOWN);
 
         // TODO::
         // Flashy particle effect would be cool here
@@ -1185,7 +1178,7 @@ fn handle_invincible_players(
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec = vec_to_other * INVINCIBLE_EFFECTIVE_IMPULSE * 2.0;
+                    let impulse_vec = vec_to_other * INVINCIBLE_EFFECTIVE_IMPULSE;
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

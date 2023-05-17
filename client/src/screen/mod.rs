@@ -4,11 +4,11 @@ use std::sync::{mpsc, Arc, Mutex};
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
-use common::configs::constants::POWER_UP_LOCATIONS;
 use common::configs::display_config::{
     ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
     ScreenLocation,
 };
+use common::configs::parameters::POWER_UP_LOCATIONS;
 use common::core::states::GameState;
 
 use crate::model::DrawModel;
