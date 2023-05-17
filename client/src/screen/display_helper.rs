@@ -83,6 +83,9 @@ fn create_icon(
                 screen_height,
                 &mut vertices,
             );
+            for v in &mut vertices{
+                v.color = i.tint.clone();
+            }
             let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(" Some icon (implement ids for more useful messages!) Vertex Buffer"),
                 contents: bytemuck::cast_slice(&vertices),

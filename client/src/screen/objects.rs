@@ -123,6 +123,8 @@ pub struct ScreenBackground {
     pub texture: String,
 }
 
+///
+/// Note that the tint variables are currently useless
 #[derive(Debug)]
 pub struct Button {
     pub location: ScreenLocation,
@@ -242,6 +244,9 @@ impl Icon {
             screen_height,
             &mut self.vertices,
         );
+        for v in &mut self.vertices{
+            v.color = self.tint.into();
+        }
         queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
         let instances: Vec<ScreenInstance> = self
                 .instance_raw

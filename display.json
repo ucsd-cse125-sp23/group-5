@@ -188,7 +188,28 @@
                     },
                     "aspect": 1.0,
                     "height": 0.222,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tint": [0.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:place_circle",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "icon:atk_forward_overlay",
+                    "location": {
+                        "vert_disp": [0.0, -0.852],
+                        "horz_disp": [0.0, 0.237]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 0.0],
                     "tex": "icon:place_circle",
                     "instances": [
                         {
@@ -209,7 +230,28 @@
                     },
                     "aspect": 1.0,
                     "height": 0.222,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tint": [0.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:place_circle",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "icon:atk_wave_overlay",
+                    "location": {
+                        "vert_disp": [0.0, -0.852],
+                        "horz_disp": [0.0, 0.504]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 0.0],
                     "tex": "icon:place_circle",
                     "instances": [
                         {
@@ -230,7 +272,7 @@
                     },
                     "aspect": 1.0,
                     "height": 0.222,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tint": [0.0, 1.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
                     "instances": [
                         {

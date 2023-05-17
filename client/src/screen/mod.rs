@@ -96,7 +96,7 @@ impl Display {
         &mut self,
         mouse: &[f32; 2],
         camera_state: &camera::CameraState,
-        player: &crate::player::Player,
+        // player: &crate::player::Player,
         player_loc: &Vec<(u32, glm::Vec4)>,
         device: &wgpu::Device,
         queue: &wgpu::Queue,

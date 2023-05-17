@@ -658,6 +658,53 @@ impl State {
                 screen.icons[ind].inst_range = 0..self.player.wind_charge;
             }
 
+            // update cooldowns
+            // hard coded for now... TODO: separate function
+            // is it necessary? would need to pass around lots of references
+            // might be better to create dedicated function in screen/mod.rs
+            {
+                let screen_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .screen
+                .as_ref()
+                .unwrap();
+
+                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                let ind = screen.icon_id_map.get("icon:atk_forward_overlay").unwrap().clone();
+                let mut tint;
+
+                if self.player.on_cooldown.contains_key(&Command::Attack) {
+                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::communication::commons::ATTACK_COOLDOWN;
+                    // use smmoothstep?
+                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                    tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                } else {
+                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                }
+                for v in &mut screen.icons[ind].vertices{
+                    v.color = tint.into();
+                }
+                self.queue.write_buffer(&screen.icons[ind].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind].vertices));
+
+                let ind = screen.icon_id_map.get("icon:atk_wave_overlay").unwrap().clone();
+
+                if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::communication::commons::AREA_ATTACK_COOLDOWN;
+                    // use smmoothstep?
+                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                    tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                } else {
+                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                }
+                for v in &mut screen.icons[ind].vertices{
+                    v.color = tint.into();
+                }
+                self.queue.write_buffer(&screen.icons[ind].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind].vertices));
+            }
+
             self.display
                 .scene_map
                 .get_mut(scene_id)
@@ -705,7 +752,7 @@ impl State {
         self.display.render(
             &self.mouse_position,
             &self.camera_state,
-            &self.player,
+            // &self.player,
             &self.player_loc,
             &self.device,
             &self.queue,
@@ -718,20 +765,6 @@ impl State {
         let size = &self.window.inner_size();
 
         // TODO: maybe refactor later?
-        // if player is alive
-        // if !self.player.is_dead {
-        //     // render ammo remaining
-        //     self.glyph_brush.queue(Section {
-        //         screen_position: (30.0, 20.0),
-        //         bounds: (size.width as f32, size.height as f32),
-        //         text: vec![Text::new(
-        //             format!("Wind Charge remaining: {:.1}\n", self.player.wind_charge).as_str(),
-        //         )
-        //         .with_color([0.0, 0.0, 0.0, 1.0])
-        //         .with_scale(40.0)],
-        //         ..Section::default()
-        //     });
-        // }
         // render respawn cooldown
         if self.player.on_cooldown.contains_key(&Command::Spawn) {
             let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
