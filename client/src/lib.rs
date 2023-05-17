@@ -716,6 +716,8 @@ impl State {
                     self.client_id,
                 );
             
+            other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
+            
             // update player scores
             // PLACEHOLDER FOR NOW
             {
@@ -729,11 +731,9 @@ impl State {
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 for i in 1..5{
                     let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
-                    let score : f32 = ((i as f32) - 1.0) / 3.0;
-                    println!("Player {} has score {}", i, score);
+                    let score : f32 = self.other_players[i as usize - 1].score;
                     let mut location = screen.icons[ind].location.clone();
                     location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
-                    println!("Location: {:?}", location);
                     screen.icons[ind].relocate(
                         location,
                         self.config.width,
@@ -819,7 +819,7 @@ impl State {
 
             // ASSUME: Ids should always be 1-4
             for (i, loc) in player_loc{
-                self.other_players[i as usize].location = loc;
+                self.other_players[i as usize - 1].location = loc;
             }
 
             self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);

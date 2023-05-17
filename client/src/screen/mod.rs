@@ -199,7 +199,7 @@ impl Display {
             let cpos = &camera_state.camera.position;
 
             for player in other_players {
-                let id = player.id - 1;
+                let id = player.id;
                 let pos = player.location;
                 if (id != client_id) && invisible_players.contains(&id) {
                     // skip if player invisible
