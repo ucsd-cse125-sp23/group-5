@@ -939,13 +939,14 @@ impl State {
                 //TODO: move to config
                 // generator
                 events::ParticleType::ATTACK => {
+                    let time = parameters::ATTACK_COOLDOWN / 2.0;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
-                        std::f32::consts::FRAC_PI_3,
-                        10.0,
+                        parameters::MAX_ATTACK_ANGLE,
+                        parameters::MAX_ATTACK_DIST / time,
                         0.3,
                         PI,
                         0.5,
@@ -957,8 +958,36 @@ impl State {
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
-                        0.5,
+                        time,
                         2000.0,
+                        p.color,
+                        atk_gen,
+                        (1, 4),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                },
+                events::ParticleType::AREA_ATTACK => {
+                    // in this case, only position matters
+                    let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;
+                    println!("adding particle: {:?}", p);
+                    let atk_gen = particles::gen::SphereGenerator::new(
+                        p.position,
+                        parameters::MAX_AREA_ATTACK_DIST / time,
+                        0.3,
+                        PI,
+                        0.5,
+                        75.0,
+                        10.0,
+                        7.0,
+                        false,
+                    );
+                    // System
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        4000.0,
                         p.color,
                         atk_gen,
                         (1, 4),
