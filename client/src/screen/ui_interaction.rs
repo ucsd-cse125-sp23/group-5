@@ -34,7 +34,7 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
 
 fn customize_body(display: &mut screen::Display,_: Option<MeshColor>, button_id : Option<String>){
     update_curr_selection(display, button_id, false);
-    update_curr_selection(display, Some(display.customization_choices.cur_leaf_color.clone()), true);
+    update_curr_selection(display, Some(display.customization_choices.cur_body_color.clone()), true);
     display.customization_choices.current_type_choice = "body".to_owned();
 }
 

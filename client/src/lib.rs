@@ -504,7 +504,7 @@ impl State {
         let default_display_id = String::from("display:title");
         let game_display_id = String::from("display:game");
 
-        // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors
+        // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
         let model_configs = config_instance.models.clone();
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
