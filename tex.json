@@ -1,4 +1,16 @@
 {
+    "particles": [
+        "particles/p1.png",
+        "particles/p2.png",
+        "particles/p3.png",
+        "particles/p4.png",
+        "particles/p5.png",
+        "particles/p6.png",
+        "particles/p7.png",
+        "particles/p8.png",
+        "particles/p9.png",
+        "particles/p10.png"
+    ],
     "textures": [
         {
             "name": "bkgd:title",

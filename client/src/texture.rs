@@ -133,6 +133,57 @@ impl Texture {
         })
     }
 
+    pub async fn from_images(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        files: Vec<String>,
+    ) -> Result<Self> {
+        let mut imgs = Vec::new();
+        let mut dimensions = (0, 0);
+        for f in &files{
+            let data = crate::resources::load_binary(f)
+                .await
+                .context(format!("error loading texture binary {f}"))?;
+            let img = image::load_from_memory(&data)?;
+            dimensions = img.dimensions();
+            imgs.push(img.to_rgba8());
+        }
+
+        let size = wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: files.len() as u32,
+        };
+        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("texture array"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &img[0],    // TO BE CHANGED!
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: NonZeroU32::new(4 * dimensions.0),
+                rows_per_image: NonZeroU32::new(dimensions.1),
+            },
+            size,
+        );
+        todo!();
+    }
+
     pub fn dummy(device: &wgpu::Device) -> Self {
         //Create dummy texture
         let wgpu_t = device.create_texture(&wgpu::TextureDescriptor {
