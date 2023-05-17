@@ -1,19 +1,20 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::model::{self, Model, StaticModel};
+use crate::model::Model;
 use glm::TMat4;
 use log::debug;
-use std::cell::RefCell;
+
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::MutexGuard;
 
-use crate::player::{Player, PlayerController};
+use nalgebra_glm as glm;
+
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
+use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
-use nalgebra_glm as glm;
+
+use crate::player::{Player, PlayerController};
 
 pub type NodeId = String;
 
@@ -136,8 +137,12 @@ impl Scene {
         transform: Transform,
     ) -> &mut Node {
         // get the parent node and push the child node to its child ids
+
         let parent_node = self.scene_graph.get_mut(&parent_node_id).unwrap();
-        parent_node.child_ids.push(child_node_id.clone());
+        // don't want to add duplicates, as we may have removed it for invisibility
+        if !parent_node.child_ids.contains(&child_node_id.clone()) {
+            parent_node.child_ids.push(child_node_id.clone());
+        }
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
@@ -155,7 +160,11 @@ impl Scene {
             .scene_graph
             .get_mut(&NodeKind::World.base_id())
             .unwrap();
-        parent_node.child_ids.push(child_node_id.clone());
+
+        // don't want to add duplicates, as we may have removed it for invisibility
+        if !parent_node.child_ids.contains(&child_node_id.clone()) {
+            parent_node.child_ids.push(child_node_id.clone());
+        }
 
         // add the child node to the scene graph
         self.add_node(child_node_id.clone(), transform);
@@ -176,9 +185,11 @@ impl Scene {
 
         // only render when i'm there
         if game_state.players.contains_key(&player_id) {
+            let invisible_players = game_state.get_affected_players(StatusEffect::Invisible);
+
             game_state.players.iter().for_each(|(id, _player_state)| {
                 let node_id = NodeKind::Player.node_id(id.to_string());
-                if !self.scene_graph.contains_key(&node_id) {
+                if !self.scene_graph.contains_key(&node_id) && !invisible_players.contains(id) {
                     self.add_player_node(node_id);
                 }
             });
@@ -188,6 +199,12 @@ impl Scene {
             player_controller.update(player, camera_state, player_state, dt);
 
             for (id, player_state) in game_state.players.iter() {
+                // take out invisible players
+                if (*id != player_id) && invisible_players.contains(id) {
+                    self.scene_graph
+                        .remove(&NodeKind::Player.node_id(id.to_string()));
+                    continue;
+                }
                 let node_id = NodeKind::Player.node_id(id.to_string());
                 self.scene_graph.get_mut(&node_id).unwrap().transform = Player::calc_transf_matrix(
                     player_state.transform.translation,
@@ -204,17 +221,17 @@ impl Scene {
         let mut ret = Vec::new();
         for id in 0..10 {
             let node_id = NodeKind::Player.node_id(id.to_string());
-            let pos;
-            match self.scene_graph.get(&node_id) {
+
+            let pos = match self.scene_graph.get(&node_id) {
                 None => continue,
-                Some(n) => pos = n.transform * glm::vec4(0.0, 0.0, 0.0, 1.0),
+                Some(n) => n.transform * glm::vec4(0.0, 0.0, 0.0, 1.0),
             };
             ret.push((
                 id,
                 glm::vec4(pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], 1.0),
             ));
         }
-        return ret;
+        ret
     }
 
     pub fn draw_scene_dfs(&mut self) {
@@ -227,7 +244,7 @@ impl Scene {
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
 
         // state needed for DFS:
-        let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
+        let mut cur_node: &Node = self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
@@ -272,9 +289,10 @@ impl Scene {
             }
 
             for node_id in cur_node.child_ids.iter() {
-                let node = self.scene_graph.get(node_id).unwrap();
-                dfs_stack.push(node);
-                matrix_stack.push(current_view_matrix * node.transform);
+                if let Some(node) = self.scene_graph.get(node_id) {
+                    dfs_stack.push(node);
+                    matrix_stack.push(current_view_matrix * node.transform);
+                } // else it is invisible
             }
         }
     }
@@ -321,8 +339,9 @@ impl Scene {
 
 #[cfg(test)]
 mod test {
-    use super::Scene;
     use common::configs::scene_config::ConfigSceneGraph;
+
+    use super::Scene;
 
     // Test reading a scene graph from an inline JSON string
     #[test]

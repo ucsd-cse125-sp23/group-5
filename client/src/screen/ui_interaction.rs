@@ -1,7 +1,7 @@
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::Input;
 use crate::screen;
-use log::{debug, info, warn};
+use log::warn;
 use phf::phf_map;
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display)> = phf_map! {

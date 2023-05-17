@@ -87,7 +87,7 @@ fn create_icon(
                 .instances
                 .iter()
                 .map(|instance_info| {
-                    let mut inst_matrix: glm::Mat4 = glm::identity();
+                    let inst_matrix: glm::Mat4 = glm::identity();
                     glm::scale(
                         &inst_matrix,
                         &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
