@@ -12,7 +12,9 @@ pub type MoveDirection = glm::Vec3;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ServerSync {
     Ready,
+    End,
 }
+
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {

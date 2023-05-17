@@ -1,10 +1,12 @@
-use common::configs::display_config::ScreenLocation;
+use common::configs::display_config::{ScreenLocation, ConfigScreenTransform};
 use nalgebra_glm as glm;
 
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 
 use crate::screen::location_helper::get_coords;
+
+use crate::screen::location_helper::to_absolute;
 use crate::mesh_color::{MeshColor, MeshColorInstance};
 
 // Vertex
@@ -110,6 +112,7 @@ pub struct Screen {
     pub background: Option<ScreenBackground>,
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
+    pub icon_id_map: HashMap<String, usize>,
     pub default_color: MeshColorInstance,
 }
 
@@ -121,6 +124,8 @@ pub struct ScreenBackground {
     pub color: Option<MeshColorInstance>,
 }
 
+///
+/// Note that the tint variables are currently useless
 #[derive(Debug)]
 pub struct Button{
     pub id: Option<String>,
@@ -146,7 +151,7 @@ pub struct Icon {
     pub vbuf: wgpu::Buffer,
     pub tint: glm::Vec4,
     pub texture: String,
-    pub instances: Vec<ScreenInstance>,
+    pub instance_raw: Vec<ConfigScreenTransform>,
     pub inst_buf: wgpu::Buffer,
     pub inst_range: std::ops::Range<u32>,
 }
@@ -242,74 +247,43 @@ impl Icon {
             screen_height,
             &mut self.vertices,
         );
+        for v in &mut self.vertices{
+            v.color = self.tint.into();
+        }
         queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
+        let instances: Vec<ScreenInstance> = self
+                .instance_raw
+                .iter()
+                .map(|instance_info| {
+                    let mut inst_matrix: glm::Mat4 = glm::identity();
+                    inst_matrix = glm::scale(
+                        &inst_matrix,
+                        &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
+                    );
+                    inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
+                    let t = to_absolute(&instance_info.translation, screen_width, screen_height);
+                    inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
+                    ScreenInstance {
+                        transform: inst_matrix.into(),
+                    }
+                })
+                .collect();
+        queue.write_buffer(&self.inst_buf, 0, bytemuck::cast_slice(&instances));
     }
-}
 
-// For testing
-pub fn get_display_groups(
-    device: &wgpu::Device,
-    color_bind_group_layout: &wgpu::BindGroupLayout,
-    groups: &mut HashMap<String, DisplayGroup>,
-){
-    // title screen
-    let id1 = String::from("display:title");
-    let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("title background Obj Vertex Buffer"),
-        contents: bytemuck::cast_slice(&TITLE_VERT),
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    });
-    let bkgd1 = ScreenBackground {
-        aspect: 16.0 / 9.0,
-        vbuf,
-        texture: String::from("bkgd:title"),
-        color: None,
-    };
-    let button1_loc = ScreenLocation {
-        vert_disp: (0.0, -0.5),
-        horz_disp: (0.0, 0.0),
-    };
-    let mut b_vert = TITLE_VERT;
-    get_coords(&button1_loc, 1.0, 0.463, 1920, 1080, &mut b_vert);
-    let b_vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("title button Vertex Buffer"),
-        contents: bytemuck::cast_slice(&TITLE_VERT),
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    });
-    let button1 = Button{
-        id: None,
-        location: button1_loc,
-        aspect: 1.0,
-        height: 0.463 * 2.0,
-        vertices: b_vert,
-        vbuf: b_vbuf,
-        default_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
-        hover_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
-        default_texture: String::from("btn:title"),
-        hover_texture: String::from("btn:title_hover"),
-        color: None,
-        on_click: String::from("game_start"),
-    };
-    let _title_screen = Screen {
-        id: String::from("screen:title"),
-        background: Some(bkgd1),
-        buttons: vec![button1],
-        icons: vec![],
-        default_color:  MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
-    };
-    let title_dg = DisplayGroup {
-        id: id1.clone(),
-        screen: Some(String::from("screen:title")),
-        scene: None,
-    };
-    groups.insert(id1, title_dg);
-
-    // game group
-    let id2 = String::from("display:game");
-    let game_dg = DisplayGroup {
-        id: id2.clone(),
-        screen: None,
-        scene: Some(String::from("scene:game")),
-    };
-    groups.insert(id2, game_dg);
+    pub fn relocate(&mut self, location: common::configs::display_config::ScreenLocation, screen_width: u32, screen_height: u32, queue: &wgpu::Queue){
+        get_coords(
+            &location,
+            self.aspect,
+            self.height,
+            screen_width,
+            screen_height,
+            &mut self.vertices,
+        );
+        for v in &mut self.vertices{
+            v.color = self.tint.into();
+        }
+        queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
+        self.location = location;
+    }
 }

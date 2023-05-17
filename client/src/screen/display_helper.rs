@@ -30,13 +30,15 @@ pub fn create_screen_map(
     let mut screen_map = HashMap::new();
     for s in &config.screens {
         let background = create_background(s, device, color_bind_group_layout);
-        let icons = create_icon(s, device, screen_width, screen_height);
+        let mut icon_id_map : HashMap<String, usize> = HashMap::new();
+        let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
         let buttons = create_button(s, device, screen_width, screen_height, color_bind_group_layout);
 
         let screen = objects::Screen {
             id: s.id.clone(),
             background,
             icons,
+            icon_id_map,
             buttons,
             default_color:  MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
         };
@@ -66,12 +68,16 @@ fn create_background(s: &ConfigScreen, device: &wgpu::Device, color_bind_group_l
 fn create_icon(
     s: &ConfigScreen,
     device: &wgpu::Device,
+    map: &mut HashMap<String, usize>,
     screen_width: u32,
     screen_height: u32,
 ) -> Vec<objects::Icon> {
+    let mut ind = 0;
     s.icons
         .iter()
         .map(|i| {
+            map.insert(i.id.clone(), ind);
+            ind += 1;
             let mut vertices = objects::TITLE_VERT;
             get_coords(
                 &i.location,
@@ -81,6 +87,9 @@ fn create_icon(
                 screen_height,
                 &mut vertices,
             );
+            for v in &mut vertices{
+                v.color = i.tint.clone();
+            }
             let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(" Some icon (implement ids for more useful messages!) Vertex Buffer"),
                 contents: bytemuck::cast_slice(&vertices),
@@ -91,14 +100,14 @@ fn create_icon(
                 .instances
                 .iter()
                 .map(|instance_info| {
-                    let inst_matrix: glm::Mat4 = glm::identity();
-                    glm::scale(
+                    let mut inst_matrix: glm::Mat4 = glm::identity();
+                    inst_matrix = glm::scale(
                         &inst_matrix,
                         &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
                     );
-                    glm::rotate_z(&inst_matrix, instance_info.rotation);
+                    inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
                     let t = to_absolute(&instance_info.translation, screen_width, screen_height);
-                    glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
+                    inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
                     objects::ScreenInstance {
                         transform: inst_matrix.into(),
                     }
@@ -120,7 +129,7 @@ fn create_icon(
                 vbuf,
                 tint: glm::make_vec4(&i.tint),
                 texture: i.tex.clone(),
-                instances,
+                instance_raw: i.instances.clone(),
                 inst_buf,
                 inst_range,
             }

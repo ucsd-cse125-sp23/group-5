@@ -21,13 +21,13 @@ use crate::configs::player_config::ConfigPlayer;
 use crate::configs::scene_config::ConfigSceneGraph;
 use crate::configs::texture_config::ConfigTexture;
 
-const MODELS_CONFIG_PATH: &str = "models.json";
-const SCENE_CONFIG_PATH: &str = "scene.json";
-const LOBBY_SCENE_CONFIG_PATH: &str = "lobby_scene.json";
-const AUDIO_CONFIG_PATH: &str = "audio.json";
-const PLAYER_CONFIG_PATH: &str = "player.json";
-const DISPLAY_CONFIG_PATH: &str = "display.json";
-const TEXTURE_CONFIG_PATH: &str = "tex.json";
+pub const MODELS_CONFIG_PATH: &str = "models.json";
+pub const SCENE_CONFIG_PATH: &str = "scene.json";
+pub const LOBBY_SCENE_CONFIG_PATH: &str = "lobby_scene.json";
+pub const AUDIO_CONFIG_PATH: &str = "audio.json";
+pub const PLAYER_CONFIG_PATH: &str = "player.json";
+pub const DISPLAY_CONFIG_PATH: &str = "display.json";
+pub const TEXTURE_CONFIG_PATH: &str = "tex.json";
 
 // pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> =
 //     OnceCellLazy::new(|| RwLock::new(None));
