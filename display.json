@@ -205,7 +205,7 @@
                     "id": "icon:atk_wave",
                     "location": {
                         "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.237]
+                        "horz_disp": [0.0, 0.504]
                     },
                     "aspect": 1.0,
                     "height": 0.222,
@@ -215,7 +215,7 @@
                         {
                             "translation": {
                                 "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.267]
+                                "horz_disp": [0.0, 0.0]
                             },
                             "rotation": 0.0,
                             "scale": [1.0, 1.0]
@@ -226,7 +226,7 @@
                     "id": "icon:atk_ult",
                     "location": {
                         "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.237]
+                        "horz_disp": [0.0, 0.770]
                     },
                     "aspect": 1.0,
                     "height": 0.222,
@@ -236,7 +236,7 @@
                         {
                             "translation": {
                                 "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.533]
+                                "horz_disp": [0.0, 0.0]
                             },
                             "rotation": 0.0,
                             "scale": [1.0, 1.0]

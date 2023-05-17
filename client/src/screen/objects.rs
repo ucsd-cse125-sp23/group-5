@@ -1,4 +1,4 @@
-use common::configs::display_config::ScreenLocation;
+use common::configs::display_config::{ScreenLocation, ConfigScreenTransform};
 use nalgebra_glm as glm;
 
 use log::{debug, info, warn};
@@ -7,6 +7,8 @@ use wgpu::util::DeviceExt;
 
 use crate::screen;
 use crate::screen::location_helper::get_coords;
+
+use crate::screen::location_helper::to_absolute;
 
 // Vertex
 #[repr(C)]
@@ -144,7 +146,7 @@ pub struct Icon {
     pub vbuf: wgpu::Buffer,
     pub tint: glm::Vec4,
     pub texture: String,
-    pub instances: Vec<ScreenInstance>,
+    pub instance_raw: Vec<ConfigScreenTransform>,
     pub inst_buf: wgpu::Buffer,
     pub inst_range: std::ops::Range<u32>,
 }
@@ -241,5 +243,23 @@ impl Icon {
             &mut self.vertices,
         );
         queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
+        let instances: Vec<ScreenInstance> = self
+                .instance_raw
+                .iter()
+                .map(|instance_info| {
+                    let mut inst_matrix: glm::Mat4 = glm::identity();
+                    inst_matrix = glm::scale(
+                        &inst_matrix,
+                        &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
+                    );
+                    inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
+                    let t = to_absolute(&instance_info.translation, screen_width, screen_height);
+                    inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
+                    ScreenInstance {
+                        transform: inst_matrix.into(),
+                    }
+                })
+                .collect();
+        queue.write_buffer(&self.inst_buf, 0, bytemuck::cast_slice(&instances));
     }
 }

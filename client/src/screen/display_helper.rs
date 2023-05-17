@@ -122,7 +122,7 @@ fn create_icon(
                 vbuf,
                 tint: glm::make_vec4(&i.tint),
                 texture: i.tex.clone(),
-                instances,
+                instance_raw: i.instances.clone(),
                 inst_buf,
                 inst_range,
             }
