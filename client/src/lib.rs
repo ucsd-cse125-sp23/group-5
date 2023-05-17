@@ -601,6 +601,16 @@ impl State {
                 }
             ).collect();
 
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    visible: false,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
+
         Self {
             window,
             surface,
