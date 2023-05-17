@@ -1,3 +1,7 @@
+use common::configs::model_config::ModelIndex;
+use mesh_color::MeshColor;
+use glm::vec3;
+
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, MutexGuard};
 
@@ -8,7 +12,6 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
-use glm::vec3;
 use model::Vertex;
 use winit::event::*;
 
@@ -31,6 +34,7 @@ mod animation;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
+pub mod mesh_color;
 
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
@@ -45,9 +49,6 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-
-const MODELS_CONFIG_PATH: &str = "models.json";
-const SCENE_CONFIG_PATH: &str = "scene.json";
 
 struct State {
     surface: wgpu::Surface,
@@ -69,6 +70,7 @@ struct State {
     client_id: u8,
     staging_belt: wgpu::util::StagingBelt,
     glyph_brush: GlyphBrush<()>,
+    color_bind_group_layout: wgpu::BindGroupLayout,
     animation_controller: animation::AnimationController,
 }
 
@@ -250,6 +252,23 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
+            let color_bind_group_layout =
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        }
+                    ],
+                    label: Some("color_bind_group_layout"),
+                });
+
         let texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -277,8 +296,9 @@ impl State {
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
+        let config_instance = ConfigurationManager::get_configuration();
         // Scene
-        let model_configs = from_file::<_, ConfigModels>(MODELS_CONFIG_PATH).unwrap();
+        let model_configs = config_instance.models.clone();
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
 
@@ -301,7 +321,7 @@ impl State {
             models.insert(model_config.name, model);
         }
 
-        let scene_config = from_file::<_, ConfigSceneGraph>(SCENE_CONFIG_PATH).unwrap();
+        let scene_config = config_instance.scene.clone();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -344,6 +364,7 @@ impl State {
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
+                    &color_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -351,7 +372,7 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d],
+                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -362,6 +383,7 @@ impl State {
                     &texture_bind_group_layout,
                     &camera_state.camera_bind_group_layout,
                     &light_state.light_bind_group_layout,
+                    &color_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -484,8 +506,38 @@ impl State {
         let _default_display_id = String::from("display:title");
         let _game_display_id = String::from("display:game");
 
+        // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
+        let model_configs = config_instance.models.clone();
+        let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+
+        for model_config in model_configs.models {
+            if model_config.animated() {
+                // TODO: skipping animated models for now for lobby scene
+                continue;
+            } else {
+                let model: Box<dyn Model> =  Box::new(
+                    StaticModel::load(&model_config.path, model_loading_resources)
+                        .await
+                        .unwrap(),
+                );
+                models.insert(model_config.name, model);
+            }
+        }
+        
+        let lobby_scene_config = config_instance.lobby_scene.clone();
+        
+        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
+        lobby_scene.objects = models;
+        lobby_scene.draw_scene_dfs();
+        // lobby_scene.objects.insert("player".to_owned(), models.get("player").unwrap());
+        // lobby_scene.objects.insert("ferris".to_owned(), *models.get("ferris").unwrap());
+
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
+        scene_map.insert(String::from("scene:lobby"), lobby_scene);
+
+        
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -529,10 +581,11 @@ impl State {
             1920,
             1080,
             &device,
+            &color_bind_group_layout,
             sender,
             game_state,
         );
-
+        // println!("{:#?}", display.screen_map);
         // let screens =
         //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
 
@@ -556,6 +609,7 @@ impl State {
             client_id,
             staging_belt,
             glyph_brush,
+            color_bind_group_layout,
             animation_controller,
         }
     }
@@ -603,7 +657,7 @@ impl State {
             }
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
-                state: _,
+                state: crate::ElementState::Released,
                 ..
             } => {
                 self.display.click(&self.mouse_position);
@@ -710,6 +764,7 @@ impl State {
             &mut encoder,
             &view,
             &mut self.animation_controller,
+            &self.color_bind_group_layout,
             &output,
             self.client_id as u32,
         );

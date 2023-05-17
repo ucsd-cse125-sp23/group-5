@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 
 use crate::screen::location_helper::get_coords;
+use crate::mesh_color::{MeshColor, MeshColorInstance};
 
 // Vertex
 #[repr(C)]
@@ -109,6 +110,7 @@ pub struct Screen {
     pub background: Option<ScreenBackground>,
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
+    pub default_color: MeshColorInstance,
 }
 
 #[derive(Debug)]
@@ -116,10 +118,12 @@ pub struct ScreenBackground {
     pub aspect: f32,
     pub vbuf: wgpu::Buffer,
     pub texture: String,
+    pub color: Option<MeshColorInstance>,
 }
 
 #[derive(Debug)]
-pub struct Button {
+pub struct Button{
+    pub id: Option<String>,
     pub location: ScreenLocation,
     pub aspect: f32, // both textures must be the same aspect ratio
     pub height: f32,
@@ -129,6 +133,7 @@ pub struct Button {
     pub hover_tint: glm::Vec4,
     pub default_texture: String,
     pub hover_texture: String,
+    pub color: Option<MeshColorInstance>,
     pub on_click: String,
 }
 
@@ -242,7 +247,11 @@ impl Icon {
 }
 
 // For testing
-pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, DisplayGroup>) {
+pub fn get_display_groups(
+    device: &wgpu::Device,
+    color_bind_group_layout: &wgpu::BindGroupLayout,
+    groups: &mut HashMap<String, DisplayGroup>,
+){
     // title screen
     let id1 = String::from("display:title");
     let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -254,6 +263,7 @@ pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, Di
         aspect: 16.0 / 9.0,
         vbuf,
         texture: String::from("bkgd:title"),
+        color: None,
     };
     let button1_loc = ScreenLocation {
         vert_disp: (0.0, -0.5),
@@ -266,7 +276,8 @@ pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, Di
         contents: bytemuck::cast_slice(&TITLE_VERT),
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     });
-    let button1 = Button {
+    let button1 = Button{
+        id: None,
         location: button1_loc,
         aspect: 1.0,
         height: 0.463 * 2.0,
@@ -276,6 +287,7 @@ pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, Di
         hover_tint: glm::vec4(1.0, 1.0, 1.0, 1.0),
         default_texture: String::from("btn:title"),
         hover_texture: String::from("btn:title_hover"),
+        color: None,
         on_click: String::from("game_start"),
     };
     let _title_screen = Screen {
@@ -283,6 +295,7 @@ pub fn get_display_groups(device: &wgpu::Device, groups: &mut HashMap<String, Di
         background: Some(bkgd1),
         buttons: vec![button1],
         icons: vec![],
+        default_color:  MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
     };
     let title_dg = DisplayGroup {
         id: id1.clone(),

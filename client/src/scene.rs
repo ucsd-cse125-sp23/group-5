@@ -1,6 +1,8 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::model::Model;
+use crate::mesh_color::MeshColor;
+use crate::model::{self, Model, StaticModel};
+
 use glm::TMat4;
 use log::debug;
 
@@ -24,6 +26,7 @@ pub struct Node {
     pub child_ids: Vec<NodeId>,
     pub model: Option<ModelIndex>,
     pub transform: Transform,
+    pub colors: Option<HashMap<String, MeshColor>>,
 }
 
 impl Node {
@@ -33,6 +36,7 @@ impl Node {
             child_ids: Vec::new(),
             model: None,
             transform: Transform::default(),
+            colors: None,
         }
     }
 
@@ -42,14 +46,20 @@ impl Node {
             child_ids: Vec::new(),
             model: None,
             transform,
+            colors: None,
         }
     }
 
     pub fn add_model(&mut self, model_index: ModelIndex) {
         self.model = Some(model_index);
     }
+
+    pub fn add_color(&mut self, colors: HashMap<String, MeshColor>) {
+        self.colors = Some(colors);
+    }
 }
 
+#[derive(Clone)]
 pub struct InstanceBundle {
     pub instance: Instance,
     pub node_id: NodeId,
@@ -65,6 +75,11 @@ impl InstanceBundle {
             instance: Instance::from_transform(transform),
             node_id,
         }
+    }
+
+    pub fn add_color(&mut self, colors: Option<HashMap<String, MeshColor>>) -> Self {
+        self.instance.mesh_colors = colors;
+        self.clone()
     }
 
     pub fn instance(&self) -> Instance {
@@ -210,6 +225,10 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
+                
+                // TODO: possibly change model and color with player choices here
+                // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
+                // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
             }
         }
     }
@@ -242,12 +261,15 @@ impl Scene {
         // stacks needed for DFS:
         let mut dfs_stack: Vec<&Node> = Vec::new();
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
+        let mut color_stack: Vec<Option<HashMap<String, MeshColor>>> = Vec::new();
 
         // state needed for DFS:
         let mut cur_node: &Node = self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
+        let mut curr_color = None;
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
+        color_stack.push(curr_color);
 
         let mut total_number_of_edges: usize = 0;
         for n in self.scene_graph.iter() {
@@ -263,6 +285,7 @@ impl Scene {
             }
             cur_node = dfs_stack.pop().unwrap();
             current_view_matrix = matrix_stack.pop().unwrap();
+            curr_color = color_stack.pop().unwrap();
 
             if let Some(model_index) = cur_node.model.clone() {
                 let model_view: TMat4<f32> = current_view_matrix;
@@ -273,7 +296,7 @@ impl Scene {
                         obj.push(InstanceBundle::from_transform(
                             &model_view,
                             cur_node.id.clone(),
-                        ));
+                        ).add_color(curr_color));
                     }
                     None => {
                         // add the new model to the hashmap
@@ -282,7 +305,7 @@ impl Scene {
                             vec![InstanceBundle::from_transform(
                                 &model_view,
                                 cur_node.id.clone(),
-                            )],
+                            ).add_color(curr_color)],
                         );
                     }
                 }
@@ -292,6 +315,7 @@ impl Scene {
                 if let Some(node) = self.scene_graph.get(node_id) {
                     dfs_stack.push(node);
                     matrix_stack.push(current_view_matrix * node.transform);
+                    color_stack.push(node.colors.clone());
                 } // else it is invisible
             }
         }
