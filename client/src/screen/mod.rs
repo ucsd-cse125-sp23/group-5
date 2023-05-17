@@ -17,8 +17,10 @@ use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::inputs::Input;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
+use crate::other_players::OtherPlayer;
 
 use common::core::states::GameState;
+
 
 use self::objects::Screen;
 
@@ -154,7 +156,7 @@ impl Display {
         mouse: &[f32; 2],
         camera_state: &camera::CameraState,
         // player: &crate::player::Player,
-        player_loc: &Vec<(u32, glm::Vec4)>,
+        other_players: &Vec<OtherPlayer>,
         invisible_players: &HashSet<u32>,
         existing_powerups: &HashSet<u32>,
         device: &wgpu::Device,
@@ -203,13 +205,13 @@ impl Display {
                 glm::normalize(&(camera_state.camera.position - camera_state.camera.target));
             let cpos = &camera_state.camera.position;
 
-            for (id, pos) in player_loc {
-                if (*id != client_id) && invisible_players.contains(id) {
+            for player in other_players {
+                let id = player.id;
+                let pos = player.location;
+                if !player.visible {
                     // skip if player invisible
                     continue;
                 }
-                // TODO: use id to map
-                // for now, just generate the last type of particle
                 // -1 to cancel out 1.0 in pos, 2.5 to place above the player
                 let pos = pos + glm::vec4(0.0, 2.5, 0.0, -1.0);
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
@@ -220,7 +222,7 @@ impl Display {
                     color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
                     spawn_time: 0.0,
                     size: 75.0,
-                    tex_id: *id as i32 + 4,
+                    tex_id: id as i32 + 4,
                     z_pos,
                     time_elapsed: 0.0,
                     size_growth: 0.0,
