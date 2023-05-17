@@ -1,8 +1,4 @@
-use std::cell::{RefCell, RefMut};
-use std::sync::{Arc, Mutex, MutexGuard};
-
-use itertools::Itertools;
-use log::{debug, error, info, warn};
+use std::sync::{Arc, Mutex};
 
 use common::configs::*;
 use common::core::command::{Command, MoveDirection, ServerSync};
@@ -19,12 +15,10 @@ use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 
-use common::configs::*;
 use common::core::states::GameLifeCycleState::{Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 pub mod command_handlers;
@@ -125,7 +119,6 @@ impl Executor {
 
         let player_config = self.config_instance.player.clone();
 
-
         #[cfg(not(feature = "debug-ready-sync"))]
         let player_upper_bound = 4;
 
@@ -216,7 +209,7 @@ impl Executor {
 
         // update the powerup for each server location
         game_state.update_powerup_locations(delta_time);
-        
+
         if let Some(id) = game_state.update_player_on_flag_times(delta_time) {
             panic!("Winner is {}, game finished!", id)
         }

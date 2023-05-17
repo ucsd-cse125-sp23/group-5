@@ -16,9 +16,6 @@ use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
 
-use crate::camera::CameraState;
-use crate::instance::{Instance, Transform};
-use crate::model::{self, Model};
 use crate::player::{Player, PlayerController};
 
 pub type NodeId = String;

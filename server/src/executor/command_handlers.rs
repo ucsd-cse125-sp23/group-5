@@ -2,18 +2,7 @@ use std::f32::consts::PI;
 use std::fmt::Debug;
 use std::time::Duration;
 
-use common::communication::commons::{
-    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE, ATTACK_COEFF,
-    ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE, MAX_AREA_ATTACK_DIST, MAX_ATTACK_ANGLE,
-    MAX_ATTACK_DIST, MAX_WIND_CHARGE, ONE_CHARGE,
-};
-use common::configs::model_config::ConfigModels;
-use common::configs::player_config::ConfigPlayer;
-use common::configs::scene_config::ConfigSceneGraph;
 use common::core::action_states::ActionState;
-use common::core::command::{Command, MoveDirection};
-use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
-use common::core::states::{GameState, PlayerState};
 
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
@@ -21,13 +10,14 @@ use nalgebra::{zero, Isometry3, Point, UnitQuaternion, Vector3};
 use nalgebra_glm as glm;
 use nalgebra_glm::Vec3;
 use rapier3d::dynamics::MassProperties;
-use rapier3d::geometry::InteractionGroups;
 use rapier3d::math::{AngVector, Isometry};
 use rapier3d::prelude as rapier;
 
 use common::configs::constants::{
-    DASH_IMPULSE, FLASH_DISTANCE_SCALAR, INVINCIBLE_EFFECTIVE_DISTANCE,
-    INVINCIBLE_EFFECTIVE_IMPULSE, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
+    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE, ATTACK_COEFF,
+    ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE, DASH_IMPULSE, FLASH_DISTANCE_SCALAR,
+    INVINCIBLE_EFFECTIVE_DISTANCE, INVINCIBLE_EFFECTIVE_IMPULSE, MAX_AREA_ATTACK_DIST,
+    MAX_ATTACK_ANGLE, MAX_ATTACK_DIST, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
     POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, WIND_ENHANCEMENT_SCALAR,
 };
 use common::configs::model_config::ConfigModels;
@@ -463,9 +453,9 @@ impl CommandHandler for JumpCommandHandler {
                 0.9
             }),
         ));
-        
+
         handle_invincible_players(game_state, physics_state, self.player_id);
-        
+
         Ok(())
     }
 }
@@ -630,7 +620,8 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
-                        let impulse_vec = scalar * vec_to_other * (ATTACK_IMPULSE - (ATTACK_COEFF * toi));
+                        let impulse_vec =
+                            scalar * vec_to_other * (ATTACK_IMPULSE - (ATTACK_COEFF * toi));
 
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],

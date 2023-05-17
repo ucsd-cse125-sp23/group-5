@@ -6,19 +6,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use glm::vec3;
-use nalgebra_glm as glm;
-use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
-use winit::event::*;
-use winit::window::Window;
-
 use common::configs::*;
-use common::core::command::Command;
-use common::core::events;
 use common::core::powerup_system::StatusEffect;
-use common::core::states::{GameState, ParticleQueue};
+use glm::vec3;
 use model::Vertex;
+use winit::event::*;
 
 mod model;
 
@@ -740,30 +732,6 @@ impl State {
                 .with_scale(40.0)],
                 ..Section::default()
             });
-        }
-        // render respawn cooldown
-        if self.player.on_cooldown.contains_key(&Command::Spawn) {
-            let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-            self.glyph_brush.queue(Section {
-                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![
-                    Text::new("You died!\n")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(100.0),
-                    Text::new("Respawning in ")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
-                        .with_color([1.0, 1.0, 1.0, 1.0])
-                        .with_scale(60.0),
-                    Text::new(" seconds")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                ],
-                layout: Layout::default().h_align(HorizontalAlign::Center),
-                ..Section::default()
-            });
             // render ability cooldowns
             if self.player.on_cooldown.contains_key(&Command::Attack) {
                 let attack_cooldown = self.player.on_cooldown.get(&Command::Attack).unwrap();
@@ -812,6 +780,30 @@ impl State {
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],
+                ..Section::default()
+            });
+        }
+        // render respawn cooldown
+        if self.player.on_cooldown.contains_key(&Command::Spawn) {
+            let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+            self.glyph_brush.queue(Section {
+                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![
+                    Text::new("You died!\n")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(100.0),
+                    Text::new("Respawning in ")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([1.0, 1.0, 1.0, 1.0])
+                        .with_scale(60.0),
+                    Text::new(" seconds")
+                        .with_color([1.0, 1.0, 0.0, 1.0])
+                        .with_scale(60.0),
+                ],
+                layout: Layout::default().h_align(HorizontalAlign::Center),
                 ..Section::default()
             });
         } else {

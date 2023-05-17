@@ -1,10 +1,4 @@
-use std::collections::{HashMap, HashSet};
-use std::time::Duration;
-
-use nalgebra_glm::Vec3;
 use phf::phf_map;
-use rapier3d::prelude::Vector;
-use serde::{Deserialize, Serialize};
 
 use crate::configs::constants::{
     DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
@@ -24,7 +18,6 @@ use std::ops::{Add, AddAssign};
 
 use crate::core::action_states::ActionState;
 use std::time::Duration;
-
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {}
@@ -53,7 +46,6 @@ impl GameState {
             ..Default::default()
         }
     }
-    
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -164,6 +156,7 @@ impl PlayerState {
 
     pub fn reset_status_effects(&mut self) {
         self.status_effects.clear();
+    }
 
     pub fn add_action_state(&mut self, action_state: ActionState, duration: Duration) {
         self.active_action_states.insert((action_state, duration));
