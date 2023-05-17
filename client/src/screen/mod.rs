@@ -201,7 +201,7 @@ impl Display {
             for player in other_players {
                 let id = player.id;
                 let pos = player.location;
-                if (id != client_id) && invisible_players.contains(&id) {
+                if !player.visible {
                     // skip if player invisible
                     continue;
                 }

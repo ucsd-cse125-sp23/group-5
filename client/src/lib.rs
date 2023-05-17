@@ -594,6 +594,7 @@ impl State {
             .map(|ind| 
                 OtherPlayer{
                     id: ind,
+                    visible: false,
                     location: glm::vec4(0.0, 0.0, 0.0, 0.0),
                     score: 0.0,
                 }
@@ -818,8 +819,12 @@ impl State {
                 .get_player_positions();
 
             // ASSUME: Ids should always be 1-4
+            for p in &mut self.other_players{
+                p.visible = false;
+            }
             for (i, loc) in player_loc{
                 self.other_players[i as usize - 1].location = loc;
+                self.other_players[i as usize - 1].visible = true;
             }
 
             self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);

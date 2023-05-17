@@ -5,6 +5,7 @@ use nalgebra_glm as glm;
 
 pub struct OtherPlayer{
     pub id: u32,
+    pub visible: bool, // don't want to render location above players not in scene graph
     pub location: glm::Vec4,
     pub score: f32,
 }
