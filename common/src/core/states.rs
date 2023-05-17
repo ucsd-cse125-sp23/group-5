@@ -1,5 +1,3 @@
-use phf::phf_map;
-
 use crate::configs::parameters::{
     DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
     POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
@@ -14,7 +12,6 @@ use rapier3d::prelude::Vector;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::ops::{Add, AddAssign};
 
 use crate::core::action_states::ActionState;
 use std::time::Duration;
@@ -65,16 +62,11 @@ pub struct PlayerState {
     pub active_action_states: HashSet<(ActionState, Duration)>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub enum GameLifeCycleState {
+    #[default]
     Waiting,
     Running,
-}
-
-impl Default for GameLifeCycleState {
-    fn default() -> Self {
-        GameLifeCycleState::Waiting
-    }
 }
 
 // Notes to be removed:
@@ -238,11 +230,11 @@ impl GameState {
             None => None,
             Some(id) => {
                 self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
-                return if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
                     Some(id)
                 } else {
                     None
-                };
+                }
             }
         }
     }
@@ -272,8 +264,7 @@ impl GameState {
             } else {
                 // check if a player should get the powerup now
                 for (_, player_state) in self.players.iter_mut() {
-                    let power_up_location =
-                        POWER_UP_LOCATIONS.get(&loc_id.value()).unwrap().clone();
+                    let power_up_location = *POWER_UP_LOCATIONS.get(&loc_id.value()).unwrap();
                     if player_state.power_up.is_none()
                         && player_state.is_in_circular_area(
                             (power_up_location.0, power_up_location.2),
@@ -321,10 +312,7 @@ impl GameState {
                 }
             }
         }
-        match min {
-            None => None,
-            Some((id, _)) => Some(id),
-        }
+        min.map(|(id, _)| id)
     }
 
     pub fn get_affected_players(&self, effect: StatusEffect) -> HashSet<u32> {

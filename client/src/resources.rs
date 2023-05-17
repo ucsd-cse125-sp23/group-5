@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 extern crate nalgebra_glm as glm;
 
-use cfg_if::cfg_if;
 use const_format::formatcp;
 use wgpu::util::DeviceExt;
 

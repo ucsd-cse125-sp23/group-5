@@ -10,7 +10,7 @@ pub fn to_absolute(location: &ScreenLocation, width: u32, height: u32) -> [f32; 
 
 pub fn get_width(height: f32, object_aspect: f32, screen_width: u32, screen_height: u32) -> f32 {
     let r_aspect: f32 = (screen_height as f32) / (screen_width as f32);
-    return height * object_aspect * r_aspect;
+    height * object_aspect * r_aspect
 }
 
 pub fn get_coords(

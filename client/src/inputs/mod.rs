@@ -7,7 +7,7 @@ use common::core::command::Command::{
 use common::core::command::{Command, ServerSync};
 
 use glm::{vec3, Vec3};
-use log::{debug, info, warn};
+use log::debug;
 use nalgebra_glm as glm;
 
 use common::communication::message::{HostRole, Message, Payload};

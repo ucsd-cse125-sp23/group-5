@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use crate::resources;
-use common::configs::texture_config::ConfigTexture;
+
 use common::configs::*;
 
 pub async fn load_screen_tex_config(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     layout: &wgpu::BindGroupLayout,
-    file_name: &str,
+    _file_name: &str,
     texture_map: &mut HashMap<String, wgpu::BindGroup>,
 ) {
     let config_instance = ConfigurationManager::get_configuration();
@@ -34,7 +34,7 @@ pub async fn load_screen_tex(
     file_name: &str,
     texture_map: &mut HashMap<String, wgpu::BindGroup>,
 ) {
-    let texture = match resources::load_texture(file_name, &device, &queue).await {
+    let texture = match resources::load_texture(file_name, device, queue).await {
         Ok(tex) => tex,
         Err(e) => panic!("Failed to load screen texture {:?}\n", e),
     };

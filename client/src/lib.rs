@@ -27,8 +27,6 @@ mod texture;
 
 use nalgebra_glm as glm;
 
-use common::configs::*;
-
 mod animation;
 pub mod audio;
 pub mod event_loop;
@@ -37,10 +35,10 @@ pub mod inputs;
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
-use crate::scene::InstanceBundle;
+
 use common::configs::model_config::ConfigModels;
 use common::configs::scene_config::ConfigSceneGraph;
-use common::configs::*;
+
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::{GameState, ParticleQueue};
@@ -339,7 +337,7 @@ impl State {
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
-        let render_pipeline_layout =
+        let _render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("3D Render Pipeline Layout"),
                 bind_group_layouts: &[
@@ -483,8 +481,8 @@ impl State {
         //TODO: for debugging -----
         // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
         // screen::objects::get_display_groups(&device, scene, &mut groups);
-        let default_display_id = String::from("display:title");
-        let game_display_id = String::from("display:game");
+        let _default_display_id = String::from("display:title");
+        let _game_display_id = String::from("display:game");
 
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
@@ -609,12 +607,12 @@ impl State {
                 ..
             } => {
                 self.display.click(&self.mouse_position);
-                return true;
+                true
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_position[0] = 2.0 * (position.x as f32) / self.window_size[0] - 1.0;
                 self.mouse_position[1] = -2.0 * (position.y as f32) / self.window_size[1] + 1.0;
-                return true;
+                true
             }
             _ => false,
         }
@@ -753,7 +751,7 @@ impl State {
                     screen_position: (30.0, 100.0),
                     bounds: (size.width as f32, size.height as f32),
                     text: vec![Text::new(
-                        &format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
+                        format!("Area Attack cooldown: {:.1}\n", area_attack_cooldown).as_str(),
                     )
                     .with_color([0.0, 0.0, 0.0, 1.0])
                     .with_scale(40.0)],
@@ -766,7 +764,7 @@ impl State {
                 screen_position: (600.0, 20.0),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![Text::new(
-                    &format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],
@@ -776,7 +774,7 @@ impl State {
                 screen_position: (600.0, 60.0),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![Text::new(
-                    &format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],
@@ -796,7 +794,7 @@ impl State {
                     Text::new("Respawning in ")
                         .with_color([1.0, 1.0, 0.0, 1.0])
                         .with_scale(60.0),
-                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                    Text::new(format!("{:.1}", spawn_cooldown).as_str())
                         .with_color([1.0, 1.0, 1.0, 1.0])
                         .with_scale(60.0),
                     Text::new(" seconds")

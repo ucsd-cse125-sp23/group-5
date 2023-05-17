@@ -1,13 +1,11 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::model::{self, Model, StaticModel};
+use crate::model::Model;
 use glm::TMat4;
 use log::debug;
-use std::cell::RefCell;
+
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::MutexGuard;
 
 use nalgebra_glm as glm;
 
@@ -223,17 +221,17 @@ impl Scene {
         let mut ret = Vec::new();
         for id in 0..10 {
             let node_id = NodeKind::Player.node_id(id.to_string());
-            let pos;
-            match self.scene_graph.get(&node_id) {
+
+            let pos = match self.scene_graph.get(&node_id) {
                 None => continue,
-                Some(n) => pos = n.transform * glm::vec4(0.0, 0.0, 0.0, 1.0),
+                Some(n) => n.transform * glm::vec4(0.0, 0.0, 0.0, 1.0),
             };
             ret.push((
                 id,
                 glm::vec4(pos[0] / pos[3], pos[1] / pos[3], pos[2] / pos[3], 1.0),
             ));
         }
-        return ret;
+        ret
     }
 
     pub fn draw_scene_dfs(&mut self) {
@@ -246,7 +244,7 @@ impl Scene {
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
 
         // state needed for DFS:
-        let mut cur_node: &Node = &self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
+        let mut cur_node: &Node = self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);

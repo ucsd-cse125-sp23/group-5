@@ -208,7 +208,7 @@ impl CommandHandler for DieCommandHandler {
         let spawn_position = player_state.spawn_point;
 
         // Teleport the player back to their spawn position and disable physics.
-        let new_position = rapier3d::prelude::Isometry::new(spawn_position, zero());
+        let new_position = Isometry::new(spawn_position, zero());
         if let Some(player_rigid_body) = physics_state.get_entity_rigid_body_mut(self.player_id) {
             player_rigid_body.set_position(new_position, true);
             player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
@@ -530,8 +530,8 @@ impl CommandHandler for AttackCommandHandler {
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::ATTACK,
-                player_pos.clone(),
-                camera_forward.clone(),
+                player_pos,
+                camera_forward,
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
                 glm::vec4(0.4, 0.9, 0.7, 1.0),
@@ -639,7 +639,7 @@ impl CommandHandler for AreaAttackCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        game_events: &mut dyn GameEventCollector,
+        _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
             .player_mut(self.player_id)
@@ -821,8 +821,8 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         let mut other_player_status_changes: Vec<(u32, StatusEffect, f32)> = vec![];
 
-        match player_state.power_up.clone() {
-            Some(x) => match x {
+        if let Some(x) = player_state.power_up.clone() {
+            match x {
                 PowerUp::Lightning => match game_state_clone.find_closest_player(self.player_id) {
                     Some(id) => {
                         other_player_status_changes.push((
@@ -840,12 +840,11 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 },
                 x => {
                     player_state.status_effects.insert(
-                        POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap().clone(),
+                        *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
                         POWER_UP_BUFF_DURATION,
                     );
                 }
-            },
-            None => {}
+            }
         };
 
         // by now the player should have casted the powerup successfully, resetting player powerup states
@@ -889,7 +888,7 @@ impl CommandHandler for DashCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        game_events: &mut dyn GameEventCollector,
+        _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
             .player_mut(self.player_id)
@@ -913,7 +912,7 @@ impl CommandHandler for DashCommandHandler {
 
         player_state.status_effects.remove(&StatusEffect::Invisible);
 
-        let player_pos = player_state.transform.translation;
+        let _player_pos = player_state.transform.translation;
 
         // TODO: replace this example with actual implementation
         // game_events.add(
@@ -980,7 +979,7 @@ impl CommandHandler for FlashCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        game_events: &mut dyn GameEventCollector,
+        _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
             .player_mut(self.player_id)
@@ -1004,7 +1003,7 @@ impl CommandHandler for FlashCommandHandler {
 
         player_state.status_effects.remove(&StatusEffect::Invisible);
 
-        let player_pos = player_state.transform.translation;
+        let _player_pos = player_state.transform.translation;
 
         // TODO: replace this example with actual implementation
         // game_events.add(
@@ -1054,8 +1053,7 @@ impl CommandHandler for FlashCommandHandler {
             .player_mut(self.player_id)
             .unwrap()
             .transform
-            .translation
-            .clone();
+            .translation;
 
         new_coordinates.x += FLASH_DISTANCE_SCALAR * x_dir;
         new_coordinates.z += FLASH_DISTANCE_SCALAR * z_dir;
@@ -1116,7 +1114,7 @@ fn handle_invincible_players(
                     //     Recipients::All,
                     // );
 
-                    let player_collider_handle = physics_state
+                    let _player_collider_handle = physics_state
                         .get_entity_handles(command_casting_player_id)
                         .ok_or(HandlerError::new(format!(
                             "Player {} not found",
@@ -1130,11 +1128,11 @@ fn handle_invincible_players(
                         )))
                         .unwrap();
 
-                    let player_rigid_body = physics_state
+                    let _player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(command_casting_player_id)
                         .unwrap();
 
-                    let camera_forward = Vec3::new(
+                    let _camera_forward = Vec3::new(
                         player_state.camera_forward.x,
                         0.0,
                         player_state.camera_forward.z,
@@ -1161,7 +1159,7 @@ fn handle_invincible_players(
                     // check dot product between direction to other player and attack direction
 
                     // if object in attack range
-                    let other_player_collider_handle = physics_state
+                    let _other_player_collider_handle = physics_state
                         .get_entity_handles(*other_player_id)
                         .ok_or(HandlerError::new(format!(
                             "Player {} not found",

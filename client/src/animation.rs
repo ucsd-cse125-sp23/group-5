@@ -1,6 +1,6 @@
 use crate::model::{Material, Mesh, Model, StaticModel};
 use crate::resources::{find_in_search_path, ModelLoadingResources};
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use derive_more::Constructor;
 use log::{error, info};
 use std::any::Any;
@@ -12,8 +12,8 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::time::Duration;
 extern crate nalgebra_glm as glm;
-use crate::scene::{Node, NodeId, NodeKind, Scene};
-use common::configs::model_config::ModelIndex;
+use crate::scene::{NodeId, NodeKind};
+
 use common::core::states::GameState;
 use serde::{Deserialize, Serialize};
 
@@ -101,9 +101,12 @@ impl AnimationController {
     }
 
     pub fn update(&mut self, dt: Duration) {
-        for (node_id, animation_state) in self.animation_states.iter_mut() {
+        for (_node_id, animation_state) in self.animation_states.iter_mut() {
             match animation_state {
-                AnimationState::Playing { animation_id, time } => {
+                AnimationState::Playing {
+                    animation_id: _,
+                    time,
+                } => {
                     *time += dt.as_secs_f32();
                 }
                 AnimationState::Stopped => {}

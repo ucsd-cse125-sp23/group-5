@@ -4,10 +4,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use nalgebra_glm as glm;
 use wgpu::util::DeviceExt;
 
-use common::configs::display_config::{
-    ConfigButton, ConfigDisplay, ConfigIcon, ConfigScreenBackground, ConfigScreenTransform,
-    ScreenLocation,
-};
+use common::configs::display_config::ConfigDisplay;
 use common::configs::parameters::POWER_UP_LOCATIONS;
 use common::core::states::GameState;
 
@@ -15,7 +12,6 @@ use crate::model::DrawModel;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
-use crate::screen::location_helper::{get_coords, to_absolute};
 
 use crate::inputs::Input;
 use crate::screen::ui_interaction::BUTTON_MAP;
@@ -138,7 +134,7 @@ impl Display {
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
         animation_controller: &mut crate::animation::AnimationController,
-        output: &wgpu::SurfaceTexture,
+        _output: &wgpu::SurfaceTexture,
         client_id: u32,
     ) {
         // inability to find the scene would be a major bug
@@ -153,7 +149,7 @@ impl Display {
             Some(scene_id) => {
                 let scene = self.scene_map.get(scene_id).unwrap();
                 for (index, instances) in scene.objects_and_instances.iter() {
-                    let count = instances.len();
+                    let _count = instances.len();
 
                     for instance in instances.iter() {
                         let mut model = scene.objects.get(index).unwrap().clone_box();
@@ -207,7 +203,7 @@ impl Display {
 
             // draw the powerups if they exist
             for id in existing_powerups.iter() {
-                let _pos = POWER_UP_LOCATIONS.get(id).unwrap().clone();
+                let _pos = *POWER_UP_LOCATIONS.get(id).unwrap();
                 let pos = glm::vec4(_pos.0, _pos.1, _pos.2, 0.0);
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
@@ -242,7 +238,7 @@ impl Display {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -265,7 +261,7 @@ impl Display {
             });
 
             // Optionally draw scene
-            if instanced_objs.len() > 0 {
+            if !instanced_objs.is_empty() {
                 render_pass.set_pipeline(&self.scene_pipeline);
                 render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
@@ -299,7 +295,7 @@ impl Display {
                     // first optionally draw background
                     if let Some(bkgd) = &screen.background {
                         render_pass.draw_ui_instanced(
-                            &self.texture_map.get(&bkgd.texture).unwrap(),
+                            self.texture_map.get(&bkgd.texture).unwrap(),
                             &bkgd.vbuf,
                             &self.default_inst_buf,
                             0..1,
@@ -311,7 +307,7 @@ impl Display {
                             false => &button.default_texture,
                         };
                         render_pass.draw_ui_instanced(
-                            &self.texture_map.get(texture).unwrap(),
+                            self.texture_map.get(texture).unwrap(),
                             &button.vbuf,
                             &self.default_inst_buf,
                             0..1,
@@ -319,7 +315,7 @@ impl Display {
                     }
                     for icon in &screen.icons {
                         render_pass.draw_ui_instanced(
-                            &self.texture_map.get(&icon.texture).unwrap(),
+                            self.texture_map.get(&icon.texture).unwrap(),
                             &icon.vbuf,
                             &self.default_inst_buf,
                             0..1,
@@ -333,10 +329,10 @@ impl Display {
     pub fn click(&mut self, mouse: &[f32; 2]) {
         //iterate through buttons
         let display_group = self.groups.get(&self.current).unwrap();
-        let screen;
-        match display_group.screen.as_ref() {
+
+        let screen = match display_group.screen.as_ref() {
             None => return,
-            Some(s) => screen = self.screen_map.get(s).unwrap(),
+            Some(s) => self.screen_map.get(s).unwrap(),
         };
         let mut to_call: Option<&str> = None;
         for button in &screen.buttons {
