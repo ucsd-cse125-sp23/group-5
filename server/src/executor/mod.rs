@@ -9,7 +9,7 @@ use crate::executor::command_handlers::{
     AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler, DashCommandHandler,
     DieCommandHandler, FlashCommandHandler, JumpCommandHandler, MoveCommandHandler,
     RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler,
+    UpdateCameraFacingCommandHandler, AreaAttackCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
@@ -162,6 +162,7 @@ impl Executor {
                 ),
                 Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
                 Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+                Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(client_command.client_id)),
                 Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
                 Command::CastPowerUp => {
                     Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
