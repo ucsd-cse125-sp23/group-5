@@ -96,6 +96,7 @@ fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
                             let str = node.model.as_deref();
                             match str {
                                 Some(model) => match model {
+                                    // TODO: fix later, hard-coded for now
                                     "cube" => {
                                         display.customization_choices.current_model = "ferris".to_owned();
                                         node.model = Some("ferris".to_string());

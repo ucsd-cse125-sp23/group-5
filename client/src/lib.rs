@@ -511,6 +511,7 @@ impl State {
 
         for model_config in model_configs.models {
             if model_config.animated() {
+                // TODO: skipping animated models for now for lobby scene
                 continue;
             } else {
                 let model: Box<dyn Model> =  Box::new(

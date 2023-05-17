@@ -33,6 +33,13 @@ pub mod ui_interaction;
 pub const TEX_CONFIG_PATH: &str = "tex.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
 
+
+pub const LOBBY_STARTING_MODEL: &str = "cube";
+pub const LOBBY_STARTING_TYPE: &str = "leaf";
+pub const LOBBY_STARTING_TYPE_BTN_ID: &str = "cust_leaf";
+pub const LOBBY_STARTING_TYPE_DEF_TEXTURE: &str = "btn:leaf";
+
+
 #[derive(Debug)]
 pub struct CustomizationChoices {
     pub color: HashMap<String, MeshColor>,
@@ -62,11 +69,12 @@ impl FinalChoices{
 
 impl CustomizationChoices {
     fn default() -> Self {
-        Self { // TODO: fix later, hard-coded for now
+        // TODO: fix later, hard-coded with constants for now
+        Self {
             color: HashMap::new(),
-            current_model: "cube".to_owned(),
-            current_type_choice: "leaf".to_owned(),
-            prev_type_selection: ("cust_leaf".to_owned(), "btn:leaf".to_owned()),
+            current_model: LOBBY_STARTING_MODEL.to_owned(),
+            current_type_choice: LOBBY_STARTING_TYPE.to_owned(),
+            prev_type_selection: (LOBBY_STARTING_TYPE_BTN_ID.to_owned(), LOBBY_STARTING_TYPE_DEF_TEXTURE.to_owned()),
             prev_color_selection: (String::new(), String::new()),
             cur_leaf_color: String::new(),
             cur_body_color: String::new(),
