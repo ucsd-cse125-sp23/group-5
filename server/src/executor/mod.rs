@@ -6,10 +6,10 @@ use common::core::events::GameEvent;
 use common::core::states::GameState;
 
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler, DashCommandHandler,
-    DieCommandHandler, FlashCommandHandler, JumpCommandHandler, MoveCommandHandler,
-    RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler, AreaAttackCommandHandler,
+    AreaAttackCommandHandler, AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler,
+    DashCommandHandler, DieCommandHandler, FlashCommandHandler, JumpCommandHandler,
+    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+    UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
@@ -19,6 +19,7 @@ use common::core::states::GameLifeCycleState::{Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
+use std::fmt::Debug;
 use std::time::Duration;
 
 pub mod command_handlers;
@@ -123,10 +124,14 @@ impl Executor {
         let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
-        let player_upper_bound = 1;
+        let player_upper_bound = 4;
 
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
+                Command::UI(ServerSync::Choices(final_choices)) => {
+                    game_state.players_customization.insert(client_command.client_id, final_choices);
+                    // println!("{:#?}", game_state.players_customization);
+                }
                 Command::UI(ServerSync::Ready) => {
                     if !self
                         .ready_players
@@ -162,7 +167,9 @@ impl Executor {
                 ),
                 Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
                 Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
-                Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(client_command.client_id)),
+                Command::AreaAttack => {
+                    Box::new(AreaAttackCommandHandler::new(client_command.client_id))
+                }
                 Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
                 Command::CastPowerUp => {
                     Box::new(CastPowerUpCommandHandler::new(client_command.client_id))

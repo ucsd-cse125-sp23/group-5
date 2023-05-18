@@ -12,9 +12,11 @@ use rapier3d::prelude::Vector;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::sync::Condvar;
 
 use crate::core::action_states::ActionState;
 use std::time::Duration;
+use crate::core::choices::FinalChoices;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {}
@@ -23,6 +25,7 @@ pub struct WorldState {}
 pub struct GameState {
     pub world: WorldState,
     pub players: HashMap<u32, PlayerState>,
+    pub players_customization: HashMap<u32, FinalChoices>,
     pub previous_tick_winner: Option<u32>,
     pub active_power_ups:
         HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
