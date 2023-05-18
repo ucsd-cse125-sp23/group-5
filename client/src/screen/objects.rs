@@ -2,10 +2,10 @@ use common::configs::display_config::{ConfigScreenTransform, ScreenLocation};
 use nalgebra_glm as glm;
 
 use std::collections::HashMap;
-use wgpu::util::DeviceExt;
 
 use crate::screen::location_helper::get_coords;
 
+use crate::mesh_color::MeshColorInstance;
 use crate::screen::location_helper::to_absolute;
 use common::core::mesh_color::{MeshColor, MeshColorInstance};
 

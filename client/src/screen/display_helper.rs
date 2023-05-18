@@ -1,3 +1,4 @@
+use crate::mesh_color::{MeshColor, MeshColorInstance};
 use crate::screen::location_helper::{get_coords, to_absolute};
 use crate::screen::objects;
 use crate::screen::objects::ScreenInstance;

@@ -257,7 +257,7 @@ where
     fn draw_model_instanced(
         &mut self,
         instanced_model: &'a InstancedModel,
-        instances: Range<u32>,
+        _instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup,
     ) {
         for j in 0..instanced_model.instance_states.len() {

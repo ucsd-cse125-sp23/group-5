@@ -615,7 +615,7 @@ impl State {
             game_state,
         );
 
-        let other_players: Vec<OtherPlayer> = (1..5)
+        let _other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| OtherPlayer {
                 id: ind,
                 visible: false,
@@ -624,7 +624,7 @@ impl State {
             })
             .collect();
 
-        let other_players: Vec<OtherPlayer> = (1..5)
+        let _other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| OtherPlayer {
                 id: ind,
                 visible: false,
@@ -815,13 +815,12 @@ impl State {
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 for i in 1..5 {
-                    let ind = screen
+                    let ind = *screen
                         .icon_id_map
                         .get(&format!("icon:score_p{}", i))
-                        .unwrap()
-                        .clone();
+                        .unwrap();
                     let score: f32 = self.other_players[i as usize - 1].score;
-                    let mut location = screen.icons[ind].location.clone();
+                    let mut location = screen.icons[ind].location;
                     location.horz_disp = (
                         0.0,
                         game_config.score_lower_x
@@ -848,14 +847,14 @@ impl State {
                     .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
+                let ind = *screen.icon_id_map.get("icon:charge").unwrap();
                 screen.icons[ind].inst_range = 0..self.player.wind_charge;
             }
 
             // update cooldowns
             // hard coded for now... TODO: separate function
             // is it necessary? would need to pass around lots of references
-            // might be better to create dedicated function in screen/mod.rs
+            // might be better to create dedicated function in screen/command_handlers
             {
                 let screen_id = self
                     .display
@@ -981,7 +980,7 @@ impl State {
                     Text::new("Respawning in ")
                         .with_color([1.0, 1.0, 0.0, 1.0])
                         .with_scale(60.0),
-                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                    Text::new(format!("{:.1}", spawn_cooldown).as_str())
                         .with_color([1.0, 1.0, 1.0, 1.0])
                         .with_scale(60.0),
                     Text::new(" seconds")

@@ -5,12 +5,6 @@ use common::core::command::{Command, MoveDirection, ServerSync};
 use common::core::events::GameEvent;
 use common::core::states::GameState;
 
-use crate::executor::command_handlers::{
-    AreaAttackCommandHandler, AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler,
-    DashCommandHandler, DieCommandHandler, FlashCommandHandler, JumpCommandHandler,
-    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler,
-};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
@@ -18,9 +12,10 @@ use crate::Recipients;
 use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
-use std::cell::{RefCell, RefMut};
-use std::fmt::Debug;
+use std::cell::RefCell;
 use std::time::Duration;
+
+use command_handlers::prelude::*;
 
 pub mod command_handlers;
 
@@ -305,17 +300,5 @@ impl Executor {
     /// get a clone of the game state
     pub fn game_state(&self) -> GameState {
         self.game_state.lock().unwrap().clone()
-    }
-}
-
-type GameEventWithRecipients = (GameEvent, Recipients);
-
-pub trait GameEventCollector {
-    fn add(&mut self, event: GameEvent, recipients: Recipients);
-}
-
-impl GameEventCollector for RefMut<'_, Vec<GameEventWithRecipients>> {
-    fn add(&mut self, event: GameEvent, recipients: Recipients) {
-        self.push((event, recipients));
     }
 }

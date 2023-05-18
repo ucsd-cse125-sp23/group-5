@@ -5,6 +5,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
 
 use common::configs::display_config::ConfigDisplay;
+use common::configs::model_config::ModelIndex;
 use common::core::choices::CustomizationChoices;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameState;
@@ -17,8 +18,8 @@ use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
+use crate::screen::object_transitions::Transition;
 
-use self::object_transitions::Transition;
 use self::objects::Screen;
 
 pub mod display_helper;
@@ -120,7 +121,7 @@ impl Display {
         animation_controller: &mut crate::animation::AnimationController,
         color_bind_group_layout: &wgpu::BindGroupLayout,
         _output: &wgpu::SurfaceTexture,
-        client_id: u32,
+        _client_id: u32,
     ) {
         let config_instance = ConfigurationManager::get_configuration();
         let game_config = config_instance.game.clone();
@@ -258,7 +259,7 @@ impl Display {
 
                 for obj in instanced_objs.iter() {
                     render_pass.draw_model_instanced(
-                        &obj,
+                        obj,
                         0..obj.num_instances as u32,
                         &camera_state.camera_bind_group,
                     );

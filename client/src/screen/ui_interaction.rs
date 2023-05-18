@@ -158,6 +158,7 @@ fn update_curr_selection(
     button_id: Option<String>,
     color_or_type: bool,
 ) {
+    // color_or_type: true -> color, false -> type
     let col_or_type = if color_or_type {
         &display.customization_choices.prev_color_selection
     } else {
@@ -165,10 +166,10 @@ fn update_curr_selection(
     };
 
     let display_group = display.groups.get_mut(&display.current).unwrap();
-    let screen: &mut Screen;
-    match display_group.screen.as_ref() {
+
+    let screen: &mut Screen = match display_group.screen.as_ref() {
         None => return,
-        Some(s) => screen = display.screen_map.get_mut(s).unwrap(),
+        Some(s) => display.screen_map.get_mut(s).unwrap(),
     };
 
     let mut btn = None;
@@ -186,7 +187,7 @@ fn update_curr_selection(
     match btn {
         None => {}
         Some(b) => {
-            let prev_id = b.id.clone().unwrap().clone();
+            let prev_id = b.id.clone().unwrap();
             let prev_tex = b.default_texture.clone();
             if color_or_type {
                 display.customization_choices.prev_color_selection = (prev_id, prev_tex);
