@@ -30,7 +30,7 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
             warn!("Error sending command: {:?}", e);
         }
     }
-    display.current = display.game_display.clone();
+    display.change_to(display.game_display.clone());
 }
 
 fn customize_body(display: &mut screen::Display,_: Option<MeshColor>, button_id : Option<String>){
@@ -80,7 +80,7 @@ fn change_player_color(display: &mut screen::Display, color: Option<MeshColor>, 
 }
 
 fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
-    display.current = "display:lobby".to_owned();
+    display.change_to("display:lobby".to_owned());
 }
 
 fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){

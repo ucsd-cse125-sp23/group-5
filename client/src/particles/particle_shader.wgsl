@@ -7,7 +7,7 @@ struct InstanceInput {
     @location(3) color: vec4<f32>,
     @location(4) spawn_time: f32,
     @location(5) size: f32,
-    @location(6) tex_id: f32,
+    @location(6) tex_id: i32,
     @location(7) z_pos: f32,
     @location(8) time_elapsed: f32,
     // allow size to grow
@@ -22,9 +22,7 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
     @location(1) color: vec4<f32>,
-    // for debugging
-    @location(2) expected: f32,
-    @location(3) z_pos: f32,
+    @location(2) tex_id: i32,
 };
 
 struct CameraUniform {
@@ -45,7 +43,11 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.tex_coords = vec2(model.tex[0], (model.tex[1] / (NUM_TEXTURES) + (instance.tex_id / NUM_TEXTURES)));
+    // texture
+    out.tex_coords = model.tex;
+    out.tex_id = instance.tex_id;
+
+    // calculating vertex locations
     var start_disp = vec3<f32>(instance.start_pos[0], instance.start_pos[1], instance.start_pos[2]);
     var start_angle = instance.start_pos[3];
     var linear_v = vec3<f32>(instance.velocity[0], instance.velocity[1], instance.velocity[2]);
@@ -90,9 +92,6 @@ fn vs_main(
     position += time_alive * linear_v;
     // then project
     out.clip_position = camera.view * vec4<f32>(position, 1.0);
-    // for debugging
-    out.expected = out.clip_position[2];
-    out.z_pos = instance.z_pos;
     // set z, for ordering issues
     out.clip_position[2] = instance.z_pos;
     out.clip_position = camera.proj * out.clip_position;
@@ -102,12 +101,12 @@ fn vs_main(
 
 // Fragment shader
 @group(1) @binding(0)
-var t_diffuse: texture_2d<f32>;
+var t_diffuse: texture_2d_array<f32>;
 @group(1) @binding(1)
 var s_diffuse: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    var t = textureSample(t_diffuse, s_diffuse, in.tex_coords, in.tex_id);
     return t * in.color;
 }
