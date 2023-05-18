@@ -119,12 +119,11 @@ impl Display {
         screen_width: u32,
         screen_height: u32,
         device: &wgpu::Device,
-        color_bind_group_layout: &wgpu::BindGroupLayout,
         sender: mpsc::Sender<Input>,
         game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         let groups = create_display_group(config);
-        let screen_map = create_screen_map(config, device, screen_width, screen_height, color_bind_group_layout);
+        let screen_map = create_screen_map(config, device, screen_width, screen_height);
         Self {
             groups,
             current: config.default_display.clone(),
@@ -329,10 +328,6 @@ impl Display {
                             &bkgd.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &bkgd.color { 
-                                None =>&screen.default_color.color_bind_group,
-                                Some(c) => &c.color_bind_group,
-                            }
                         );
                     };
                     for button in &screen.buttons {
@@ -345,10 +340,6 @@ impl Display {
                             &button.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &button.color { 
-                                None =>&screen.default_color.color_bind_group,
-                                Some(c) => &c.color_bind_group,
-                            }
                         );
                     }
 
@@ -358,7 +349,6 @@ impl Display {
                             &icon.vbuf,
                             &icon.inst_buf,
                             icon.inst_range.clone(),
-                            &screen.default_color.color_bind_group,
                         );
                     }
                 }
@@ -380,7 +370,7 @@ impl Display {
         for button in &screen.buttons {
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
-                color = match button.color.as_ref() {None => None, Some(c) => Some(c.color)};
+                color = Some(MeshColor::new([button.default_tint[0],button.default_tint[1], button.default_tint[2]] ));
                 button_id = button.id.clone();
             }
         }
@@ -398,7 +388,6 @@ pub trait DrawGUI<'a> {
         vbuf: &'a wgpu::Buffer,
         inst_buf: &'a wgpu::Buffer,
         instances: std::ops::Range<u32>,
-        color_bind_group: &'a wgpu::BindGroup,
     );
 }
 
@@ -412,12 +401,10 @@ where
             vbuf: &'a wgpu::Buffer,
             inst_buf: &'a wgpu::Buffer,
             instances: std::ops::Range<u32>,
-            color_bind_group: &'a wgpu::BindGroup,
         ) {
         self.set_vertex_buffer(0, vbuf.slice(..));
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);
-        self.set_bind_group(1, color_bind_group, &[]);
         self.draw_indexed(0..6, 0, instances);
     }
 }

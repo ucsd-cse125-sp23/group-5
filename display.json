@@ -70,11 +70,10 @@
                     },
                     "aspect": 1.0,
                     "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tint": [1.0, 0.0, 0.0, 1.0],
+                    "hover_tint": [1.0, 0.0, 0.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
-                    "color": [1.0,0.0,0.0],
                     "on_click": "change_player_color"
                 },
                 {
@@ -85,11 +84,10 @@
                     },
                     "aspect": 1.0,
                     "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tint": [0.0, 1.0, 0.0, 1.0],
+                    "hover_tint": [0.0, 1.0, 0.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
-                    "color": [0.0,1.0,0.0],
                     "on_click": "change_player_color"
                 },
                 {
@@ -100,11 +98,10 @@
                     },
                     "aspect": 1.0,
                     "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tint": [0.0, 0.0, 1.0, 1.0],
+                    "hover_tint": [0.0, 0.0, 1.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
-                    "color": [0.0,0.0,1.0],
                     "on_click": "change_player_color"
                 },
                 {
@@ -115,11 +112,10 @@
                     },
                     "aspect": 1.0,
                     "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tint": [1.0, 1.0, 0.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 0.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
-                    "color": [1.0,1.0,0.0],
                     "on_click": "change_player_color"
                 },
                 {

@@ -326,7 +326,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-        .add_model("korok".to_string());
+        .add_model("cube".to_string());
     }
 
     pub fn from_config(json_scene_graph: &ConfigSceneGraph) -> Self {

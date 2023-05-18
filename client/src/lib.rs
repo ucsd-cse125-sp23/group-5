@@ -302,21 +302,35 @@ impl State {
         let model_configs = config_instance.models.clone();
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
+        let mut static_loaded_models = HashMap::new();
 
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
 
-        for model_config in model_configs.models {
+        // load all static models once and clone Arcs for all scenes
+        for model_config in model_configs.models.clone() {
+            let model = if model_config.animated() {
+                continue;
+            }
+            else{
+                StaticModel::load(&model_config.path, model_loading_resources)
+                        .await
+                        .unwrap()
+            };
+            static_loaded_models.insert(model_config.name, model);
+        }
+
+        for model_config in model_configs.models.clone() {
             let model: Box<dyn Model> = if model_config.animated() {
+                continue;
                 Box::new(
                     AnimatedModel::load(&model_config.path, model_loading_resources)
                         .await
                         .unwrap(),
                 )
             } else {
+                let static_model = static_loaded_models.get(model_config.name.as_str()).unwrap();
                 Box::new(
-                    StaticModel::load(&model_config.path, model_loading_resources)
-                        .await
-                        .unwrap(),
+                    StaticModel {path: static_model.path.clone(), meshes: static_model.meshes.clone(), materials: static_model.materials.clone()}
                 )
             };
             models.insert(model_config.name, model);
@@ -373,7 +387,7 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout_2d],
                 push_constant_ranges: &[],
             });
 
@@ -501,23 +515,19 @@ impl State {
             particle_tex,
         );
 
-        // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
-        let model_configs = config_instance.models.clone();
-        let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
+       
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
-
-        for model_config in model_configs.models {
-            if model_config.animated() {
+        for model_config in model_configs.models.clone() {
+            let model = if model_config.animated() {
                 // TODO: skipping animated models for now for lobby scene
                 continue;
             } else {
-                let model: Box<dyn Model> =  Box::new(
-                    StaticModel::load(&model_config.path, model_loading_resources)
-                        .await
-                        .unwrap(),
-                );
-                models.insert(model_config.name, model);
-            }
+                let static_model = static_loaded_models.get(model_config.name.as_str()).unwrap();
+                Box::new(
+                    StaticModel {path: static_model.path.clone(), meshes: static_model.meshes.clone(), materials: static_model.materials.clone()}
+                )
+            };
+            models.insert(model_config.name, model);
         }
         
         let lobby_scene_config = config_instance.lobby_scene.clone();
@@ -576,7 +586,6 @@ impl State {
             1920,
             1080,
             &device,
-            &color_bind_group_layout,
             sender,
             game_state,
         );
