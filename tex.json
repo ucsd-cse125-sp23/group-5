@@ -5,7 +5,11 @@
             "path": "start_screen_without_btn.jpg"
         },
         {
-            "name": "bkgd:end",
+            "name": "bkgd:victory",
+            "path": "overlay.png"
+        },
+        {
+            "name": "bkgd:defeat",
             "path": "overlay.png"
         },
         {

@@ -14,6 +14,7 @@ pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<Me
     "customize_body" => customize_body,
     "customize_leaf" => customize_leaf,
     "go_to_lobby" => go_to_lobby,
+    "go_to_title" => go_to_title,
 };
 
 // Place click events here ----------------------
@@ -80,6 +81,10 @@ fn change_player_color(display: &mut screen::Display, color: Option<MeshColor>, 
 
 fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
     display.current = "display:lobby".to_owned();
+}
+
+fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+    display.current = "display:title".to_owned();
 }
 
 fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){

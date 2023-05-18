@@ -17,8 +17,13 @@
             "scene": "scene:game"
         },
         {
-            "id": "display:end",
-            "screen": "screen:end",
+            "id": "display:victory",
+            "screen": "screen:victory",
+            "scene": "scene:game"
+        }, 
+        {
+            "id": "display:defeat",
+            "screen": "screen:defeat",
             "scene": "scene:game"
         }
     ],
@@ -497,12 +502,49 @@
             ]
         },
         {
-            "id": "screen:end",
+            "id": "screen:victory",
             "background":  {
-                "tex": "bkgd:end",
+                "tex": "bkgd:victory",
                 "aspect": 1.77777778
             },
-            "buttons": [],
+            "buttons": [
+                {
+                    "location": {
+                        "vert_disp": [0.0, -0.5],
+                        "horz_disp": [0.0, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.926,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:title",
+                    "hover_tex": "btn:title_hover",
+                    "on_click": "go_to_title"
+                }
+            ],
+            "icons": []
+        },
+        {
+            "id": "screen:defeat",
+            "background":  {
+                "tex": "bkgd:defeat",
+                "aspect": 1.77777778
+            },
+            "buttons": [
+                {
+                    "location": {
+                        "vert_disp": [0.0, -0.5],
+                        "horz_disp": [0.0, 0.0]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.926,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:title",
+                    "hover_tex": "btn:title_hover",
+                    "on_click": "go_to_title"
+                }
+            ],
             "icons": []
         }
     ]

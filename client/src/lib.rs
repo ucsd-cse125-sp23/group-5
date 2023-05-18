@@ -13,6 +13,7 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
+use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
 
@@ -689,7 +690,22 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
+        // Only update if we're in game
+        if self.display.current != self.display.game_display.clone() {
+            return 
+        }
+
         let game_state_clone = game_state.lock().unwrap().clone();
+
+        // check if the game has ended and set corresponding end screen
+        if game_state_clone.life_cycle_state == Ended {
+            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
+                self.display.current = "display:victory".to_owned();
+            } else {
+                self.display.current = "display:defeat".to_owned(); 
+            }
+            return
+        }
 
         // game state to scene graph conversion and update
         {
