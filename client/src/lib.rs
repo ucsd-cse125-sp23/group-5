@@ -1,13 +1,13 @@
+
 use common::configs::model_config::ModelIndex;
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 use mesh_color::MeshColor;
+
 use glm::vec3;
 use other_players::OtherPlayer;
-
 use std::collections::{HashMap, HashSet};
 use std::default;
 use std::sync::{mpsc, MutexGuard};
-
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
@@ -20,13 +20,12 @@ use model::Vertex;
 use winit::event::*;
 
 mod model;
-
 mod camera;
 mod instance;
 mod lights;
+mod other_players;
 mod particles;
 mod player;
-mod other_players;
 mod resources;
 mod scene;
 mod screen;
@@ -38,15 +37,12 @@ mod animation;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
-pub mod mesh_color;
 
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
 
-use common::configs::model_config::ConfigModels;
-use common::configs::scene_config::ConfigSceneGraph;
-use common::configs as configs;
+use common::configs;
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::{GameState, ParticleQueue};
@@ -256,22 +252,20 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-            let color_bind_group_layout =
-                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        }
-                    ],
-                    label: Some("color_bind_group_layout"),
-                });
+        let color_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("color_bind_group_layout"),
+            });
 
         let texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -521,9 +515,10 @@ impl State {
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let rng = rand::thread_rng();
-        let particle_tex = texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
-            .await
-            .unwrap();
+        let particle_tex =
+            texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
+                .await
+                .unwrap();
         let particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
@@ -541,7 +536,7 @@ impl State {
                 // TODO: skipping animated models for now for lobby scene
                 continue;
             } else {
-                let model: Box<dyn Model> =  Box::new(
+                let model: Box<dyn Model> = Box::new(
                     StaticModel::load(&model_config.path, model_loading_resources)
                         .await
                         .unwrap(),
@@ -549,9 +544,9 @@ impl State {
                 models.insert(model_config.name, model);
             }
         }
-        
+
         let lobby_scene_config = config_instance.lobby_scene.clone();
-        
+
         let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
         lobby_scene.objects = models;
         lobby_scene.draw_scene_dfs();
@@ -562,7 +557,6 @@ impl State {
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
-        
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -610,36 +604,33 @@ impl State {
             sender,
             game_state,
         );
-        
-        let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
-                OtherPlayer{
-                    id: ind,
-                    visible: false,
-                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                    score: 0.0,
-                }
-            ).collect();
 
         let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
-                OtherPlayer{
-                    id: ind,
-                    visible: false,
-                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                    score: 0.0,
-                }
-            ).collect();
+            .map(|ind| OtherPlayer {
+                id: ind,
+                visible: false,
+                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                score: 0.0,
+            })
+            .collect();
 
         let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
-                OtherPlayer{
-                    id: ind,
-                    visible: false,
-                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                    score: 0.0,
-                }
-            ).collect();
+            .map(|ind| OtherPlayer {
+                id: ind,
+                visible: false,
+                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                score: 0.0,
+            })
+            .collect();
+
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| OtherPlayer {
+                id: ind,
+                visible: false,
+                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                score: 0.0,
+            })
+            .collect();
 
         Self {
             window,
@@ -776,41 +767,53 @@ impl State {
                     dt,
                     self.client_id,
                 );
-            
+
             other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
-            
+
             // update player scores
             {
-                let screen_id = self.display.groups
-                .get(&self.display.game_display)
-                .unwrap()
-                .screen
-                .as_ref()
-                .unwrap();
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                for i in 1..5{
-                    let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
-                    let score : f32 = self.other_players[i as usize - 1].score;
+                for i in 1..5 {
+                    let ind = screen
+                        .icon_id_map
+                        .get(&format!("icon:score_p{}", i))
+                        .unwrap()
+                        .clone();
+                    let score: f32 = self.other_players[i as usize - 1].score;
                     let mut location = screen.icons[ind].location.clone();
-                    location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
+                    location.horz_disp = (
+                        0.0,
+                        parameters::SCORE_LOWER_X
+                            + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X),
+                    );
                     screen.icons[ind].relocate(
                         location,
                         self.config.width,
                         self.config.height,
-                        &self.queue
+                        &self.queue,
                     );
                 }
             }
 
             // update player number of charges
             {
-                let screen_id = self.display.groups
-                .get(&self.display.game_display)
-                .unwrap()
-                .screen
-                .as_ref()
-                .unwrap();
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
@@ -822,12 +825,14 @@ impl State {
             // is it necessary? would need to pass around lots of references
             // might be better to create dedicated function in screen/mod.rs
             {
-                let screen_id = self.display.groups
-                .get(&self.display.game_display)
-                .unwrap()
-                .screen
-                .as_ref()
-                .unwrap();
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
 
                 // TODO: Magic constants here seem a little unavoidable?
                 let atk_load = String::from("icon:atk_forward_overlay");
@@ -862,10 +867,10 @@ impl State {
                 .get_player_positions();
 
             // ASSUME: Ids should always be 1-4
-            for p in &mut self.other_players{
+            for p in &mut self.other_players {
                 p.visible = false;
             }
-            for (i, loc) in player_loc{
+            for (i, loc) in player_loc {
                 self.other_players[i as usize - 1].location = loc;
                 self.other_players[i as usize - 1].visible = true;
             }
@@ -963,11 +968,11 @@ impl State {
         self.glyph_brush.queue(Section {
             screen_position: (600.0, 60.0),
             bounds: (size.width as f32, size.height as f32),
-            text: vec![Text::new(
-                format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-            )
-            .with_color([0.0, 0.0, 0.0, 1.0])
-            .with_scale(40.0)],
+            text: vec![
+                Text::new(format!("PowerUp Held: {:?}\n", self.player.power_up).as_str())
+                    .with_color([0.0, 0.0, 0.0, 1.0])
+                    .with_scale(40.0),
+            ],
             ..Section::default()
         });
 
@@ -1030,7 +1035,7 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-                },
+                }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
                     let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;

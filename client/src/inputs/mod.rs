@@ -17,6 +17,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, VirtualKeyCode};
+use common::core::choices::FinalChoices;
 
 pub mod handlers;
 
@@ -31,6 +32,7 @@ pub enum Input {
 #[derive(Debug, Clone)]
 pub enum ClientSync {
     Ready,
+    Choices(FinalChoices),
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +177,15 @@ impl InputEventProcessor {
                     let message: Message = Message::new(
                         HostRole::Client(self.client_id),
                         Payload::Command(Command::UI(ServerSync::Ready)),
+                    );
+                    self.protocol
+                        .send_message(&message)
+                        .expect("send message fails");
+                }
+                Input::UI(ClientSync::Choices(final_choices)) => {
+                    let message: Message = Message::new(
+                        HostRole::Client(self.client_id),
+                        Payload::Command(Command::UI(ServerSync::Choices(final_choices))),
                     );
                     self.protocol
                         .send_message(&message)

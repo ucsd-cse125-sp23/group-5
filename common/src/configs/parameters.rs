@@ -1,8 +1,8 @@
 use phf::phf_map;
 
 // Constant for score bar: would need to recalculate every time graphic is changed
-pub const SCORE_LOWER_X :f32 = -24.5/9.0 * 0.14;
-pub const SCORE_UPPER_X :f32 =  21.5/9.0 * 0.14;
+pub const SCORE_LOWER_X: f32 = -24.5 / 9.0 * 0.14;
+pub const SCORE_UPPER_X: f32 = 21.5 / 9.0 * 0.14;
 
 // Default camera parameters for lobby 
 pub const DEFAULT_PLAYER_POS: (f32, f32, f32) = (0.0, 0.0, 0.0);
