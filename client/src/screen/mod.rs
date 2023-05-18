@@ -145,6 +145,12 @@ impl Display {
         }
     }
 
+    /// Takes care of any cleanup switching displays might need
+    pub fn change_to(&mut self, new: String){
+        self.particles.systems.clear();
+        self.current = new;
+    }
+
     pub fn render(
         &mut self,
         mouse: &[f32; 2],
@@ -216,7 +222,7 @@ impl Display {
                     color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
                     spawn_time: 0.0,
                     size: 75.0,
-                    tex_id: id as f32 + 4.0,
+                    tex_id: id as i32 + 4,
                     z_pos,
                     time_elapsed: 0.0,
                     size_growth: 0.0,
@@ -237,7 +243,7 @@ impl Display {
                     color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
                     spawn_time: 0.0,
                     size: 75.0,
-                    tex_id: 9.0, // TODO: Find more icons for powerup
+                    tex_id: 9, // TODO: Find more icons for powerup
                     // prob need a system to link each powerup to each icon
                     // (Or perhaps we can just use one Icon and show players what they get after they have obtained it, adds a little bit of randomness on top)
                     z_pos,

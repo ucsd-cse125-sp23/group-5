@@ -639,7 +639,7 @@ impl CommandHandler for AreaAttackCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        _game_events: &mut dyn GameEventCollector,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
             .player_mut(self.player_id)
@@ -678,19 +678,19 @@ impl CommandHandler for AreaAttackCommandHandler {
             )),
             Recipients::All,
         );
+        */
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
-                ParticleType::ATTACK,
-                player_pos.clone(),
-                camera_forward.clone(),
+                ParticleType::AREA_ATTACK,
+                player_pos,
+                glm::vec3(0.0, 0.0, 0.0),
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
                 glm::vec4(0.4, 0.9, 0.7, 1.0),
-                format!("Attack from player {}", self.player_id),
+                format!("Area Attack from player {}", self.player_id),
             )),
             Recipients::All,
         );
-        */
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter() {
             if &self.player_id == other_player_id {

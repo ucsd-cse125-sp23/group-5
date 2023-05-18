@@ -491,7 +491,7 @@ impl State {
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let rng = rand::thread_rng();
-        let particle_tex = resources::load_texture("test_particle.png", &device, &queue)
+        let particle_tex = texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
             .await
             .unwrap();
         let particle_renderer = particles::ParticleDrawer::new(
@@ -500,12 +500,6 @@ impl State {
             &camera_state.camera_bind_group_layout,
             particle_tex,
         );
-
-        //TODO: for debugging -----
-        // let mut groups: HashMap<String, DisplayGroup> = HashMap::new();
-        // screen::objects::get_display_groups(&device, scene, &mut groups);
-        let _default_display_id = String::from("display:title");
-        let _game_display_id = String::from("display:game");
 
         // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
         let model_configs = config_instance.models.clone();
@@ -586,9 +580,26 @@ impl State {
             sender,
             game_state,
         );
-        // println!("{:#?}", display.screen_map);
-        // let screens =
-        //     screen_objects::get_screens(&texture_bind_group_layout_2d, &device, &queue).await;
+        
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    visible: false,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
+
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    visible: false,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
 
         let other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| 
@@ -959,13 +970,14 @@ impl State {
                 //TODO: move to config
                 // generator
                 events::ParticleType::ATTACK => {
+                    let time = parameters::ATTACK_COOLDOWN / 2.0;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
-                        std::f32::consts::FRAC_PI_3,
-                        10.0,
+                        parameters::MAX_ATTACK_ANGLE,
+                        parameters::MAX_ATTACK_DIST / time,
                         0.3,
                         PI,
                         0.5,
@@ -977,8 +989,36 @@ impl State {
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
-                        0.5,
+                        time,
                         2000.0,
+                        p.color,
+                        atk_gen,
+                        (1, 4),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                },
+                events::ParticleType::AREA_ATTACK => {
+                    // in this case, only position matters
+                    let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;
+                    println!("adding particle: {:?}", p);
+                    let atk_gen = particles::gen::SphereGenerator::new(
+                        p.position,
+                        parameters::MAX_AREA_ATTACK_DIST / time,
+                        0.3,
+                        PI,
+                        0.5,
+                        75.0,
+                        10.0,
+                        7.0,
+                        false,
+                    );
+                    // System
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        4000.0,
                         p.color,
                         atk_gen,
                         (1, 4),
