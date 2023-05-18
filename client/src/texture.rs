@@ -140,7 +140,7 @@ impl Texture {
     ) -> Result<Self> {
         let mut imgs = Vec::new();
         let mut dimensions = (0, 0);
-        for f in files{
+        for f in files {
             let data = crate::resources::load_binary(f)
                 .await
                 .context(format!("error loading texture binary {f}"))?;
@@ -166,19 +166,19 @@ impl Texture {
             view_formats: &[],
         });
 
-        for i in 0..imgs.len(){
+        for i in 0..imgs.len() {
             queue.write_texture(
                 wgpu::ImageCopyTexture {
                     aspect: wgpu::TextureAspect::All,
                     texture: &texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d{
+                    origin: wgpu::Origin3d {
                         x: 0,
                         y: 0,
                         z: i as u32,
                     },
                 },
-                &imgs[i],    // TO BE CHANGED!
+                &imgs[i], // TO BE CHANGED!
                 wgpu::ImageDataLayout {
                     offset: 0,
                     bytes_per_row: NonZeroU32::new(4 * dimensions.0),

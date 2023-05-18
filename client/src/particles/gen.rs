@@ -24,7 +24,7 @@ pub trait ParticleGenerator {
     ) -> u32;
 }
 
-pub struct SphereGenerator{
+pub struct SphereGenerator {
     source: glm::Vec3,
     linear_speed: f32,
     linear_variance: f32,
@@ -36,7 +36,7 @@ pub struct SphereGenerator{
     poisson_generation: bool,
 }
 
-impl SphereGenerator{
+impl SphereGenerator {
     pub fn new(
         source: glm::Vec3,
         linear_speed: f32,
@@ -48,7 +48,7 @@ impl SphereGenerator{
         size_growth: f32,
         poisson_generation: bool,
     ) -> Self {
-        Self{
+        Self {
             source,
             linear_speed,
             linear_variance,
@@ -82,7 +82,11 @@ impl ParticleGenerator for SphereGenerator {
         // let v = self.dir;
         while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
             let lin_scale = lin_dist.sample(rng);
-            let dir = glm::vec3(dir_dist.sample(rng), dir_dist.sample(rng), dir_dist.sample(rng));
+            let dir = glm::vec3(
+                dir_dist.sample(rng),
+                dir_dist.sample(rng),
+                dir_dist.sample(rng),
+            );
             let v = glm::normalize(&dir);
             list.push(Particle {
                 start_pos: [self.source[0], self.source[1], self.source[2], 0.0],

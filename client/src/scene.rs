@@ -1,7 +1,7 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
 use crate::mesh_color::MeshColor;
-use crate::model::{self, Model, StaticModel};
+use crate::model::Model;
 
 use glm::TMat4;
 use log::debug;
@@ -225,7 +225,7 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
-                
+
                 // TODO: possibly change model and color with player choices here
                 // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
                 // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
@@ -293,19 +293,19 @@ impl Scene {
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
-                        obj.push(InstanceBundle::from_transform(
-                            &model_view,
-                            cur_node.id.clone(),
-                        ).add_color(curr_color));
+                        obj.push(
+                            InstanceBundle::from_transform(&model_view, cur_node.id.clone())
+                                .add_color(curr_color),
+                        );
                     }
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
                             model_index,
-                            vec![InstanceBundle::from_transform(
-                                &model_view,
-                                cur_node.id.clone(),
-                            ).add_color(curr_color)],
+                            vec![
+                                InstanceBundle::from_transform(&model_view, cur_node.id.clone())
+                                    .add_color(curr_color),
+                            ],
                         );
                     }
                 }

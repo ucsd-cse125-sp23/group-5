@@ -1,7 +1,7 @@
 use common::configs::model_config::ModelIndex;
-use wgpu::util::DeviceExt;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
+use wgpu::util::DeviceExt;
 
 use crate::mesh_color::MeshColor;
 use nalgebra_glm as glm;
@@ -15,12 +15,11 @@ use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 
 use crate::inputs::Input;
+use crate::other_players::OtherPlayer;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
-use crate::other_players::OtherPlayer;
 
 use common::core::states::GameState;
-
 
 use self::objects::Screen;
 
@@ -33,12 +32,10 @@ pub mod ui_interaction;
 // pub const TEX_CONFIG_PATH: &str = "tex.json";
 // pub const DISPLAY_CONFIG_PATH: &str = "display.json";
 
-
 pub const LOBBY_STARTING_MODEL: &str = "cube";
 pub const LOBBY_STARTING_TYPE: &str = "leaf";
 pub const LOBBY_STARTING_TYPE_BTN_ID: &str = "cust_leaf";
 pub const LOBBY_STARTING_TYPE_DEF_TEXTURE: &str = "btn:leaf";
-
 
 #[derive(Debug)]
 pub struct CustomizationChoices {
@@ -52,12 +49,12 @@ pub struct CustomizationChoices {
 }
 
 #[derive(Debug)]
-pub struct FinalChoices{
+pub struct FinalChoices {
     pub color: HashMap<String, MeshColor>,
     pub model: ModelIndex,
 }
 
-impl FinalChoices{
+impl FinalChoices {
     fn new(choices: &CustomizationChoices) -> Self {
         Self {
             color: choices.color.clone(),
@@ -66,7 +63,6 @@ impl FinalChoices{
     }
 }
 
-
 impl CustomizationChoices {
     fn default() -> Self {
         // TODO: fix later, hard-coded with constants for now
@@ -74,7 +70,10 @@ impl CustomizationChoices {
             color: HashMap::new(),
             current_model: LOBBY_STARTING_MODEL.to_owned(),
             current_type_choice: LOBBY_STARTING_TYPE.to_owned(),
-            prev_type_selection: (LOBBY_STARTING_TYPE_BTN_ID.to_owned(), LOBBY_STARTING_TYPE_DEF_TEXTURE.to_owned()),
+            prev_type_selection: (
+                LOBBY_STARTING_TYPE_BTN_ID.to_owned(),
+                LOBBY_STARTING_TYPE_DEF_TEXTURE.to_owned(),
+            ),
             prev_color_selection: (String::new(), String::new()),
             cur_leaf_color: String::new(),
             cur_body_color: String::new(),
@@ -124,7 +123,13 @@ impl Display {
         game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         let groups = create_display_group(config);
-        let screen_map = create_screen_map(config, device, screen_width, screen_height, color_bind_group_layout);
+        let screen_map = create_screen_map(
+            config,
+            device,
+            screen_width,
+            screen_height,
+            color_bind_group_layout,
+        );
         Self {
             groups,
             current: config.default_display.clone(),
@@ -146,7 +151,7 @@ impl Display {
     }
 
     /// Takes care of any cleanup switching displays might need
-    pub fn change_to(&mut self, new: String){
+    pub fn change_to(&mut self, new: String) {
         self.particles.systems.clear();
         self.current = new;
     }
@@ -157,7 +162,7 @@ impl Display {
         camera_state: &camera::CameraState,
         // player: &crate::player::Player,
         other_players: &Vec<OtherPlayer>,
-        invisible_players: &HashSet<u32>,
+        _invisible_players: &HashSet<u32>,
         existing_powerups: &HashSet<u32>,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -166,7 +171,7 @@ impl Display {
         animation_controller: &mut crate::animation::AnimationController,
         color_bind_group_layout: &wgpu::BindGroupLayout,
         _output: &wgpu::SurfaceTexture,
-        client_id: u32,
+        _client_id: u32,
     ) {
         // inability to find the scene would be a major bug
         // panicking is fine
@@ -297,7 +302,7 @@ impl Display {
 
                 for obj in instanced_objs.iter() {
                     render_pass.draw_model_instanced(
-                        &obj,
+                        obj,
                         0..obj.num_instances as u32,
                         &camera_state.camera_bind_group,
                     );
@@ -329,10 +334,10 @@ impl Display {
                             &bkgd.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &bkgd.color { 
-                                None =>&screen.default_color.color_bind_group,
+                            match &bkgd.color {
+                                None => &screen.default_color.color_bind_group,
                                 Some(c) => &c.color_bind_group,
-                            }
+                            },
                         );
                     };
                     for button in &screen.buttons {
@@ -345,10 +350,10 @@ impl Display {
                             &button.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &button.color { 
-                                None =>&screen.default_color.color_bind_group,
+                            match &button.color {
+                                None => &screen.default_color.color_bind_group,
                                 Some(c) => &c.color_bind_group,
-                            }
+                            },
                         );
                     }
 
@@ -380,13 +385,13 @@ impl Display {
         for button in &screen.buttons {
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
-                color = match button.color.as_ref() {None => None, Some(c) => Some(c.color)};
+                color = button.color.as_ref().map(|c| c.color);
                 button_id = button.id.clone();
             }
         }
-        match to_call{
-            None => {},
-            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id)
+        match to_call {
+            None => {}
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id),
         };
     }
 }
@@ -407,13 +412,13 @@ where
     'b: 'a,
 {
     fn draw_ui_instanced(
-            &mut self,
-            tex_bind_group: &'a wgpu::BindGroup,
-            vbuf: &'a wgpu::Buffer,
-            inst_buf: &'a wgpu::Buffer,
-            instances: std::ops::Range<u32>,
-            color_bind_group: &'a wgpu::BindGroup,
-        ) {
+        &mut self,
+        tex_bind_group: &'a wgpu::BindGroup,
+        vbuf: &'a wgpu::Buffer,
+        inst_buf: &'a wgpu::Buffer,
+        instances: std::ops::Range<u32>,
+        color_bind_group: &'a wgpu::BindGroup,
+    ) {
         self.set_vertex_buffer(0, vbuf.slice(..));
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);

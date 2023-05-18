@@ -57,14 +57,17 @@ impl Instance {
 
     pub fn make_buffers(instances: &Vec<Instance>, device: &wgpu::Device) -> Vec<InstanceState> {
         let mut instance_states = Vec::new();
-        for instance in instances.iter(){
+        for instance in instances.iter() {
             let data = instance.to_raw();
             let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Instance Buffer"),
                 contents: bytemuck::cast_slice(&[data]),
                 usage: wgpu::BufferUsages::VERTEX,
             });
-            instance_states.push(InstanceState { data: vec![data], buffer});
+            instance_states.push(InstanceState {
+                data: vec![data],
+                buffer,
+            });
         }
         instance_states
     }
