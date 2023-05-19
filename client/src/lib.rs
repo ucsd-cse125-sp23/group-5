@@ -1,9 +1,11 @@
 use common::configs::model_config::ModelIndex;
+use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 use mesh_color::MeshColor;
 use glm::vec3;
 use other_players::OtherPlayer;
 
 use std::collections::{HashMap, HashSet};
+use std::default;
 use std::sync::{mpsc, MutexGuard};
 
 use std::{
@@ -13,6 +15,7 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
+use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
 
@@ -328,13 +331,13 @@ impl State {
         scene.objects = models;
 
         // placeholder position, will get overriden by server
-        let player = player::Player::new(vec3(0.0, 0.0, 0.0));
+        let player = player::Player::new(vec3(DEFAULT_PLAYER_POS.0, DEFAULT_PLAYER_POS.1, DEFAULT_PLAYER_POS.2));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
-            player.position + vec3(-2.0, 2.0, 0.0),
-            player.position,
+            glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2),
+            glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2),
             vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
@@ -700,7 +703,26 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
+        // Only update if we're in game/lobby
+        if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
+            return 
+        }
+
         let game_state_clone = game_state.lock().unwrap().clone();
+
+        // check if the game has ended and set corresponding end screen
+        if game_state_clone.life_cycle_state == Ended {
+            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
+                self.display.current = "display:victory".to_owned();
+            } else {
+                self.display.current = "display:defeat".to_owned(); 
+            }
+
+            // Reset camera and player for lobby 
+            self.camera_state.camera.position = glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2);
+            self.camera_state.camera.target = glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2);
+            return
+        }
 
         // game state to scene graph conversion and update
         {

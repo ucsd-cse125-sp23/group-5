@@ -335,6 +335,17 @@ impl Display {
                             }
                         );
                     };
+
+                    for icon in &screen.icons {
+                        render_pass.draw_ui_instanced(
+                            self.texture_map.get(&icon.texture).unwrap(),
+                            &icon.vbuf,
+                            &icon.inst_buf,
+                            icon.inst_range.clone(),
+                            &screen.default_color.color_bind_group,
+                        );
+                    }
+                    
                     for button in &screen.buttons {
                         let texture = match button.is_hover(mouse) {
                             true => &button.hover_texture,
@@ -349,16 +360,6 @@ impl Display {
                                 None =>&screen.default_color.color_bind_group,
                                 Some(c) => &c.color_bind_group,
                             }
-                        );
-                    }
-
-                    for icon in &screen.icons {
-                        render_pass.draw_ui_instanced(
-                            self.texture_map.get(&icon.texture).unwrap(),
-                            &icon.vbuf,
-                            &icon.inst_buf,
-                            icon.inst_range.clone(),
-                            &screen.default_color.color_bind_group,
                         );
                     }
                 }
