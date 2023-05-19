@@ -2,24 +2,29 @@ use derive_more::Constructor;
 use nalgebra::vector;
 use rand::prelude::*;
 use rapier3d::math::Vector;
+use common::core::events::{GameEvent, ParticleSpec, ParticleType};
 use common::core::states::GameState;
 use common::core::weather::Weather;
 
 use crate::executor::command_handlers::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::game_loop::TICK_RATE;
+use crate::Recipients;
 use crate::simulation::physics_state::PhysicsState;
+
+extern crate nalgebra_glm as glm;
 
 pub trait MarkovState<T> {
     fn next(&self) -> T;
 }
 
 // Constants for fraction of visits in long term (derived from limiting distribution)
-const RAIN_FRACTION: f64 = 0.2;
+const RAIN_FRACTION: f64 = 0.3;
 const WIND_FRACTION: f64 = 0.2;
-const NONE_FRACTION: f64 = 0.6;
+const NONE_FRACTION: f64 = 0.5;
 
 // ticks of the effects
-const RAIN_TICKS: f64 = 20. * TICK_RATE as f64; // on average, it will rain every 10 seconds
+const RAIN_TICKS: f64 = 20. * TICK_RATE as f64;
+// on average, it will rain every 10 seconds
 const WIND_TICKS: f64 = 10. * TICK_RATE as f64;
 
 const WIND_FORCE_MANGNITUDE: f32 = 128.0;
@@ -48,14 +53,12 @@ impl MarkovState<Option<Weather>> for Option<Weather> {
                 }
             }
             None => {
-
                 const TO_RAINY: f64 = RAIN_FRACTION / (NONE_FRACTION * RAIN_TICKS);
                 const TO_WINDY: f64 = WIND_FRACTION / (NONE_FRACTION * WIND_TICKS);
 
                 if random_number < TO_RAINY {
                     Some(Weather::Rainy)
                 } else if random_number < TO_RAINY + TO_WINDY {
-
                     let wind_dir = thread_rng().gen_range(0.0..2.0 * std::f32::consts::PI);
                     let wind_dir = vector![wind_dir.cos(), 0.0, wind_dir.sin()];
 
@@ -106,6 +109,8 @@ impl CommandHandler for WeatherEffectCommandHandler {
 
 impl WeatherEffectCommandHandler {
     fn handle_rainy_weather(&self, game_state: &mut GameState, physics_state: &mut PhysicsState, game_events: &mut dyn GameEventCollector) -> HandlerResult {
+
+
         // reduce friction for every player
         for (&player_id, player_state) in game_state.players.iter() {
             let body = physics_state
@@ -117,6 +122,19 @@ impl WeatherEffectCommandHandler {
                 .get_entity_collider_mut(player_id)
                 .unwrap();
             collider.set_friction(RAINY_FRICTION);
+
+            // add rain particles every one second
+            if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
+                game_events.add(GameEvent::ParticleEvent(ParticleSpec::new(
+                    ParticleType::RAIN,
+                    player_state.transform.translation,
+                    -Vector::y(),
+                    Vector::y(),
+                    glm::vec4(0.4, 0.9, 0.7, 1.0),
+                    "rain".to_string(),
+                )), Recipients::One(player_id as u8)
+                )
+            }
         }
         Ok(())
     }
