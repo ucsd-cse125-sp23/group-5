@@ -28,6 +28,7 @@ mod screen;
 mod texture;
 
 use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
 
 mod animation;
 pub mod audio;
@@ -1056,6 +1057,33 @@ impl State {
                         p.color,
                         atk_gen,
                         (1, 4),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::RAIN => {
+                    let time = 2.;
+                    println!("adding particle: {:?}", p);
+                    let atk_gen = particles::gen::RainGenerator::new(
+                        p.position + Vec3::new(0., 10.,0.),
+                        (20.0, 20.0, 20.0),
+                        p.direction,
+                        3.0,
+                        0.3,
+                        75.0,
+                        PI,
+                        0.5,
+                        false,
+                    );
+                    // System
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        2000.0,
+                        p.color,
+                        atk_gen,
+                        (1, 2),
                         &self.device,
                         &mut self.rng,
                     );
