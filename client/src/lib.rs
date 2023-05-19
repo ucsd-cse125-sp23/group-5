@@ -321,7 +321,6 @@ impl State {
 
         for model_config in model_configs.models.clone() {
             let model: Box<dyn Model> = if model_config.animated() {
-                continue;
                 Box::new(
                     AnimatedModel::load(&model_config.path, model_loading_resources)
                         .await

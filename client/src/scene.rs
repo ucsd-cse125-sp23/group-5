@@ -229,6 +229,27 @@ impl Scene {
                 // TODO: possibly change model and color with player choices here
                 // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
                 // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
+
+                // JUST TO VERIFY COLOR AND MODEL CHANGINg WORKS
+                let mut color_hashmap = HashMap::new();
+                match node_id.as_str() {
+                    "player:1" => {
+                        color_hashmap.insert("korok".to_string(), MeshColor::new([1.0,0.0,0.0]));
+                        self.scene_graph.get_mut(&node_id).unwrap().model = Some("cube".to_string());
+                    },
+                    "player:2" => {
+                        color_hashmap.insert("korok".to_string(), MeshColor::new([0.0,1.0,0.0]));
+                        self.scene_graph.get_mut(&node_id).unwrap().model = Some("ferris".to_string());
+                    },
+                    "player:3" => {
+                        color_hashmap.insert("korok".to_string(), MeshColor::new([0.0,0.0,1.0]));
+                    },
+                    "player:4" => {
+                        color_hashmap.insert("korok".to_string(), MeshColor::new([1.0,1.0,1.0]));
+                    },
+                    _ => {}
+                }
+                self.scene_graph.get_mut(&node_id).unwrap().colors = Some(color_hashmap);
             }
         }
     }
@@ -326,7 +347,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-        .add_model("cube".to_string());
+        .add_model("korok".to_string());
     }
 
     pub fn from_config(json_scene_graph: &ConfigSceneGraph) -> Self {
