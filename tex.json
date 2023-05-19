@@ -17,11 +17,7 @@
             "path": "start_screen_without_btn.jpg"
         },
         {
-            "name": "bkgd:victory",
-            "path": "overlay.png"
-        },
-        {
-            "name": "bkgd:defeat",
+            "name": "bkgd:end_screen",
             "path": "overlay.png"
         },
         {
@@ -43,6 +39,14 @@
         {
             "name": "icon:place_circle",
             "path": "placehold_circle.png"
+        },
+        {
+            "name": "icon:victory",
+            "path": "victory.jpg"
+        }, 
+        {
+            "name": "icon:defeat",
+            "path": "defeat.jpg"
         },
         {
             "name": "btn:down_arrow",
