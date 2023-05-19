@@ -41,6 +41,10 @@
             "path": "circle_mask.png"
         },
         {
+            "name": "icon:loading",
+            "path": "loading.jpg"
+        },
+        {
             "name": "icon:victory",
             "path": "victory.jpg"
         }, 
@@ -74,7 +78,7 @@
         },
         {
             "name": "mask:none",
-            "path": "default_mask.jpg"
+            "path": "default_mask.png"
         },
         {
             "name": "mask:circle",

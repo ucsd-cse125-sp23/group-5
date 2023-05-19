@@ -157,7 +157,7 @@ impl Display {
         camera_state: &camera::CameraState,
         // player: &crate::player::Player,
         other_players: &Vec<OtherPlayer>,
-        invisible_players: &HashSet<u32>,
+        _invisible_players: &HashSet<u32>,
         existing_powerups: &HashSet<u32>,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -326,6 +326,7 @@ impl Display {
                     if let Some(bkgd) = &screen.background {
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(&bkgd.texture).unwrap(),
+                            self.texture_map.get(&bkgd.mask_texture).unwrap(),
                             &bkgd.vbuf,
                             &self.default_inst_buf,
                             0..1,
@@ -339,6 +340,7 @@ impl Display {
                     for icon in &screen.icons {
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(&icon.texture).unwrap(),
+                            self.texture_map.get(&icon.mask_texture).unwrap(),
                             &icon.vbuf,
                             &icon.inst_buf,
                             icon.inst_range.clone(),
@@ -364,6 +366,7 @@ impl Display {
 
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(texture).unwrap(),
+                            self.texture_map.get(&button.mask_texture).unwrap(),
                             &button.vbuf,
                             &self.default_inst_buf,
                             0..1,
@@ -407,6 +410,7 @@ pub trait DrawGUI<'a> {
     fn draw_ui_instanced(
         &mut self,
         tex_bind_group: &'a wgpu::BindGroup,
+        mask_bind_group: &'a wgpu::BindGroup,
         vbuf: &'a wgpu::Buffer,
         inst_buf: &'a wgpu::Buffer,
         instances: std::ops::Range<u32>,
@@ -421,6 +425,7 @@ where
     fn draw_ui_instanced(
             &mut self,
             tex_bind_group: &'a wgpu::BindGroup,
+            mask_bind_group: &'a wgpu::BindGroup,
             vbuf: &'a wgpu::Buffer,
             inst_buf: &'a wgpu::Buffer,
             instances: std::ops::Range<u32>,
@@ -430,6 +435,7 @@ where
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);
         self.set_bind_group(1, color_bind_group, &[]);
+        self.set_bind_group(2, mask_bind_group, &[]);
         self.draw_indexed(0..6, 0, instances);
     }
 }

@@ -29,6 +29,7 @@ pub struct ConfigScreen {
 pub struct ConfigScreenBackground{
     pub tex: String,
     pub aspect: f32,
+    pub mask_tex: String,
     pub color: Option<[f32; 3]>,
 }
 

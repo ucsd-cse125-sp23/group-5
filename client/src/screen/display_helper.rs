@@ -60,6 +60,7 @@ fn create_background(s: &ConfigScreen, device: &wgpu::Device, color_bind_group_l
             aspect: bg.aspect,
             vbuf,
             texture: bg.tex.clone(),
+            mask_texture: bg.mask_tex.clone(),
             color: match bg.color {None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
         }
     })

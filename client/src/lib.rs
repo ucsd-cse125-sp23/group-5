@@ -295,6 +295,29 @@ impl State {
                 ],
                 label: Some("2d_texture_bind_group_layout"),
             });
+        
+            let mask_texture_bind_group_layout_2d =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("2d_mask_texture_bind_group_layout"),
+            });
 
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
@@ -376,7 +399,11 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout_2d, 
+                    &color_bind_group_layout,
+                    &mask_texture_bind_group_layout_2d,
+                ],
                 push_constant_ranges: &[],
             });
 

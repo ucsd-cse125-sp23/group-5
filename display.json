@@ -32,6 +32,7 @@
             "id": "screen:title",
             "background": {
                 "tex": "bkgd:title",
+                "mask_tex": "mask:none",
                 "aspect": 1.77777778
             },
             "buttons": [
@@ -486,7 +487,7 @@
                     "aspect": 1.0,
                     "height": 0.222,
                     "tint": [1.0, 1.0, 1.0, 0.0],
-                    "tex": "icon:place_circle",
+                    "tex": "icon:loading",
                     "mask_tex": "mask:circle",
                     "instances": [
                         {
@@ -527,6 +528,7 @@
             "id": "screen:victory",
             "background":  {
                 "tex": "bkgd:end_screen",
+                "mask_tex": "mask:none",
                 "aspect": 1.77777778
             },
             "buttons": [
@@ -574,6 +576,7 @@
             "id": "screen:defeat",
             "background":  {
                 "tex": "bkgd:end_screen",
+                "mask_tex": "mask:none",
                 "aspect": 1.77777778
             },
             "buttons": [

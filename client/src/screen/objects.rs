@@ -121,6 +121,7 @@ pub struct ScreenBackground {
     pub aspect: f32,
     pub vbuf: wgpu::Buffer,
     pub texture: String,
+    pub mask_texture: String,
     pub color: Option<MeshColorInstance>,
 }
 
