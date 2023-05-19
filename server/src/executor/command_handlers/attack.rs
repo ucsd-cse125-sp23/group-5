@@ -20,10 +20,14 @@ use crate::executor::command_handlers::{
     CommandHandler, GameEventCollector, HandlerError, HandlerResult,
 };
 use rapier3d::prelude as rapier;
+use common::configs::game_config::ConfigGame;
+use common::configs::physics_config::ConfigPhysics;
 
 #[derive(Constructor)]
 pub struct AttackCommandHandler {
     player_id: u32,
+    physics_config: ConfigPhysics,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for AttackCommandHandler {

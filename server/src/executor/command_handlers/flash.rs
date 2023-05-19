@@ -1,5 +1,4 @@
 use crate::simulation::physics_state::PhysicsState;
-use common::configs::parameters::{FLASH_DISTANCE_SCALAR, SPECIAL_MOVEMENT_COOLDOWN};
 use common::core::command::Command;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
@@ -7,12 +6,14 @@ use derive_more::Constructor;
 use nalgebra::{zero, UnitQuaternion};
 use nalgebra_glm::Vec3;
 use rapier3d::math::Isometry;
+use common::configs::game_config::ConfigGame;
 
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 
 #[derive(Constructor)]
 pub struct FlashCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for FlashCommandHandler {

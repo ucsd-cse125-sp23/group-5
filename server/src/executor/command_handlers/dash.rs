@@ -1,4 +1,3 @@
-use common::configs::parameters::{DASH_IMPULSE, SPECIAL_MOVEMENT_COOLDOWN};
 use common::core::command::Command;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
@@ -12,10 +11,12 @@ use crate::simulation::physics_state::PhysicsState;
 extern crate nalgebra_glm as glm;
 
 use rapier3d::prelude as rapier;
+use common::configs::game_config::ConfigGame;
 
 #[derive(Constructor)]
 pub struct DashCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for DashCommandHandler {

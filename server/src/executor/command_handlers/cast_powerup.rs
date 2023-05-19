@@ -1,18 +1,17 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
-use common::configs::parameters::{
-    POWER_UP_BUFF_DURATION, POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION,
-};
 use common::core::command::Command;
 use common::core::events::{GameEvent, SoundSpec};
 use common::core::powerup_system::{PowerUp, StatusEffect, POWER_UP_TO_EFFECT_MAP};
 use common::core::states::GameState;
 use derive_more::Constructor;
+use common::configs::game_config::ConfigGame;
 
 #[derive(Constructor)]
 pub struct CastPowerUpCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for CastPowerUpCommandHandler {

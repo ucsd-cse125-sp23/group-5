@@ -13,10 +13,12 @@ use rapier3d::{geometry, pipeline};
 
 extern crate nalgebra_glm as glm;
 use rapier3d::prelude as rapier;
+use common::configs::physics_config::ConfigPhysics;
 
 #[derive(Constructor)]
 pub struct AreaAttackCommandHandler {
     player_id: u32,
+    physics_config: ConfigPhysics,
 }
 
 impl CommandHandler for AreaAttackCommandHandler {

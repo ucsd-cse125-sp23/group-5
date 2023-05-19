@@ -9,6 +9,8 @@ pub use super::movement::MoveCommandHandler;
 pub use super::refill::RefillCommandHandler;
 pub use super::spawn::SpawnCommandHandler;
 pub use super::update_camera_facing::UpdateCameraFacingCommandHandler;
+pub use super::weather::UpdateWeatherCommandHandler;
+pub use super::weather::WeatherEffectCommandHandler;
 
 // pub use super::weather::WeatherCommandHandler;
 pub use super::startup::StartupCommandHandler;

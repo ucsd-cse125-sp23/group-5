@@ -11,11 +11,13 @@ use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use std::time::Duration;
+use common::configs::physics_config::ConfigPhysics;
 
 #[derive(Constructor)]
 pub struct MoveCommandHandler {
     player_id: u32,
     direction: MoveDirection,
+    physics_config: ConfigPhysics,
 }
 
 impl CommandHandler for MoveCommandHandler {

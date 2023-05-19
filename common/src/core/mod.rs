@@ -6,3 +6,4 @@ pub mod events;
 pub mod mesh_color;
 pub mod powerup_system;
 pub mod states;
+pub mod weather;
