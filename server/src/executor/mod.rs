@@ -62,8 +62,8 @@ impl Executor {
         }
     }
 
-    pub fn game_init(&self, mut commands: Vec<ClientCommand>) -> Vec<ClientCommand> {
-        if self.game_state().life_cycle_state == Running {
+    pub fn game_init(&self, commands: &mut Vec<ClientCommand>) {
+        if matches!(self.game_state().life_cycle_state, Running(_)) {
             // TODO: still have bugs when handling multiple game in a row without exiting
             if !*self.spawn_command_pushed.borrow() {
                 for client_id in self.ready_players.borrow().iter() {
@@ -73,7 +73,6 @@ impl Executor {
                 *self.spawn_command_pushed.borrow_mut() = true;
             }
         }
-        commands
     }
 
     pub(crate) fn plan_and_execute(&self, commands: Vec<ClientCommand>) {
@@ -86,8 +85,8 @@ impl Executor {
                 Some(Command::Move(
                     val.command.unwrap_move()
                         + acc
-                            .unwrap_or(Command::Move(MoveDirection::zeros()))
-                            .unwrap_move(),
+                        .unwrap_or(Command::Move(MoveDirection::zeros()))
+                        .unwrap_move(),
                 ))
             })
             .iter()
@@ -105,6 +104,13 @@ impl Executor {
             .for_each(|command| self.execute(command));
     }
 
+    pub(crate) fn game_state_tick(&self) {
+        // increment tick
+        if let Running(ref mut tick) = &mut self.game_state.lock().unwrap().life_cycle_state {
+            *tick += 1;
+        }
+    }
+
     /// Executes a command issued by a client.
     pub(crate) fn execute(&self, client_command: ClientCommand) {
         debug!("Executing command: {:?}", client_command);
@@ -116,32 +122,29 @@ impl Executor {
         let player_config = self.config_instance.player.clone();
 
         #[cfg(not(feature = "debug-ready-sync"))]
-        let player_upper_bound = 4;
+            let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
-        let player_upper_bound = 1;
+            let player_upper_bound = 1;
 
         if game_state.life_cycle_state == Waiting {
-            match client_command.command {
-                Command::UI(ServerSync::Ready) => {
-                    if !self
-                        .ready_players
-                        .borrow()
-                        .contains(&client_command.client_id)
-                    {
-                        self.ready_players
-                            .borrow_mut()
-                            .push(client_command.client_id);
-                        // change the 1 to 4 for working correctly
-                        // here I just change it to 1 for testing purpose
-                        if self.ready_players.borrow().len() == player_upper_bound {
-                            game_state.life_cycle_state = Running;
-                        }
-                    } else {
-                        warn!("player has already been ready!");
+            if let Command::UI(ServerSync::Ready) = client_command.command {
+                if !self
+                    .ready_players
+                    .borrow()
+                    .contains(&client_command.client_id)
+                {
+                    self.ready_players
+                        .borrow_mut()
+                        .push(client_command.client_id);
+                    // change the 1 to 4 for working correctly
+                    // here I just change it to 1 for testing purpose
+                    if self.ready_players.borrow().len() == player_upper_bound {
+                        game_state.life_cycle_state = Running(0);
                     }
+                } else {
+                    warn!("player has already been ready!");
                 }
-                _ => {}
             }
         } else {
             let handler: Box<dyn CommandHandler> = match client_command.command {
@@ -167,6 +170,11 @@ impl Executor {
                 }
                 Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
                 Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
+
+
+                // weather systems
+                Command::UpdateWeather => Box::new(UpdateWeatherCommandHandler::new()),
+                Command::WeatherEffects => Box::new(WeatherEffectCommandHandler::new()),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;

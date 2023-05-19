@@ -15,9 +15,12 @@ use std::collections::{HashMap, HashSet};
 
 use crate::core::action_states::ActionState;
 use std::time::Duration;
+use crate::core::weather::Weather;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct WorldState {}
+pub struct WorldState {
+    pub weather: Option<Weather>
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct GameState {
@@ -66,7 +69,16 @@ pub struct PlayerState {
 pub enum GameLifeCycleState {
     #[default]
     Waiting,
-    Running,
+    Running(u64),
+}
+
+impl GameLifeCycleState {
+    pub fn unwrap_running(&self) -> u64 {
+        match self {
+            GameLifeCycleState::Running(d) => *d,
+            _ => panic!("GameLifeCycleState is not Running"),
+        }
+    }
 }
 
 // Notes to be removed:

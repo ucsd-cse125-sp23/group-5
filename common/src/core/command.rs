@@ -31,6 +31,8 @@ pub enum Command {
     CastPowerUp,
     Dash,
     Flash,
+    UpdateWeather,
+    WeatherEffects
 }
 
 impl Command {
