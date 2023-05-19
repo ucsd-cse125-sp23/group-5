@@ -22,6 +22,7 @@ use crate::other_players::OtherPlayer;
 use common::core::states::GameState;
 
 
+use self::object_transitions::Transition;
 use self::objects::Screen;
 
 pub mod display_helper;
@@ -29,6 +30,7 @@ pub mod location_helper;
 pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
+pub mod object_transitions;
 
 // pub const TEX_CONFIG_PATH: &str = "tex.json";
 // pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -90,6 +92,7 @@ pub struct Display {
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
+    pub transition_map: HashMap<String, Transition>,
     pub light_state: lights::LightState,
     // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
@@ -132,6 +135,7 @@ impl Display {
             texture_map,
             screen_map,
             scene_map,
+            transition_map: HashMap::new(),
             light_state,
             scene_pipeline,
             ui_pipeline,
@@ -318,7 +322,7 @@ impl Display {
             match &display_group.screen {
                 None => {}
                 Some(screen_id) => {
-                    let screen = self.screen_map.get(screen_id).unwrap();
+                    let screen = self.screen_map.get_mut(screen_id).unwrap();
                     render_pass.set_pipeline(&self.ui_pipeline);
                     render_pass
                         .set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
@@ -337,7 +341,11 @@ impl Display {
                         );
                     };
 
-                    for icon in &screen.icons {
+                    for icon in &mut screen.icons {
+                        match self.transition_map.get(&icon.id) {
+                            None => {},
+                            Some(x) => x.apply(icon, queue)
+                        };
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(&icon.texture).unwrap(),
                             self.texture_map.get(&icon.mask_texture).unwrap(),
@@ -352,7 +360,7 @@ impl Display {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
                             true => &button.hover_texture,
-                            false => &button.default_texture,
+                            false => texture,
                         };
                         texture = match button.selected_texture.as_ref(){
                             None => texture,

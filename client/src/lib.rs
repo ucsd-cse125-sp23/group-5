@@ -780,7 +780,6 @@ impl State {
             other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
             
             // update player scores
-            // PLACEHOLDER FOR NOW
             {
                 let screen_id = self.display.groups
                 .get(&self.display.game_display)
@@ -830,39 +829,23 @@ impl State {
                 .as_ref()
                 .unwrap();
 
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = screen.icon_id_map.get("icon:atk_forward_overlay").unwrap().clone();
-                let mut tint;
+                // TODO: Magic constants here seem a little unavoidable?
+                let atk_load = String::from("icon:atk_forward_overlay");
+                let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
                     let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
-                    // use smmoothstep?
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
-                    tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                    self.display.transition_map.insert(atk_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
-                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    self.display.transition_map.remove(&atk_load);
                 }
-                for v in &mut screen.icons[ind].vertices{
-                    v.color = tint.into();
-                }
-                self.queue.write_buffer(&screen.icons[ind].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind].vertices));
-
-                let ind = screen.icon_id_map.get("icon:atk_wave_overlay").unwrap().clone();
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::AREA_ATTACK_COOLDOWN;
-                    // use smmoothstep?
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
-                    tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
+                    self.display.transition_map.insert(atk_area_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
-                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    self.display.transition_map.remove(&atk_area_load);
                 }
-                for v in &mut screen.icons[ind].vertices{
-                    v.color = tint.into();
-                }
-                self.queue.write_buffer(&screen.icons[ind].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind].vertices));
             }
 
             self.display

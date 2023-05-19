@@ -196,7 +196,7 @@
                     "height": 0.14,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:score_back",
-                    "mask_tex": "mask:circle",
+                    "mask_tex": "mask:none",
                     "instances": [
                         {
                             "translation": {
@@ -443,7 +443,7 @@
                     "aspect": 1.0,
                     "height": 0.222,
                     "tint": [1.0, 1.0, 1.0, 0.0],
-                    "tex": "icon:place_circle",
+                    "tex": "icon:loading",
                     "mask_tex": "mask:circle",
                     "instances": [
                         {

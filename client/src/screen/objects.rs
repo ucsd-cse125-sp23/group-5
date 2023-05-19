@@ -33,6 +33,10 @@ impl Vertex {
     }
 }
 
+/// Order of vertices
+///  1 --- 2
+///  |     |
+///  0 --- 3
 #[rustfmt::skip]
 pub const RECT_IND : [u16; 6] = [
     0, 2, 1,
@@ -148,6 +152,7 @@ pub struct Button{
 
 #[derive(Debug)]
 pub struct Icon {
+    pub id: String,
     pub location: ScreenLocation,
     pub aspect: f32,
     pub height: f32,

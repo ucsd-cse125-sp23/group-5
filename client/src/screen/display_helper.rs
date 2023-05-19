@@ -123,6 +123,7 @@ fn create_icon(
             });
 
             objects::Icon {
+                id: i.id.clone(),
                 location: i.location,
                 aspect: i.aspect,
                 height: i.height,
