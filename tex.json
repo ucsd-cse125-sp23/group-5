@@ -38,7 +38,7 @@
         },
         {
             "name": "icon:place_circle",
-            "path": "placehold_circle.png"
+            "path": "circle_mask.png"
         },
         {
             "name": "icon:victory",
@@ -71,6 +71,14 @@
         {
             "name": "btn:body",
             "path": "body_btn.png"
+        },
+        {
+            "name": "mask:none",
+            "path": "default_mask.jpg"
+        },
+        {
+            "name": "mask:circle",
+            "path": "circle_mask.png"
         }
     ]
 }

@@ -347,10 +347,21 @@ impl Display {
                     }
                     
                     for button in &screen.buttons {
-                        let texture = match button.is_hover(mouse) {
+                        let mut texture = &button.default_texture;
+                        texture = match button.is_hover(mouse) {
                             true => &button.hover_texture,
                             false => &button.default_texture,
                         };
+                        texture = match button.selected_texture.as_ref(){
+                            None => texture,
+                            Some(tex) => {
+                                match button.selected{
+                                    true => tex,
+                                    false => texture,
+                                }
+                            }
+                        };
+
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(texture).unwrap(),
                             &button.vbuf,

@@ -138,8 +138,11 @@ pub struct Button{
     pub hover_tint: glm::Vec4,
     pub default_texture: String,
     pub hover_texture: String,
+    pub selected_texture: Option<String>,
+    pub mask_texture: String,
     pub color: Option<MeshColorInstance>,
     pub on_click: String,
+    pub selected: bool,
 }
 
 #[derive(Debug)]
@@ -151,6 +154,7 @@ pub struct Icon {
     pub vbuf: wgpu::Buffer,
     pub tint: glm::Vec4,
     pub texture: String,
+    pub mask_texture: String,
     pub instance_raw: Vec<ConfigScreenTransform>,
     pub inst_buf: wgpu::Buffer,
     pub inst_range: std::ops::Range<u32>,

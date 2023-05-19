@@ -42,6 +42,8 @@ pub struct ConfigButton{
     pub hover_tint: [f32; 4],
     pub default_tex: String,
     pub hover_tex: String,
+    pub selected_tex: Option<String>,
+    pub mask_tex: String,
     pub color: Option<[f32; 3]>,
     pub on_click: String,
 }
@@ -54,6 +56,7 @@ pub struct ConfigIcon {
     pub height: f32,
     pub tint: [f32; 4],
     pub tex: String,
+    pub mask_tex: String,
     pub instances: Vec<ConfigScreenTransform>,
 }
 
