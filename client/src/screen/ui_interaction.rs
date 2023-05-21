@@ -45,10 +45,6 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
             warn!("Error sending command: {:?}", e);
         }
     }
-    // TODO: wait for all four players' ready
-    // while display.game_state.lock().unwrap().life_cycle_state == Waiting {
-    //     thread::sleep(Duration::from_millis(1000));
-    // }
     display.change_to(display.game_display.clone());
 }
 

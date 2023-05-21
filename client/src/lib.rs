@@ -15,7 +15,7 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
-use common::core::states::GameLifeCycleState::Ended;
+use common::core::states::GameLifeCycleState::{Ended, Running};
 use model::Vertex;
 use winit::event::*;
 
@@ -49,6 +49,7 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use crate::screen::ui_interaction::game_start;
 
 struct State {
     surface: wgpu::Surface,
@@ -723,10 +724,14 @@ impl State {
     ) {
         // Only update if we're in game/lobby
         if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
-            return 
+            return
         }
 
         let game_state_clone = game_state.lock().unwrap().clone();
+
+        if game_state_clone.life_cycle_state == Running {
+            game_start(&mut self.display);
+        }
 
         // check if the game has ended and set corresponding end screen
         if game_state_clone.life_cycle_state == Ended {
