@@ -305,6 +305,26 @@ impl Display {
                         );
                     };
 
+                    let icons_on_top = vec!["leaf_type_selector", "leaf_color_selector", "wood_color_selector"];
+                    let mut icons_top = Vec::new();
+                    
+                    for icon in &mut screen.icons {
+                        if icons_on_top.contains(&icon.id.as_str()){
+                            icons_top.push(icon); continue;
+                        }
+                        match self.transition_map.get(&icon.id) {
+                            None => {},
+                            Some(x) => x.apply(icon, queue)
+                        };
+                        render_pass.draw_ui_instanced(
+                            self.texture_map.get(&icon.texture).unwrap(),
+                            self.texture_map.get(&icon.mask_texture).unwrap(),
+                            &icon.vbuf,
+                            &icon.inst_buf,
+                            icon.inst_range.clone(),
+                        );
+                    }
+                    
                     for button in &mut screen.buttons {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
@@ -343,18 +363,17 @@ impl Display {
                         );
                     }
 
-                    for icon in &mut screen.icons {
-                        match self.transition_map.get(&icon.id) {
-                            None => {},
-                            Some(x) => x.apply(icon, queue)
-                        };
-                        render_pass.draw_ui_instanced(
-                            self.texture_map.get(&icon.texture).unwrap(),
-                            self.texture_map.get(&icon.mask_texture).unwrap(),
-                            &icon.vbuf,
-                            &icon.inst_buf,
-                            icon.inst_range.clone(),
-                        );
+                    // TEMPORARY FIX
+                    if screen.id == "screen:lobby" {
+                        for icon in icons_top {
+                            render_pass.draw_ui_instanced(
+                                self.texture_map.get(&icon.texture).unwrap(),
+                                self.texture_map.get(&icon.mask_texture).unwrap(),
+                                &icon.vbuf,
+                                &icon.inst_buf,
+                                icon.inst_range.clone(),
+                            );
+                        }
                     }
                 }
             };

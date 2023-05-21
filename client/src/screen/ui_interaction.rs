@@ -1,6 +1,7 @@
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::Input;
 use crate::screen;
+use common::configs::display_config::ScreenLocation;
 use log::warn;
 use phf::phf_map;
 use crate::mesh_color::MeshColor;
@@ -49,14 +50,28 @@ fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<St
 fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
     display.change_to("display:lobby".to_owned());
 
-    // TODO: reset everything in the lobby (reset color, or keep remember choices?)
-    display.customization_choices.1 = false;
+    // reset everything in the lobby
+    display.customization_choices = (FinalChoices::default(), false);
+
+    let curr_group = display.groups.get_mut(&display.current).unwrap();
+    let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
+
+    let curr_leaf_type: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
+    curr_leaf_type.location = ScreenLocation{ vert_disp: (0.0,0.555), horz_disp: (0.0, -1.333) };
+    let curr_leaf_color: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
+    curr_leaf_color.location = ScreenLocation{ vert_disp: (1000.0, 1000.0), horz_disp: (1000.0, 1000.0) };
+    let curr_wood_color: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("wood_color_selector").unwrap()];
+    curr_wood_color.location = ScreenLocation{ vert_disp: (1000.0, 1000.0), horz_disp: (1000.0, 1000.0) };
+    curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].default_tint = nalgebra_glm::Vec4::new(0.0,0.0,0.0,1.0);
+    curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].hover_tint = nalgebra_glm::Vec4::new(0.0,0.0,0.0,1.0);
+    
     match display.scene_map.get_mut("scene:lobby"){
         None => {},
         Some(scene) => {
             match scene.scene_graph.get_mut("object:player_model") {
                 None => {},
                 Some(node) => {
+                    node.model = Some("korok".to_string());
                     node.colors = Some(std::collections::HashMap::from([("korok".to_string(), MeshColor::new([0.5,0.5,0.5]))]));
                 }
             }
