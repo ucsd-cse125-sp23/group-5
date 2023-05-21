@@ -788,18 +788,26 @@ impl State {
                 .as_ref()
                 .unwrap();
 
+                // TODO: update profile color/textures using gamestate 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 for i in 1..5{
-                    let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
+                    let score_ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
+                    let profile_body_ind = screen.icon_id_map.get(&format!("icon:profile_body_p{}",i)).unwrap().clone();
+                    let profile_leaf_ind = screen.icon_id_map.get(&format!("icon:profile_leaf_p{}",i)).unwrap().clone();
                     let score : f32 = self.other_players[i as usize - 1].score;
-                    let mut location = screen.icons[ind].location.clone();
-                    location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
-                    screen.icons[ind].relocate(
-                        location,
-                        self.config.width,
-                        self.config.height,
-                        &self.queue
-                    );
+
+                    // move positions of profile icons according to score
+                    for ind in [score_ind, profile_body_ind, profile_leaf_ind] {
+                        let mut location = screen.icons[ind].location.clone();
+                        location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
+                        screen.icons[ind].relocate(
+                            location,
+                            self.config.width,
+                            self.config.height,
+                            &self.queue
+                        );
+                    }
+
                 }
             }
 
