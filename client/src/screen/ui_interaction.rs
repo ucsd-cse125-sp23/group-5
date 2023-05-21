@@ -10,6 +10,7 @@ use phf::phf_map;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameLifeCycleState::Waiting;
 
+<<<<<<< Updated upstream
 const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 const EYES_EYES_MESH: &str = "eyes_eyes_mesh";
 const LEG0R_LEG0R_MESH: &str = "leg0R_leg0R_mesh";
@@ -19,6 +20,10 @@ pub static BUTTON_MAP: phf::Map<
     fn(&mut screen::Display, Option<MeshColor>, Option<String>),
 > = phf_map! {
     "go_to_lobby" => go_to_lobby,
+=======
+pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<MeshColor>, Option<String>)> = phf_map!{
+    "game_start" => be_ready,
+>>>>>>> Stashed changes
     "next_model" => next_model,
     "change_player_color" => change_player_color,
     "customize_body" => customize_body,
@@ -26,10 +31,18 @@ pub static BUTTON_MAP: phf::Map<
     "game_start" => game_start,
 };
 
+<<<<<<< Updated upstream
 /// ---------------------------------- Place click events here -------------------------------------
 fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     display.change_to("display:lobby".to_owned());
 }
+=======
+// Place click events here ----------------------
+fn be_ready(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+    let final_choices = FinalChoices::new(&display.customization_choices);
+    println!("{:#?}", final_choices);
+    // TODO: sened final customization choices to server
+>>>>>>> Stashed changes
 
 fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     let final_choices = FinalChoices::new(&display.customization_choices);
@@ -41,6 +54,7 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
             warn!("Error sending command: {:?}", e);
         }
     }
+<<<<<<< Updated upstream
     // once start game, send ready to the client main.
     match display.sender.send(Input::UI(Ready)) {
         Ok(_) => {}
@@ -52,6 +66,11 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
     // while display.game_state.lock().unwrap().life_cycle_state == Waiting {
     //     thread::sleep(Duration::from_millis(1000));
     // }
+=======
+}
+
+pub fn game_start(display: &mut screen::Display) {
+>>>>>>> Stashed changes
     display.change_to(display.game_display.clone());
 }
 

@@ -9,6 +9,10 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
+<<<<<<< Updated upstream
+=======
+use common::core::states::GameLifeCycleState::{Ended, Running};
+>>>>>>> Stashed changes
 use model::Vertex;
 use winit::event::*;
 
@@ -42,6 +46,7 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use crate::screen::ui_interaction::game_start;
 
 struct State {
     surface: wgpu::Surface,
@@ -687,8 +692,36 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
+<<<<<<< Updated upstream
         let game_state_clone = game_state.lock().unwrap().clone();
 
+=======
+        // Only update if we're in game/lobby
+        if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
+            return
+        }
+
+        let game_state_clone = game_state.lock().unwrap().clone();
+
+        if game_state_clone.life_cycle_state == Running {
+            game_start(&mut self.display);
+        }
+
+        // check if the game has ended and set corresponding end screen
+        if game_state_clone.life_cycle_state == Ended {
+            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
+                self.display.current = "display:victory".to_owned();
+            } else {
+                self.display.current = "display:defeat".to_owned(); 
+            }
+
+            // Reset camera and player for lobby 
+            self.camera_state.camera.position = glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2);
+            self.camera_state.camera.target = glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2);
+            return
+        }
+
+>>>>>>> Stashed changes
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
