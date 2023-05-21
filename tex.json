@@ -40,29 +40,30 @@
             "name": "icon:place_circle",
             "path": "placehold_circle.png"
         },
+
         {
-            "name": "btn:down_arrow",
-            "path": "down_arrow.png"
+            "name": "btn:option",
+            "path": "option.png"
         },
         {
-            "name": "btn:down_arrow_hover",
-            "path": "down_arrow_hover.png"
+            "name": "btn:go",
+            "path": "go_btn.png"
         },
         {
-            "name": "btn:color_button",
-            "path": "button_icon.png"
+            "name": "icon:option_selected",
+            "path": "option_selected.png"
         },
         {
-            "name": "btn:checkmark",
-            "path": "checkmark.png"
+            "name": "icon:select_leaf_txt",
+            "path": "select_your_leaf_text.png"
         },
         {
-            "name": "btn:leaf",
-            "path": "leaf_btn.png"
+            "name": "icon:select_leaf_color_txt",
+            "path": "select_leaf_color_text.png"
         },
         {
-            "name": "btn:body",
-            "path": "body_btn.png"
+            "name": "icon:select_wood_color_txt",
+            "path": "select_wood_color_text.png"
         }
     ]
 }

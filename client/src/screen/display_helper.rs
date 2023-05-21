@@ -30,7 +30,9 @@ pub fn create_screen_map(
         let background = create_background(s, device);
         let mut icon_id_map : HashMap<String, usize> = HashMap::new();
         let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
-        let buttons = create_button(s, device, screen_width, screen_height);
+        
+        let mut btn_id_map : HashMap<String, usize> = HashMap::new();
+        let buttons = create_button(s, device, &mut btn_id_map, screen_width, screen_height);
 
         let screen = objects::Screen {
             id: s.id.clone(),
@@ -38,6 +40,7 @@ pub fn create_screen_map(
             icons,
             icon_id_map,
             buttons,
+            btn_id_map,
         };
         screen_map.insert(s.id.clone(), screen);
     }
@@ -136,12 +139,18 @@ fn create_icon(
 fn create_button(
     s: &ConfigScreen,
     device: &wgpu::Device,
+    map: &mut HashMap<String, usize>,
     screen_width: u32,
     screen_height: u32,
 ) -> Vec<objects::Button> {
+    let mut ind = 0;
     s.buttons
         .iter()
         .map(|b| {
+            match &b.id {
+                None => {}, Some(btn_id) => {map.insert(btn_id.clone(), ind);}
+            }
+            ind += 1;
             let mut vertices = objects::TITLE_VERT;
             get_coords(
                 &b.location,

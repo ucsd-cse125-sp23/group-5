@@ -34,50 +34,19 @@ pub mod ui_interaction;
 // pub const DISPLAY_CONFIG_PATH: &str = "display.json";
 
 
-pub const LOBBY_STARTING_MODEL: &str = "cube";
-pub const LOBBY_STARTING_TYPE: &str = "leaf";
-pub const LOBBY_STARTING_TYPE_BTN_ID: &str = "cust_leaf";
-pub const LOBBY_STARTING_TYPE_DEF_TEXTURE: &str = "btn:leaf";
+pub const LOBBY_STARTING_MODEL: &str = "korok";
 
-
-#[derive(Debug)]
-pub struct CustomizationChoices {
-    pub color: HashMap<String, MeshColor>,
-    pub current_model: ModelIndex,
-    pub prev_color_selection: (String, String), // (btn_name, default_texture)
-    pub prev_type_selection: (String, String),
-    pub cur_leaf_color: String,
-    pub cur_body_color: String,
-    pub current_type_choice: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FinalChoices{
     pub color: HashMap<String, MeshColor>,
     pub model: ModelIndex,
 }
 
 impl FinalChoices{
-    fn new(choices: &CustomizationChoices) -> Self {
-        Self {
-            color: choices.color.clone(),
-            model: choices.current_model.clone(),
-        }
-    }
-}
-
-
-impl CustomizationChoices {
     fn default() -> Self {
-        // TODO: fix later, hard-coded with constants for now
         Self {
             color: HashMap::new(),
-            current_model: LOBBY_STARTING_MODEL.to_owned(),
-            current_type_choice: LOBBY_STARTING_TYPE.to_owned(),
-            prev_type_selection: (LOBBY_STARTING_TYPE_BTN_ID.to_owned(), LOBBY_STARTING_TYPE_DEF_TEXTURE.to_owned()),
-            prev_color_selection: (String::new(), String::new()),
-            cur_leaf_color: String::new(),
-            cur_body_color: String::new(),
+            model: LOBBY_STARTING_MODEL.to_owned(),
         }
     }
 }
@@ -98,7 +67,7 @@ pub struct Display {
     pub rect_ibuf: wgpu::Buffer,
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
-    pub customization_choices: CustomizationChoices, // TODO: fix later, here for now until the code for sending these updates is finished
+    pub customization_choices: FinalChoices, // TODO: fix later, here for now until the code for sending these updates is finished
     // for sending command
     pub sender: mpsc::Sender<Input>,
     pub game_state: Arc<Mutex<GameState>>,
@@ -138,7 +107,7 @@ impl Display {
             rect_ibuf,
             depth_texture,
             default_inst_buf,
-            customization_choices: CustomizationChoices::default(),
+            customization_choices: FinalChoices::default(),
             sender,
             game_state,
         }
@@ -271,9 +240,9 @@ impl Display {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.888,
-                            g: 0.815,
-                            b: 0.745,
+                            r: 0.945098, // 0.888,
+                            g: 0.909804, // 0.815,
+                            b: 0.874509, // 0.745,
                             a: 1.0,
                         }),
                         store: true,
@@ -317,7 +286,7 @@ impl Display {
             match &display_group.screen {
                 None => {}
                 Some(screen_id) => {
-                    let screen = self.screen_map.get(screen_id).unwrap();
+                    let screen = self.screen_map.get_mut(screen_id).unwrap();
                     render_pass.set_pipeline(&self.ui_pipeline);
                     render_pass
                         .set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
@@ -330,10 +299,22 @@ impl Display {
                             0..1,
                         );
                     };
-                    for button in &screen.buttons {
+                    for button in &mut screen.buttons {
                         let texture = match button.is_hover(mouse) {
-                            true => &button.hover_texture,
-                            false => &button.default_texture,
+                            true => {
+                                for v in &mut button.vertices {
+                                    v.color = [button.hover_tint[0], button.hover_tint[1], button.hover_tint[2], button.hover_tint[3]];
+                                }
+                                queue.write_buffer(&button.vbuf, 0, bytemuck::cast_slice(&button.vertices));
+                                &button.hover_texture
+                            }
+                            false => {
+                                for v in &mut button.vertices {
+                                    v.color = [button.default_tint[0], button.default_tint[1], button.default_tint[2], button.default_tint[3]];
+                                }
+                                queue.write_buffer(&button.vbuf, 0, bytemuck::cast_slice(&button.vertices));
+                                &button.default_texture
+                            }
                         };
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(texture).unwrap(),

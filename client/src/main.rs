@@ -108,7 +108,7 @@ fn main() {
         let audio_config = config_instance.audio.clone();
 
         let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
-        audio.play_background_track([0.0, 100.0, 0.0]); // add position of background track to config
+        audio.play_background_track([0.0, 50.0, 0.0]); // add position of background track to config
         audio.handle_audio_updates(game_state_clone, client_id);
     });
 

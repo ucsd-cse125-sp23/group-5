@@ -303,34 +303,34 @@ impl State {
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
         let mut static_loaded_models = HashMap::new();
-
-        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+        let mut anim_loaded_models = HashMap::new();
 
         // load all static models once and clone Arcs for all scenes
         for model_config in model_configs.models.clone() {
-            let model = if model_config.animated() {
-                continue;
+            if model_config.animated() {
+                let model = 
+                    AnimatedModel::load(&model_config.path, model_loading_resources)
+                    .await
+                    .unwrap();
+                anim_loaded_models.insert(model_config.name, model);
             }
             else{
-                StaticModel::load(&model_config.path, model_loading_resources)
+                let model = StaticModel::load(&model_config.path, model_loading_resources)
                         .await
-                        .unwrap()
-            };
-            static_loaded_models.insert(model_config.name, model);
+                        .unwrap();
+                static_loaded_models.insert(model_config.name, model);
+            }
         }
+
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
 
         for model_config in model_configs.models.clone() {
             let model: Box<dyn Model> = if model_config.animated() {
-                Box::new(
-                    AnimatedModel::load(&model_config.path, model_loading_resources)
-                        .await
-                        .unwrap(),
-                )
+                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
+                Box::new(anim_model.clone())
             } else {
                 let static_model = static_loaded_models.get(model_config.name.as_str()).unwrap();
-                Box::new(
-                    StaticModel {path: static_model.path.clone(), meshes: static_model.meshes.clone(), materials: static_model.materials.clone()}
-                )
+                Box::new(static_model.clone())
             };
             models.insert(model_config.name, model);
         }
@@ -517,14 +517,12 @@ impl State {
        
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
         for model_config in model_configs.models.clone() {
-            let model = if model_config.animated() {
-                // TODO: skipping animated models for now for lobby scene
-                continue;
+            let model: Box<dyn Model> = if model_config.animated() {
+                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
+                Box::new(anim_model.clone())
             } else {
                 let static_model = static_loaded_models.get(model_config.name.as_str()).unwrap();
-                Box::new(
-                    StaticModel {path: static_model.path.clone(), meshes: static_model.meshes.clone(), materials: static_model.materials.clone()}
-                )
+                Box::new(static_model.clone())
             };
             models.insert(model_config.name, model);
         }
@@ -534,8 +532,6 @@ impl State {
         let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
         lobby_scene.objects = models;
         lobby_scene.draw_scene_dfs();
-        // lobby_scene.objects.insert("player".to_owned(), models.get("player").unwrap());
-        // lobby_scene.objects.insert("ferris".to_owned(), *models.get("ferris").unwrap());
 
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
@@ -691,6 +687,7 @@ impl State {
                 ..
             } => {
                 self.display.click(&self.mouse_position);
+                self.relocate_selectors();
                 true
             }
             WindowEvent::CursorMoved { position, .. } => {
@@ -699,6 +696,22 @@ impl State {
                 true
             }
             _ => false,
+        }
+    }
+
+    fn relocate_selectors(&mut self){
+        if self.display.current == "display:lobby".to_string() {
+            let screen = self.display.screen_map.get_mut("screen:lobby").unwrap();
+            for s in vec!["leaf_type_selector", "leaf_color_selector", "wood_color_selector"] {
+                let ind = screen.icon_id_map.get(s).unwrap().clone();
+                let loc = screen.icons[ind].location.clone();
+                screen.icons[ind].relocate(
+                    loc,
+                    self.config.width,
+                    self.config.height,
+                    &self.queue
+                );
+            }
         }
     }
 
@@ -925,28 +938,43 @@ impl State {
             });
         }
 
-        // render status effect and powerup held
-        self.glyph_brush.queue(Section {
-            screen_position: (600.0, 20.0),
-            bounds: (size.width as f32, size.height as f32),
-            text: vec![Text::new(
-                format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
-            )
-            .with_color([0.0, 0.0, 0.0, 1.0])
-            .with_scale(40.0)],
-            ..Section::default()
-        });
-        self.glyph_brush.queue(Section {
-            screen_position: (600.0, 60.0),
-            bounds: (size.width as f32, size.height as f32),
-            text: vec![Text::new(
-                format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-            )
-            .with_color([0.0, 0.0, 0.0, 1.0])
-            .with_scale(40.0)],
-            ..Section::default()
-        });
+        // TODO: ONLY DISPLAY ONCE THE PLAYER CLICKS "GO" BUTTON
+        if self.display.current == "display:lobby" {
+            self.glyph_brush.queue(Section {
+                screen_position: (0.0, 0.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("LOBBY TEST\n READY! WAITING ON OTHER PLAYERS...").as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+        }
 
+        if self.display.current == self.display.game_display.clone() {
+            // render status effect and powerup held
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 20.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+            self.glyph_brush.queue(Section {
+                screen_position: (600.0, 60.0),
+                bounds: (size.width as f32, size.height as f32),
+                text: vec![Text::new(
+                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+                )
+                .with_color([0.0, 0.0, 0.0, 1.0])
+                .with_scale(40.0)],
+                ..Section::default()
+            });
+        }
         // Draw the text!
         self.glyph_brush
             .draw_queued(

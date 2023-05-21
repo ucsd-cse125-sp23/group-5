@@ -113,6 +113,7 @@ pub struct Screen {
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
     pub icon_id_map: HashMap<String, usize>,
+    pub btn_id_map: HashMap<String, usize>,
 }
 
 #[derive(Debug)]

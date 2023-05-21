@@ -50,117 +50,463 @@
             "id": "screen:lobby",
             "buttons": [
                 {
+                    "id": "korok",
                     "location": {
-                        "vert_disp": [0.0,-0.5],
-                        "horz_disp": [-0.5, 0.0]
+                        "vert_disp": [0.0,0.555],
+                        "horz_disp": [0.0, -1.333]
                     },
                     "aspect": 1.0,
-                    "height": 0.5,
+                    "height": 0.3,
                     "default_tint": [1.0, 1.0, 1.0, 1.0],
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:down_arrow",
-                    "hover_tex": "btn:down_arrow_hover",
-                    "on_click": "next_model"
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_type"
                 },
                 {
-                    "id": "color_btn_1",
+                    "id": "ferris",
                     "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.0, 0.0]
+                        "vert_disp": [0.0,0.555],
+                        "horz_disp": [0.0, -0.963]
                     },
                     "aspect": 1.0,
-                    "height": 0.25,
+                    "height": 0.3,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_type"
+                },
+                {
+                    "id": "player",
+                    "location": {
+                        "vert_disp": [0.0,0.555],
+                        "horz_disp": [0.0, -0.593]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.3,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_type"
+                },
+                {
+                    "id": "cube",
+                    "location": {
+                        "vert_disp": [0.0,0.555],
+                        "horz_disp": [0.0, -0.223]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.3,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_type"
+                },
+
+
+                {
+                    "id": "leaf_color_1",
+                    "location": {
+                        "vert_disp": [0.0, 0.055],
+                        "horz_disp": [0.0, -1.388]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
                     "default_tint": [1.0, 0.0, 0.0, 1.0],
-                    "hover_tint": [1.0, 0.0, 0.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "on_click": "change_player_color"
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
                 },
                 {
-                    "id": "color_btn_2",
+                    "id": "leaf_color_2",
                     "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.25, 0.0]
+                        "vert_disp": [0.0, 0.055],
+                        "horz_disp": [0.0, -1.144]
                     },
                     "aspect": 1.0,
-                    "height": 0.25,
+                    "height": 0.185,
                     "default_tint": [0.0, 1.0, 0.0, 1.0],
-                    "hover_tint": [0.0, 1.0, 0.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "on_click": "change_player_color"
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
                 },
                 {
-                    "id": "color_btn_3",
+                    "id": "leaf_color_3",
                     "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.5, 0.0]
+                        "vert_disp": [0.0, 0.055],
+                        "horz_disp": [0.0, -0.9]
                     },
                     "aspect": 1.0,
-                    "height": 0.25,
+                    "height": 0.185,
                     "default_tint": [0.0, 0.0, 1.0, 1.0],
-                    "hover_tint": [0.0, 0.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "on_click": "change_player_color"
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
                 },
                 {
-                    "id": "color_btn_4",
+                    "id": "leaf_color_4",
                     "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.75, 0.0]
+                        "vert_disp": [0.0, 0.055],
+                        "horz_disp": [0.0, -0.656]
                     },
                     "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 0.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 0.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "on_click": "change_player_color"
-                },
-                {
-                    "id": "cust_leaf",
-                    "location": {
-                        "vert_disp": [0.0,0.75],
-                        "horz_disp": [0.18, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
+                    "height": 0.185,
                     "default_tint": [1.0, 1.0, 1.0, 1.0],
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:checkmark",
-                    "hover_tex": "btn:checkmark",
-                    "on_click": "customize_leaf"
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
                 },
                 {
-                    "id": "cust_body",
+                    "id": "leaf_color_5",
                     "location": {
-                        "vert_disp": [0.0,0.75],
-                        "horz_disp": [0.54, 0.0]
+                        "vert_disp": [0.0, 0.055],
+                        "horz_disp": [0.0, -0.412]
                     },
                     "aspect": 1.0,
-                    "height": 0.25,
+                    "height": 0.185,
                     "default_tint": [1.0, 1.0, 1.0, 1.0],
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:body",
-                    "hover_tex": "btn:checkmark",
-                    "on_click": "customize_body"
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
                 },
                 {
+                    "id": "leaf_color_6",
                     "location": {
-                        "vert_disp": [0.0,-0.5],
-                        "horz_disp": [0.5, 0.0]
+                        "vert_disp": [0.0, 0.055],
+                        "horz_disp": [0.0, -0.168]
                     },
                     "aspect": 1.0,
-                    "height": 0.25,
+                    "height": 0.185,
                     "default_tint": [1.0, 1.0, 1.0, 1.0],
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+                {
+                    "id": "leaf_color_7",
+                    "location": {
+                        "vert_disp": [0.0, -0.171],
+                        "horz_disp": [0.0, -1.388]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+                {
+                    "id": "leaf_color_8",
+                    "location": {
+                        "vert_disp": [0.0, -0.171],
+                        "horz_disp": [0.0, -1.144]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+                {
+                    "id": "leaf_color_9",
+                    "location": {
+                        "vert_disp": [0.0, -0.171],
+                        "horz_disp": [0.0, -0.9]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+                {
+                    "id": "leaf_color_10",
+                    "location": {
+                        "vert_disp": [0.0, -0.171],
+                        "horz_disp": [0.0, -0.656]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+                {
+                    "id": "leaf_color_11",
+                    "location": {
+                        "vert_disp": [0.0, -0.171],
+                        "horz_disp": [0.0, -0.412]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+                {
+                    "id": "leaf_color_12",
+                    "location": {
+                        "vert_disp": [0.0, -0.171],
+                        "horz_disp": [0.0, -0.168]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_leaf_color"
+                },
+
+
+                {
+                    "id": "wood_color_1",
+                    "location": {
+                        "vert_disp": [0.0, -0.633],
+                        "horz_disp": [0.0, -1.388]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_wood_color"
+                },
+                {
+                    "id": "wood_color_2",
+                    "location": {
+                        "vert_disp": [0.0, -0.633],
+                        "horz_disp": [0.0, -1.144]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_wood_color"
+                },
+                {
+                    "id": "wood_color_3",
+                    "location": {
+                        "vert_disp": [0.0, -0.633],
+                        "horz_disp": [0.0, -0.9]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_wood_color"
+                },
+                {
+                    "id": "wood_color_4",
+                    "location": {
+                        "vert_disp": [0.0, -0.633],
+                        "horz_disp": [0.0, -0.656]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_wood_color"
+                },
+                {
+                    "id": "wood_color_5",
+                    "location": {
+                        "vert_disp": [0.0, -0.633],
+                        "horz_disp": [0.0, -0.412]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_wood_color"
+                },
+                {
+                    "id": "wood_color_6",
+                    "location": {
+                        "vert_disp": [0.0, -0.633],
+                        "horz_disp": [0.0, -0.168]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.185,
+                    "default_tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "default_tex": "btn:option",
+                    "hover_tex": "btn:option",
+                    "on_click": "change_wood_color"
+                },
+
+                
+                {
+                    "id": "start_game",
+                    "location": {
+                        "vert_disp": [0.0, -0.806],
+                        "horz_disp": [0.0, 1.426]
+                    },
+                    "aspect": 1.692,
+                    "height": 0.241,
+                    "default_tint": [0.0, 0.0, 0.0, 1.0],
+                    "hover_tint": [0.0, 0.0, 0.0, 1.0],
+                    "default_tex": "btn:go",
+                    "hover_tex": "btn:go",
                     "on_click": "game_start"
                 }
             ],
-            "icons": []
+            "icons": [
+                {
+                    "id": "select_leaf_text",
+                    "location": {
+                        "vert_disp": [0.0, 0.780],
+                        "horz_disp": [0.0, -1.305]
+                    },
+                    "aspect": 5.428,
+                    "height": 0.065,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:select_leaf_txt",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "select_leaf_color_text",
+                    "location": {
+                        "vert_disp": [0.0, 0.221],
+                        "horz_disp": [0.0, -1.297]
+                    },
+                    "aspect": 6.161,
+                    "height": 0.0574,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:select_leaf_color_txt",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "select_wood_color_text",
+                    "location": {
+                        "vert_disp": [0.0, -0.467],
+                        "horz_disp": [0.0, -1.303]
+                    },
+                    "aspect": 8.391,
+                    "height": 0.0425,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:select_wood_color_txt",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "leaf_type_selector",
+                    "location": {
+                        "vert_disp": [0.0,0.555],
+                        "horz_disp": [0.0, -1.333]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.37,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:option_selected",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "leaf_color_selector",
+                    "location": {
+                        "vert_disp": [0.0, 1000],
+                        "horz_disp": [0.0, 1000]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:option_selected",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]
+                },
+                {
+                    "id": "wood_color_selector",
+                    "location": {
+                        "vert_disp": [0.0, 1000],
+                        "horz_disp": [0.0, 1000]
+                    },
+                    "aspect": 1.0,
+                    "height": 0.222,
+                    "tint": [1.0, 1.0, 1.0, 1.0],
+                    "tex": "icon:option_selected",
+                    "instances": [
+                        {
+                            "translation": {
+                                "vert_disp": [0.0, 0.0],
+                                "horz_disp": [0.0, 0.0]
+                            },
+                            "rotation": 0.0,
+                            "scale": [1.0, 1.0]
+                        }
+                    ]                
+                }
+            ]
         },
         {
             "id": "screen:game",

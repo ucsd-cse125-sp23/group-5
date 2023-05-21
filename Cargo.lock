@@ -532,6 +532,7 @@ dependencies = [
  "image",
  "instant",
  "log",
+ "nalgebra",
  "nalgebra-glm",
  "phf",
  "pollster",
