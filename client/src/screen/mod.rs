@@ -67,7 +67,7 @@ pub struct Display {
     pub rect_ibuf: wgpu::Buffer,
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
-    pub customization_choices: FinalChoices, // TODO: fix later, here for now until the code for sending these updates is finished
+    pub customization_choices: (FinalChoices, bool), // (choices, ready?) TODO: fix later, here for now until the code for sending these updates is finished
     // for sending command
     pub sender: mpsc::Sender<Input>,
     pub game_state: Arc<Mutex<GameState>>,
@@ -107,7 +107,7 @@ impl Display {
             rect_ibuf,
             depth_texture,
             default_inst_buf,
-            customization_choices: FinalChoices::default(),
+            customization_choices: (FinalChoices::default(), false),
             sender,
             game_state,
         }

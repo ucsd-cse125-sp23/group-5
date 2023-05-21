@@ -939,12 +939,14 @@ impl State {
         }
 
         // TODO: ONLY DISPLAY ONCE THE PLAYER CLICKS "GO" BUTTON
-        if self.display.current == "display:lobby" {
+        if self.display.current == "display:lobby" && self.display.customization_choices.1 {
+            // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
+            self.animation_controller.play_animation("attack".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
-                screen_position: (0.0, 0.0),
+                screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![Text::new(
-                    format!("LOBBY TEST\n READY! WAITING ON OTHER PLAYERS...").as_str(),
+                    format!("READY! WAITING ON OTHER PLAYERS...").as_str(),
                 )
                 .with_color([0.0, 0.0, 0.0, 1.0])
                 .with_scale(40.0)],
