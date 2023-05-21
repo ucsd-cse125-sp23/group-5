@@ -67,7 +67,10 @@ impl GameLoop<'_> {
 
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
-
+            
+            // Reset game if game has ended 
+            self.executor.reset_game(); 
+            
             // consume and collect all messages in the channel
             let commands = self.commands.try_iter().collect::<Vec<_>>();
 

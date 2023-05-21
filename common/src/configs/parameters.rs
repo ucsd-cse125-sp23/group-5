@@ -4,6 +4,10 @@ use phf::phf_map;
 pub const SCORE_LOWER_X :f32 = -24.5/9.0 * 0.14;
 pub const SCORE_UPPER_X :f32 =  21.5/9.0 * 0.14;
 
+// Default camera parameters for lobby 
+pub const DEFAULT_PLAYER_POS: (f32, f32, f32) = (0.0, 0.0, 0.0);
+pub const DEFAULT_CAMERA_POS: (f32, f32, f32) = (-2.0, 2.0, 0.0);
+pub const DEFAULT_CAMERA_TARGET: (f32, f32, f32) = (0.0, 0.0, 0.0);
 // parameter to tune
 
 // movement parameter
@@ -55,14 +59,14 @@ pub const INVINCIBLE_EFFECTIVE_DISTANCE: f32 = 2.5;
 pub const INVINCIBLE_EFFECTIVE_IMPULSE: f32 = 20.0;
 pub const MAX_ATTACK_DIST: f32 = 10.0;
 pub const MAX_ATTACK_ANGLE: f32 = std::f32::consts::FRAC_PI_6;
-pub const ATTACK_IMPULSE: f32 = 100.0;
+pub const ATTACK_IMPULSE: f32 = 250.0;
 // attack impulse force
 pub const ATTACK_COEFF: f32 = 5.0;
 // controls impact of distance on normal attack falloff (higher = distance matters more)
 pub const ATTACK_COST: u32 = 1;
 pub const ATTACK_COOLDOWN: f32 = 1.0;
 pub const MAX_AREA_ATTACK_DIST: f32 = 5.0;
-pub const AREA_ATTACK_IMPULSE: f32 = 75.0;
+pub const AREA_ATTACK_IMPULSE: f32 = 150.0;
 // area attack impulse force
 pub const AREA_ATTACK_COEFF: f32 = 5.0;
 // controls impact of distance on area attack falloff (higher = distance matters more)

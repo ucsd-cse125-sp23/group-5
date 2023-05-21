@@ -17,7 +17,7 @@
             "path": "start_screen_without_btn.jpg"
         },
         {
-            "name": "bkgd:end",
+            "name": "bkgd:end_screen",
             "path": "overlay.png"
         },
         {
@@ -38,7 +38,19 @@
         },
         {
             "name": "icon:place_circle",
-            "path": "placehold_circle.png"
+            "path": "circle_mask.png"
+        },
+        {
+            "name": "icon:loading",
+            "path": "loading.jpg"
+        },
+        {
+            "name": "icon:victory",
+            "path": "victory.jpg"
+        }, 
+        {
+            "name": "icon:defeat",
+            "path": "defeat.jpg"
         },
 
         {
@@ -64,6 +76,14 @@
         {
             "name": "icon:select_wood_color_txt",
             "path": "select_wood_color_text.png"
+        },
+        {
+            "name": "mask:none",
+            "path": "default_mask.png"
+        },
+        {
+            "name": "mask:circle",
+            "path": "circle_mask.png"
         }
     ]
 }

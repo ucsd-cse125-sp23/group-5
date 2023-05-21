@@ -29,6 +29,7 @@ pub struct ConfigScreen {
 pub struct ConfigScreenBackground{
     pub tex: String,
     pub aspect: f32,
+    pub mask_tex: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -41,6 +42,8 @@ pub struct ConfigButton{
     pub hover_tint: [f32; 4],
     pub default_tex: String,
     pub hover_tex: String,
+    pub selected_tex: Option<String>,
+    pub mask_tex: String,
     pub on_click: String,
 }
 
@@ -52,6 +55,7 @@ pub struct ConfigIcon {
     pub height: f32,
     pub tint: [f32; 4],
     pub tex: String,
+    pub mask_tex: String,
     pub instances: Vec<ConfigScreenTransform>,
 }
 

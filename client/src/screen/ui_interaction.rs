@@ -16,6 +16,7 @@ pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<Me
     "change_leaf_color" => change_leaf_color,
     "change_wood_color" => change_wood_color,
     "go_to_lobby" => go_to_lobby,
+    "go_to_title" => go_to_title,
 };
 
 // Place click events here ----------------------
@@ -37,8 +38,12 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
             }
         }
 
-        // display.change_to(display.game_display.clone());
+        display.change_to(display.game_display.clone());
     }
+}
+
+fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+    display.current = "display:title".to_owned();
 }
 
 fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
