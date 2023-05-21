@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::{ClientSync, Input};
 use crate::screen;
-use crate::screen::Screen;
+use crate::screen::{Display, Screen};
 use common::core::choices::FinalChoices;
 use log::warn;
 use phf::phf_map;

@@ -49,6 +49,8 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use common::core::states::GameLifeCycleState::Running;
+use crate::screen::ui_interaction::game_start;
 
 struct State {
     surface: wgpu::Surface,
