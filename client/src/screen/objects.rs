@@ -33,6 +33,10 @@ impl Vertex {
     }
 }
 
+/// Order of vertices
+///  1 --- 2
+///  |     |
+///  0 --- 3
 #[rustfmt::skip]
 pub const RECT_IND : [u16; 6] = [
     0, 2, 1,
@@ -121,6 +125,7 @@ pub struct ScreenBackground {
     pub aspect: f32,
     pub vbuf: wgpu::Buffer,
     pub texture: String,
+    pub mask_texture: String,
     pub color: Option<MeshColorInstance>,
 }
 
@@ -138,12 +143,16 @@ pub struct Button{
     pub hover_tint: glm::Vec4,
     pub default_texture: String,
     pub hover_texture: String,
+    pub selected_texture: Option<String>,
+    pub mask_texture: String,
     pub color: Option<MeshColorInstance>,
     pub on_click: String,
+    pub selected: bool,
 }
 
 #[derive(Debug)]
 pub struct Icon {
+    pub id: String,
     pub location: ScreenLocation,
     pub aspect: f32,
     pub height: f32,
@@ -151,6 +160,7 @@ pub struct Icon {
     pub vbuf: wgpu::Buffer,
     pub tint: glm::Vec4,
     pub texture: String,
+    pub mask_texture: String,
     pub instance_raw: Vec<ConfigScreenTransform>,
     pub inst_buf: wgpu::Buffer,
     pub inst_range: std::ops::Range<u32>,

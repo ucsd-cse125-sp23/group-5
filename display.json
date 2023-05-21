@@ -32,6 +32,7 @@
             "id": "screen:title",
             "background": {
                 "tex": "bkgd:title",
+                "mask_tex": "mask:none",
                 "aspect": 1.77777778
             },
             "buttons": [
@@ -46,6 +47,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:title",
                     "hover_tex": "btn:title_hover",
+                    "mask_tex": "mask:none",
                     "on_click": "go_to_lobby"
                 }
             ],
@@ -65,6 +67,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:down_arrow",
                     "hover_tex": "btn:down_arrow_hover",
+                    "mask_tex": "mask:none",
                     "on_click": "next_model"
                 },
                 {
@@ -78,7 +81,9 @@
                     "default_tint": [1.0, 1.0, 1.0, 1.0],
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
+                    "hover_tex": "btn:color_button",
+                    "selected_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "color": [1.0,0.0,0.0],
                     "on_click": "change_player_color"
                 },
@@ -94,6 +99,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "color": [0.0,1.0,0.0],
                     "on_click": "change_player_color"
                 },
@@ -109,6 +115,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "color": [0.0,0.0,1.0],
                     "on_click": "change_player_color"
                 },
@@ -124,6 +131,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "color": [1.0,1.0,0.0],
                     "on_click": "change_player_color"
                 },
@@ -139,6 +147,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:checkmark",
                     "hover_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "on_click": "customize_leaf"
                 },
                 {
@@ -153,6 +162,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:body",
                     "hover_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "on_click": "customize_body"
                 },
                 {
@@ -166,6 +176,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:color_button",
                     "hover_tex": "btn:checkmark",
+                    "mask_tex": "mask:none",
                     "on_click": "game_start"
                 }
             ],
@@ -185,6 +196,7 @@
                     "height": 0.14,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:score_back",
+                    "mask_tex": "mask:none",
                     "instances": [
                         {
                             "translation": {
@@ -206,6 +218,7 @@
                     "height": 0.078,
                     "tint": [1.0, 0.0, 0.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -227,6 +240,7 @@
                     "height": 0.078,
                     "tint": [0.0, 1.0, 0.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -248,6 +262,7 @@
                     "height": 0.078,
                     "tint": [0.0, 0.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -269,6 +284,7 @@
                     "height": 0.078,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -290,6 +306,7 @@
                     "height": 0.1482,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:atk_back",
+                    "mask_tex": "mask:none",
                     "instances": [
                         {
                             "translation": {
@@ -311,6 +328,7 @@
                     "height": 0.074,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:none",
                     "instances": [
                         {
                             "translation": {
@@ -404,6 +422,7 @@
                     "height": 0.222,
                     "tint": [0.0, 1.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -424,7 +443,8 @@
                     "aspect": 1.0,
                     "height": 0.222,
                     "tint": [1.0, 1.0, 1.0, 0.0],
-                    "tex": "icon:place_circle",
+                    "tex": "icon:loading",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -446,6 +466,7 @@
                     "height": 0.222,
                     "tint": [0.0, 1.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -466,7 +487,8 @@
                     "aspect": 1.0,
                     "height": 0.222,
                     "tint": [1.0, 1.0, 1.0, 0.0],
-                    "tex": "icon:place_circle",
+                    "tex": "icon:loading",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -488,6 +510,7 @@
                     "height": 0.222,
                     "tint": [0.0, 1.0, 1.0, 1.0],
                     "tex": "icon:place_circle",
+                    "mask_tex": "mask:circle",
                     "instances": [
                         {
                             "translation": {
@@ -505,6 +528,7 @@
             "id": "screen:victory",
             "background":  {
                 "tex": "bkgd:end_screen",
+                "mask_tex": "mask:none",
                 "aspect": 1.77777778
             },
             "buttons": [
@@ -519,6 +543,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:title",
                     "hover_tex": "btn:title_hover",
+                    "mask_tex": "mask:none",
                     "on_click": "go_to_title"
                 }
             ],
@@ -533,6 +558,7 @@
                     "height": 1.8,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:victory",
+                    "mask_tex": "mask:none",
                     "instances": [
                         {
                             "translation": {
@@ -550,6 +576,7 @@
             "id": "screen:defeat",
             "background":  {
                 "tex": "bkgd:end_screen",
+                "mask_tex": "mask:none",
                 "aspect": 1.77777778
             },
             "buttons": [
@@ -564,6 +591,7 @@
                     "hover_tint": [1.0, 1.0, 1.0, 1.0],
                     "default_tex": "btn:title",
                     "hover_tex": "btn:title_hover",
+                    "mask_tex": "mask:none",
                     "on_click": "go_to_title"
                 }
             ],
@@ -578,6 +606,7 @@
                     "height": 1.8,
                     "tint": [1.0, 1.0, 1.0, 1.0],
                     "tex": "icon:defeat",
+                    "mask_tex": "mask:none",
                     "instances": [
                         {
                             "translation": {

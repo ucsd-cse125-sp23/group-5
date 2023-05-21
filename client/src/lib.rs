@@ -295,6 +295,29 @@ impl State {
                 ],
                 label: Some("2d_texture_bind_group_layout"),
             });
+        
+            let mask_texture_bind_group_layout_2d =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("2d_mask_texture_bind_group_layout"),
+            });
 
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
@@ -376,7 +399,11 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout_2d, 
+                    &color_bind_group_layout,
+                    &mask_texture_bind_group_layout_2d,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -753,7 +780,6 @@ impl State {
             other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
             
             // update player scores
-            // PLACEHOLDER FOR NOW
             {
                 let screen_id = self.display.groups
                 .get(&self.display.game_display)
@@ -803,39 +829,23 @@ impl State {
                 .as_ref()
                 .unwrap();
 
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = screen.icon_id_map.get("icon:atk_forward_overlay").unwrap().clone();
-                let mut tint;
+                // TODO: Magic constants here seem a little unavoidable?
+                let atk_load = String::from("icon:atk_forward_overlay");
+                let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
                     let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
-                    // use smmoothstep?
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
-                    tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                    self.display.transition_map.insert(atk_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
-                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    self.display.transition_map.remove(&atk_load);
                 }
-                for v in &mut screen.icons[ind].vertices{
-                    v.color = tint.into();
-                }
-                self.queue.write_buffer(&screen.icons[ind].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind].vertices));
-
-                let ind = screen.icon_id_map.get("icon:atk_wave_overlay").unwrap().clone();
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::AREA_ATTACK_COOLDOWN;
-                    // use smmoothstep?
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
-                    tint = glm::vec4(1.0, 1.0, 1.0, 3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0));
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
+                    self.display.transition_map.insert(atk_area_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
-                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    self.display.transition_map.remove(&atk_area_load);
                 }
-                for v in &mut screen.icons[ind].vertices{
-                    v.color = tint.into();
-                }
-                self.queue.write_buffer(&screen.icons[ind].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind].vertices));
             }
 
             self.display

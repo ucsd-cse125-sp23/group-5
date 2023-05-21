@@ -158,6 +158,7 @@ fn update_curr_selection(display: &mut screen::Display, button_id: Option<String
                 display.customization_choices.prev_type_selection = (prev_id, prev_tex);
             } 
             b.default_texture = b.hover_texture.clone();
+            b.selected = true;
         }
     }
 }

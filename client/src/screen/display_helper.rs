@@ -60,6 +60,7 @@ fn create_background(s: &ConfigScreen, device: &wgpu::Device, color_bind_group_l
             aspect: bg.aspect,
             vbuf,
             texture: bg.tex.clone(),
+            mask_texture: bg.mask_tex.clone(),
             color: match bg.color {None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
         }
     })
@@ -122,6 +123,7 @@ fn create_icon(
             });
 
             objects::Icon {
+                id: i.id.clone(),
                 location: i.location,
                 aspect: i.aspect,
                 height: i.height,
@@ -129,6 +131,7 @@ fn create_icon(
                 vbuf,
                 tint: glm::make_vec4(&i.tint),
                 texture: i.tex.clone(),
+                mask_texture: i.mask_tex.clone(),
                 instance_raw: i.instances.clone(),
                 inst_buf,
                 inst_range,
@@ -173,8 +176,11 @@ fn create_button(
                 hover_tint: glm::make_vec4(&b.hover_tint),
                 default_texture: b.default_tex.clone(),
                 hover_texture: b.hover_tex.clone(),
+                selected_texture: b.selected_tex.clone(),
+                mask_texture: b.mask_tex.clone(),
                 color: match b.color{None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
                 on_click: b.on_click.clone(),
+                selected: false,
             }
         })
         .collect()
