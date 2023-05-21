@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::{ClientSync, Input};
 use crate::screen;
-use crate::screen::Screen;
+use crate::screen::{Display, Screen};
 use common::core::choices::FinalChoices;
 use log::warn;
 use phf::phf_map;
@@ -23,7 +23,7 @@ pub static BUTTON_MAP: phf::Map<
     "change_player_color" => change_player_color,
     "customize_body" => customize_body,
     "customize_leaf" => customize_leaf,
-    "game_start" => game_start,
+    "game_start" => be_ready,
 };
 
 /// ---------------------------------- Place click events here -------------------------------------
@@ -31,7 +31,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<St
     display.change_to("display:lobby".to_owned());
 }
 
-fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
+fn be_ready(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     let final_choices = FinalChoices::new(&display.customization_choices);
     // println!("{:#?}", final_choices);
     // Send final customization choices to server
@@ -48,10 +48,9 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
             warn!("Error sending command: {:?}", e);
         }
     }
-    // TODO: wait for all four players' ready
-    // while display.game_state.lock().unwrap().life_cycle_state == Waiting {
-    //     thread::sleep(Duration::from_millis(1000));
-    // }
+}
+
+pub fn game_start(display: &mut screen::Display) {
     display.change_to(display.game_display.clone());
 }
 
