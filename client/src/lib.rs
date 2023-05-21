@@ -49,7 +49,6 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use crate::screen::ui_interaction::game_start;
 
 struct State {
     surface: wgpu::Surface,
@@ -746,7 +745,6 @@ impl State {
             self.camera_state.camera.target = glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2);
             return
         }
-
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
