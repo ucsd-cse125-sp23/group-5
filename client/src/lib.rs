@@ -48,6 +48,7 @@ use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use common::core::weather::Weather;
 
 struct State {
     surface: wgpu::Surface,
@@ -850,6 +851,36 @@ impl State {
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 let ind = *screen.icon_id_map.get("icon:charge").unwrap();
                 screen.icons[ind].inst_range = 0..self.player.wind_charge;
+            }
+
+            // update weather icon
+            {
+                let screen_id = self.display.groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
+
+                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                let wind_ind = *screen.icon_id_map.get("icon:windy").unwrap();
+
+                screen.icons[wind_ind].inst_range = 0..{
+                    if matches!(game_state.lock().unwrap().world.weather, Some(Weather::Windy(_)))  {
+                        1
+                    } else {
+                        0
+                    }
+                };
+
+                let rain_ind = *screen.icon_id_map.get("icon:rainy").unwrap();
+                screen.icons[rain_ind].inst_range = 0..{
+                    if matches!(game_state.lock().unwrap().world.weather, Some(Weather::Rainy))  {
+                        1
+                    } else {
+                        0
+                    }
+                };
             }
 
             // update cooldowns
