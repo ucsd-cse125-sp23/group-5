@@ -1,7 +1,7 @@
 use glm::vec3;
 use other_players::OtherPlayer;
 use std::collections::{HashMap, HashSet};
-use std::default;
+
 use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
@@ -38,6 +38,7 @@ use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
 
 use common::configs;
+use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::GameLifeCycleState::Running;
@@ -285,8 +286,8 @@ impl State {
                 ],
                 label: Some("2d_texture_bind_group_layout"),
             });
-        
-            let mask_texture_bind_group_layout_2d =
+
+        let mask_texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -344,13 +345,25 @@ impl State {
         scene.objects = models;
 
         // placeholder position, will get overriden by server
-        let player = player::Player::new(vec3(DEFAULT_PLAYER_POS.0, DEFAULT_PLAYER_POS.1, DEFAULT_PLAYER_POS.2));
+        let player = player::Player::new(vec3(
+            DEFAULT_PLAYER_POS.0,
+            DEFAULT_PLAYER_POS.1,
+            DEFAULT_PLAYER_POS.2,
+        ));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
-            glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2),
-            glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2),
+            glm::vec3(
+                DEFAULT_CAMERA_POS.0,
+                DEFAULT_CAMERA_POS.1,
+                DEFAULT_CAMERA_POS.2,
+            ),
+            glm::vec3(
+                DEFAULT_CAMERA_TARGET.0,
+                DEFAULT_CAMERA_TARGET.1,
+                DEFAULT_CAMERA_TARGET.2,
+            ),
             vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
@@ -390,7 +403,7 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[
-                    &texture_bind_group_layout_2d, 
+                    &texture_bind_group_layout_2d,
                     &color_bind_group_layout,
                     &mask_texture_bind_group_layout_2d,
                 ],
@@ -723,24 +736,34 @@ impl State {
         let game_config = config_instance.game.clone();
 
         // Only update if we're in game/lobby
-        if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
-            return 
+        if self.display.current != self.display.game_display.clone()
+            && self.display.current != "display:lobby"
+        {
+            return;
         }
 
         let game_state_clone = game_state.lock().unwrap().clone();
 
         // check if the game has ended and set corresponding end screen
         if game_state_clone.life_cycle_state == Ended {
-            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
+            if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
                 self.display.current = "display:victory".to_owned();
             } else {
-                self.display.current = "display:defeat".to_owned(); 
+                self.display.current = "display:defeat".to_owned();
             }
 
-            // Reset camera and player for lobby 
-            self.camera_state.camera.position = glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2);
-            self.camera_state.camera.target = glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2);
-            return
+            // Reset camera and player for lobby
+            self.camera_state.camera.position = glm::vec3(
+                DEFAULT_CAMERA_POS.0,
+                DEFAULT_CAMERA_POS.1,
+                DEFAULT_CAMERA_POS.2,
+            );
+            self.camera_state.camera.target = glm::vec3(
+                DEFAULT_CAMERA_TARGET.0,
+                DEFAULT_CAMERA_TARGET.1,
+                DEFAULT_CAMERA_TARGET.2,
+            );
+            return;
         }
 
         // game state to scene graph conversion and update
@@ -844,15 +867,23 @@ impl State {
                 let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / physics_config.attack_config.attack_cooldown;
-                    self.display.transition_map.insert(atk_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
+                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
+                        / physics_config.attack_config.attack_cooldown;
+                    self.display.transition_map.insert(
+                        atk_load.clone(),
+                        screen::object_transitions::Transition::SqueezeDown(cd_left),
+                    );
                 } else {
                     self.display.transition_map.remove(&atk_load);
                 }
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / physics_config.attack_config.attack_cooldown;
-                    self.display.transition_map.insert(atk_area_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
+                        / physics_config.attack_config.attack_cooldown;
+                    self.display.transition_map.insert(
+                        atk_area_load.clone(),
+                        screen::object_transitions::Transition::SqueezeDown(cd_left),
+                    );
                 } else {
                     self.display.transition_map.remove(&atk_area_load);
                 }

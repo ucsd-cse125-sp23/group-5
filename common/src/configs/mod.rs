@@ -2,6 +2,7 @@ pub mod audio_config;
 pub mod display_config;
 pub mod game_config;
 pub mod model_config;
+pub mod parameters;
 pub mod particle_config;
 pub mod physics_config;
 pub mod scene_config;

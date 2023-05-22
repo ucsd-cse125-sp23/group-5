@@ -1,36 +1,29 @@
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::{ClientSync, Input};
 use crate::screen;
-use crate::screen::{Display, Screen};
+use crate::screen::Screen;
 use common::core::choices::FinalChoices;
 use common::core::mesh_color::MeshColor;
-use common::core::states::GameLifeCycleState::Waiting;
 use log::warn;
 use phf::phf_map;
-use std::thread;
-use std::time::Duration;
-
-const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-const EYES_EYES_MESH: &str = "eyes_eyes_mesh";
-const LEG0R_LEG0R_MESH: &str = "leg0R_leg0R_mesh";
 
 pub static BUTTON_MAP: phf::Map<
     &'static str,
     fn(&mut screen::Display, Option<MeshColor>, Option<String>),
 > = phf_map! {
+    "game_start" => game_start,
     "next_model" => next_model,
     "change_player_color" => change_player_color,
     "customize_body" => customize_body,
     "customize_leaf" => customize_leaf,
-    "game_start" => be_ready,
     "go_to_lobby" => go_to_lobby,
     "go_to_title" => go_to_title,
 };
 
-/// ---------------------------------- Place click events here -------------------------------------
-fn be_ready(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
+// Place click events here ----------------------
+fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     let final_choices = FinalChoices::new(&display.customization_choices);
-    // println!("{:#?}", final_choices);
+    println!("{:#?}", final_choices);
     // Send final customization choices to server
     match display
         .sender
@@ -41,6 +34,7 @@ fn be_ready(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Strin
             warn!("Error sending command: {:?}", e);
         }
     }
+
     // once start game, send ready to the client main.
     match display.sender.send(Input::UI(Ready)) {
         Ok(_) => {}
@@ -78,43 +72,57 @@ fn change_player_color(
 ) {
     update_curr_selection(display, button_id.clone(), true);
 
-    let actual_color = color.unwrap_or(MeshColor::default());
-
-    if let Some(curr_group) = display.groups.get_mut(&display.current) {
-        if let Some(scene_id) = curr_group.scene.clone() {
-            if let Some(scene) = display.scene_map.get_mut(&scene_id) {
-                if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
-                    let curr_choice = display.customization_choices.current_type_choice.clone();
-                    if curr_choice == "leaf".to_owned() {
-                        display.customization_choices.cur_leaf_color = button_id.clone().unwrap();
-                        display
-                            .customization_choices
-                            .color
-                            .insert(EYES_EYES_MESH.to_owned(), actual_color);
-                    } else if curr_choice == "body".to_owned() {
-                        display.customization_choices.cur_body_color = button_id.clone().unwrap();
-                        display
-                            .customization_choices
-                            .color
-                            .insert(LEG0R_LEG0R_MESH.to_owned(), actual_color);
+    let actual_color = match color {
+        None => MeshColor::default(),
+        Some(c) => c,
+    };
+    let curr_group = display.groups.get_mut(&display.current).unwrap();
+    match curr_group.scene.clone() {
+        None => {}
+        Some(scene_id) => {
+            match display.scene_map.get_mut(&scene_id) {
+                None => {}
+                Some(scene) => {
+                    // TODO: fix later, hard-coded for now
+                    match scene.scene_graph.get_mut("object:player_model") {
+                        None => {}
+                        Some(node) => {
+                            let curr_choice =
+                                display.customization_choices.current_type_choice.clone();
+                            if curr_choice == "leaf".to_owned() {
+                                display.customization_choices.cur_leaf_color =
+                                    button_id.clone().unwrap();
+                                display
+                                    .customization_choices
+                                    .color
+                                    .insert("eyes_eyes_mesh".to_owned(), actual_color);
+                            } else if curr_choice == "body".to_owned() {
+                                display.customization_choices.cur_body_color =
+                                    button_id.clone().unwrap();
+                                display
+                                    .customization_choices
+                                    .color
+                                    .insert("leg0R_leg0R_mesh".to_owned(), actual_color);
+                            }
+                            node.colors = Some(display.customization_choices.color.clone());
+                        }
                     }
-                    node.colors = Some(display.customization_choices.color.clone());
+                    scene.draw_scene_dfs();
                 }
-                scene.draw_scene_dfs();
             }
         }
     }
 }
 
-fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     display.change_to("display:lobby".to_owned());
 }
 
-fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     display.current = "display:title".to_owned();
 }
 
-fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     match curr_group.scene.clone() {
         None => {}
@@ -151,13 +159,14 @@ fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
         }
     }
 }
-/// -------------------------------------- end click events ----------------------------------------
+// end click events ----------------------
 
 fn update_curr_selection(
     display: &mut screen::Display,
     button_id: Option<String>,
     color_or_type: bool,
 ) {
+    // color_or_type: true -> color, false -> type
     let col_or_type = if color_or_type {
         &display.customization_choices.prev_color_selection
     } else {
