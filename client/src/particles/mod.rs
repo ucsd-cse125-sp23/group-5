@@ -271,6 +271,7 @@ impl ParticleDrawer {
             }
             to_draw.extend_from_slice(&ps.particles[..end_ind]);
         }
+
         // sort by depth
         to_draw.sort_by(|a, b| {
             a.z_pos

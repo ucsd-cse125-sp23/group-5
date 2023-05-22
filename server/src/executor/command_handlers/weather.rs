@@ -18,9 +18,9 @@ pub trait MarkovState<T> {
 }
 
 // Constants for fraction of visits in long term (derived from limiting distribution)
-const RAIN_FRACTION: f64 = 0.3;
-const WIND_FRACTION: f64 = 0.2;
-const NONE_FRACTION: f64 = 0.5;
+const RAIN_FRACTION: f64 = 0.8;
+const WIND_FRACTION: f64 = 0.0;
+const NONE_FRACTION: f64 = 0.2;
 
 // ticks of the effects
 const RAIN_TICKS: f64 = 20. * TICK_RATE as f64;
@@ -130,7 +130,7 @@ impl WeatherEffectCommandHandler {
                     player_state.transform.translation,
                     -Vector::y(),
                     Vector::y(),
-                    glm::vec4(0.4, 0.9, 0.7, 1.0),
+                    glm::vec4(1.0, 1.0, 1.0, 0.8),
                     "rain".to_string(),
                 )), Recipients::One(player_id as u8)
                 )
