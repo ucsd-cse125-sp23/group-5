@@ -15,7 +15,7 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
-use common::core::states::GameLifeCycleState::{Ended, Running};
+use common::core::states::GameLifeCycleState::{Ended};
 use model::Vertex;
 use winit::event::*;
 
@@ -50,7 +50,6 @@ use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
 use common::core::states::GameLifeCycleState::Running;
-use crate::screen::ui_interaction::game_start;
 
 struct State {
     surface: wgpu::Surface,
@@ -727,6 +726,9 @@ impl State {
         if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
             return
         }
+        // config setup
+        let config_instance = ConfigurationManager::get_configuration();
+        let physics_config = config_instance.physics.clone();
 
         let game_state_clone = game_state.lock().unwrap().clone();
 
@@ -1007,20 +1009,29 @@ impl State {
     }
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let physics_config = config_instance.physics.clone();
+
+        let attack_cd = physics_config.attack_cooldown;
+        let max_attack_angle = physics_config.max_attack_angle;
+        let max_attack_dist = physics_config.max_attack_dist;
+        let area_attack_cd = physics_config.area_attack_cooldown;
+        let max_area_attack_dist = physics_config.max_area_attack_dist;
+
         for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
                 //TODO: move to config
                 // generator
                 events::ParticleType::ATTACK => {
-                    let time = parameters::ATTACK_COOLDOWN / 2.0;
+                    let time = attack_cd / 2.0;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
-                        parameters::MAX_ATTACK_ANGLE,
-                        parameters::MAX_ATTACK_DIST / time,
+                        max_attack_angle,
+                        max_attack_dist / time,
                         0.3,
                         PI,
                         0.5,
@@ -1044,11 +1055,11 @@ impl State {
                 }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
-                    let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;
+                    let time = area_attack_cd / 2.0;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
-                        parameters::MAX_AREA_ATTACK_DIST / time,
+                        max_area_attack_dist / time,
                         0.3,
                         PI,
                         0.5,
