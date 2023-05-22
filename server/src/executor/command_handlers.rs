@@ -5,6 +5,7 @@ use std::time::Duration;
 use common::core::action_states::ActionState;
 
 use common::configs::game_config::ConfigGame;
+use common::configs::ConfigurationManager;
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
 use nalgebra::{zero, Isometry3, Point, UnitQuaternion, Vector3};
@@ -15,10 +16,6 @@ use rapier3d::math::{AngVector, Isometry};
 use rapier3d::prelude as rapier;
 
 use common::configs::model_config::ConfigModels;
-use common::configs::parameters::{
-    DASH_IMPULSE, FLASH_DISTANCE_SCALAR, INVINCIBLE_EFFECTIVE_DISTANCE,
-    INVINCIBLE_EFFECTIVE_IMPULSE, SPECIAL_MOVEMENT_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
-};
 use common::configs::physics_config::ConfigPhysics;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
@@ -457,6 +454,7 @@ impl CommandHandler for JumpCommandHandler {
 pub struct AttackCommandHandler {
     player_id: u32,
     physics_config: ConfigPhysics,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for AttackCommandHandler {
@@ -550,7 +548,7 @@ impl CommandHandler for AttackCommandHandler {
             .status_effects
             .contains_key(&StatusEffect::EnhancedWind);
         let scalar = if wind_enhanced {
-            WIND_ENHANCEMENT_SCALAR
+            self.game_config.powerup_config.wind_enhancement_scalar
         } else {
             1.0
         };
@@ -903,6 +901,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
 #[derive(Constructor)]
 pub struct DashCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for DashCommandHandler {
@@ -961,7 +960,10 @@ impl CommandHandler for DashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Dash, SPECIAL_MOVEMENT_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Dash,
+            self.game_config.powerup_config.special_movement_cooldown,
+        );
 
         // TODO::
         // some particle at the end would be cool, but probably different
@@ -979,9 +981,9 @@ impl CommandHandler for DashCommandHandler {
 
         player_rigid_body.apply_impulse(
             rapier::vector![
-                player_state.camera_forward.x * DASH_IMPULSE,
+                player_state.camera_forward.x * self.game_config.powerup_config.dash_impulse,
                 0.0,
-                player_state.camera_forward.z * DASH_IMPULSE
+                player_state.camera_forward.z * self.game_config.powerup_config.dash_impulse
             ],
             true,
         );
@@ -994,6 +996,7 @@ impl CommandHandler for DashCommandHandler {
 #[derive(Constructor)]
 pub struct FlashCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for FlashCommandHandler {
@@ -1052,7 +1055,10 @@ impl CommandHandler for FlashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Flash, SPECIAL_MOVEMENT_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Flash,
+            self.game_config.powerup_config.special_movement_cooldown,
+        );
 
         // TODO::
         // Flashy particle effect would be cool here
@@ -1077,8 +1083,8 @@ impl CommandHandler for FlashCommandHandler {
             .transform
             .translation;
 
-        new_coordinates.x += FLASH_DISTANCE_SCALAR * x_dir;
-        new_coordinates.z += FLASH_DISTANCE_SCALAR * z_dir;
+        new_coordinates.x += self.game_config.powerup_config.flash_distance_scalar * x_dir;
+        new_coordinates.z += self.game_config.powerup_config.flash_distance_scalar * z_dir;
 
         let new_position = Isometry::new(new_coordinates, zero());
         player_rigid_body.set_position(new_position, true);
@@ -1106,6 +1112,10 @@ fn handle_invincible_players(
     {
         return;
     }
+
+    let config_instance = ConfigurationManager::get_configuration();
+    let game_config = config_instance.game.clone();
+
     let game_state_clone = game_state.clone();
     for (id, player_state) in game_state.players.iter_mut() {
         if player_state
@@ -1120,7 +1130,7 @@ fn handle_invincible_players(
                     && calculate_distance(
                         player_state.transform.translation,
                         other_player_state.transform.translation,
-                    ) < INVINCIBLE_EFFECTIVE_DISTANCE
+                    ) < game_config.powerup_config.invincible_effective_distance
                 {
                     // get launched
                     let player_pos = player_state.transform.translation;
@@ -1198,7 +1208,8 @@ fn handle_invincible_players(
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec = vec_to_other * INVINCIBLE_EFFECTIVE_IMPULSE;
+                    let impulse_vec =
+                        vec_to_other * game_config.powerup_config.invincible_effective_impulse;
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

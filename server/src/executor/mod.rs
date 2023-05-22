@@ -180,6 +180,7 @@ impl Executor {
                 Command::Attack => Box::new(AttackCommandHandler::new(
                     client_command.client_id,
                     physics_config,
+                    game_config,
                 )),
                 Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(
                     client_command.client_id,
@@ -193,8 +194,14 @@ impl Executor {
                     client_command.client_id,
                     game_config,
                 )),
-                Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
-                Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
+                Command::Dash => Box::new(DashCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
+                Command::Flash => Box::new(FlashCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;
