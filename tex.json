@@ -84,6 +84,14 @@
         {
             "name": "mask:circle",
             "path": "circle_mask.png"
+        },
+        {
+            "name": "icon:rainy",
+            "path": "rainy.png"
+        },
+        {
+            "name": "icon:windy",
+            "path": "windy.png"
         }
     ]
 }

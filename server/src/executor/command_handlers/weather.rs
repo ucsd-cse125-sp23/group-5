@@ -18,9 +18,12 @@ pub trait MarkovState<T> {
 }
 
 // Constants for fraction of visits in long term (derived from limiting distribution)
-const RAIN_FRACTION: f64 = 0.8;
-const WIND_FRACTION: f64 = 0.0;
-const NONE_FRACTION: f64 = 0.2;
+const RAIN_FRACTION: f64 = 0.3;
+const WIND_FRACTION: f64 = 0.2;
+const NONE_FRACTION: f64 = 0.5;
+
+#[allow(clippy::assertions_on_constants)]
+const _: () = assert!(RAIN_FRACTION + WIND_FRACTION + NONE_FRACTION == 1.0);
 
 // ticks of the effects
 const RAIN_TICKS: f64 = 20. * TICK_RATE as f64;
@@ -34,6 +37,7 @@ const RAINY_FRICTION: f32 = -0.2;
 /// Modeling weather as a Markov process
 impl MarkovState<Option<Weather>> for Option<Weather> {
     fn next(&self) -> Option<Weather> {
+
         let mut rng = thread_rng();
         let random_number: f64 = rng.gen(); // Generate a random number between 0 and 1
 
