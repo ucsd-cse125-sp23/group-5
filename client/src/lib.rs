@@ -749,7 +749,6 @@ impl State {
         // check whether all players are ready, if so launch the game
         if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
             self.display.current = self.display.game_display.clone();
-            println!("Game started at {}", timestamp);
         }
 
         // check if the game has ended and set corresponding end screen
