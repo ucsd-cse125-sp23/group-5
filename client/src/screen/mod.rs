@@ -1,78 +1,32 @@
-use common::configs::model_config::ModelIndex;
-use wgpu::util::DeviceExt;
+use common::configs::ConfigurationManager;
+use nalgebra_glm as glm;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
-
-use crate::mesh_color::MeshColor;
-use nalgebra_glm as glm;
+use wgpu::util::DeviceExt;
 
 use common::configs::display_config::ConfigDisplay;
-use common::configs::parameters::POWER_UP_LOCATIONS;
+use common::core::choices::CurrentSelections;
+use common::core::mesh_color::MeshColor;
+use common::core::states::GameState;
 
+use crate::inputs::Input;
 use crate::model::DrawModel;
+use crate::other_players::OtherPlayer;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
-
-use crate::inputs::Input;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
-use crate::other_players::OtherPlayer;
-
-use common::core::states::GameState;
-
 
 use self::object_transitions::Transition;
 use self::objects::Screen;
 
 pub mod display_helper;
 pub mod location_helper;
+pub mod object_transitions;
 pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
-pub mod object_transitions;
-
-// pub const TEX_CONFIG_PATH: &str = "tex.json";
-// pub const DISPLAY_CONFIG_PATH: &str = "display.json";
-
-
-pub const LOBBY_STARTING_MODEL: &str = "korok";
-
-#[derive(Debug, Clone)]
-pub struct CurrentSelections {
-    pub final_choices: FinalChoices,
-    pub ready: bool,
-    pub curr_leaf_type: String,
-    pub curr_leaf_color: String,
-    pub curr_wood_color: String,
-}
-
-impl CurrentSelections {
-    fn default() -> Self {
-        Self {
-            final_choices: FinalChoices::default(),
-            ready: false,
-            curr_leaf_type: "korok".to_string(),
-            curr_leaf_color: String::new(),
-            curr_wood_color: String::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct FinalChoices{
-    pub color: HashMap<String, MeshColor>,
-    pub model: ModelIndex,
-}
-
-impl FinalChoices{
-    fn default() -> Self {
-        Self {
-            color: HashMap::new(),
-            model: LOBBY_STARTING_MODEL.to_owned(),
-        }
-    }
-}
 
 // Should only be one of these in the entire game
 pub struct Display {
@@ -116,7 +70,12 @@ impl Display {
         game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         let groups = create_display_group(config);
-        let screen_map = create_screen_map(config, device, screen_width, screen_height);
+        let screen_map = create_screen_map(
+            config,
+            device,
+            screen_width,
+            screen_height,
+        );
         Self {
             groups,
             current: config.default_display.clone(),
@@ -139,7 +98,7 @@ impl Display {
     }
 
     /// Takes care of any cleanup switching displays might need
-    pub fn change_to(&mut self, new: String){
+    pub fn change_to(&mut self, new: String) {
         self.particles.systems.clear();
         self.current = new;
     }
@@ -161,6 +120,9 @@ impl Display {
         _output: &wgpu::SurfaceTexture,
         client_id: u32,
     ) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
+
         // inability to find the scene would be a major bug
         // panicking is fine
         let display_group = self.groups.get(&self.current).unwrap();
@@ -226,7 +188,11 @@ impl Display {
 
             // draw the powerups if they exist
             for id in existing_powerups.iter() {
-                let _pos = *POWER_UP_LOCATIONS.get(id).unwrap();
+                let _pos = *game_config
+                    .powerup_config
+                    .power_up_locations
+                    .get(id)
+                    .unwrap();
                 let pos = glm::vec4(_pos.0, _pos.1, _pos.2, 0.0);
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
@@ -334,8 +300,8 @@ impl Display {
                             icons_top.push(icon); continue;
                         }
                         match self.transition_map.get(&icon.id) {
-                            None => {},
-                            Some(x) => x.apply(icon, queue)
+                            None => {}
+                            Some(x) => x.apply(icon, queue),
                         };
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(&icon.texture).unwrap(),
@@ -366,14 +332,12 @@ impl Display {
                             }
                         };
 
-                        texture = match button.selected_texture.as_ref(){
+                        texture = match button.selected_texture.as_ref() {
                             None => texture,
-                            Some(tex) => {
-                                match button.selected{
-                                    true => tex,
-                                    false => texture,
-                                }
-                            }
+                            Some(tex) => match button.selected {
+                                true => tex,
+                                false => texture,
+                            },
                         };
 
                         render_pass.draw_ui_instanced(
@@ -420,9 +384,9 @@ impl Display {
                 button_id = button.id.clone();
             }
         }
-        match to_call{
-            None => {},
-            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id)
+        match to_call {
+            None => {}
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id),
         };
     }
 }

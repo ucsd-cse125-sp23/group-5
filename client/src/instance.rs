@@ -1,9 +1,10 @@
-use wgpu::util::DeviceExt;
 extern crate nalgebra_glm as glm;
+use common::core::mesh_color::MeshColor;
+use std::collections::HashMap;
+use wgpu::util::DeviceExt;
 
 pub type Transform = nalgebra_glm::TMat4<f32>;
-use crate::mesh_color::MeshColor;
-use std::collections::HashMap;
+
 // Instances
 // Lets us duplicate objects in a scene with less cost
 #[derive(Debug, Clone)]
@@ -57,14 +58,17 @@ impl Instance {
 
     pub fn make_buffers(instances: &Vec<Instance>, device: &wgpu::Device) -> Vec<InstanceState> {
         let mut instance_states = Vec::new();
-        for instance in instances.iter(){
+        for instance in instances.iter() {
             let data = instance.to_raw();
             let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Instance Buffer"),
                 contents: bytemuck::cast_slice(&[data]),
                 usage: wgpu::BufferUsages::VERTEX,
             });
-            instance_states.push(InstanceState { data: vec![data], buffer});
+            instance_states.push(InstanceState {
+                data: vec![data],
+                buffer,
+            });
         }
         instance_states
     }

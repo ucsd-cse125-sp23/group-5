@@ -15,10 +15,8 @@ use nalgebra_glm as glm;
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
     inputs: Sender<Input>,
-
     game_state: Arc<Mutex<GameState>>,
     particle_queue: Arc<Mutex<ParticleQueue>>,
-
     // current player id
     client_id: u8,
 }

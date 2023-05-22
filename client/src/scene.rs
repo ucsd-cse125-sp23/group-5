@@ -1,7 +1,6 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::mesh_color::MeshColor;
-use crate::model::{self, Model, StaticModel};
+use crate::model::{Model, StaticModel};
 
 use glm::TMat4;
 use log::debug;
@@ -13,6 +12,7 @@ use nalgebra_glm as glm;
 
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
+use common::core::mesh_color::MeshColor;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
 
@@ -225,31 +225,15 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
-                
-                // TODO: possibly change model and color with player choices here
-                // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
-                // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
+            }
 
-                // JUST TO VERIFY COLOR AND MODEL CHANGINg WORKS
-                let mut color_hashmap = HashMap::new();
-                match node_id.as_str() {
-                    "player:1" => {
-                        color_hashmap.insert("korok".to_string(), MeshColor::new([1.0,0.0,0.0]));
-                        self.scene_graph.get_mut(&node_id).unwrap().model = Some("cube".to_string());
-                    },
-                    "player:2" => {
-                        color_hashmap.insert("korok".to_string(), MeshColor::new([0.0,1.0,0.0]));
-                        self.scene_graph.get_mut(&node_id).unwrap().model = Some("ferris".to_string());
-                    },
-                    "player:3" => {
-                        color_hashmap.insert("korok".to_string(), MeshColor::new([0.0,0.0,1.0]));
-                    },
-                    "player:4" => {
-                        color_hashmap.insert("korok".to_string(), MeshColor::new([1.0,1.0,1.0]));
-                    },
-                    _ => {}
+            for (id, final_choices) in game_state.players_customization.iter() {
+                if (*id != player_id) && invisible_players.contains(id) {
+                    continue;
                 }
-                self.scene_graph.get_mut(&node_id).unwrap().colors = Some(color_hashmap);
+                let node_id = NodeKind::Player.node_id(id.to_string());
+                self.scene_graph.get_mut(&node_id).unwrap().colors = Some(final_choices.color.clone()); // change color
+                self.scene_graph.get_mut(&node_id).unwrap().model = Some(final_choices.model.clone()); // change model
             }
         }
     }
@@ -314,19 +298,19 @@ impl Scene {
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
-                        obj.push(InstanceBundle::from_transform(
-                            &model_view,
-                            cur_node.id.clone(),
-                        ).add_color(curr_color));
+                        obj.push(
+                            InstanceBundle::from_transform(&model_view, cur_node.id.clone())
+                                .add_color(curr_color),
+                        );
                     }
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
                             model_index,
-                            vec![InstanceBundle::from_transform(
-                                &model_view,
-                                cur_node.id.clone(),
-                            ).add_color(curr_color)],
+                            vec![
+                                InstanceBundle::from_transform(&model_view, cur_node.id.clone())
+                                    .add_color(curr_color),
+                            ],
                         );
                     }
                 }

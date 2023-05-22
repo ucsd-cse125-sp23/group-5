@@ -1,13 +1,10 @@
-use common::configs::model_config::ModelIndex;
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
-use mesh_color::MeshColor;
+
 use glm::vec3;
 use other_players::OtherPlayer;
-
 use std::collections::{HashMap, HashSet};
 use std::default;
 use std::sync::{mpsc, MutexGuard};
-
 use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
@@ -19,14 +16,13 @@ use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
 
-mod model;
-
 mod camera;
 mod instance;
 mod lights;
+mod model;
+mod other_players;
 mod particles;
 mod player;
-mod other_players;
 mod resources;
 mod scene;
 mod screen;
@@ -38,17 +34,15 @@ mod animation;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
-pub mod mesh_color;
 
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
 
-use common::configs::model_config::ConfigModels;
-use common::configs::scene_config::ConfigSceneGraph;
-use common::configs as configs;
+use common::configs;
 use common::core::command::Command;
 use common::core::events;
+use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
@@ -256,22 +250,20 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-            let color_bind_group_layout =
-                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        }
-                    ],
-                    label: Some("color_bind_group_layout"),
-                });
+        let color_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("color_bind_group_layout"),
+            });
 
         let texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -295,8 +287,8 @@ impl State {
                 ],
                 label: Some("2d_texture_bind_group_layout"),
             });
-        
-            let mask_texture_bind_group_layout_2d =
+
+        let mask_texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -367,13 +359,25 @@ impl State {
         scene.objects = models;
 
         // placeholder position, will get overriden by server
-        let player = player::Player::new(vec3(DEFAULT_PLAYER_POS.0, DEFAULT_PLAYER_POS.1, DEFAULT_PLAYER_POS.2));
+        let player = player::Player::new(vec3(
+            DEFAULT_PLAYER_POS.0,
+            DEFAULT_PLAYER_POS.1,
+            DEFAULT_PLAYER_POS.2,
+        ));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
-            glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2),
-            glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2),
+            glm::vec3(
+                DEFAULT_CAMERA_POS.0,
+                DEFAULT_CAMERA_POS.1,
+                DEFAULT_CAMERA_POS.2,
+            ),
+            glm::vec3(
+                DEFAULT_CAMERA_TARGET.0,
+                DEFAULT_CAMERA_TARGET.1,
+                DEFAULT_CAMERA_TARGET.2,
+            ),
             vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
@@ -413,7 +417,7 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[
-                    &texture_bind_group_layout_2d, 
+                    &texture_bind_group_layout_2d,
                     &mask_texture_bind_group_layout_2d,
                 ],
                 push_constant_ranges: &[],
@@ -533,9 +537,10 @@ impl State {
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let rng = rand::thread_rng();
-        let particle_tex = texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
-            .await
-            .unwrap();
+        let particle_tex =
+            texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
+                .await
+                .unwrap();
         let particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
@@ -555,9 +560,9 @@ impl State {
             };
             models.insert(model_config.name, model);
         }
-        
+
         let lobby_scene_config = config_instance.lobby_scene.clone();
-        
+
         let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
         lobby_scene.objects = models;
         lobby_scene.draw_scene_dfs();
@@ -566,7 +571,6 @@ impl State {
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
-        
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -613,36 +617,33 @@ impl State {
             sender,
             game_state,
         );
-        
-        let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
-                OtherPlayer{
-                    id: ind,
-                    visible: false,
-                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                    score: 0.0,
-                }
-            ).collect();
 
         let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
-                OtherPlayer{
-                    id: ind,
-                    visible: false,
-                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                    score: 0.0,
-                }
-            ).collect();
+            .map(|ind| OtherPlayer {
+                id: ind,
+                visible: false,
+                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                score: 0.0,
+            })
+            .collect();
 
         let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
-                OtherPlayer{
-                    id: ind,
-                    visible: false,
-                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                    score: 0.0,
-                }
-            ).collect();
+            .map(|ind| OtherPlayer {
+                id: ind,
+                visible: false,
+                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                score: 0.0,
+            })
+            .collect();
+
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| OtherPlayer {
+                id: ind,
+                visible: false,
+                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                score: 0.0,
+            })
+            .collect();
 
         Self {
             window,
@@ -751,26 +752,44 @@ impl State {
         dt: instant::Duration,
     ) {
         // Only update if we're in game/lobby
-        if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
-            return 
+        if self.display.current != self.display.game_display.clone()
+            && self.display.current != "display:lobby"
+        {
+            return;
         }
+        // config setup
+        let config_instance = ConfigurationManager::get_configuration();
+        let physics_config = config_instance.physics.clone();
+        let game_config = config_instance.game.clone();
 
         let game_state_clone = game_state.lock().unwrap().clone();
 
-        // check if the game has ended and set corresponding end screen
-        if game_state_clone.life_cycle_state == Ended {
-            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
-                self.display.current = "display:victory".to_owned();
-            } else {
-                self.display.current = "display:defeat".to_owned(); 
-            }
-
-            // Reset camera and player for lobby 
-            self.camera_state.camera.position = glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2);
-            self.camera_state.camera.target = glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2);
-            return
+        // check whether all players are ready, if so launch the game
+        if game_state_clone.life_cycle_state == Running {
+            self.display.current = self.display.game_display.clone();
         }
 
+        // check if the game has ended and set corresponding end screen
+        if game_state_clone.life_cycle_state == Ended {
+            if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
+                self.display.current = "display:victory".to_owned();
+            } else {
+                self.display.current = "display:defeat".to_owned();
+            }
+
+            // Reset camera and player for lobby
+            self.camera_state.camera.position = glm::vec3(
+                DEFAULT_CAMERA_POS.0,
+                DEFAULT_CAMERA_POS.1,
+                DEFAULT_CAMERA_POS.2,
+            );
+            self.camera_state.camera.target = glm::vec3(
+                DEFAULT_CAMERA_TARGET.0,
+                DEFAULT_CAMERA_TARGET.1,
+                DEFAULT_CAMERA_TARGET.2,
+            );
+            return;
+        }
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -796,41 +815,57 @@ impl State {
                     dt,
                     self.client_id,
                 );
-            
-            other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
-            
+
+            other_players::load_game_state(
+                &mut self.other_players,
+                game_state.lock().unwrap(),
+                game_config.clone(),
+            );
+
             // update player scores
             {
-                let screen_id = self.display.groups
-                .get(&self.display.game_display)
-                .unwrap()
-                .screen
-                .as_ref()
-                .unwrap();
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                for i in 1..5{
-                    let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
-                    let score : f32 = self.other_players[i as usize - 1].score;
+                for i in 1..5 {
+                    let ind = screen
+                        .icon_id_map
+                        .get(&format!("icon:score_p{}", i))
+                        .unwrap()
+                        .clone();
+                    let score: f32 = self.other_players[i as usize - 1].score;
                     let mut location = screen.icons[ind].location.clone();
-                    location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
+                    location.horz_disp = (
+                        0.0,
+                        game_config.score_lower_x
+                            + score * (game_config.score_upper_x - game_config.score_lower_x),
+                    );
                     screen.icons[ind].relocate(
                         location,
                         self.config.width,
                         self.config.height,
-                        &self.queue
+                        &self.queue,
                     );
                 }
             }
 
             // update player number of charges
             {
-                let screen_id = self.display.groups
-                .get(&self.display.game_display)
-                .unwrap()
-                .screen
-                .as_ref()
-                .unwrap();
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
@@ -842,27 +877,37 @@ impl State {
             // is it necessary? would need to pass around lots of references
             // might be better to create dedicated function in screen/mod.rs
             {
-                let screen_id = self.display.groups
-                .get(&self.display.game_display)
-                .unwrap()
-                .screen
-                .as_ref()
-                .unwrap();
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
 
                 // TODO: Magic constants here seem a little unavoidable?
                 let atk_load = String::from("icon:atk_forward_overlay");
                 let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
-                    self.display.transition_map.insert(atk_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
+                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
+                        / physics_config.attack_config.attack_cooldown;
+                    self.display.transition_map.insert(
+                        atk_load.clone(),
+                        screen::object_transitions::Transition::SqueezeDown(cd_left),
+                    );
                 } else {
                     self.display.transition_map.remove(&atk_load);
                 }
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
-                    self.display.transition_map.insert(atk_area_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
+                        / physics_config.attack_config.area_attack_cooldown;
+                    self.display.transition_map.insert(
+                        atk_area_load.clone(),
+                        screen::object_transitions::Transition::SqueezeDown(cd_left),
+                    );
                 } else {
                     self.display.transition_map.remove(&atk_area_load);
                 }
@@ -882,10 +927,10 @@ impl State {
                 .get_player_positions();
 
             // ASSUME: Ids should always be 1-4
-            for p in &mut self.other_players{
+            for p in &mut self.other_players {
                 p.visible = false;
             }
-            for (i, loc) in player_loc{
+            for (i, loc) in player_loc {
                 self.other_players[i as usize - 1].location = loc;
                 self.other_players[i as usize - 1].visible = true;
             }
@@ -943,7 +988,6 @@ impl State {
 
         let size = &self.window.inner_size();
 
-        // TODO: maybe refactor later?
         // render respawn cooldown
         if self.player.on_cooldown.contains_key(&Command::Spawn) {
             let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
@@ -1037,33 +1081,44 @@ impl State {
     }
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let physics_config = config_instance.physics.clone();
+        let particle_config = config_instance.particles.clone();
+        // attack consts
+        let attack_cd = physics_config.attack_config.attack_cooldown;
+        let max_attack_angle = physics_config.attack_config.max_attack_angle;
+        let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
+        let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
+        // particle consts
+        let time_divider = particle_config.time_divider;
+
         for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
-                //TODO: move to config
                 // generator
                 events::ParticleType::ATTACK => {
-                    let time = parameters::ATTACK_COOLDOWN / 2.0;
+                    let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
-                        parameters::MAX_ATTACK_ANGLE,
-                        parameters::MAX_ATTACK_DIST / time,
-                        0.3,
+                        max_attack_angle,
+                        max_attack_dist / time,
+                        particle_config.attack_particle_config.linear_variance,
                         PI,
-                        0.5,
-                        75.0,
-                        10.0,
-                        7.0,
+                        particle_config.attack_particle_config.angular_variance,
+                        particle_config.attack_particle_config.size,
+                        particle_config.attack_particle_config.size_variance,
+                        particle_config.attack_particle_config.size_growth,
                         false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        2000.0,
+                        particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
                         (1, 4),
@@ -1071,27 +1126,27 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-                },
+                }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
-                    let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;
+                    let time = area_attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
-                        parameters::MAX_AREA_ATTACK_DIST / time,
-                        0.3,
+                        max_area_attack_dist / time,
+                        particle_config.area_attack_particle_config.linear_variance,
                         PI,
-                        0.5,
-                        75.0,
-                        10.0,
-                        7.0,
+                        particle_config.area_attack_particle_config.angular_variance,
+                        particle_config.area_attack_particle_config.size,
+                        particle_config.area_attack_particle_config.size_variance,
+                        particle_config.area_attack_particle_config.size_growth,
                         false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        4000.0,
+                        particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
                         (1, 4),

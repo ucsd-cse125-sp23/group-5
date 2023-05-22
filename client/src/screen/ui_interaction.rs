@@ -1,13 +1,20 @@
 use crate::inputs::ClientSync::Ready;
-use crate::inputs::Input;
+use crate::inputs::{ClientSync, Input};
 use crate::screen;
+
 use common::configs::display_config::ScreenLocation;
+use super::objects::Icon;
+
+use crate::screen::Screen;
+use common::core::choices::CurrentSelections;
+use common::core::mesh_color::MeshColor;
 use log::warn;
 use phf::phf_map;
-use crate::mesh_color::MeshColor;
-use crate::screen::CurrentSelections;
-use crate::screen::Screen;
-use super::objects::{Button, Icon};
+
+const OBJECT_PLAYER_MODEL: &str = "object:player_model";
+const LEAF_MESH: &str = "eyes_eyes_mesh";
+const BODY_MESH: &str = "leg0R_leg0R_mesh";
+const CURR_MESH: &str = "korok";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<MeshColor>, Option<String>)> = phf_map!{
     "game_start" => game_start,
@@ -32,7 +39,17 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
 
         let final_choices = display.customization_choices.final_choices.clone();
         println!("{:#?}", final_choices);
-        // TODO: sened final customization choices to server
+
+        // Send final customization choices to server
+        match display
+            .sender
+            .send(Input::UI(ClientSync::Choices(final_choices)))
+        {
+            Ok(_) => {}
+            Err(e) => {
+                warn!("Error sending command: {:?}", e);
+            }
+        }
 
         // once start game, send ready to the client main.
         match display.sender.send(Input::UI(Ready)) {
@@ -41,16 +58,15 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
                 warn!("Error sending command: {:?}", e);
             }
         }
-
-        display.change_to(display.game_display.clone());
+        // display.change_to(display.game_display.clone());
     }
 }
 
 fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
-    display.current = "display:title".to_owned();
+    display.change_to("display:title".to_owned());
 }
 
-fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     display.change_to("display:lobby".to_owned());
 
     let curr_group = display.groups.get_mut(&display.current).unwrap();
@@ -83,7 +99,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<St
 
     // reset model
     if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
-        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
+        if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
             let default_color = MeshColor::new([0.5,0.5,0.5]);
             display.customization_choices.final_choices.color.insert("korok".to_string(), default_color);
             node.model = Some("korok".to_string());
@@ -106,7 +122,8 @@ fn change_leaf_type(display: &mut screen::Display, _: Option<MeshColor>, button_
     let curr_leaf_type = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
 
     if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
-        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
+        if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
+            display.customization_choices.final_choices.model = button_id.clone().unwrap();
             node.model = Some(button_id.clone().unwrap());
             curr_leaf_type.location = curr_button.location.clone();
         }
@@ -129,9 +146,9 @@ fn change_leaf_color(display: &mut screen::Display, color: Option<MeshColor>, bu
     let actual_color = match color {None => MeshColor::default(), Some(c) => c};
 
     if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
-        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
-            display.customization_choices.final_choices.color.insert("eyes_eyes_mesh".to_owned(), actual_color);
-            display.customization_choices.final_choices.color.insert("korok".to_owned(), actual_color);
+        if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
+            display.customization_choices.final_choices.color.insert(LEAF_MESH.to_owned(), actual_color);
+            display.customization_choices.final_choices.color.insert(CURR_MESH.to_owned(), actual_color);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             curr_leaf_color.location = curr_button.location;
         }
@@ -156,8 +173,8 @@ fn change_wood_color(display: &mut screen::Display, color: Option<MeshColor>, bu
     let actual_color = color.unwrap_or(MeshColor::default());
 
     if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
-        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
-            display.customization_choices.final_choices.color.insert("leg0R_leg0R_mesh".to_owned(), actual_color);
+        if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
+            display.customization_choices.final_choices.color.insert(BODY_MESH.to_owned(), actual_color);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             curr_wood_color.location = curr_button.location;
         }

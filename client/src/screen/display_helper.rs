@@ -2,6 +2,7 @@ use crate::screen::location_helper::{get_coords, to_absolute};
 use crate::screen::objects;
 use crate::screen::objects::ScreenInstance;
 use common::configs::display_config::{ConfigDisplay, ConfigScreen};
+use common::core::mesh_color::{MeshColor, MeshColorInstance};
 use nalgebra_glm as glm;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
@@ -47,7 +48,10 @@ pub fn create_screen_map(
     screen_map
 }
 
-fn create_background(s: &ConfigScreen, device: &wgpu::Device) -> Option<objects::ScreenBackground> {
+fn create_background(
+    s: &ConfigScreen,
+    device: &wgpu::Device,
+) -> Option<objects::ScreenBackground> {
     s.background.as_ref().map(|bg| {
         let vertices = objects::TITLE_VERT;
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -87,7 +91,7 @@ fn create_icon(
                 screen_height,
                 &mut vertices,
             );
-            for v in &mut vertices{
+            for v in &mut vertices {
                 v.color = i.tint.clone();
             }
             let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -174,7 +178,7 @@ fn create_button(
             });
 
             objects::Button {
-                id: b.id.clone(), 
+                id: b.id.clone(),
                 location: b.location,
                 aspect: b.aspect,
                 height: b.height,
