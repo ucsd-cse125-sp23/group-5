@@ -20,7 +20,6 @@ use crate::screen::object_transitions::Transition;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
 
-use self::object_transitions::Transition;
 use self::objects::Screen;
 
 pub mod display_helper;
@@ -29,7 +28,6 @@ pub mod object_transitions;
 pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
-pub mod object_transitions;
 
 // Should only be one of these in the entire game
 pub struct Display {

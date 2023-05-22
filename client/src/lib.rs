@@ -429,11 +429,7 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[
-<<<<<<< HEAD
-                    &texture_bind_group_layout_2d, 
-=======
                     &texture_bind_group_layout_2d,
->>>>>>> main
                     &color_bind_group_layout,
                     &mask_texture_bind_group_layout_2d,
                 ],
