@@ -86,27 +86,7 @@ impl GameLoop<'_> {
             // consume and collect all messages in the channel
             let mut commands = self.commands.try_iter().collect::<Vec<_>>();
 
-            commands.push(ClientCommand::server_issued(UpdateWeather));
-            commands.push(ClientCommand::server_issued(WeatherEffects));
-
-            // automatically spawning the 4 players if gamestate is running now
-            self.executor.game_init(&mut commands);
-
-            // update list of dead players and issue die commands
-            let dead_players = self.executor.update_dead_players();
-            if !dead_players.is_empty() {
-                for client_id in dead_players {
-                    commands.push(ClientCommand::new(client_id, Command::Die));
-                }
-            }
-
-            // check whether dead players need to respawn and issue spawn commands
-            let players_to_respawn = self.executor.check_respawn_players();
-            if !players_to_respawn.is_empty() {
-                for client_id in players_to_respawn {
-                    commands.push(ClientCommand::new(client_id, Command::Spawn));
-                }
-            }
+            self.executor.add_pretick_commands(&mut commands);
 
             // send commands to the executor
             self.executor.plan_and_execute(commands);

@@ -16,6 +16,7 @@ use std::cell::RefCell;
 use std::time::Duration;
 
 use command_handlers::prelude::*;
+use common::core::command::Command::{UpdateWeather, WeatherEffects};
 
 pub mod command_handlers;
 
@@ -309,5 +310,36 @@ impl Executor {
     /// get a clone of the game state
     pub fn game_state(&self) -> GameState {
         self.game_state.lock().unwrap().clone()
+    }
+
+    pub fn add_pretick_commands(&self, commands: &mut Vec<ClientCommand>) {
+        commands.push(ClientCommand::server_issued(UpdateWeather));
+        commands.push(ClientCommand::server_issued(WeatherEffects));
+
+
+
+        for player in self.game_state.lock().unwrap().players.values() {
+            commands.push(ClientCommand::new(player.id, Command::Refill));
+        }
+
+
+        // automatically spawning the 4 players if gamestate is running now
+        self.game_init(commands);
+
+        // update list of dead players and issue die commands
+        let dead_players = self.update_dead_players();
+        if !dead_players.is_empty() {
+            for client_id in dead_players {
+                commands.push(ClientCommand::new(client_id, Command::Die));
+            }
+        }
+
+        // check whether dead players need to respawn and issue spawn commands
+        let players_to_respawn = self.check_respawn_players();
+        if !players_to_respawn.is_empty() {
+            for client_id in players_to_respawn {
+                commands.push(ClientCommand::new(client_id, Command::Spawn));
+            }
+        }
     }
 }
