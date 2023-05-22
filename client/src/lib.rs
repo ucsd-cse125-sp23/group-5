@@ -802,7 +802,7 @@ impl State {
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
                     let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
-                        / physics_config.attack_cooldown;
+                        / physics_config.attack_config.attack_cooldown;
                     // use smmoothstep?
                     screen.icons[ind].tint = glm::vec4(
                         1.0,
@@ -837,7 +837,7 @@ impl State {
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
                     let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
-                        / physics_config.area_attack_cooldown;
+                        / physics_config.attack_config.area_attack_cooldown;
                     // use smmoothstep?
                     screen.icons[ind].tint = glm::vec4(
                         1.0,
@@ -1016,11 +1016,11 @@ impl State {
         let config_instance = ConfigurationManager::get_configuration();
         let physics_config = config_instance.physics.clone();
 
-        let attack_cd = physics_config.attack_cooldown;
-        let max_attack_angle = physics_config.max_attack_angle;
-        let max_attack_dist = physics_config.max_attack_dist;
-        let area_attack_cd = physics_config.area_attack_cooldown;
-        let max_area_attack_dist = physics_config.max_area_attack_dist;
+        let attack_cd = physics_config.attack_config.attack_cooldown;
+        let max_attack_angle = physics_config.attack_config.max_attack_angle;
+        let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
+        let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
 
         for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
