@@ -5,8 +5,8 @@ use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
 
 use common::configs::display_config::ConfigDisplay;
+use common::core::choices::CurrentSelections;
 use common::configs::model_config::ModelIndex;
-use common::core::choices::CustomizationChoices;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameState;
 
@@ -46,7 +46,7 @@ pub struct Display {
     pub rect_ibuf: wgpu::Buffer,
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
-    pub customization_choices: CustomizationChoices, // TODO: fix later, here for now until the code for sending these updates is finished
+    pub customization_choices: CurrentSelections, // TODO: fix later, here for now until the code for sending these updates is finished
     // for sending command
     pub sender: mpsc::Sender<Input>,
     pub game_state: Arc<Mutex<GameState>>,
@@ -67,7 +67,6 @@ impl Display {
         screen_width: u32,
         screen_height: u32,
         device: &wgpu::Device,
-        color_bind_group_layout: &wgpu::BindGroupLayout,
         sender: mpsc::Sender<Input>,
         game_state: Arc<Mutex<GameState>>,
     ) -> Self {
@@ -77,7 +76,6 @@ impl Display {
             device,
             screen_width,
             screen_height,
-            color_bind_group_layout,
         );
         Self {
             groups,
@@ -94,7 +92,7 @@ impl Display {
             rect_ibuf,
             depth_texture,
             default_inst_buf,
-            customization_choices: CustomizationChoices::default(),
+            customization_choices: CurrentSelections::default(),
             sender,
             game_state,
         }
@@ -234,9 +232,9 @@ impl Display {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.888,
-                            g: 0.815,
-                            b: 0.745,
+                            r: 0.945098, // 0.888,
+                            g: 0.909804, // 0.815,
+                            b: 0.874509, // 0.745,
                             a: 1.0,
                         }),
                         store: true,
@@ -292,14 +290,16 @@ impl Display {
                             &bkgd.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &bkgd.color {
-                                None => &screen.default_color.color_bind_group,
-                                Some(c) => &c.color_bind_group,
-                            },
                         );
                     };
 
+                    let icons_on_top = vec!["leaf_type_selector", "leaf_color_selector", "wood_color_selector"];
+                    let mut icons_top = Vec::new();
+
                     for icon in &mut screen.icons {
+                        if icons_on_top.contains(&icon.id.as_str()){
+                            icons_top.push(icon); continue;
+                        }
                         match self.transition_map.get(&icon.id) {
                             None => {}
                             Some(x) => x.apply(icon, queue),
@@ -310,16 +310,29 @@ impl Display {
                             &icon.vbuf,
                             &icon.inst_buf,
                             icon.inst_range.clone(),
-                            &screen.default_color.color_bind_group,
                         );
                     }
-
-                    for button in &screen.buttons {
+                    
+                    for button in &mut screen.buttons {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
-                            true => &button.hover_texture,
-                            false => texture,
+                            true => {
+                                for v in &mut button.vertices {
+                                    v.color = [button.hover_tint[0], button.hover_tint[1], button.hover_tint[2], button.hover_tint[3]];
+                                }
+                                queue.write_buffer(&button.vbuf, 0, bytemuck::cast_slice(&button.vertices));
+                                if button.selected { texture }
+                                else {&button.hover_texture }
+                            }
+                            false => {
+                                for v in &mut button.vertices {
+                                    v.color = [button.default_tint[0], button.default_tint[1], button.default_tint[2], button.default_tint[3]];
+                                }
+                                queue.write_buffer(&button.vbuf, 0, bytemuck::cast_slice(&button.vertices));
+                                texture
+                            }
                         };
+
                         texture = match button.selected_texture.as_ref() {
                             None => texture,
                             Some(tex) => match button.selected {
@@ -334,11 +347,20 @@ impl Display {
                             &button.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &button.color {
-                                None => &screen.default_color.color_bind_group,
-                                Some(c) => &c.color_bind_group,
-                            },
                         );
+                    }
+
+                    // TEMPORARY FIX
+                    if screen.id == "screen:lobby" {
+                        for icon in icons_top {
+                            render_pass.draw_ui_instanced(
+                                self.texture_map.get(&icon.texture).unwrap(),
+                                self.texture_map.get(&icon.mask_texture).unwrap(),
+                                &icon.vbuf,
+                                &icon.inst_buf,
+                                icon.inst_range.clone(),
+                            );
+                        }
                     }
                 }
             };
@@ -359,10 +381,7 @@ impl Display {
         for button in &screen.buttons {
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
-                color = match button.color.as_ref() {
-                    None => None,
-                    Some(c) => Some(c.color),
-                };
+                color = Some(MeshColor::new([button.default_tint[0],button.default_tint[1], button.default_tint[2]] ));
                 button_id = button.id.clone();
             }
         }
@@ -381,7 +400,6 @@ pub trait DrawGUI<'a> {
         vbuf: &'a wgpu::Buffer,
         inst_buf: &'a wgpu::Buffer,
         instances: std::ops::Range<u32>,
-        color_bind_group: &'a wgpu::BindGroup,
     );
 }
 
@@ -390,19 +408,17 @@ where
     'b: 'a,
 {
     fn draw_ui_instanced(
-        &mut self,
-        tex_bind_group: &'a wgpu::BindGroup,
-        mask_bind_group: &'a wgpu::BindGroup,
-        vbuf: &'a wgpu::Buffer,
-        inst_buf: &'a wgpu::Buffer,
-        instances: std::ops::Range<u32>,
-        color_bind_group: &'a wgpu::BindGroup,
-    ) {
+            &mut self,
+            tex_bind_group: &'a wgpu::BindGroup,
+            mask_bind_group: &'a wgpu::BindGroup,
+            vbuf: &'a wgpu::Buffer,
+            inst_buf: &'a wgpu::Buffer,
+            instances: std::ops::Range<u32>,
+        ) {
         self.set_vertex_buffer(0, vbuf.slice(..));
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);
-        self.set_bind_group(1, color_bind_group, &[]);
-        self.set_bind_group(2, mask_bind_group, &[]);
+        self.set_bind_group(1, mask_bind_group, &[]);
         self.draw_indexed(0..6, 0, instances);
     }
 }

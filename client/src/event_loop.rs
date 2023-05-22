@@ -10,6 +10,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
+use nalgebra_glm as glm;
 
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
@@ -88,13 +89,35 @@ impl PlayerLoop {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::KeyboardInput { input, .. } => {
-                                // to toggle on/off the background track because it got annoying
-                                // match input {
-                                //     KeyboardInput {virtual_keycode: Some(VirtualKeyCode::M), ..} => {
-                                //         audio.toggle_background_track();
-                                //     },
-                                //      _ => {},
-                                // }
+                                // FOR TESTING TO FIND CORRECT ORIENTATION OF CHARACTERS
+                                if state.display.current == "display:lobby" {
+                                    let scene = state.display.scene_map.get_mut("scene:lobby").unwrap();
+                                    let mut node: &mut crate::scene::Node = &mut crate::scene::Node::new("random".to_string());
+                                    let mut rot = nalgebra::Quaternion::new(1.0, 0.0, 0.0, 0.0);
+                                    match scene.scene_graph.get_mut("object:player_model") {
+                                        None =>(), Some(n) => node = n,
+                                    }
+
+                                    match input {
+                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::W), ..} => {
+                                            rot = glm::quat_rotate(&rot, -glm::pi::<f32>()/10.0,&glm::vec3(1.0,0.0,0.0));
+                                        },
+                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::A), ..} => {
+                                            rot = glm::quat_rotate(&rot, -glm::pi::<f32>()/10.0,&glm::vec3(0.0,1.0,0.0));
+                                        },
+                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::S), ..} => {
+                                            rot = glm::quat_rotate(&rot, glm::pi::<f32>()/10.0,&glm::vec3(1.0,0.0,0.0));
+                                        },
+                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::D), ..} => {
+                                            rot = glm::quat_rotate(&rot, glm::pi::<f32>()/10.0,&glm::vec3(0.0,1.0,0.0));
+                                        },
+                                        _ => {},
+                                    }
+                                    node.transform *= glm::quat_to_mat4(&rot);
+                                    println!("QUAT: {:#?}", glm::to_quat(&node.transform.clone()));
+                                    scene.draw_scene_dfs();
+                                    std::thread::sleep(instant::Duration::new(0,10));
+                                }
                                 match self
                                     .inputs
                                     .send(Input::Keyboard(*input))
