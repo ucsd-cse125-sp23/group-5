@@ -9,12 +9,12 @@ use common::core::choices::CustomizationChoices;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameState;
 
+use crate::inputs::Input;
 use crate::model::DrawModel;
+use crate::other_players::OtherPlayer;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
-use crate::inputs::Input;
-use crate::other_players::OtherPlayer;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
 
@@ -23,10 +23,10 @@ use self::objects::Screen;
 
 pub mod display_helper;
 pub mod location_helper;
+pub mod object_transitions;
 pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
-pub mod object_transitions;
 
 // Should only be one of these in the entire game
 pub struct Display {
@@ -300,8 +300,8 @@ impl Display {
 
                     for icon in &mut screen.icons {
                         match self.transition_map.get(&icon.id) {
-                            None => {},
-                            Some(x) => x.apply(icon, queue)
+                            None => {}
+                            Some(x) => x.apply(icon, queue),
                         };
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(&icon.texture).unwrap(),
@@ -312,21 +312,19 @@ impl Display {
                             &screen.default_color.color_bind_group,
                         );
                     }
-                    
+
                     for button in &screen.buttons {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
                             true => &button.hover_texture,
                             false => texture,
                         };
-                        texture = match button.selected_texture.as_ref(){
+                        texture = match button.selected_texture.as_ref() {
                             None => texture,
-                            Some(tex) => {
-                                match button.selected{
-                                    true => tex,
-                                    false => texture,
-                                }
-                            }
+                            Some(tex) => match button.selected {
+                                true => tex,
+                                false => texture,
+                            },
                         };
 
                         render_pass.draw_ui_instanced(
@@ -391,14 +389,14 @@ where
     'b: 'a,
 {
     fn draw_ui_instanced(
-            &mut self,
-            tex_bind_group: &'a wgpu::BindGroup,
-            mask_bind_group: &'a wgpu::BindGroup,
-            vbuf: &'a wgpu::Buffer,
-            inst_buf: &'a wgpu::Buffer,
-            instances: std::ops::Range<u32>,
-            color_bind_group: &'a wgpu::BindGroup,
-        ) {
+        &mut self,
+        tex_bind_group: &'a wgpu::BindGroup,
+        mask_bind_group: &'a wgpu::BindGroup,
+        vbuf: &'a wgpu::Buffer,
+        inst_buf: &'a wgpu::Buffer,
+        instances: std::ops::Range<u32>,
+        color_bind_group: &'a wgpu::BindGroup,
+    ) {
         self.set_vertex_buffer(0, vbuf.slice(..));
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);

@@ -15,7 +15,7 @@ use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 
-use common::core::states::GameLifeCycleState::{Running, Waiting, Ended};
+use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
@@ -288,17 +288,17 @@ impl Executor {
             let mut game_events = self.game_events.borrow_mut();
             let mut ready_players = self.ready_players.borrow_mut();
             let mut spawn_command_pushed = self.spawn_command_pushed.borrow_mut();
-            
-            // Remove all players from physics state 
+
+            // Remove all players from physics state
             for player_id in game_state.players.keys() {
                 physics_state.remove_entity(*player_id);
             }
-            
-            // Reset other instance variables 
+
+            // Reset other instance variables
             *game_state = GameState::new();
             game_events.clear();
-            ready_players.clear(); 
-            *spawn_command_pushed = false; 
+            ready_players.clear();
+            *spawn_command_pushed = false;
         }
     }
 

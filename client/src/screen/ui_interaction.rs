@@ -106,15 +106,15 @@ fn change_player_color(
     }
 }
 
-fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     display.change_to("display:lobby".to_owned());
 }
 
-fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     display.current = "display:title".to_owned();
 }
 
-fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     match curr_group.scene.clone() {
         None => {}

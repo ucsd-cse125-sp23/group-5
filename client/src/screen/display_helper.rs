@@ -75,7 +75,14 @@ fn create_background(
             vbuf,
             texture: bg.tex.clone(),
             mask_texture: bg.mask_tex.clone(),
-            color: match bg.color {None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
+            color: match bg.color {
+                None => None,
+                Some(c) => Some(MeshColorInstance::new(
+                    device,
+                    color_bind_group_layout,
+                    MeshColor::new(c),
+                )),
+            },
         }
     })
 }
@@ -192,7 +199,14 @@ fn create_button(
                 hover_texture: b.hover_tex.clone(),
                 selected_texture: b.selected_tex.clone(),
                 mask_texture: b.mask_tex.clone(),
-                color: match b.color{None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
+                color: match b.color {
+                    None => None,
+                    Some(c) => Some(MeshColorInstance::new(
+                        device,
+                        color_bind_group_layout,
+                        MeshColor::new(c),
+                    )),
+                },
                 on_click: b.on_click.clone(),
                 selected: false,
             }
