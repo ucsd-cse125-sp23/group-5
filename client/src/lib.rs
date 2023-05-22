@@ -1118,14 +1118,14 @@ impl State {
                     let time = 2.;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::RainGenerator::new(
-                        p.position + Vec3::new(0., 10.,0.),
+                        p.position + Vec3::new(0., 20.,0.),
                         (20.0, 20.0, 20.0),
                         p.direction,
                         3.0,
                         0.3,
-                        75.0,
+                        20.0,
                         PI,
-                        0.5,
+                        0.0,
                         false,
                     );
                     // System
@@ -1135,7 +1135,7 @@ impl State {
                         2000.0,
                         p.color,
                         atk_gen,
-                        (1, 2),
+                        (11, 12),
                         &self.device,
                         &mut self.rng,
                     );
