@@ -1,7 +1,7 @@
 use common::configs::model_config::ModelIndex;
+use wgpu::util::DeviceExt;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
-use wgpu::util::DeviceExt;
 
 use crate::mesh_color::MeshColor;
 use nalgebra_glm as glm;
@@ -15,12 +15,14 @@ use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
 
 use crate::inputs::Input;
-use crate::other_players::OtherPlayer;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
+use crate::other_players::OtherPlayer;
 
 use common::core::states::GameState;
 
+
+use self::object_transitions::Transition;
 use self::objects::Screen;
 
 pub mod display_helper;
@@ -28,14 +30,17 @@ pub mod location_helper;
 pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
+pub mod object_transitions;
 
 // pub const TEX_CONFIG_PATH: &str = "tex.json";
 // pub const DISPLAY_CONFIG_PATH: &str = "display.json";
+
 
 pub const LOBBY_STARTING_MODEL: &str = "cube";
 pub const LOBBY_STARTING_TYPE: &str = "leaf";
 pub const LOBBY_STARTING_TYPE_BTN_ID: &str = "cust_leaf";
 pub const LOBBY_STARTING_TYPE_DEF_TEXTURE: &str = "btn:leaf";
+
 
 #[derive(Debug)]
 pub struct CustomizationChoices {
@@ -49,12 +54,12 @@ pub struct CustomizationChoices {
 }
 
 #[derive(Debug)]
-pub struct FinalChoices {
+pub struct FinalChoices{
     pub color: HashMap<String, MeshColor>,
     pub model: ModelIndex,
 }
 
-impl FinalChoices {
+impl FinalChoices{
     fn new(choices: &CustomizationChoices) -> Self {
         Self {
             color: choices.color.clone(),
@@ -63,6 +68,7 @@ impl FinalChoices {
     }
 }
 
+
 impl CustomizationChoices {
     fn default() -> Self {
         // TODO: fix later, hard-coded with constants for now
@@ -70,10 +76,7 @@ impl CustomizationChoices {
             color: HashMap::new(),
             current_model: LOBBY_STARTING_MODEL.to_owned(),
             current_type_choice: LOBBY_STARTING_TYPE.to_owned(),
-            prev_type_selection: (
-                LOBBY_STARTING_TYPE_BTN_ID.to_owned(),
-                LOBBY_STARTING_TYPE_DEF_TEXTURE.to_owned(),
-            ),
+            prev_type_selection: (LOBBY_STARTING_TYPE_BTN_ID.to_owned(), LOBBY_STARTING_TYPE_DEF_TEXTURE.to_owned()),
             prev_color_selection: (String::new(), String::new()),
             cur_leaf_color: String::new(),
             cur_body_color: String::new(),
@@ -89,6 +92,7 @@ pub struct Display {
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
+    pub transition_map: HashMap<String, Transition>,
     pub light_state: lights::LightState,
     // Grandfathered in, we don't really use lights
     pub scene_pipeline: wgpu::RenderPipeline,
@@ -123,13 +127,7 @@ impl Display {
         game_state: Arc<Mutex<GameState>>,
     ) -> Self {
         let groups = create_display_group(config);
-        let screen_map = create_screen_map(
-            config,
-            device,
-            screen_width,
-            screen_height,
-            color_bind_group_layout,
-        );
+        let screen_map = create_screen_map(config, device, screen_width, screen_height, color_bind_group_layout);
         Self {
             groups,
             current: config.default_display.clone(),
@@ -137,6 +135,7 @@ impl Display {
             texture_map,
             screen_map,
             scene_map,
+            transition_map: HashMap::new(),
             light_state,
             scene_pipeline,
             ui_pipeline,
@@ -151,7 +150,7 @@ impl Display {
     }
 
     /// Takes care of any cleanup switching displays might need
-    pub fn change_to(&mut self, new: String) {
+    pub fn change_to(&mut self, new: String){
         self.particles.systems.clear();
         self.current = new;
     }
@@ -171,7 +170,7 @@ impl Display {
         animation_controller: &mut crate::animation::AnimationController,
         color_bind_group_layout: &wgpu::BindGroupLayout,
         _output: &wgpu::SurfaceTexture,
-        _client_id: u32,
+        client_id: u32,
     ) {
         // inability to find the scene would be a major bug
         // panicking is fine
@@ -302,7 +301,7 @@ impl Display {
 
                 for obj in instanced_objs.iter() {
                     render_pass.draw_model_instanced(
-                        obj,
+                        &obj,
                         0..obj.num_instances as u32,
                         &camera_state.camera_bind_group,
                     );
@@ -323,7 +322,7 @@ impl Display {
             match &display_group.screen {
                 None => {}
                 Some(screen_id) => {
-                    let screen = self.screen_map.get(screen_id).unwrap();
+                    let screen = self.screen_map.get_mut(screen_id).unwrap();
                     render_pass.set_pipeline(&self.ui_pipeline);
                     render_pass
                         .set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
@@ -331,39 +330,58 @@ impl Display {
                     if let Some(bkgd) = &screen.background {
                         render_pass.draw_ui_instanced(
                             self.texture_map.get(&bkgd.texture).unwrap(),
+                            self.texture_map.get(&bkgd.mask_texture).unwrap(),
                             &bkgd.vbuf,
                             &self.default_inst_buf,
                             0..1,
-                            match &bkgd.color {
-                                None => &screen.default_color.color_bind_group,
+                            match &bkgd.color { 
+                                None =>&screen.default_color.color_bind_group,
                                 Some(c) => &c.color_bind_group,
-                            },
+                            }
                         );
                     };
-                    for button in &screen.buttons {
-                        let texture = match button.is_hover(mouse) {
-                            true => &button.hover_texture,
-                            false => &button.default_texture,
+
+                    for icon in &mut screen.icons {
+                        match self.transition_map.get(&icon.id) {
+                            None => {},
+                            Some(x) => x.apply(icon, queue)
                         };
                         render_pass.draw_ui_instanced(
-                            self.texture_map.get(texture).unwrap(),
-                            &button.vbuf,
-                            &self.default_inst_buf,
-                            0..1,
-                            match &button.color {
-                                None => &screen.default_color.color_bind_group,
-                                Some(c) => &c.color_bind_group,
-                            },
-                        );
-                    }
-
-                    for icon in &screen.icons {
-                        render_pass.draw_ui_instanced(
                             self.texture_map.get(&icon.texture).unwrap(),
+                            self.texture_map.get(&icon.mask_texture).unwrap(),
                             &icon.vbuf,
                             &icon.inst_buf,
                             icon.inst_range.clone(),
                             &screen.default_color.color_bind_group,
+                        );
+                    }
+                    
+                    for button in &screen.buttons {
+                        let mut texture = &button.default_texture;
+                        texture = match button.is_hover(mouse) {
+                            true => &button.hover_texture,
+                            false => texture,
+                        };
+                        texture = match button.selected_texture.as_ref(){
+                            None => texture,
+                            Some(tex) => {
+                                match button.selected{
+                                    true => tex,
+                                    false => texture,
+                                }
+                            }
+                        };
+
+                        render_pass.draw_ui_instanced(
+                            self.texture_map.get(texture).unwrap(),
+                            self.texture_map.get(&button.mask_texture).unwrap(),
+                            &button.vbuf,
+                            &self.default_inst_buf,
+                            0..1,
+                            match &button.color { 
+                                None =>&screen.default_color.color_bind_group,
+                                Some(c) => &c.color_bind_group,
+                            }
                         );
                     }
                 }
@@ -385,13 +403,13 @@ impl Display {
         for button in &screen.buttons {
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
-                color = button.color.as_ref().map(|c| c.color);
+                color = match button.color.as_ref() {None => None, Some(c) => Some(c.color)};
                 button_id = button.id.clone();
             }
         }
-        match to_call {
-            None => {}
-            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id),
+        match to_call{
+            None => {},
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id)
         };
     }
 }
@@ -400,6 +418,7 @@ pub trait DrawGUI<'a> {
     fn draw_ui_instanced(
         &mut self,
         tex_bind_group: &'a wgpu::BindGroup,
+        mask_bind_group: &'a wgpu::BindGroup,
         vbuf: &'a wgpu::Buffer,
         inst_buf: &'a wgpu::Buffer,
         instances: std::ops::Range<u32>,
@@ -412,17 +431,19 @@ where
     'b: 'a,
 {
     fn draw_ui_instanced(
-        &mut self,
-        tex_bind_group: &'a wgpu::BindGroup,
-        vbuf: &'a wgpu::Buffer,
-        inst_buf: &'a wgpu::Buffer,
-        instances: std::ops::Range<u32>,
-        color_bind_group: &'a wgpu::BindGroup,
-    ) {
+            &mut self,
+            tex_bind_group: &'a wgpu::BindGroup,
+            mask_bind_group: &'a wgpu::BindGroup,
+            vbuf: &'a wgpu::Buffer,
+            inst_buf: &'a wgpu::Buffer,
+            instances: std::ops::Range<u32>,
+            color_bind_group: &'a wgpu::BindGroup,
+        ) {
         self.set_vertex_buffer(0, vbuf.slice(..));
         self.set_vertex_buffer(1, inst_buf.slice(..));
         self.set_bind_group(0, tex_bind_group, &[]);
         self.set_bind_group(1, color_bind_group, &[]);
+        self.set_bind_group(2, mask_bind_group, &[]);
         self.draw_indexed(0..6, 0, instances);
     }
 }

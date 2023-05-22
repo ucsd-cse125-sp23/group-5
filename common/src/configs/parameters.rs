@@ -4,6 +4,10 @@ use phf::phf_map;
 pub const SCORE_LOWER_X: f32 = -24.5 / 9.0 * 0.14;
 pub const SCORE_UPPER_X: f32 = 21.5 / 9.0 * 0.14;
 
+// Default camera parameters for lobby 
+pub const DEFAULT_PLAYER_POS: (f32, f32, f32) = (0.0, 0.0, 0.0);
+pub const DEFAULT_CAMERA_POS: (f32, f32, f32) = (-2.0, 2.0, 0.0);
+pub const DEFAULT_CAMERA_TARGET: (f32, f32, f32) = (0.0, 0.0, 0.0);
 // parameter to tune
 
 // movement parameter

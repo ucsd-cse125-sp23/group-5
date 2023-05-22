@@ -1,7 +1,11 @@
+use common::configs::model_config::ModelIndex;
+use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
+use mesh_color::MeshColor;
 use glm::vec3;
 use other_players::OtherPlayer;
 
 use std::collections::{HashMap, HashSet};
+use std::default;
 use std::sync::{mpsc, MutexGuard};
 
 use std::{
@@ -11,6 +15,7 @@ use std::{
 
 use common::configs::*;
 use common::core::powerup_system::StatusEffect;
+use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
 
@@ -19,9 +24,9 @@ mod model;
 mod camera;
 mod instance;
 mod lights;
-mod other_players;
 mod particles;
 mod player;
+mod other_players;
 mod resources;
 mod scene;
 mod screen;
@@ -40,7 +45,9 @@ use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
 
-use common::configs;
+use common::configs::model_config::ConfigModels;
+use common::configs::scene_config::ConfigSceneGraph;
+use common::configs as configs;
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::{GameState, ParticleQueue};
@@ -250,20 +257,22 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        let color_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("color_bind_group_layout"),
-            });
+            let color_bind_group_layout =
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        }
+                    ],
+                    label: Some("color_bind_group_layout"),
+                });
 
         let texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -286,6 +295,29 @@ impl State {
                     },
                 ],
                 label: Some("2d_texture_bind_group_layout"),
+            });
+        
+            let mask_texture_bind_group_layout_2d =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("2d_mask_texture_bind_group_layout"),
             });
 
         //Render pipeline
@@ -323,13 +355,13 @@ impl State {
         scene.objects = models;
 
         // placeholder position, will get overriden by server
-        let player = player::Player::new(vec3(0.0, 0.0, 0.0));
+        let player = player::Player::new(vec3(DEFAULT_PLAYER_POS.0, DEFAULT_PLAYER_POS.1, DEFAULT_PLAYER_POS.2));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
         let camera_state = camera::CameraState::new(
             &device,
-            player.position + vec3(-2.0, 2.0, 0.0),
-            player.position,
+            glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2),
+            glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2),
             vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
@@ -368,7 +400,11 @@ impl State {
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout_2d, &color_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout_2d, 
+                    &color_bind_group_layout,
+                    &mask_texture_bind_group_layout_2d,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -486,10 +522,9 @@ impl State {
         let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let rng = rand::thread_rng();
-        let particle_tex =
-            texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
-                .await
-                .unwrap();
+        let particle_tex = texture::Texture::from_images(&config_instance.texture.particles, &device, &queue)
+            .await
+            .unwrap();
         let particle_renderer = particles::ParticleDrawer::new(
             &device,
             &config,
@@ -507,7 +542,7 @@ impl State {
                 // TODO: skipping animated models for now for lobby scene
                 continue;
             } else {
-                let model: Box<dyn Model> = Box::new(
+                let model: Box<dyn Model> =  Box::new(
                     StaticModel::load(&model_config.path, model_loading_resources)
                         .await
                         .unwrap(),
@@ -515,9 +550,9 @@ impl State {
                 models.insert(model_config.name, model);
             }
         }
-
+        
         let lobby_scene_config = config_instance.lobby_scene.clone();
-
+        
         let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
         lobby_scene.objects = models;
         lobby_scene.draw_scene_dfs();
@@ -528,6 +563,7 @@ impl State {
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
+        
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -575,33 +611,36 @@ impl State {
             sender,
             game_state,
         );
-
-        let _other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| OtherPlayer {
-                id: ind,
-                visible: false,
-                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                score: 0.0,
-            })
-            .collect();
-
-        let _other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| OtherPlayer {
-                id: ind,
-                visible: false,
-                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                score: 0.0,
-            })
-            .collect();
+        
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    visible: false,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
 
         let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| OtherPlayer {
-                id: ind,
-                visible: false,
-                location: glm::vec4(0.0, 0.0, 0.0, 0.0),
-                score: 0.0,
-            })
-            .collect();
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    visible: false,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
+
+        let other_players: Vec<OtherPlayer> = (1..5)
+            .map(|ind| 
+                OtherPlayer{
+                    id: ind,
+                    visible: false,
+                    location: glm::vec4(0.0, 0.0, 0.0, 0.0),
+                    score: 0.0,
+                }
+            ).collect();
 
         Self {
             window,
@@ -692,7 +731,26 @@ impl State {
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
+        // Only update if we're in game/lobby
+        if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
+            return 
+        }
+
         let game_state_clone = game_state.lock().unwrap().clone();
+
+        // check if the game has ended and set corresponding end screen
+        if game_state_clone.life_cycle_state == Ended {
+            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
+                self.display.current = "display:victory".to_owned();
+            } else {
+                self.display.current = "display:defeat".to_owned(); 
+            }
+
+            // Reset camera and player for lobby 
+            self.camera_state.camera.position = glm::vec3(DEFAULT_CAMERA_POS.0, DEFAULT_CAMERA_POS.1, DEFAULT_CAMERA_POS.2);
+            self.camera_state.camera.target = glm::vec3(DEFAULT_CAMERA_TARGET.0, DEFAULT_CAMERA_TARGET.1, DEFAULT_CAMERA_TARGET.2);
+            return
+        }
 
         // game state to scene graph conversion and update
         {
@@ -719,136 +777,76 @@ impl State {
                     dt,
                     self.client_id,
                 );
-
+            
             other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
-
+            
             // update player scores
-            // PLACEHOLDER FOR NOW
             {
-                let screen_id = self
-                    .display
-                    .groups
-                    .get(&self.display.game_display)
-                    .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
+                let screen_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .screen
+                .as_ref()
+                .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                for i in 1..5 {
-                    let ind = *screen
-                        .icon_id_map
-                        .get(&format!("icon:score_p{}", i))
-                        .unwrap();
-                    let score: f32 = self.other_players[i as usize - 1].score;
-                    let mut location = screen.icons[ind].location;
-                    location.horz_disp = (
-                        0.0,
-                        parameters::SCORE_LOWER_X
-                            + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X),
-                    );
+                for i in 1..5{
+                    let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
+                    let score : f32 = self.other_players[i as usize - 1].score;
+                    let mut location = screen.icons[ind].location.clone();
+                    location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
                     screen.icons[ind].relocate(
                         location,
                         self.config.width,
                         self.config.height,
-                        &self.queue,
+                        &self.queue
                     );
                 }
             }
 
             // update player number of charges
             {
-                let screen_id = self
-                    .display
-                    .groups
-                    .get(&self.display.game_display)
-                    .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
+                let screen_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .screen
+                .as_ref()
+                .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = *screen.icon_id_map.get("icon:charge").unwrap();
+                let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
                 screen.icons[ind].inst_range = 0..self.player.wind_charge;
             }
 
             // update cooldowns
             // hard coded for now... TODO: separate function
             // is it necessary? would need to pass around lots of references
-            // might be better to create dedicated function in screen/command_handlers
+            // might be better to create dedicated function in screen/mod.rs
             {
-                let screen_id = self
-                    .display
-                    .groups
-                    .get(&self.display.game_display)
-                    .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
+                let screen_id = self.display.groups
+                .get(&self.display.game_display)
+                .unwrap()
+                .screen
+                .as_ref()
+                .unwrap();
 
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = *screen.icon_id_map.get("icon:atk_forward_overlay").unwrap();
-                let mut tint;
+                // TODO: Magic constants here seem a little unavoidable?
+                let atk_load = String::from("icon:atk_forward_overlay");
+                let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
-                        / common::configs::parameters::ATTACK_COOLDOWN;
-                    // use smmoothstep?
-                    screen.icons[ind].tint = glm::vec4(
-                        1.0,
-                        1.0,
-                        1.0,
-                        3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0),
-                    );
-                    tint = glm::vec4(
-                        1.0,
-                        1.0,
-                        1.0,
-                        3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0),
-                    );
+                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
+                    self.display.transition_map.insert(atk_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
-                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    self.display.transition_map.remove(&atk_load);
                 }
-                for v in &mut screen.icons[ind].vertices {
-                    v.color = tint.into();
-                }
-                self.queue.write_buffer(
-                    &screen.icons[ind].vbuf,
-                    0,
-                    bytemuck::cast_slice(&screen.icons[ind].vertices),
-                );
-
-                let ind = *screen.icon_id_map.get("icon:atk_wave_overlay").unwrap();
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
-                        / common::configs::parameters::AREA_ATTACK_COOLDOWN;
-                    // use smmoothstep?
-                    screen.icons[ind].tint = glm::vec4(
-                        1.0,
-                        1.0,
-                        1.0,
-                        3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0),
-                    );
-                    tint = glm::vec4(
-                        1.0,
-                        1.0,
-                        1.0,
-                        3.0 * cd_left.powf(2.0) - 2.0 * cd_left.powf(3.0),
-                    );
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
+                    self.display.transition_map.insert(atk_area_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
-                    screen.icons[ind].tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
-                    tint = glm::vec4(1.0, 1.0, 1.0, 0.0);
+                    self.display.transition_map.remove(&atk_area_load);
                 }
-                for v in &mut screen.icons[ind].vertices {
-                    v.color = tint.into();
-                }
-                self.queue.write_buffer(
-                    &screen.icons[ind].vbuf,
-                    0,
-                    bytemuck::cast_slice(&screen.icons[ind].vertices),
-                );
             }
 
             self.display
@@ -865,10 +863,10 @@ impl State {
                 .get_player_positions();
 
             // ASSUME: Ids should always be 1-4
-            for p in &mut self.other_players {
+            for p in &mut self.other_players{
                 p.visible = false;
             }
-            for (i, loc) in player_loc {
+            for (i, loc) in player_loc{
                 self.other_players[i as usize - 1].location = loc;
                 self.other_players[i as usize - 1].visible = true;
             }
@@ -940,7 +938,7 @@ impl State {
                     Text::new("Respawning in ")
                         .with_color([1.0, 1.0, 0.0, 1.0])
                         .with_scale(60.0),
-                    Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
                         .with_color([1.0, 1.0, 1.0, 1.0])
                         .with_scale(60.0),
                     Text::new(" seconds")
@@ -966,11 +964,11 @@ impl State {
         self.glyph_brush.queue(Section {
             screen_position: (600.0, 60.0),
             bounds: (size.width as f32, size.height as f32),
-            text: vec![
-                Text::new(format!("PowerUp Held: {:?}\n", self.player.power_up).as_str())
-                    .with_color([0.0, 0.0, 0.0, 1.0])
-                    .with_scale(40.0),
-            ],
+            text: vec![Text::new(
+                format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+            )
+            .with_color([0.0, 0.0, 0.0, 1.0])
+            .with_scale(40.0)],
             ..Section::default()
         });
 
@@ -1033,7 +1031,7 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-                }
+                },
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
                     let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;

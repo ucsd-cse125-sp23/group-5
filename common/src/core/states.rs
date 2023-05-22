@@ -30,6 +30,7 @@ pub struct GameState {
     pub active_power_ups:
         HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
     pub life_cycle_state: GameLifeCycleState,
+    pub game_winner: Option<u32>,
 }
 
 impl GameState {
@@ -69,6 +70,7 @@ pub struct PlayerState {
 pub enum GameLifeCycleState {
     #[default]
     Waiting,
+    Ended,
     Running(u64),
 }
 
@@ -373,6 +375,7 @@ mod tests {
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
+            game_winner: None,
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -386,6 +389,7 @@ mod tests {
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
+            game_winner: None,
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();
