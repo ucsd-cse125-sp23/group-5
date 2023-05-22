@@ -161,12 +161,12 @@ impl Executor {
                 )),
                 Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
                 Command::Move(dir) => {
-                    Box::new(MoveCommandHandler::new(client_command.client_id, dir))
+                    Box::new(MoveCommandHandler::new(client_command.client_id, dir, physics_config))
                 }
                 Command::UpdateCamera { forward } => Box::new(
                     UpdateCameraFacingCommandHandler::new(client_command.client_id, forward),
                 ),
-                Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
+                Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id, physics_config)),
                 Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id, physics_config)),
                 Command::AreaAttack => {
                     Box::new(AreaAttackCommandHandler::new(client_command.client_id, physics_config))
