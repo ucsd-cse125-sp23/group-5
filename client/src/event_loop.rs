@@ -10,9 +10,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use nalgebra::UnitQuaternion;
 use nalgebra_glm as glm;
-use nalgebra_glm::Vec3;
 
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
@@ -93,7 +91,7 @@ impl PlayerLoop {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::KeyboardInput { input, .. } => {
-                                // TODO: REMOVE LATER, FOR TESTING TO FIND CORRECT ORIENTATION OF CHARACTERS
+                                // FOR TESTING TO FIND CORRECT ORIENTATION OF CHARACTERS
                                 if state.display.current == "display:lobby" {
                                     let scene = state.display.scene_map.get_mut("scene:lobby").unwrap();
                                     let mut node: &mut crate::scene::Node = &mut crate::scene::Node::new("random".to_string());

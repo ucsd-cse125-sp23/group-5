@@ -331,7 +331,7 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
 
-        // load all static models once and clone Arcs for all scenes
+        // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
             if model_config.animated() {
                 let model = 
@@ -983,6 +983,10 @@ impl State {
                 .with_scale(40.0)],
                 ..Section::default()
             });
+        }
+        // temporary fix
+        else if self.display.current == "display:game" {
+            self.animation_controller.stop_animation("object:player_model".to_string());
         }
 
         if self.display.current == self.display.game_display.clone() {
