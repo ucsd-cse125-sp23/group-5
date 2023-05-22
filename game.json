@@ -16,5 +16,24 @@
   "winning_threshold": 20.0,
   "decay_rate": 0.3333,
   "refill_radius": 2.0,
-  "refill_rate_limit": 0.5
+  "refill_rate_limit": 0.5,
+  "powerup_config": {
+    "power_up_locations": {
+      "1": [5.0, -5.0, -5.0],
+      "2": [-5.0, -5.0, 5.0],
+      "3": [-5.0, -5.0, -5.0],
+      "4": [5.0, -5.0, 5.0]
+    },
+    "power_up_radius": 1.0,
+    "power_up_respawn_cooldown": 15.0,
+    "power_up_buff_duration": 10.0,
+    "power_up_debuff_duration": 3.0,
+    "power_up_cooldown": 5.0,
+    "wind_enhancement_scalar": 1.5,
+    "dash_impulse": 100.0,
+    "flash_distance_scalar": 5.0,
+    "invincible_effective_distance": 2.5,
+    "invincible_effective_impulse": 20.0,
+    "special_movement_cooldown": 0.5
+  }
 }

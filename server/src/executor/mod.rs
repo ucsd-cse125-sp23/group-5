@@ -236,7 +236,7 @@ impl Executor {
         game_state.update_player_status_effect(delta_time);
 
         // update the powerup for each server location
-        game_state.update_powerup_locations(delta_time);
+        game_state.update_powerup_locations(delta_time, game_config.clone());
 
         if let Some(id) = game_state.update_player_on_flag_times(delta_time, game_config.clone()) {
             println!("Winner is {}, game finished!", id);
