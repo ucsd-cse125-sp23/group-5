@@ -691,8 +691,9 @@ impl State {
     ) {
         let game_state_clone = game_state.lock().unwrap().clone();
 
+        // check whether all players are ready, if so launch the game
         if game_state_clone.life_cycle_state == Running {
-            game_start(&mut self.display);
+            self.display.current = self.display.game_display.clone();
         }
 
         // game state to scene graph conversion and update

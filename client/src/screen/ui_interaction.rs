@@ -48,10 +48,7 @@ fn be_ready(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Strin
             warn!("Error sending command: {:?}", e);
         }
     }
-}
-
-pub fn game_start(display: &mut screen::Display) {
-    display.change_to(display.game_display.clone());
+    //display.change_to(display.game_display.clone());
 }
 
 fn customize_body(display: &mut screen::Display, _: Option<MeshColor>, button_id: Option<String>) {
