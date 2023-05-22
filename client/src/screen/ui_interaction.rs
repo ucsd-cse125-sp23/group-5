@@ -5,10 +5,8 @@ use common::configs::display_config::ScreenLocation;
 use log::warn;
 use phf::phf_map;
 use crate::mesh_color::MeshColor;
-use crate::screen::FinalChoices;
+use crate::screen::CurrentSelections;
 use crate::screen::Screen;
-
-use super::location_helper::get_coords;
 use super::objects::{Button, Icon};
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<MeshColor>, Option<String>)> = phf_map!{
@@ -22,12 +20,17 @@ pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<Me
 
 // Place click events here ----------------------
 fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
-    if display.customization_choices.0.color.len() >= 2 && !display.customization_choices.1 {
-        let curr_group = display.groups.get_mut(&display.current).unwrap();
-        let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
-        curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].default_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
-        display.customization_choices.1 = true;
-        let final_choices = display.customization_choices.0.clone();
+    // do nothing if no colors were selected
+    let curr_group = display.groups.get_mut(&display.current).unwrap();
+    let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
+    let sel_2 = selected_2colors(&display.customization_choices.final_choices.color, curr_screen);
+
+    if sel_2 && !display.customization_choices.ready {
+        let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
+        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
+        display.customization_choices.ready = true;
+
+        let final_choices = display.customization_choices.final_choices.clone();
         println!("{:#?}", final_choices);
         // TODO: sened final customization choices to server
 
@@ -50,132 +53,139 @@ fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<St
 fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
     display.change_to("display:lobby".to_owned());
 
-    // reset everything in the lobby
-    display.customization_choices = (FinalChoices::default(), false);
-
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
 
+    // reset selectors
     let curr_leaf_type: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
     curr_leaf_type.location = ScreenLocation{ vert_disp: (0.0,0.555), horz_disp: (0.0, -1.333) };
-    let curr_leaf_color: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
-    curr_leaf_color.location = ScreenLocation{ vert_disp: (1000.0, 1000.0), horz_disp: (1000.0, 1000.0) };
-    let curr_wood_color: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("wood_color_selector").unwrap()];
-    curr_wood_color.location = ScreenLocation{ vert_disp: (1000.0, 1000.0), horz_disp: (1000.0, 1000.0) };
-    curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].default_tint = nalgebra_glm::Vec4::new(0.0,0.0,0.0,1.0);
-    curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].hover_tint = nalgebra_glm::Vec4::new(0.0,0.0,0.0,1.0);
+
+    for i in vec!["leaf_color_selector", "wood_color_selector"]{
+        let ind = *curr_screen.icon_id_map.get(i).unwrap();
+        let icon = &mut curr_screen.icons[ind];
+        icon.location = ScreenLocation{ vert_disp: (1000.0, 1000.0), horz_disp: (1000.0, 1000.0) };
+    }
+
+    // reset go button
+    let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
+    let def_col = nalgebra_glm::Vec4::new(0.0,0.0,0.0,1.0);
+    curr_screen.buttons[ind].default_tint = def_col;
+    curr_screen.buttons[ind].hover_tint = def_col;
     
-    match display.scene_map.get_mut("scene:lobby"){
-        None => {},
-        Some(scene) => {
-            match scene.scene_graph.get_mut("object:player_model") {
-                None => {},
-                Some(node) => {
-                    node.model = Some("korok".to_string());
-                    node.colors = Some(std::collections::HashMap::from([("korok".to_string(), MeshColor::new([0.5,0.5,0.5]))]));
-                }
-            }
-            scene.draw_scene_dfs();
+    // reset choices
+    unselect_button(&display.customization_choices.curr_leaf_type, curr_screen);
+    unselect_button(&display.customization_choices.curr_leaf_color, curr_screen);
+    unselect_button(&display.customization_choices.curr_wood_color, curr_screen);
+
+    let ind = *curr_screen.btn_id_map.get("korok").unwrap();
+    curr_screen.buttons[ind].selected = true;
+    display.customization_choices = CurrentSelections::default();
+
+    // reset model
+    if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
+        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
+            let default_color = MeshColor::new([0.5,0.5,0.5]);
+            display.customization_choices.final_choices.color.insert("korok".to_string(), default_color);
+            node.model = Some("korok".to_string());
+            node.colors = Some(std::collections::HashMap::from([("korok".to_string(), default_color)]));
         }
+        scene.draw_scene_dfs();
     }
 }
 
 fn change_leaf_type(display: &mut screen::Display, _: Option<MeshColor>, button_id: Option<String>){
-    if display.customization_choices.1 { return }
+    if display.customization_choices.ready { return }
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
 
-    let curr_leaf_type: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
-    let curr_button: &Button = &curr_screen.buttons[*curr_screen.btn_id_map.get(&button_id.clone().unwrap()).unwrap()];
+    unselect_button(&display.customization_choices.curr_leaf_type, curr_screen);
+    let curr_button = &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&button_id.clone().unwrap()).unwrap()];
+    display.customization_choices.curr_leaf_type = button_id.clone().unwrap();
+    curr_button.selected = true;
 
-    match curr_group.scene.clone() {
-        None => {},
-        Some(scene_id) => {
-            match display.scene_map.get_mut(&scene_id){
-                None => {},
-                Some(scene) => {
-                    match scene.scene_graph.get_mut("object:player_model") {
-                        None => {},
-                        Some(node) => {
-                            node.model = Some(button_id.clone().unwrap());
-                            curr_leaf_type.location = curr_button.location.clone();
-                        }
-                    }
-                    scene.draw_scene_dfs();
-                }
-            }
+    let curr_leaf_type = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
+
+    if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
+        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
+            node.model = Some(button_id.clone().unwrap());
+            curr_leaf_type.location = curr_button.location.clone();
         }
+        scene.draw_scene_dfs();
     }
 }
 
 fn change_leaf_color(display: &mut screen::Display, color: Option<MeshColor>, button_id: Option<String>){
-    if display.customization_choices.1 { return }
+    if display.customization_choices.ready { return }
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
 
-    let curr_leaf_color: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
-    let curr_button: &Button = &curr_screen.buttons[*curr_screen.btn_id_map.get(&button_id.clone().unwrap()).unwrap()];
+    unselect_button(&display.customization_choices.curr_leaf_color, curr_screen);
+    let curr_button = &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&button_id.clone().unwrap()).unwrap()];
+    display.customization_choices.curr_leaf_color = button_id.unwrap();
+    curr_button.selected = true;
 
+    let curr_leaf_color = &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
+    
     let actual_color = match color {None => MeshColor::default(), Some(c) => c};
 
-    match curr_group.scene.clone() {
-        None => {},
-        Some(scene_id) => {
-            match display.scene_map.get_mut(&scene_id){
-                None => {},
-                Some(scene) => {
-                    match scene.scene_graph.get_mut("object:player_model") {
-                        None => {},
-                        Some(node) => {
-                            display.customization_choices.0.color.insert("eyes_eyes_mesh".to_owned(), actual_color);
-                            display.customization_choices.0.color.insert("korok".to_owned(), actual_color);
-                            node.colors = Some(display.customization_choices.0.color.clone());
-                            curr_leaf_color.location = curr_button.location;
-                        }
-                    }
-                    scene.draw_scene_dfs();
-                }
-            }
+    if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
+        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
+            display.customization_choices.final_choices.color.insert("eyes_eyes_mesh".to_owned(), actual_color);
+            display.customization_choices.final_choices.color.insert("korok".to_owned(), actual_color);
+            node.colors = Some(display.customization_choices.final_choices.color.clone());
+            curr_leaf_color.location = curr_button.location;
         }
+        scene.draw_scene_dfs();
     }
-    if display.customization_choices.0.color.len() >= 2 {
-        curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].default_tint = nalgebra_glm::Vec4::new(1.0,1.0,1.0,1.0);
-        curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].hover_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
-    }
+
+    selected_2colors(&display.customization_choices.final_choices.color, curr_screen);
 }
 
 fn change_wood_color(display: &mut screen::Display, color: Option<MeshColor>, button_id: Option<String>){
-    if display.customization_choices.1 { return }
+    if display.customization_choices.ready { return }
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
 
-    let curr_wood_color: &mut Icon = &mut curr_screen.icons[*curr_screen.icon_id_map.get("wood_color_selector").unwrap()];
-    let curr_button: &Button = &curr_screen.buttons[*curr_screen.btn_id_map.get(&button_id.clone().unwrap()).unwrap()];
+    unselect_button(&display.customization_choices.curr_wood_color, curr_screen);
+    let curr_button= &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&button_id.clone().unwrap()).unwrap()];
+    display.customization_choices.curr_wood_color = button_id.clone().unwrap();
+    curr_button.selected = true;
 
-    let actual_color = match color {None => MeshColor::default(), Some(c) => c};
+    let curr_wood_color= &mut curr_screen.icons[*curr_screen.icon_id_map.get("wood_color_selector").unwrap()];
 
-    match curr_group.scene.clone() {
-        None => {},
-        Some(scene_id) => {
-            match display.scene_map.get_mut(&scene_id){
-                None => {},
-                Some(scene) => {
-                    match scene.scene_graph.get_mut("object:player_model") {
-                        None => {},
-                        Some(node) => {
-                            display.customization_choices.0.color.insert("leg0R_leg0R_mesh".to_owned(), actual_color);
-                            node.colors = Some(display.customization_choices.0.color.clone());
-                            curr_wood_color.location = curr_button.location;
-                        }
-                    }
-                    scene.draw_scene_dfs();
-                }
-            }
+    let actual_color = color.unwrap_or(MeshColor::default());
+
+    if let Some(scene) =  display.scene_map.get_mut(&curr_group.scene.clone().unwrap()){
+        if let Some(node) = scene.scene_graph.get_mut("object:player_model") {
+            display.customization_choices.final_choices.color.insert("leg0R_leg0R_mesh".to_owned(), actual_color);
+            node.colors = Some(display.customization_choices.final_choices.color.clone());
+            curr_wood_color.location = curr_button.location;
         }
+        scene.draw_scene_dfs();
     }
-    if display.customization_choices.0.color.len() >= 2 {
-        curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].default_tint = nalgebra_glm::Vec4::new(1.0,1.0,1.0,1.0);
-        curr_screen.buttons[*curr_screen.btn_id_map.get("start_game").unwrap()].hover_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
-    }
+
+    selected_2colors(&display.customization_choices.final_choices.color, curr_screen);
 }
 // end click events ----------------------
+
+fn selected_2colors(colors: &std::collections::HashMap<String, MeshColor>, curr_screen: &mut Screen) -> bool{
+    let mut len = 0;
+    let default_color = [0.5,0.5,0.5];
+    for (_,v) in colors {
+        if  v.rgb_color != default_color {
+            len += 1;
+        }
+    }
+    if  len >= 2 {
+        let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
+        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(1.0,1.0,1.0,1.0);
+        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
+        return true;
+    }
+    false
+}
+
+fn unselect_button(btn: &str, curr_screen: &mut Screen){
+    let ind = curr_screen.btn_id_map.get(btn);
+    if let Some(i) = ind {curr_screen.buttons[*i].selected = false;}
+}

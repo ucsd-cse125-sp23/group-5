@@ -39,6 +39,27 @@ pub mod object_transitions;
 pub const LOBBY_STARTING_MODEL: &str = "korok";
 
 #[derive(Debug, Clone)]
+pub struct CurrentSelections {
+    pub final_choices: FinalChoices,
+    pub ready: bool,
+    pub curr_leaf_type: String,
+    pub curr_leaf_color: String,
+    pub curr_wood_color: String,
+}
+
+impl CurrentSelections {
+    fn default() -> Self {
+        Self {
+            final_choices: FinalChoices::default(),
+            ready: false,
+            curr_leaf_type: "korok".to_string(),
+            curr_leaf_color: String::new(),
+            curr_wood_color: String::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct FinalChoices{
     pub color: HashMap<String, MeshColor>,
     pub model: ModelIndex,
@@ -70,7 +91,7 @@ pub struct Display {
     pub rect_ibuf: wgpu::Buffer,
     pub depth_texture: texture::Texture,
     pub default_inst_buf: wgpu::Buffer,
-    pub customization_choices: (FinalChoices, bool), // (choices, ready?) TODO: fix later, here for now until the code for sending these updates is finished
+    pub customization_choices: CurrentSelections, // TODO: fix later, here for now until the code for sending these updates is finished
     // for sending command
     pub sender: mpsc::Sender<Input>,
     pub game_state: Arc<Mutex<GameState>>,
@@ -111,7 +132,7 @@ impl Display {
             rect_ibuf,
             depth_texture,
             default_inst_buf,
-            customization_choices: (FinalChoices::default(), false),
+            customization_choices: CurrentSelections::default(),
             sender,
             game_state,
         }
@@ -307,7 +328,7 @@ impl Display {
 
                     let icons_on_top = vec!["leaf_type_selector", "leaf_color_selector", "wood_color_selector"];
                     let mut icons_top = Vec::new();
-                    
+
                     for icon in &mut screen.icons {
                         if icons_on_top.contains(&icon.id.as_str()){
                             icons_top.push(icon); continue;
@@ -333,7 +354,8 @@ impl Display {
                                     v.color = [button.hover_tint[0], button.hover_tint[1], button.hover_tint[2], button.hover_tint[3]];
                                 }
                                 queue.write_buffer(&button.vbuf, 0, bytemuck::cast_slice(&button.vertices));
-                                &button.hover_texture
+                                if button.selected { texture }
+                                else {&button.hover_texture }
                             }
                             false => {
                                 for v in &mut button.vertices {

@@ -970,7 +970,7 @@ impl State {
         }
 
         // TODO: ONLY DISPLAY ONCE THE PLAYER CLICKS "GO" BUTTON
-        if self.display.current == "display:lobby" && self.display.customization_choices.1 {
+        if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller.play_animation("attack".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {

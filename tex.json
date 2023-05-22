@@ -58,6 +58,10 @@
             "path": "option.png"
         },
         {
+            "name": "btn:option_hover",
+            "path": "option_hover.png"
+        },
+        {
             "name": "btn:go",
             "path": "go_btn.png"
         },
