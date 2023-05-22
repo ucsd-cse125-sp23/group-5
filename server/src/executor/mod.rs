@@ -219,6 +219,8 @@ impl Executor {
         let mut game_state = self.game_state.lock().unwrap();
         let physics_state = self.physics_state.borrow();
 
+        let game_config = self.config_instance.game.clone();
+
         // update player positions
         for (_id, player) in game_state.players.iter_mut() {
             let rigid_body = physics_state.get_entity_rigid_body(player.id).unwrap();
@@ -236,10 +238,10 @@ impl Executor {
         // update the powerup for each server location
         game_state.update_powerup_locations(delta_time);
 
-        if let Some(id) = game_state.update_player_on_flag_times(delta_time) {
+        if let Some(id) = game_state.update_player_on_flag_times(delta_time, game_config.clone()) {
             panic!("Winner is {}, game finished!", id)
         }
-        game_state.previous_tick_winner = game_state.has_single_winner();
+        game_state.previous_tick_winner = game_state.has_single_winner(game_config);
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
