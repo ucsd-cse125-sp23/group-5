@@ -1,4 +1,7 @@
-use crate::configs::parameters::{DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, POWER_UP_LOCATIONS, POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD};
+use crate::configs::parameters::{
+    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, POWER_UP_LOCATIONS, POWER_UP_RADIUS,
+    POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
+};
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;

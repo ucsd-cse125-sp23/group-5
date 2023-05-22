@@ -185,7 +185,10 @@ impl Executor {
                     client_command.client_id,
                     physics_config,
                 )),
-                Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id, game_config)),
+                Command::Refill => Box::new(RefillCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
                 Command::CastPowerUp => {
                     Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
                 }
