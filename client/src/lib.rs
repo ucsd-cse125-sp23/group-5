@@ -1129,7 +1129,6 @@ impl State {
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
                     let time = area_attack_cd / time_divider;
-                    println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
                         max_area_attack_dist / time,
@@ -1163,7 +1162,7 @@ impl State {
                         p.direction,
                         3.0,
                         0.3,
-                        20.0,
+                        25.0,
                         PI,
                         0.0,
                         false,
@@ -1172,7 +1171,7 @@ impl State {
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        2000.0,
+                        2500.0,
                         p.color,
                         atk_gen,
                         (11, 12),
