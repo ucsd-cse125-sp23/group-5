@@ -941,7 +941,6 @@ impl State {
 
         let size = &self.window.inner_size();
 
-        // TODO: maybe refactor later?
         // render respawn cooldown
         if self.player.on_cooldown.contains_key(&Command::Spawn) {
             let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
@@ -1016,20 +1015,22 @@ impl State {
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
         let physics_config = config_instance.physics.clone();
-
+        let particle_config = config_instance.particles.clone();
+        // attack consts
         let attack_cd = physics_config.attack_config.attack_cooldown;
         let max_attack_angle = physics_config.attack_config.max_attack_angle;
         let max_attack_dist = physics_config.attack_config.max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
         let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
+        // particle consts
+        let time_divider = particle_config.time_divider;
 
         for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
-                //TODO: move to config
                 // generator
                 events::ParticleType::ATTACK => {
-                    let time = attack_cd / 2.0;
+                    let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
@@ -1037,19 +1038,19 @@ impl State {
                         p.up,
                         max_attack_angle,
                         max_attack_dist / time,
-                        0.3,
+                        particle_config.attack_particle_config.linear_variance,
                         PI,
-                        0.5,
-                        75.0,
-                        10.0,
-                        7.0,
+                        particle_config.attack_particle_config.angular_variance,
+                        particle_config.attack_particle_config.size,
+                        particle_config.attack_particle_config.size_variance,
+                        particle_config.attack_particle_config.size_growth,
                         false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        2000.0,
+                        particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
                         (1, 4),
@@ -1060,24 +1061,24 @@ impl State {
                 }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
-                    let time = area_attack_cd / 2.0;
+                    let time = area_attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
                         max_area_attack_dist / time,
-                        0.3,
+                        particle_config.area_attack_particle_config.linear_variance,
                         PI,
-                        0.5,
-                        75.0,
-                        10.0,
-                        7.0,
+                        particle_config.area_attack_particle_config.angular_variance,
+                        particle_config.area_attack_particle_config.size,
+                        particle_config.area_attack_particle_config.size_variance,
+                        particle_config.area_attack_particle_config.size_growth,
                         false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        4000.0,
+                        particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
                         (1, 4),
