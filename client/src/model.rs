@@ -1,11 +1,11 @@
 use crate::instance::Instance;
+use common::core::mesh_color::{MeshColor, MeshColorInstance};
 use std::any::Any;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::ops::Range;
 use std::sync::Arc;
 use wgpu::Device;
-use common::core::mesh_color::{MeshColor, MeshColorInstance};
 
 use crate::instance;
 use crate::resources::{load_model, ModelLoadingResources};

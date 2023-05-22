@@ -30,6 +30,3 @@ pub struct ConfigAction {
     pub max_jump_count: u32,
     pub jump_impulse: f32,
 }
-
-
-

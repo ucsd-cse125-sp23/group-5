@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use crate::configs::model_config::ModelIndex;
 use crate::core::mesh_color::MeshColor;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub const LOBBY_STARTING_MODEL: &str = "cube";
 pub const LOBBY_STARTING_TYPE: &str = "leaf";

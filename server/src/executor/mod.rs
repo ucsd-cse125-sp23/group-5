@@ -118,7 +118,7 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let player_config = self.config_instance.player.clone();
+        let game_config = self.config_instance.game.clone();
         let physics_config = self.config_instance.physics.clone();
 
         #[cfg(not(feature = "debug-ready-sync"))]
@@ -130,7 +130,9 @@ impl Executor {
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
                 Command::UI(ServerSync::Choices(final_choices)) => {
-                    game_state.players_customization.insert(client_command.client_id, final_choices);
+                    game_state
+                        .players_customization
+                        .insert(client_command.client_id, final_choices);
                     // println!("{:#?}", game_state.players_customization);
                 }
                 Command::UI(ServerSync::Ready) => {
@@ -157,20 +159,29 @@ impl Executor {
             let handler: Box<dyn CommandHandler> = match client_command.command {
                 Command::Spawn => Box::new(SpawnCommandHandler::new(
                     client_command.client_id,
-                    player_config,
+                    game_config,
                 )),
                 Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
-                Command::Move(dir) => {
-                    Box::new(MoveCommandHandler::new(client_command.client_id, dir, physics_config))
-                }
+                Command::Move(dir) => Box::new(MoveCommandHandler::new(
+                    client_command.client_id,
+                    dir,
+                    physics_config,
+                )),
                 Command::UpdateCamera { forward } => Box::new(
                     UpdateCameraFacingCommandHandler::new(client_command.client_id, forward),
                 ),
-                Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id, physics_config)),
-                Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id, physics_config)),
-                Command::AreaAttack => {
-                    Box::new(AreaAttackCommandHandler::new(client_command.client_id, physics_config))
-                }
+                Command::Jump => Box::new(JumpCommandHandler::new(
+                    client_command.client_id,
+                    physics_config,
+                )),
+                Command::Attack => Box::new(AttackCommandHandler::new(
+                    client_command.client_id,
+                    physics_config,
+                )),
+                Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(
+                    client_command.client_id,
+                    physics_config,
+                )),
                 Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
                 Command::CastPowerUp => {
                     Box::new(CastPowerUpCommandHandler::new(client_command.client_id))

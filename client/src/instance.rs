@@ -1,7 +1,7 @@
 extern crate nalgebra_glm as glm;
-use wgpu::util::DeviceExt;
-use std::collections::HashMap;
 use common::core::mesh_color::MeshColor;
+use std::collections::HashMap;
+use wgpu::util::DeviceExt;
 
 pub type Transform = nalgebra_glm::TMat4<f32>;
 

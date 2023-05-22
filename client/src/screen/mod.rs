@@ -1,7 +1,7 @@
+use nalgebra_glm as glm;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
-use nalgebra_glm as glm;
 
 use common::configs::display_config::ConfigDisplay;
 use common::configs::parameters::POWER_UP_LOCATIONS;
@@ -27,7 +27,6 @@ pub mod location_helper;
 pub mod objects;
 pub mod texture_helper;
 pub mod ui_interaction;
-
 
 // Should only be one of these in the entire game
 pub struct Display {

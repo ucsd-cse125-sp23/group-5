@@ -57,7 +57,6 @@ impl PlayerLoop {
             .build(&event_loop)
             .unwrap();
 
-
         let mut state = State::new(
             window,
             self.client_id,
