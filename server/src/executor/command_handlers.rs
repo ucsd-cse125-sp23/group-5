@@ -4,6 +4,8 @@ use std::time::Duration;
 
 use common::core::action_states::ActionState;
 
+use common::configs::game_config::ConfigGame;
+use common::configs::ConfigurationManager;
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
 use nalgebra::{zero, Isometry3, Point, UnitQuaternion, Vector3};
@@ -14,16 +16,7 @@ use rapier3d::math::{AngVector, Isometry};
 use rapier3d::prelude as rapier;
 
 use common::configs::model_config::ConfigModels;
-use common::configs::parameters::{
-    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE,
-    ATTACKING_COOLDOWN, ATTACK_COEFF, ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE, DAMPING,
-    DASH_IMPULSE, FLASH_DISTANCE_SCALAR, GAIN, INVINCIBLE_EFFECTIVE_DISTANCE,
-    INVINCIBLE_EFFECTIVE_IMPULSE, JUMP_IMPULSE, MAX_AREA_ATTACK_DIST, MAX_ATTACK_ANGLE,
-    MAX_ATTACK_DIST, MAX_JUMP_COUNT, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
-    POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, REFILL_RADIUS, REFILL_RATE_LIMIT, SPAWN_COOLDOWN,
-    SPECIAL_MOVEMENT_COOLDOWN, STEP_SIZE, WALKING_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
-};
-use common::configs::player_config::ConfigPlayer;
+use common::configs::physics_config::ConfigPhysics;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
@@ -125,7 +118,7 @@ impl CommandHandler for StartupCommandHandler {
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
-    config_player: ConfigPlayer,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -136,7 +129,8 @@ impl CommandHandler for SpawnCommandHandler {
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // get spawn-locations with corresponding id
-        let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
+        let spawn_position = self.game_config.spawn_points[self.player_id as usize - 1];
+        let max_wind_charge = self.game_config.max_wind_charge;
 
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
@@ -149,7 +143,7 @@ impl CommandHandler for SpawnCommandHandler {
                 }
 
                 player.is_dead = false;
-                player.refill_wind_charge(Some(MAX_WIND_CHARGE));
+                player.refill_wind_charge(Some(max_wind_charge), max_wind_charge);
             }
         } else {
             let collider = rapier::ColliderBuilder::capsule_y(0.5, 0.25)
@@ -175,7 +169,7 @@ impl CommandHandler for SpawnCommandHandler {
                 PlayerState {
                     id: self.player_id,
                     is_dead: false,
-                    wind_charge: MAX_WIND_CHARGE,
+                    wind_charge: self.game_config.max_wind_charge,
                     on_flag_time: 0.0,
                     spawn_point: spawn_position,
                     power_up: None,
@@ -190,6 +184,7 @@ impl CommandHandler for SpawnCommandHandler {
 #[derive(Constructor)]
 pub struct DieCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for DieCommandHandler {
@@ -216,7 +211,7 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, SPAWN_COOLDOWN);
+        player_state.insert_cooldown(Command::Spawn, self.game_config.spawn_cooldown);
 
         Ok(())
     }
@@ -259,6 +254,7 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
 pub struct MoveCommandHandler {
     player_id: u32,
     direction: MoveDirection,
+    physics_config: ConfigPhysics,
 }
 
 impl CommandHandler for MoveCommandHandler {
@@ -310,12 +306,6 @@ impl CommandHandler for MoveCommandHandler {
 
         // apply the rotation to the direction vector
 
-        // rotate by just setting the rotation
-        // player_rigid_body.set_rotation(rotation, true);
-
-        // rotate by applying a torque impulse
-        // (does not guarantee the rotation will be reached, but it will eventually converge to the desired rotation)
-
         // Step 1: Calculate the angular displacement required to reach the desired rotation
         let rotation_difference = player_rotation * player_rigid_body.rotation().inverse();
 
@@ -324,18 +314,22 @@ impl CommandHandler for MoveCommandHandler {
 
         // Step 3: Calculate the difference between the current and desired angular velocities
 
-        player_rigid_body.set_angular_damping(DAMPING);
+        player_rigid_body.set_angular_damping(self.physics_config.movement_config.damping);
         let current_angular_velocity = player_rigid_body.angvel();
         let angular_velocity_difference = desired_angular_velocity - current_angular_velocity;
 
         // Step 4: Calculate the required torque using the gain factor
-        let required_torque = angular_velocity_difference * GAIN;
+        let required_torque =
+            angular_velocity_difference * self.physics_config.movement_config.gain;
 
         // Step 5: Apply the torque to the player's rigid body
         player_rigid_body.apply_torque_impulse(required_torque, true);
 
         let dir_vec = rotation * dir_vec;
-        physics_state.move_character_with_velocity(self.player_id, dir_vec * STEP_SIZE);
+        physics_state.move_character_with_velocity(
+            self.player_id,
+            dir_vec * self.physics_config.movement_config.step_size,
+        );
 
         // TODO: replace this example with actual implementation
         game_events.add(
@@ -349,7 +343,7 @@ impl CommandHandler for MoveCommandHandler {
 
         player_state.active_action_states.insert((
             ActionState::Walking,
-            Duration::from_secs_f32(WALKING_COOLDOWN),
+            Duration::from_secs_f32(self.physics_config.movement_config.walking_cooldown),
         ));
 
         Ok(())
@@ -359,6 +353,7 @@ impl CommandHandler for MoveCommandHandler {
 #[derive(Constructor)]
 pub struct JumpCommandHandler {
     player_id: u32,
+    physics_config: ConfigPhysics,
 }
 
 impl CommandHandler for JumpCommandHandler {
@@ -421,9 +416,9 @@ impl CommandHandler for JumpCommandHandler {
             .status_effects
             .contains_key(&StatusEffect::TripleJump)
         {
-            MAX_JUMP_COUNT + 1
+            self.physics_config.movement_config.max_jump_count + 1
         } else {
-            MAX_JUMP_COUNT
+            self.physics_config.movement_config.max_jump_count
         };
 
         if player_state.jump_count >= jump_limit {
@@ -435,7 +430,10 @@ impl CommandHandler for JumpCommandHandler {
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
-        player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
+        player_rigid_body.apply_impulse(
+            rapier::vector![0.0, self.physics_config.movement_config.jump_impulse, 0.0],
+            true,
+        );
 
         player_state.active_action_states.insert((
             ActionState::Jumping,
@@ -455,6 +453,8 @@ impl CommandHandler for JumpCommandHandler {
 #[derive(Constructor)]
 pub struct AttackCommandHandler {
     player_id: u32,
+    physics_config: ConfigPhysics,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for AttackCommandHandler {
@@ -479,7 +479,8 @@ impl CommandHandler for AttackCommandHandler {
 
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::Attack)
-            || !player_state.try_consume_wind_charge(Some(ATTACK_COST))
+            || !player_state
+                .try_consume_wind_charge(Some(self.physics_config.attack_config.attack_cost))
         {
             return Ok(());
         }
@@ -515,7 +516,10 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&horizontal_camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Attack, ATTACK_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Attack,
+            self.physics_config.attack_config.attack_cooldown,
+        );
 
         // send game events for attack sound/particles
         // TODO: replace this example with actual implementation
@@ -544,14 +548,14 @@ impl CommandHandler for AttackCommandHandler {
             .status_effects
             .contains_key(&StatusEffect::EnhancedWind);
         let scalar = if wind_enhanced {
-            WIND_ENHANCEMENT_SCALAR
+            self.game_config.powerup_config.wind_enhancement_scalar
         } else {
             1.0
         };
 
         player_state.active_action_states.insert((
             ActionState::Attacking,
-            Duration::from_secs_f32(ATTACKING_COOLDOWN),
+            Duration::from_secs_f32(self.physics_config.attack_config.attack_cooldown),
         ));
 
         // loop over all other players
@@ -577,7 +581,7 @@ impl CommandHandler for AttackCommandHandler {
             let angle = glm::angle(&horizontal_camera_forward, &vec_to_other);
 
             // if object in attack range
-            if angle <= MAX_ATTACK_ANGLE * scalar {
+            if angle <= self.physics_config.attack_config.max_attack_angle * scalar {
                 // send ray to other player (may need multiple later)
                 let solid = true;
                 let filter =
@@ -591,7 +595,7 @@ impl CommandHandler for AttackCommandHandler {
                     &physics_state.bodies,
                     &physics_state.colliders,
                     &ray,
-                    MAX_ATTACK_DIST,
+                    self.physics_config.attack_config.max_attack_dist,
                     solid,
                     filter,
                 ) {
@@ -613,8 +617,10 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
-                        let impulse_vec =
-                            scalar * vec_to_other * (ATTACK_IMPULSE - (ATTACK_COEFF * toi));
+                        let impulse_vec = scalar
+                            * vec_to_other
+                            * (self.physics_config.attack_config.attack_impulse
+                                - (self.physics_config.attack_config.attack_coeff * toi));
 
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
@@ -632,6 +638,7 @@ impl CommandHandler for AttackCommandHandler {
 #[derive(Constructor)]
 pub struct AreaAttackCommandHandler {
     player_id: u32,
+    physics_config: ConfigPhysics,
 }
 
 impl CommandHandler for AreaAttackCommandHandler {
@@ -647,7 +654,8 @@ impl CommandHandler for AreaAttackCommandHandler {
 
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::AreaAttack)
-            || !player_state.try_consume_wind_charge(Some(AREA_ATTACK_COST))
+            || !player_state
+                .try_consume_wind_charge(Some(self.physics_config.attack_config.area_attack_cost))
         {
             return Ok(());
         }
@@ -666,7 +674,10 @@ impl CommandHandler for AreaAttackCommandHandler {
                 self.player_id
             )))?;
 
-        player_state.insert_cooldown(Command::AreaAttack, AREA_ATTACK_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::AreaAttack,
+            self.physics_config.attack_config.area_attack_cooldown,
+        );
 
         // TODO: add sound/particles for area attack
         /*
@@ -713,7 +724,7 @@ impl CommandHandler for AreaAttackCommandHandler {
                 &physics_state.bodies,
                 &physics_state.colliders,
                 &ray,
-                MAX_AREA_ATTACK_DIST,
+                self.physics_config.attack_config.max_area_attack_dist,
                 solid,
                 filter,
             ) {
@@ -734,8 +745,9 @@ impl CommandHandler for AreaAttackCommandHandler {
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec =
-                        vec_to_other * (AREA_ATTACK_IMPULSE - (AREA_ATTACK_COEFF * toi));
+                    let impulse_vec = vec_to_other
+                        * (self.physics_config.attack_config.area_attack_impulse
+                            - (self.physics_config.attack_config.area_attack_coeff * toi));
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,
@@ -751,6 +763,7 @@ impl CommandHandler for AreaAttackCommandHandler {
 #[derive(Constructor)]
 pub struct RefillCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for RefillCommandHandler {
@@ -774,15 +787,18 @@ impl CommandHandler for RefillCommandHandler {
 
         if !player_state.is_in_circular_area(
             (spawn_position.x, spawn_position.z),
-            REFILL_RADIUS,
+            self.game_config.refill_radius,
             (None, None),
         ) || player_state.command_on_cooldown(Command::Refill)
         {
             // signal player that he/she is not in refill area
             return Ok(());
         }
-        player_state.refill_wind_charge(Some(ONE_CHARGE));
-        player_state.insert_cooldown(Command::Refill, REFILL_RATE_LIMIT);
+        player_state.refill_wind_charge(
+            Some(self.game_config.one_charge),
+            self.game_config.max_wind_charge,
+        );
+        player_state.insert_cooldown(Command::Refill, self.game_config.refill_rate_limit);
         Ok(())
     }
 }
@@ -790,6 +806,7 @@ impl CommandHandler for RefillCommandHandler {
 #[derive(Constructor)]
 pub struct CastPowerUpCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for CastPowerUpCommandHandler {
@@ -828,7 +845,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         other_player_status_changes.push((
                             id,
                             StatusEffect::Stun,
-                            POWER_UP_DEBUFF_DURATION,
+                            self.game_config.powerup_config.power_up_debuff_duration,
                         ));
                     }
                     _ => {
@@ -841,7 +858,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 x => {
                     player_state.status_effects.insert(
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
-                        POWER_UP_BUFF_DURATION,
+                        self.game_config.powerup_config.power_up_buff_duration,
                     );
                 }
             }
@@ -849,7 +866,10 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         // by now the player should have casted the powerup successfully, resetting player powerup states
         player_state.power_up = None;
-        player_state.insert_cooldown(Command::CastPowerUp, POWER_UP_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::CastPowerUp,
+            self.game_config.powerup_config.power_up_cooldown,
+        );
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
         let player_pos = player_state.transform.translation;
@@ -881,6 +901,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
 #[derive(Constructor)]
 pub struct DashCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for DashCommandHandler {
@@ -939,7 +960,10 @@ impl CommandHandler for DashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Dash, SPECIAL_MOVEMENT_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Dash,
+            self.game_config.powerup_config.special_movement_cooldown,
+        );
 
         // TODO::
         // some particle at the end would be cool, but probably different
@@ -957,9 +981,9 @@ impl CommandHandler for DashCommandHandler {
 
         player_rigid_body.apply_impulse(
             rapier::vector![
-                player_state.camera_forward.x * DASH_IMPULSE,
+                player_state.camera_forward.x * self.game_config.powerup_config.dash_impulse,
                 0.0,
-                player_state.camera_forward.z * DASH_IMPULSE
+                player_state.camera_forward.z * self.game_config.powerup_config.dash_impulse
             ],
             true,
         );
@@ -972,6 +996,7 @@ impl CommandHandler for DashCommandHandler {
 #[derive(Constructor)]
 pub struct FlashCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for FlashCommandHandler {
@@ -1030,7 +1055,10 @@ impl CommandHandler for FlashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Flash, SPECIAL_MOVEMENT_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Flash,
+            self.game_config.powerup_config.special_movement_cooldown,
+        );
 
         // TODO::
         // Flashy particle effect would be cool here
@@ -1055,8 +1083,8 @@ impl CommandHandler for FlashCommandHandler {
             .transform
             .translation;
 
-        new_coordinates.x += FLASH_DISTANCE_SCALAR * x_dir;
-        new_coordinates.z += FLASH_DISTANCE_SCALAR * z_dir;
+        new_coordinates.x += self.game_config.powerup_config.flash_distance_scalar * x_dir;
+        new_coordinates.z += self.game_config.powerup_config.flash_distance_scalar * z_dir;
 
         let new_position = Isometry::new(new_coordinates, zero());
         player_rigid_body.set_position(new_position, true);
@@ -1084,6 +1112,10 @@ fn handle_invincible_players(
     {
         return;
     }
+
+    let config_instance = ConfigurationManager::get_configuration();
+    let game_config = config_instance.game.clone();
+
     let game_state_clone = game_state.clone();
     for (id, player_state) in game_state.players.iter_mut() {
         if player_state
@@ -1098,7 +1130,7 @@ fn handle_invincible_players(
                     && calculate_distance(
                         player_state.transform.translation,
                         other_player_state.transform.translation,
-                    ) < INVINCIBLE_EFFECTIVE_DISTANCE
+                    ) < game_config.powerup_config.invincible_effective_distance
                 {
                     // get launched
                     let player_pos = player_state.transform.translation;
@@ -1176,7 +1208,8 @@ fn handle_invincible_players(
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec = vec_to_other * INVINCIBLE_EFFECTIVE_IMPULSE;
+                    let impulse_vec =
+                        vec_to_other * game_config.powerup_config.invincible_effective_impulse;
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

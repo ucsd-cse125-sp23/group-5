@@ -1,5 +1,6 @@
 extern crate nalgebra_glm as glm;
 
+use crate::core::choices::FinalChoices;
 use glm::Quat;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -12,6 +13,7 @@ pub type MoveDirection = glm::Vec3;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ServerSync {
     Ready,
+    Choices(FinalChoices),
     End,
 }
 

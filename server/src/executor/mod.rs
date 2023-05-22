@@ -6,19 +6,20 @@ use common::core::events::GameEvent;
 use common::core::states::GameState;
 
 use crate::executor::command_handlers::{
-    AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler, DashCommandHandler,
-    DieCommandHandler, FlashCommandHandler, JumpCommandHandler, MoveCommandHandler,
-    RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler, AreaAttackCommandHandler,
+    AreaAttackCommandHandler, AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler,
+    DashCommandHandler, DieCommandHandler, FlashCommandHandler, JumpCommandHandler,
+    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
+    UpdateCameraFacingCommandHandler,
 };
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 
-use common::core::states::GameLifeCycleState::{Running, Waiting, Ended};
+use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
+use std::fmt::Debug;
 use std::time::Duration;
 
 pub mod command_handlers;
@@ -117,16 +118,23 @@ impl Executor {
         let mut physics_state = self.physics_state.borrow_mut();
         let mut game_events = self.game_events.borrow_mut();
 
-        let player_config = self.config_instance.player.clone();
+        let game_config = self.config_instance.game.clone();
+        let physics_config = self.config_instance.physics.clone();
 
         #[cfg(not(feature = "debug-ready-sync"))]
         let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
-        let player_upper_bound = 1;
+        let player_upper_bound = 2;
 
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
+                Command::UI(ServerSync::Choices(final_choices)) => {
+                    game_state
+                        .players_customization
+                        .insert(client_command.client_id, final_choices);
+                    // println!("{:#?}", game_state.players_customization);
+                }
                 Command::UI(ServerSync::Ready) => {
                     if !self
                         .ready_players
@@ -151,24 +159,49 @@ impl Executor {
             let handler: Box<dyn CommandHandler> = match client_command.command {
                 Command::Spawn => Box::new(SpawnCommandHandler::new(
                     client_command.client_id,
-                    player_config,
+                    game_config,
                 )),
-                Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
-                Command::Move(dir) => {
-                    Box::new(MoveCommandHandler::new(client_command.client_id, dir))
-                }
+                Command::Die => Box::new(DieCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
+                Command::Move(dir) => Box::new(MoveCommandHandler::new(
+                    client_command.client_id,
+                    dir,
+                    physics_config,
+                )),
                 Command::UpdateCamera { forward } => Box::new(
                     UpdateCameraFacingCommandHandler::new(client_command.client_id, forward),
                 ),
-                Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
-                Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
-                Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(client_command.client_id)),
-                Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
-                Command::CastPowerUp => {
-                    Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
-                }
-                Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
-                Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
+                Command::Jump => Box::new(JumpCommandHandler::new(
+                    client_command.client_id,
+                    physics_config,
+                )),
+                Command::Attack => Box::new(AttackCommandHandler::new(
+                    client_command.client_id,
+                    physics_config,
+                    game_config,
+                )),
+                Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(
+                    client_command.client_id,
+                    physics_config,
+                )),
+                Command::Refill => Box::new(RefillCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
+                Command::CastPowerUp => Box::new(CastPowerUpCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
+                Command::Dash => Box::new(DashCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
+                Command::Flash => Box::new(FlashCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;
@@ -194,6 +227,8 @@ impl Executor {
         let mut game_state = self.game_state.lock().unwrap();
         let physics_state = self.physics_state.borrow();
 
+        let game_config = self.config_instance.game.clone();
+
         // update player positions
         for (_id, player) in game_state.players.iter_mut() {
             let rigid_body = physics_state.get_entity_rigid_body(player.id).unwrap();
@@ -209,14 +244,14 @@ impl Executor {
         game_state.update_player_status_effect(delta_time);
 
         // update the powerup for each server location
-        game_state.update_powerup_locations(delta_time);
+        game_state.update_powerup_locations(delta_time, game_config.clone());
 
-        if let Some(id) = game_state.update_player_on_flag_times(delta_time) {
+        if let Some(id) = game_state.update_player_on_flag_times(delta_time, game_config.clone()) {
             println!("Winner is {}, game finished!", id);
             game_state.game_winner = Some(id);
             game_state.life_cycle_state = Ended;
         }
-        game_state.previous_tick_winner = game_state.has_single_winner();
+        game_state.previous_tick_winner = game_state.has_single_winner(game_config);
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
@@ -253,17 +288,17 @@ impl Executor {
             let mut game_events = self.game_events.borrow_mut();
             let mut ready_players = self.ready_players.borrow_mut();
             let mut spawn_command_pushed = self.spawn_command_pushed.borrow_mut();
-            
-            // Remove all players from physics state 
+
+            // Remove all players from physics state
             for player_id in game_state.players.keys() {
                 physics_state.remove_entity(*player_id);
             }
-            
-            // Reset other instance variables 
+
+            // Reset other instance variables
             *game_state = GameState::new();
             game_events.clear();
-            ready_players.clear(); 
-            *spawn_command_pushed = false; 
+            ready_players.clear();
+            *spawn_command_pushed = false;
         }
     }
 

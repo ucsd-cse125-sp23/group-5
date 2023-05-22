@@ -1,7 +1,3 @@
-use crate::configs::parameters::{
-    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
-    POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
-};
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
@@ -13,7 +9,9 @@ use rapier3d::prelude::Vector;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
+use crate::configs::game_config::ConfigGame;
 use crate::core::action_states::ActionState;
+use crate::core::choices::FinalChoices;
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -23,6 +21,7 @@ pub struct WorldState {}
 pub struct GameState {
     pub world: WorldState,
     pub players: HashMap<u32, PlayerState>,
+    pub players_customization: HashMap<u32, FinalChoices>,
     pub previous_tick_winner: Option<u32>,
     pub active_power_ups:
         HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
@@ -93,12 +92,12 @@ impl PlayerState {
     }
 
     // add to refill command handlers, put NONE for refill all, won't exceed cap
-    pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>) {
-        let refill_amount = refill_amount.unwrap_or(MAX_WIND_CHARGE);
+    pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>, max_wind_charge: u32) {
+        let refill_amount = refill_amount.unwrap_or(max_wind_charge);
         let mut charges = self.wind_charge;
         charges += refill_amount;
-        self.wind_charge = if charges > MAX_WIND_CHARGE {
-            MAX_WIND_CHARGE
+        self.wind_charge = if charges > max_wind_charge {
+            max_wind_charge
         } else {
             charges
         };
@@ -196,7 +195,7 @@ impl GameState {
         }
     }
 
-    pub fn has_single_winner(&self) -> Option<u32> {
+    pub fn has_single_winner(&self, game_config: ConfigGame) -> Option<u32> {
         let valid_players: HashMap<u32, bool> = self
             .clone()
             .players
@@ -204,7 +203,11 @@ impl GameState {
             .map(|(id, player_state)| {
                 (
                     id,
-                    player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
+                    player_state.is_in_circular_area(
+                        game_config.flag_xz,
+                        game_config.flag_radius,
+                        game_config.flag_z_bound,
+                    ),
                 )
             })
             .filter(|(_, res)| *res)
@@ -217,10 +220,15 @@ impl GameState {
     }
 
     // returns winner if winner is decided
-    pub fn update_player_on_flag_times(&mut self, delta_time: f32) -> Option<u32> {
+    pub fn update_player_on_flag_times(
+        &mut self,
+        delta_time: f32,
+        game_config: ConfigGame,
+    ) -> Option<u32> {
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            let provisional_on_flag_time = player_state.on_flag_time - delta_time * DECAY_RATE;
+            let provisional_on_flag_time =
+                player_state.on_flag_time - delta_time * game_config.decay_rate;
             player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
                 provisional_on_flag_time
             } else {
@@ -231,8 +239,9 @@ impl GameState {
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
-                if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                self.player_mut(id).unwrap().on_flag_time +=
+                    delta_time * (1.0 + game_config.decay_rate);
+                if self.player_mut(id).unwrap().on_flag_time > game_config.winning_threshold {
                     Some(id)
                 } else {
                     None
@@ -253,7 +262,9 @@ impl GameState {
         }
     }
 
-    pub fn update_powerup_locations(&mut self, delta_time: f32) {
+    pub fn update_powerup_locations(&mut self, delta_time: f32, game_config: ConfigGame) {
+        let powerup_radius = game_config.powerup_config.power_up_radius;
+        let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;
         for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
             if powerup.clone().is_none() {
                 // case where the powerup is empty, we need to refill the powerup for the map
@@ -266,20 +277,24 @@ impl GameState {
             } else {
                 // check if a player should get the powerup now
                 for (_, player_state) in self.players.iter_mut() {
-                    let power_up_location = *POWER_UP_LOCATIONS.get(&loc_id.value()).unwrap();
+                    let power_up_location = *game_config
+                        .powerup_config
+                        .power_up_locations
+                        .get(&loc_id.value())
+                        .unwrap();
                     if player_state.power_up.is_none()
                         && player_state.is_in_circular_area(
                             (power_up_location.0, power_up_location.2),
-                            POWER_UP_RADIUS,
+                            powerup_radius,
                             (
-                                Some(power_up_location.1 - POWER_UP_RADIUS),
-                                Some(power_up_location.1 + POWER_UP_RADIUS),
+                                Some(power_up_location.1 - powerup_radius),
+                                Some(power_up_location.1 + powerup_radius),
                             ),
                         )
                     {
                         // player should get it, powerup is gone
                         player_state.power_up = powerup.clone();
-                        *vacancy_time = POWER_UP_RESPAWN_COOLDOWN;
+                        *vacancy_time = powerup_respawn_cd;
                         *powerup = None;
                     }
                 }
@@ -360,6 +375,7 @@ mod tests {
         let state = GameState {
             world: WorldState::default(),
             players: HashMap::default(),
+            players_customization: Default::default(),
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
@@ -374,6 +390,7 @@ mod tests {
         let state = GameState {
             world: WorldState::default(),
             players: HashMap::default(),
+            players_customization: Default::default(),
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
