@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use common::core::action_states::ActionState;
 
+use common::configs::game_config::ConfigGame;
 use derive_more::{Constructor, Display, Error};
 use itertools::Itertools;
 use nalgebra::{zero, Isometry3, Point, UnitQuaternion, Vector3};
@@ -21,7 +22,6 @@ use common::configs::parameters::{
     SPECIAL_MOVEMENT_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
 };
 use common::configs::physics_config::ConfigPhysics;
-use common::configs::player_config::ConfigPlayer;
 use common::configs::scene_config::ConfigSceneGraph;
 use common::core::command::{Command, MoveDirection};
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
@@ -123,7 +123,7 @@ impl CommandHandler for StartupCommandHandler {
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
-    config_player: ConfigPlayer,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -134,7 +134,7 @@ impl CommandHandler for SpawnCommandHandler {
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // get spawn-locations with corresponding id
-        let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
+        let spawn_position = self.game_config.spawn_points[self.player_id as usize - 1];
 
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
@@ -322,13 +322,17 @@ impl CommandHandler for MoveCommandHandler {
         let angular_velocity_difference = desired_angular_velocity - current_angular_velocity;
 
         // Step 4: Calculate the required torque using the gain factor
-        let required_torque = angular_velocity_difference * self.physics_config.movement_config.gain;
+        let required_torque =
+            angular_velocity_difference * self.physics_config.movement_config.gain;
 
         // Step 5: Apply the torque to the player's rigid body
         player_rigid_body.apply_torque_impulse(required_torque, true);
 
         let dir_vec = rotation * dir_vec;
-        physics_state.move_character_with_velocity(self.player_id, dir_vec * self.physics_config.movement_config.step_size);
+        physics_state.move_character_with_velocity(
+            self.player_id,
+            dir_vec * self.physics_config.movement_config.step_size,
+        );
 
         // TODO: replace this example with actual implementation
         game_events.add(
@@ -429,7 +433,10 @@ impl CommandHandler for JumpCommandHandler {
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
-        player_rigid_body.apply_impulse(rapier::vector![0.0, self.physics_config.movement_config.jump_impulse, 0.0], true);
+        player_rigid_body.apply_impulse(
+            rapier::vector![0.0, self.physics_config.movement_config.jump_impulse, 0.0],
+            true,
+        );
 
         player_state.active_action_states.insert((
             ActionState::Jumping,
@@ -474,7 +481,8 @@ impl CommandHandler for AttackCommandHandler {
 
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::Attack)
-            || !player_state.try_consume_wind_charge(Some(self.physics_config.attack_config.attack_cost))
+            || !player_state
+                .try_consume_wind_charge(Some(self.physics_config.attack_config.attack_cost))
         {
             return Ok(());
         }
@@ -510,7 +518,10 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&horizontal_camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Attack, self.physics_config.attack_config.attack_cooldown);
+        player_state.insert_cooldown(
+            Command::Attack,
+            self.physics_config.attack_config.attack_cooldown,
+        );
 
         // send game events for attack sound/particles
         // TODO: replace this example with actual implementation
@@ -608,8 +619,10 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
-                        let impulse_vec =
-                            scalar * vec_to_other * (self.physics_config.attack_config.attack_impulse - (self.physics_config.attack_config.attack_coeff * toi));
+                        let impulse_vec = scalar
+                            * vec_to_other
+                            * (self.physics_config.attack_config.attack_impulse
+                                - (self.physics_config.attack_config.attack_coeff * toi));
 
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
@@ -643,7 +656,8 @@ impl CommandHandler for AreaAttackCommandHandler {
 
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::AreaAttack)
-            || !player_state.try_consume_wind_charge(Some(self.physics_config.attack_config.area_attack_cost))
+            || !player_state
+                .try_consume_wind_charge(Some(self.physics_config.attack_config.area_attack_cost))
         {
             return Ok(());
         }
@@ -662,7 +676,10 @@ impl CommandHandler for AreaAttackCommandHandler {
                 self.player_id
             )))?;
 
-        player_state.insert_cooldown(Command::AreaAttack, self.physics_config.attack_config.area_attack_cooldown);
+        player_state.insert_cooldown(
+            Command::AreaAttack,
+            self.physics_config.attack_config.area_attack_cooldown,
+        );
 
         // TODO: add sound/particles for area attack
         /*
@@ -730,8 +747,9 @@ impl CommandHandler for AreaAttackCommandHandler {
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec =
-                        vec_to_other * (self.physics_config.attack_config.area_attack_impulse - (self.physics_config.attack_config.area_attack_coeff * toi));
+                    let impulse_vec = vec_to_other
+                        * (self.physics_config.attack_config.area_attack_impulse
+                            - (self.physics_config.attack_config.area_attack_coeff * toi));
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

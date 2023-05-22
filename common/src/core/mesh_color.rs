@@ -1,5 +1,5 @@
-use wgpu::util::DeviceExt;
 use serde::{Deserialize, Serialize};
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, bytemuck::Pod, bytemuck::Zeroable)]

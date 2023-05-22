@@ -19,10 +19,10 @@ use common::core::states::GameLifeCycleState::{Ended};
 use model::Vertex;
 use winit::event::*;
 
-mod model;
 mod camera;
 mod instance;
 mod lights;
+mod model;
 mod other_players;
 mod particles;
 mod player;
@@ -45,11 +45,11 @@ use crate::model::{Model, StaticModel};
 use common::configs;
 use common::core::command::Command;
 use common::core::events;
+use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameState, ParticleQueue};
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use common::core::states::GameLifeCycleState::Running;
 
 struct State {
     surface: wgpu::Surface,

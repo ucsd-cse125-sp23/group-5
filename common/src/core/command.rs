@@ -1,10 +1,10 @@
 extern crate nalgebra_glm as glm;
 
+use crate::core::choices::FinalChoices;
 use glm::Quat;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 use std::mem;
-use crate::core::choices::FinalChoices;
 
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;

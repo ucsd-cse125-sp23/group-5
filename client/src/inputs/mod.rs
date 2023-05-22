@@ -11,13 +11,13 @@ use log::debug;
 use nalgebra_glm as glm;
 
 use common::communication::message::{HostRole, Message, Payload};
+use common::core::choices::FinalChoices;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, VirtualKeyCode};
-use common::core::choices::FinalChoices;
 
 pub mod handlers;
 

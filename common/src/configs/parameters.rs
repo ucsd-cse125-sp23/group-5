@@ -45,7 +45,6 @@ pub const INVINCIBLE_EFFECTIVE_IMPULSE: f32 = 20.0;
 
 pub const SPECIAL_MOVEMENT_COOLDOWN: f32 = 0.5;
 
-
 // TODO:
 /* there are some more constants in command_handler,
 such as 1.4, 0.9, PI/3, 0.0 etc. but all seem quite refined */

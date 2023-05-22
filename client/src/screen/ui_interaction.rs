@@ -1,14 +1,14 @@
-use std::thread;
-use std::time::Duration;
 use crate::inputs::ClientSync::Ready;
 use crate::inputs::{ClientSync, Input};
 use crate::screen;
 use crate::screen::{Display, Screen};
 use common::core::choices::FinalChoices;
-use log::warn;
-use phf::phf_map;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameLifeCycleState::Waiting;
+use log::warn;
+use phf::phf_map;
+use std::thread;
+use std::time::Duration;
 
 const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 const EYES_EYES_MESH: &str = "eyes_eyes_mesh";
@@ -32,7 +32,10 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
     let final_choices = FinalChoices::new(&display.customization_choices);
     // println!("{:#?}", final_choices);
     // Send final customization choices to server
-    match display.sender.send(Input::UI(ClientSync::Choices(final_choices))) {
+    match display
+        .sender
+        .send(Input::UI(ClientSync::Choices(final_choices)))
+    {
         Ok(_) => {}
         Err(e) => {
             warn!("Error sending command: {:?}", e);
@@ -81,18 +84,15 @@ fn change_player_color(
         if let Some(scene_id) = curr_group.scene.clone() {
             if let Some(scene) = display.scene_map.get_mut(&scene_id) {
                 if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
-                    let curr_choice =
-                        display.customization_choices.current_type_choice.clone();
+                    let curr_choice = display.customization_choices.current_type_choice.clone();
                     if curr_choice == "leaf".to_owned() {
-                        display.customization_choices.cur_leaf_color =
-                            button_id.clone().unwrap();
+                        display.customization_choices.cur_leaf_color = button_id.clone().unwrap();
                         display
                             .customization_choices
                             .color
                             .insert(EYES_EYES_MESH.to_owned(), actual_color);
                     } else if curr_choice == "body".to_owned() {
-                        display.customization_choices.cur_body_color =
-                            button_id.clone().unwrap();
+                        display.customization_choices.cur_body_color = button_id.clone().unwrap();
                         display
                             .customization_choices
                             .color

@@ -1,9 +1,9 @@
 pub mod audio_config;
 pub mod display_config;
+pub mod game_config;
 pub mod model_config;
 pub mod parameters;
 pub mod physics_config;
-pub mod player_config;
 pub mod scene_config;
 pub mod texture_config;
 
@@ -16,9 +16,9 @@ use std::sync::{Arc, RwLock};
 
 use crate::configs::audio_config::ConfigAudioAssets;
 use crate::configs::display_config::ConfigDisplay;
+use crate::configs::game_config::ConfigGame;
 use crate::configs::model_config::ConfigModels;
 use crate::configs::physics_config::ConfigPhysics;
-use crate::configs::player_config::ConfigPlayer;
 use crate::configs::scene_config::ConfigSceneGraph;
 use crate::configs::texture_config::ConfigTexture;
 
@@ -26,7 +26,7 @@ pub const MODELS_CONFIG_PATH: &str = "models.json";
 pub const SCENE_CONFIG_PATH: &str = "scene.json";
 pub const LOBBY_SCENE_CONFIG_PATH: &str = "lobby_scene.json";
 pub const AUDIO_CONFIG_PATH: &str = "audio.json";
-pub const PLAYER_CONFIG_PATH: &str = "player.json";
+pub const GAME_CONFIG_PATH: &str = "game.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
 pub const TEXTURE_CONFIG_PATH: &str = "tex.json";
 pub const PHYSICS_CONFIG_PATH: &str = "physics.json";
@@ -42,14 +42,23 @@ pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCell
         from_file(LOBBY_SCENE_CONFIG_PATH).expect("Failed to load scene config");
     let audio: ConfigAudioAssets =
         from_file(AUDIO_CONFIG_PATH).expect("Failed to load audio config");
-    let player: ConfigPlayer = from_file(PLAYER_CONFIG_PATH).expect("Failed to load player config");
+    let player: ConfigGame = from_file(GAME_CONFIG_PATH).expect("Failed to load player config");
     let display: ConfigDisplay =
         from_file(DISPLAY_CONFIG_PATH).expect("Failed to load display config");
     let texture: ConfigTexture =
         from_file(TEXTURE_CONFIG_PATH).expect("Failed to load texture config");
     let physics: ConfigPhysics =
         from_file(PHYSICS_CONFIG_PATH).expect("Failed to load physics config");
-    let config = Config::new(models, scene, lobby_scene, audio, player, display, texture, physics);
+    let config = Config::new(
+        models,
+        scene,
+        lobby_scene,
+        audio,
+        player,
+        display,
+        texture,
+        physics,
+    );
     RwLock::new(Some(Arc::new(config)))
 });
 
@@ -58,7 +67,7 @@ pub struct Config {
     pub scene: ConfigSceneGraph,
     pub lobby_scene: ConfigSceneGraph,
     pub audio: ConfigAudioAssets,
-    pub player: ConfigPlayer,
+    pub game: ConfigGame,
     pub display: ConfigDisplay,
     pub texture: ConfigTexture,
     pub physics: ConfigPhysics,
@@ -70,20 +79,20 @@ impl Config {
         scene: ConfigSceneGraph,
         lobby_scene: ConfigSceneGraph,
         audio: ConfigAudioAssets,
-        player: ConfigPlayer,
+        game: ConfigGame,
         display: ConfigDisplay,
         texture: ConfigTexture,
-        physics: ConfigPhysics
+        physics: ConfigPhysics,
     ) -> Self {
         Config {
             models,
             scene,
             lobby_scene,
             audio,
-            player,
+            game,
             display,
             texture,
-            physics
+            physics,
         }
     }
 }
