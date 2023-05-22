@@ -1093,14 +1093,13 @@ impl State {
                 }
                 events::ParticleType::RAIN => {
                     let time = 2.;
-                    println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::RainGenerator::new(
                         p.position + Vec3::new(0., 20.,0.),
                         (20.0, 20.0, 20.0),
                         p.direction,
                         3.0,
                         0.3,
-                        20.0,
+                        25.0,
                         PI,
                         0.0,
                         false,
@@ -1109,7 +1108,7 @@ impl State {
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        2000.0,
+                        2500.0,
                         p.color,
                         atk_gen,
                         (11, 12),
