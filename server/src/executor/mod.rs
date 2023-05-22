@@ -5,12 +5,6 @@ use common::core::command::{Command, MoveDirection, ServerSync};
 use common::core::events::GameEvent;
 use common::core::states::GameState;
 
-use crate::executor::command_handlers::{
-    AreaAttackCommandHandler, AttackCommandHandler, CastPowerUpCommandHandler, CommandHandler,
-    DashCommandHandler, DieCommandHandler, FlashCommandHandler, JumpCommandHandler,
-    MoveCommandHandler, RefillCommandHandler, SpawnCommandHandler, StartupCommandHandler,
-    UpdateCameraFacingCommandHandler,
-};
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
@@ -18,9 +12,10 @@ use crate::Recipients;
 use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
-use std::cell::{RefCell, RefMut};
-use std::fmt::Debug;
+use std::cell::RefCell;
 use std::time::Duration;
+
+use command_handlers::prelude::*;
 
 pub mod command_handlers;
 
@@ -67,8 +62,8 @@ impl Executor {
         }
     }
 
-    pub fn game_init(&self, mut commands: Vec<ClientCommand>) -> Vec<ClientCommand> {
-        if self.game_state().life_cycle_state == Running {
+    pub fn game_init(&self, commands: &mut Vec<ClientCommand>) {
+        if matches!(self.game_state().life_cycle_state, Running(_)) {
             // TODO: still have bugs when handling multiple game in a row without exiting
             if !*self.spawn_command_pushed.borrow() {
                 for client_id in self.ready_players.borrow().iter() {
@@ -78,7 +73,6 @@ impl Executor {
                 *self.spawn_command_pushed.borrow_mut() = true;
             }
         }
-        commands
     }
 
     pub(crate) fn plan_and_execute(&self, commands: Vec<ClientCommand>) {
@@ -108,6 +102,13 @@ impl Executor {
             .filter(|command| !matches!(command.command, Command::Move(_)))
             .chain(movement_commands.into_iter())
             .for_each(|command| self.execute(command));
+    }
+
+    pub(crate) fn game_state_tick(&self) {
+        // increment tick
+        if let Running(ref mut tick) = &mut self.game_state.lock().unwrap().life_cycle_state {
+            *tick += 1;
+        }
     }
 
     /// Executes a command issued by a client.
@@ -147,7 +148,7 @@ impl Executor {
                         // change the 1 to 4 for working correctly
                         // here I just change it to 1 for testing purpose
                         if self.ready_players.borrow().len() == player_upper_bound {
-                            game_state.life_cycle_state = Running;
+                            game_state.life_cycle_state = Running(0);
                         }
                     } else {
                         warn!("player has already been ready!");
@@ -202,6 +203,9 @@ impl Executor {
                     client_command.client_id,
                     game_config,
                 )),
+                // weather systems
+                Command::UpdateWeather => Box::new(UpdateWeatherCommandHandler::new()),
+                Command::WeatherEffects => Box::new(WeatherEffectCommandHandler::new()),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;
@@ -305,17 +309,5 @@ impl Executor {
     /// get a clone of the game state
     pub fn game_state(&self) -> GameState {
         self.game_state.lock().unwrap().clone()
-    }
-}
-
-type GameEventWithRecipients = (GameEvent, Recipients);
-
-pub trait GameEventCollector {
-    fn add(&mut self, event: GameEvent, recipients: Recipients);
-}
-
-impl GameEventCollector for RefMut<'_, Vec<GameEventWithRecipients>> {
-    fn add(&mut self, event: GameEvent, recipients: Recipients) {
-        self.push((event, recipients));
     }
 }

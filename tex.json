@@ -9,7 +9,8 @@
         "particles/p7.png",
         "particles/p8.png",
         "particles/p9.png",
-        "particles/p10.png"
+        "particles/p10.png",
+        "particles/rain_particle.png"
     ],
     "textures": [
         {
@@ -88,6 +89,14 @@
         {
             "name": "mask:circle",
             "path": "circle_mask.png"
+        },
+        {
+            "name": "icon:rainy",
+            "path": "rainy.png"
+        },
+        {
+            "name": "icon:windy",
+            "path": "windy.png"
         }
     ]
 }

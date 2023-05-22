@@ -2790,6 +2790,7 @@ dependencies = [
  "nalgebra-glm",
  "once_cell",
  "rand",
+ "rand_distr",
  "rapier3d",
  "serde_json",
  "threadpool",

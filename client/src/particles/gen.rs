@@ -1,6 +1,6 @@
 extern crate nalgebra_glm as glm;
 use rand::Rng;
-use rand_distr::{Distribution, Normal, Poisson, Uniform};
+use rand_distr::{Distribution, Geometric, LogNormal, Normal, Poisson, Uniform};
 use std::f32::consts::{FRAC_PI_2, PI};
 
 use crate::particles::Particle;
@@ -381,6 +381,90 @@ impl ParticleGenerator for LineGenerator {
                 start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                 color: color.into(),
                 velocity: [v[0], v[1], v[2], ang_dist.sample(rng)],
+                spawn_time,
+                size: size_dist.sample(rng),
+                tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
+                z_pos: 0.0,
+                time_elapsed: 0.0,
+                size_growth: self.size_growth,
+                halflife,
+                _pad2: 0.0,
+            });
+            spawn_time += match self.poisson_generation {
+                true => time_dist.sample(rng),
+                false => 1.0 / spawn_rate,
+            };
+        }
+        list.len() as u32
+    }
+}
+
+pub struct RainGenerator {
+    source: glm::Vec3,     // Central point of the rain area
+    area: (f32, f32, f32), // 3d box of the rain area
+    dir: glm::Vec3,        // Direction of rain (usually down)
+    linear_speed: f32,
+    linear_variance: f32,
+    size: f32,
+    size_variance: f32,
+    size_growth: f32,
+    poisson_generation: bool,
+}
+
+impl RainGenerator {
+    pub fn new(
+        source: glm::Vec3,
+        area: (f32, f32, f32),
+        dir: glm::Vec3,
+        linear_speed: f32,
+        linear_variance: f32,
+        size: f32,
+        size_variance: f32,
+        size_growth: f32,
+        poisson_generation: bool,
+    ) -> Self {
+        Self {
+            source,
+            area,
+            dir: glm::normalize(&dir),
+            linear_speed,
+            linear_variance,
+            size,
+            size_variance,
+            size_growth,
+            poisson_generation,
+        }
+    }
+}
+
+impl ParticleGenerator for RainGenerator {
+    fn generate(
+        &self,
+        list: &mut Vec<Particle>,
+        spawning_time: std::time::Duration,
+        spawn_rate: f32,
+        halflife: f32,
+        tex_range: (u32, u32),
+        color: glm::Vec4,
+        rng: &mut rand::rngs::ThreadRng,
+    ) -> u32 {
+        let size_dist = Normal::new(self.size, self.size_variance).unwrap();
+        let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
+        let mut spawn_time = 0.0;
+        let x_dist = Uniform::new(-self.area.0 / 2.0, self.area.0 / 2.0);
+        let z_dist = Uniform::new(-self.area.1 / 2.0, self.area.1 / 2.0);
+        let y_dist = Uniform::new(-self.area.2 / 2.0, self.area.2 / 2.0);
+
+        let v_dist = LogNormal::new(self.linear_speed, self.linear_variance).unwrap();
+
+        while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
+            let v = self.dir * v_dist.sample(rng);
+            let pos =
+                self.source + glm::vec3(x_dist.sample(rng), y_dist.sample(rng), z_dist.sample(rng));
+            list.push(Particle {
+                start_pos: [pos[0], pos[1], pos[2], 0.0],
+                color: color.into(),
+                velocity: [v[0], v[1], v[2], 0.0],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
