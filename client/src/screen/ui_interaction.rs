@@ -30,7 +30,7 @@ fn game_start(display: &mut screen::Display, _: Option<MeshColor>, _: Option<Str
     // do nothing if no colors were selected
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     let curr_screen = display.screen_map.get_mut(&curr_group.screen.clone().unwrap()).unwrap();
-    let sel_2 = selected_2colors(&display.customization_choices.final_choices.color, curr_screen);
+    let sel_2 = selected_2colors(&display.customization_choices.final_choices.color, curr_screen, false);
 
     if sel_2 && !display.customization_choices.ready {
         let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
@@ -155,7 +155,7 @@ fn change_leaf_color(display: &mut screen::Display, color: Option<MeshColor>, bu
         scene.draw_scene_dfs();
     }
 
-    selected_2colors(&display.customization_choices.final_choices.color, curr_screen);
+    selected_2colors(&display.customization_choices.final_choices.color, curr_screen, true);
 }
 
 fn change_wood_color(display: &mut screen::Display, color: Option<MeshColor>, button_id: Option<String>){
@@ -181,11 +181,11 @@ fn change_wood_color(display: &mut screen::Display, color: Option<MeshColor>, bu
         scene.draw_scene_dfs();
     }
 
-    selected_2colors(&display.customization_choices.final_choices.color, curr_screen);
+    selected_2colors(&display.customization_choices.final_choices.color, curr_screen, true);
 }
 // end click events ----------------------
 
-fn selected_2colors(colors: &std::collections::HashMap<String, MeshColor>, curr_screen: &mut Screen) -> bool{
+fn selected_2colors(colors: &std::collections::HashMap<String, MeshColor>, curr_screen: &mut Screen, change_color: bool) -> bool{
     let mut len = 0;
     let default_color = [0.5,0.5,0.5];
     for (_,v) in colors {
@@ -194,9 +194,11 @@ fn selected_2colors(colors: &std::collections::HashMap<String, MeshColor>, curr_
         }
     }
     if  len >= 2 {
-        let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(1.0,1.0,1.0,1.0);
-        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
+        if change_color {
+            let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
+            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(1.0,1.0,1.0,1.0);
+            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0,1.0,0.0,1.0);
+        }
         return true;
     }
     false
