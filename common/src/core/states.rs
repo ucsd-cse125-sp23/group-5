@@ -1,6 +1,5 @@
 use crate::configs::parameters::{
-    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, POWER_UP_LOCATIONS, POWER_UP_RADIUS,
-    POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
+    DECAY_RATE, POWER_UP_LOCATIONS, POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN,
 };
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
@@ -12,8 +11,8 @@ use rapier3d::prelude::Vector;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::sync::Condvar;
 
+use crate::configs::game_config::ConfigGame;
 use crate::core::action_states::ActionState;
 use crate::core::choices::FinalChoices;
 use std::time::Duration;
@@ -199,7 +198,7 @@ impl GameState {
         }
     }
 
-    pub fn has_single_winner(&self) -> Option<u32> {
+    pub fn has_single_winner(&self, game_config: ConfigGame) -> Option<u32> {
         let valid_players: HashMap<u32, bool> = self
             .clone()
             .players
@@ -207,7 +206,11 @@ impl GameState {
             .map(|(id, player_state)| {
                 (
                     id,
-                    player_state.is_in_circular_area(FLAG_XZ, FLAG_RADIUS, FLAG_Z_BOUND),
+                    player_state.is_in_circular_area(
+                        game_config.flag_xz,
+                        game_config.flag_radius,
+                        game_config.flag_z_bound,
+                    ),
                 )
             })
             .filter(|(_, res)| *res)
@@ -220,7 +223,11 @@ impl GameState {
     }
 
     // returns winner if winner is decided
-    pub fn update_player_on_flag_times(&mut self, delta_time: f32) -> Option<u32> {
+    pub fn update_player_on_flag_times(
+        &mut self,
+        delta_time: f32,
+        game_config: ConfigGame,
+    ) -> Option<u32> {
         // decay
         for (_, player_state) in self.players.iter_mut() {
             let provisional_on_flag_time = player_state.on_flag_time - delta_time * DECAY_RATE;
@@ -235,7 +242,7 @@ impl GameState {
             None => None,
             Some(id) => {
                 self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
-                if self.player_mut(id).unwrap().on_flag_time > WINNING_THRESHOLD {
+                if self.player_mut(id).unwrap().on_flag_time > game_config.winning_threshold {
                     Some(id)
                 } else {
                     None

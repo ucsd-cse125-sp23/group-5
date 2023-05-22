@@ -777,7 +777,11 @@ impl State {
                     self.client_id,
                 );
 
-            other_players::load_game_state(&mut self.other_players, game_state.lock().unwrap());
+            other_players::load_game_state(
+                &mut self.other_players,
+                game_state.lock().unwrap(),
+                game_config.clone(),
+            );
 
             // update player scores
             {
