@@ -18,8 +18,7 @@ use common::configs::model_config::ConfigModels;
 use common::configs::parameters::{
     DASH_IMPULSE, FLASH_DISTANCE_SCALAR, INVINCIBLE_EFFECTIVE_DISTANCE,
     INVINCIBLE_EFFECTIVE_IMPULSE, POWER_UP_BUFF_DURATION, POWER_UP_COOLDOWN,
-    POWER_UP_DEBUFF_DURATION, SPECIAL_MOVEMENT_COOLDOWN,
-    WIND_ENHANCEMENT_SCALAR,
+    POWER_UP_DEBUFF_DURATION, SPECIAL_MOVEMENT_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
 };
 use common::configs::physics_config::ConfigPhysics;
 use common::configs::scene_config::ConfigSceneGraph;
@@ -798,7 +797,10 @@ impl CommandHandler for RefillCommandHandler {
             // signal player that he/she is not in refill area
             return Ok(());
         }
-        player_state.refill_wind_charge(Some(self.game_config.one_charge), self.game_config.max_wind_charge);
+        player_state.refill_wind_charge(
+            Some(self.game_config.one_charge),
+            self.game_config.max_wind_charge,
+        );
         player_state.insert_cooldown(Command::Refill, self.game_config.refill_rate_limit);
         Ok(())
     }

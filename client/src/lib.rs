@@ -729,6 +729,7 @@ impl State {
         // config setup
         let config_instance = ConfigurationManager::get_configuration();
         let physics_config = config_instance.physics.clone();
+        let game_config = config_instance.game.clone();
 
         let game_state_clone = game_state.lock().unwrap().clone();
 
@@ -800,8 +801,8 @@ impl State {
                     let mut location = screen.icons[ind].location.clone();
                     location.horz_disp = (
                         0.0,
-                        parameters::SCORE_LOWER_X
-                            + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X),
+                        game_config.score_lower_x
+                            + score * (game_config.score_upper_x - game_config.score_lower_x),
                     );
                     screen.icons[ind].relocate(
                         location,
