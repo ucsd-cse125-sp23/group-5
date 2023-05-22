@@ -1,16 +1,14 @@
-use std::collections::HashMap;
 use crate::instance::Instance;
+use common::core::mesh_color::{MeshColor, MeshColorInstance};
 use std::any::Any;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-
 use std::ops::Range;
 use std::sync::Arc;
 use wgpu::Device;
 
 use crate::instance;
 use crate::resources::{load_model, ModelLoadingResources};
-
-use crate::mesh_color::{MeshColor, MeshColorInstance};
 use crate::texture;
 
 pub trait Model: Any + Debug {
@@ -79,34 +77,51 @@ pub struct InstancedModel {
 }
 
 impl InstancedModel {
-    pub fn new(model: Box<dyn Model>, instances: &Vec<Instance>, device: &Device, color_bind_group_layout: &wgpu::BindGroupLayout) -> Self {
+    pub fn new(
+        model: Box<dyn Model>,
+        instances: &Vec<Instance>,
+        device: &Device,
+        color_bind_group_layout: &wgpu::BindGroupLayout,
+    ) -> Self {
         Self {
             model,
             num_instances: instances.len(),
             // instance_state: Instance::make_buffer(instances, device),
             instance_states: instance::Instance::make_buffers(instances, device),
-            mesh_colors: instances.iter().map(|x| x.mesh_colors.clone()).collect::<Vec<_>>()
-                .iter().map(|x| to_mesh_color_inst(x, device, color_bind_group_layout)).collect::<Vec<_>>(),
-            default_color: MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
+            mesh_colors: instances
+                .iter()
+                .map(|x| x.mesh_colors.clone())
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|x| to_mesh_color_inst(x, device, color_bind_group_layout))
+                .collect::<Vec<_>>(),
+            default_color: MeshColorInstance::new(
+                device,
+                color_bind_group_layout,
+                MeshColor::default(),
+            ),
         }
     }
 }
 
 pub fn to_mesh_color_inst(
-    map: &Option<HashMap<String, MeshColor>>, 
-    device: &wgpu::Device, 
-    color_bind_group_layout: &wgpu::BindGroupLayout
+    map: &Option<HashMap<String, MeshColor>>,
+    device: &wgpu::Device,
+    color_bind_group_layout: &wgpu::BindGroupLayout,
 ) -> HashMap<String, MeshColorInstance> {
-        let mut mci = HashMap::new();
-        match map {
-            Some(colors) => {
-                for (mesh_name, mesh_color) in colors.iter() {
-                    mci.insert(mesh_name.clone(), MeshColorInstance::new(device, color_bind_group_layout, *mesh_color));
-                }
-            },
-            None => {}
+    let mut mci = HashMap::new();
+    match map {
+        Some(colors) => {
+            for (mesh_name, mesh_color) in colors.iter() {
+                mci.insert(
+                    mesh_name.clone(),
+                    MeshColorInstance::new(device, color_bind_group_layout, *mesh_color),
+                );
+            }
         }
-        mci
+        None => {}
+    }
+    mci
 }
 
 // We need this for Rust to store our data correctly for the shaders
@@ -238,32 +253,46 @@ where
     ) {
         self.draw_model_instanced(instanced_model, 0..1, camera_bind_group);
     }
-    
+
     fn draw_model_instanced(
         &mut self,
         instanced_model: &'a InstancedModel,
-        instances: Range<u32>,
+        _instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup,
-    ) { 
-        for j in 0..instanced_model.instance_states.len(){
+    ) {
+        for j in 0..instanced_model.instance_states.len() {
             let instance_state = &instanced_model.instance_states[j];
             self.set_vertex_buffer(1, instance_state.buffer.slice(..));
             for i in 0..instanced_model.model.meshes().len() {
                 // assume each mesh has a material
                 let mat_id = instanced_model.model.meshes()[i].material;
-                self.set_vertex_buffer(0, instanced_model.model.meshes()[i].vertex_buffer.slice(..));
-                self.set_index_buffer(instanced_model.model.meshes()[i].index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                self.set_vertex_buffer(
+                    0,
+                    instanced_model.model.meshes()[i].vertex_buffer.slice(..),
+                );
+                self.set_index_buffer(
+                    instanced_model.model.meshes()[i].index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint32,
+                );
 
                 match instanced_model.mesh_colors[j].get(&instanced_model.model.meshes()[i].name) {
                     Some(color) => {
                         self.set_bind_group(3, &color.color_bind_group, &[]);
-                    },
+                    }
                     None => {
-                        self.set_bind_group(3, &instanced_model.default_color.color_bind_group, &[]);
-                    },
+                        self.set_bind_group(
+                            3,
+                            &instanced_model.default_color.color_bind_group,
+                            &[],
+                        );
+                    }
                 }
-                
-                self.set_bind_group(0, &instanced_model.model.materials()[mat_id].bind_group, &[]);
+
+                self.set_bind_group(
+                    0,
+                    &instanced_model.model.materials()[mat_id].bind_group,
+                    &[],
+                );
                 // print!("model:154 {:?}\n", &instanced_model.model.materials[mat_id]);
                 self.set_bind_group(1, camera_bind_group, &[]);
                 self.draw_indexed(0..instanced_model.model.meshes()[i].num_elements, 0, 0..1);

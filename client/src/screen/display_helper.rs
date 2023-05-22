@@ -2,10 +2,10 @@ use crate::screen::location_helper::{get_coords, to_absolute};
 use crate::screen::objects;
 use crate::screen::objects::ScreenInstance;
 use common::configs::display_config::{ConfigDisplay, ConfigScreen};
+use common::core::mesh_color::{MeshColor, MeshColorInstance};
 use nalgebra_glm as glm;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
-use crate::mesh_color::{MeshColorInstance, MeshColor};
 
 pub fn create_display_group(config: &ConfigDisplay) -> HashMap<String, objects::DisplayGroup> {
     let mut groups = HashMap::new();
@@ -30,9 +30,15 @@ pub fn create_screen_map(
     let mut screen_map = HashMap::new();
     for s in &config.screens {
         let background = create_background(s, device, color_bind_group_layout);
-        let mut icon_id_map : HashMap<String, usize> = HashMap::new();
+        let mut icon_id_map: HashMap<String, usize> = HashMap::new();
         let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
-        let buttons = create_button(s, device, screen_width, screen_height, color_bind_group_layout);
+        let buttons = create_button(
+            s,
+            device,
+            screen_width,
+            screen_height,
+            color_bind_group_layout,
+        );
 
         let screen = objects::Screen {
             id: s.id.clone(),
@@ -40,14 +46,22 @@ pub fn create_screen_map(
             icons,
             icon_id_map,
             buttons,
-            default_color:  MeshColorInstance::new(device, color_bind_group_layout, MeshColor::default()),
+            default_color: MeshColorInstance::new(
+                device,
+                color_bind_group_layout,
+                MeshColor::default(),
+            ),
         };
         screen_map.insert(s.id.clone(), screen);
     }
     screen_map
 }
 
-fn create_background(s: &ConfigScreen, device: &wgpu::Device, color_bind_group_layout: &wgpu::BindGroupLayout) -> Option<objects::ScreenBackground> {
+fn create_background(
+    s: &ConfigScreen,
+    device: &wgpu::Device,
+    color_bind_group_layout: &wgpu::BindGroupLayout,
+) -> Option<objects::ScreenBackground> {
     s.background.as_ref().map(|bg| {
         let vertices = objects::TITLE_VERT;
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -61,7 +75,14 @@ fn create_background(s: &ConfigScreen, device: &wgpu::Device, color_bind_group_l
             vbuf,
             texture: bg.tex.clone(),
             mask_texture: bg.mask_tex.clone(),
-            color: match bg.color {None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
+            color: match bg.color {
+                None => None,
+                Some(c) => Some(MeshColorInstance::new(
+                    device,
+                    color_bind_group_layout,
+                    MeshColor::new(c),
+                )),
+            },
         }
     })
 }
@@ -77,6 +98,7 @@ fn create_icon(
     s.icons
         .iter()
         .map(|i| {
+            println!("Creating icon: {}", i.id);
             map.insert(i.id.clone(), ind);
             ind += 1;
             let mut vertices = objects::TITLE_VERT;
@@ -88,7 +110,7 @@ fn create_icon(
                 screen_height,
                 &mut vertices,
             );
-            for v in &mut vertices{
+            for v in &mut vertices {
                 v.color = i.tint.clone();
             }
             let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -166,7 +188,7 @@ fn create_button(
             });
 
             objects::Button {
-                id: b.id.clone(), 
+                id: b.id.clone(),
                 location: b.location,
                 aspect: b.aspect,
                 height: b.height,
@@ -178,7 +200,18 @@ fn create_button(
                 hover_texture: b.hover_tex.clone(),
                 selected_texture: b.selected_tex.clone(),
                 mask_texture: b.mask_tex.clone(),
+<<<<<<< HEAD
                 color: match b.color{None => None, Some(c) => Some(MeshColorInstance::new(device, color_bind_group_layout, MeshColor::new(c)))},
+=======
+                color: match b.color {
+                    None => None,
+                    Some(c) => Some(MeshColorInstance::new(
+                        device,
+                        color_bind_group_layout,
+                        MeshColor::new(c),
+                    )),
+                },
+>>>>>>> main
                 on_click: b.on_click.clone(),
                 selected: false,
             }

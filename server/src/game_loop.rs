@@ -4,6 +4,7 @@ use crate::Recipients;
 use bus::Bus;
 use common::core::command::Command;
 
+use common::core::command::Command::{UpdateWeather, WeatherEffects};
 use log::debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
@@ -11,7 +12,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-const TICK_RATE: u64 = 30; // 30 fps
+pub const TICK_RATE: u64 = 30; // 30 fps
 
 /// Wrapper around a `Command` that also contains the id of the client that issued the command.
 #[derive(Debug, Clone)]
@@ -23,6 +24,17 @@ pub struct ClientCommand {
 impl ClientCommand {
     pub fn new(client_id: u32, command: Command) -> ClientCommand {
         ClientCommand { client_id, command }
+    }
+
+    pub fn server_issued(command: Command) -> ClientCommand {
+        ClientCommand {
+            client_id: 0,
+            command,
+        }
+    }
+
+    pub fn is_server_issued(&self) -> bool {
+        self.client_id == 0
     }
 }
 
@@ -67,34 +79,20 @@ impl GameLoop<'_> {
 
         while self.running.load(Ordering::SeqCst) {
             let tick_start = Instant::now();
-            
-            // Reset game if game has ended 
-            self.executor.reset_game(); 
-            
+
+            // Reset game if game has ended
+            self.executor.reset_game();
+
             // consume and collect all messages in the channel
-            let commands = self.commands.try_iter().collect::<Vec<_>>();
+            let mut commands = self.commands.try_iter().collect::<Vec<_>>();
 
-            // automatically spawning the 4 players if gamestate is running now
-            let mut commands = self.executor.game_init(commands);
-
-            // update list of dead players and issue die commands
-            let dead_players = self.executor.update_dead_players();
-            if !dead_players.is_empty() {
-                for client_id in dead_players {
-                    commands.push(ClientCommand::new(client_id, Command::Die));
-                }
-            }
-
-            // check whether dead players need to respawn and issue spawn commands
-            let players_to_respawn = self.executor.check_respawn_players();
-            if !players_to_respawn.is_empty() {
-                for client_id in players_to_respawn {
-                    commands.push(ClientCommand::new(client_id, Command::Spawn));
-                }
-            }
+            self.executor.add_pretick_commands(&mut commands);
 
             // send commands to the executor
             self.executor.plan_and_execute(commands);
+
+            // game state tick
+            self.executor.game_state_tick();
 
             // calculate the delta time
             let delta_time = Instant::now().duration_since(last_instant);

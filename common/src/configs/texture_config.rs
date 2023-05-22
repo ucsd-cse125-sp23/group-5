@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct ConfigTexture {
     pub textures: Vec<ConfigTextureItem>,
     // paths
-    pub particles: Vec<String>, 
+    pub particles: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

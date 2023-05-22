@@ -22,6 +22,7 @@ pub struct SoundSpec {
 pub enum ParticleType {
     ATTACK,
     AREA_ATTACK,
+    RAIN,
 }
 /// Particle specification
 #[derive(Constructor, Debug, Clone, Serialize, Deserialize, PartialEq)]
