@@ -10,8 +10,6 @@ pub const FLAG_RADIUS: f32 = 2.0;
 pub const FLAG_Z_BOUND: (Option<f32>, Option<f32>) = (Some(-10.0), Some(0.0));
 pub const WINNING_THRESHOLD: f32 = 20.0;
 pub const DECAY_RATE: f32 = 1.0 / 3.0;
-pub const REFILL_RADIUS: f32 = 2.0;
-pub const REFILL_RATE_LIMIT: f32 = 0.5;
 
 // powerup
 pub const POWER_UP_1_XYZ: (f32, f32, f32) = (5.0, -5.0, -5.0);
