@@ -119,6 +119,7 @@ impl Executor {
         let mut game_events = self.game_events.borrow_mut();
 
         let player_config = self.config_instance.player.clone();
+        let physics_config = self.config_instance.physics.clone();
 
         #[cfg(not(feature = "debug-ready-sync"))]
         let player_upper_bound = 4;
@@ -166,9 +167,9 @@ impl Executor {
                     UpdateCameraFacingCommandHandler::new(client_command.client_id, forward),
                 ),
                 Command::Jump => Box::new(JumpCommandHandler::new(client_command.client_id)),
-                Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id)),
+                Command::Attack => Box::new(AttackCommandHandler::new(client_command.client_id, physics_config)),
                 Command::AreaAttack => {
-                    Box::new(AreaAttackCommandHandler::new(client_command.client_id))
+                    Box::new(AreaAttackCommandHandler::new(client_command.client_id, physics_config))
                 }
                 Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
                 Command::CastPowerUp => {
