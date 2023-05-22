@@ -31,9 +31,6 @@ pub const DISPLAY_CONFIG_PATH: &str = "display.json";
 pub const TEXTURE_CONFIG_PATH: &str = "tex.json";
 pub const PHYSICS_CONFIG_PATH: &str = "physics.json";
 
-// pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> =
-//     OnceCellLazy::new(|| RwLock::new(None));
-
 pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCellLazy::new(|| {
     let models: ConfigModels = from_file(MODELS_CONFIG_PATH).expect("Failed to load models config");
     let scene: ConfigSceneGraph =

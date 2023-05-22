@@ -2,11 +2,8 @@ use phf::phf_map;
 
 // player/game
 // Constant for score bar: would need to recalculate every time graphic is changed
-pub const SPAWN_COOLDOWN: f32 = 3.0;
 pub const SCORE_LOWER_X: f32 = -24.5 / 9.0 * 0.14;
 pub const SCORE_UPPER_X: f32 = 21.5 / 9.0 * 0.14;
-pub const MAX_WIND_CHARGE: u32 = 10;
-pub const ONE_CHARGE: u32 = 1;
 pub const FLAG_XZ: (f32, f32) = (0.0, 0.0);
 pub const FLAG_RADIUS: f32 = 2.0;
 pub const FLAG_Z_BOUND: (Option<f32>, Option<f32>) = (Some(-10.0), Some(0.0));

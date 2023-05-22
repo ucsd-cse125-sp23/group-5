@@ -17,9 +17,9 @@ use rapier3d::prelude as rapier;
 use common::configs::model_config::ConfigModels;
 use common::configs::parameters::{
     DASH_IMPULSE, FLASH_DISTANCE_SCALAR, INVINCIBLE_EFFECTIVE_DISTANCE,
-    INVINCIBLE_EFFECTIVE_IMPULSE, MAX_WIND_CHARGE, ONE_CHARGE, POWER_UP_BUFF_DURATION,
-    POWER_UP_COOLDOWN, POWER_UP_DEBUFF_DURATION, REFILL_RADIUS, REFILL_RATE_LIMIT, SPAWN_COOLDOWN,
-    SPECIAL_MOVEMENT_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
+    INVINCIBLE_EFFECTIVE_IMPULSE, POWER_UP_BUFF_DURATION, POWER_UP_COOLDOWN,
+    POWER_UP_DEBUFF_DURATION, REFILL_RADIUS, REFILL_RATE_LIMIT, SPECIAL_MOVEMENT_COOLDOWN,
+    WIND_ENHANCEMENT_SCALAR,
 };
 use common::configs::physics_config::ConfigPhysics;
 use common::configs::scene_config::ConfigSceneGraph;
@@ -135,6 +135,7 @@ impl CommandHandler for SpawnCommandHandler {
     ) -> HandlerResult {
         // get spawn-locations with corresponding id
         let spawn_position = self.game_config.spawn_points[self.player_id as usize - 1];
+        let max_wind_charge = self.game_config.max_wind_charge;
 
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
@@ -147,7 +148,7 @@ impl CommandHandler for SpawnCommandHandler {
                 }
 
                 player.is_dead = false;
-                player.refill_wind_charge(Some(MAX_WIND_CHARGE));
+                player.refill_wind_charge(Some(max_wind_charge), max_wind_charge);
             }
         } else {
             let collider = rapier::ColliderBuilder::capsule_y(0.5, 0.25)
@@ -173,7 +174,7 @@ impl CommandHandler for SpawnCommandHandler {
                 PlayerState {
                     id: self.player_id,
                     is_dead: false,
-                    wind_charge: MAX_WIND_CHARGE,
+                    wind_charge: self.game_config.max_wind_charge,
                     on_flag_time: 0.0,
                     spawn_point: spawn_position,
                     power_up: None,
@@ -188,6 +189,7 @@ impl CommandHandler for SpawnCommandHandler {
 #[derive(Constructor)]
 pub struct DieCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for DieCommandHandler {
@@ -214,7 +216,7 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, SPAWN_COOLDOWN);
+        player_state.insert_cooldown(Command::Spawn, self.game_config.spawn_cooldown);
 
         Ok(())
     }
@@ -765,6 +767,7 @@ impl CommandHandler for AreaAttackCommandHandler {
 #[derive(Constructor)]
 pub struct RefillCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for RefillCommandHandler {
@@ -795,7 +798,7 @@ impl CommandHandler for RefillCommandHandler {
             // signal player that he/she is not in refill area
             return Ok(());
         }
-        player_state.refill_wind_charge(Some(ONE_CHARGE));
+        player_state.refill_wind_charge(Some(self.game_config.one_charge), self.game_config.max_wind_charge);
         player_state.insert_cooldown(Command::Refill, REFILL_RATE_LIMIT);
         Ok(())
     }

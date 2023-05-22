@@ -161,7 +161,10 @@ impl Executor {
                     client_command.client_id,
                     game_config,
                 )),
-                Command::Die => Box::new(DieCommandHandler::new(client_command.client_id)),
+                Command::Die => Box::new(DieCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
                 Command::Move(dir) => Box::new(MoveCommandHandler::new(
                     client_command.client_id,
                     dir,
@@ -182,7 +185,7 @@ impl Executor {
                     client_command.client_id,
                     physics_config,
                 )),
-                Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id)),
+                Command::Refill => Box::new(RefillCommandHandler::new(client_command.client_id, game_config)),
                 Command::CastPowerUp => {
                     Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
                 }
