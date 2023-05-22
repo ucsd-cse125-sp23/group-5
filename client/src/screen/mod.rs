@@ -1,10 +1,10 @@
+use common::configs::ConfigurationManager;
 use nalgebra_glm as glm;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
 
 use common::configs::display_config::ConfigDisplay;
-use common::configs::parameters::POWER_UP_LOCATIONS;
 use common::core::choices::CustomizationChoices;
 use common::core::mesh_color::MeshColor;
 
@@ -120,6 +120,9 @@ impl Display {
         _output: &wgpu::SurfaceTexture,
         client_id: u32,
     ) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
+
         // inability to find the scene would be a major bug
         // panicking is fine
         let display_group = self.groups.get(&self.current).unwrap();
@@ -185,7 +188,11 @@ impl Display {
 
             // draw the powerups if they exist
             for id in existing_powerups.iter() {
-                let _pos = *POWER_UP_LOCATIONS.get(id).unwrap();
+                let _pos = *game_config
+                    .powerup_config
+                    .power_up_locations
+                    .get(id)
+                    .unwrap();
                 let pos = glm::vec4(_pos.0, _pos.1, _pos.2, 0.0);
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
