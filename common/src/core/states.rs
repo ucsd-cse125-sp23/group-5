@@ -1,7 +1,4 @@
-use crate::configs::parameters::{
-    DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, MAX_WIND_CHARGE, POWER_UP_LOCATIONS,
-    POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD,
-};
+use crate::configs::parameters::{DECAY_RATE, FLAG_RADIUS, FLAG_XZ, FLAG_Z_BOUND, POWER_UP_LOCATIONS, POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN, WINNING_THRESHOLD};
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
@@ -96,12 +93,12 @@ impl PlayerState {
     }
 
     // add to refill command handlers, put NONE for refill all, won't exceed cap
-    pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>) {
-        let refill_amount = refill_amount.unwrap_or(MAX_WIND_CHARGE);
+    pub fn refill_wind_charge(&mut self, refill_amount: Option<u32>, max_wind_charge: u32) {
+        let refill_amount = refill_amount.unwrap_or(max_wind_charge);
         let mut charges = self.wind_charge;
         charges += refill_amount;
-        self.wind_charge = if charges > MAX_WIND_CHARGE {
-            MAX_WIND_CHARGE
+        self.wind_charge = if charges > max_wind_charge {
+            max_wind_charge
         } else {
             charges
         };
@@ -363,6 +360,7 @@ mod tests {
         let state = GameState {
             world: WorldState::default(),
             players: HashMap::default(),
+            players_customization: Default::default(),
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
@@ -377,6 +375,7 @@ mod tests {
         let state = GameState {
             world: WorldState::default(),
             players: HashMap::default(),
+            players_customization: Default::default(),
             previous_tick_winner: None,
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
