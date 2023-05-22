@@ -1,15 +1,15 @@
+use common::core::events::{GameEvent, ParticleSpec, ParticleType};
+use common::core::states::GameState;
+use common::core::weather::Weather;
 use derive_more::Constructor;
 use nalgebra::vector;
 use rand::prelude::*;
 use rapier3d::math::Vector;
-use common::core::events::{GameEvent, ParticleSpec, ParticleType};
-use common::core::states::GameState;
-use common::core::weather::Weather;
 
 use crate::executor::command_handlers::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::game_loop::TICK_RATE;
-use crate::Recipients;
 use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 
 extern crate nalgebra_glm as glm;
 
@@ -37,7 +37,6 @@ const RAINY_FRICTION: f32 = -0.2;
 /// Modeling weather as a Markov process
 impl MarkovState<Option<Weather>> for Option<Weather> {
     fn next(&self) -> Option<Weather> {
-
         let mut rng = thread_rng();
         let random_number: f64 = rng.gen(); // Generate a random number between 0 and 1
 
@@ -104,55 +103,63 @@ impl CommandHandler for WeatherEffectCommandHandler {
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         match game_state.world.weather {
-            Some(Weather::Rainy) => self.handle_rainy_weather(game_state, physics_state, game_events),
-            Some(Weather::Windy(_)) => self.handle_windy_weather(game_state, physics_state, game_events),
+            Some(Weather::Rainy) => {
+                self.handle_rainy_weather(game_state, physics_state, game_events)
+            }
+            Some(Weather::Windy(_)) => {
+                self.handle_windy_weather(game_state, physics_state, game_events)
+            }
             None => self.handle_reset_weather(game_state, physics_state, game_events),
         }
     }
 }
 
 impl WeatherEffectCommandHandler {
-    fn handle_rainy_weather(&self, game_state: &mut GameState, physics_state: &mut PhysicsState, game_events: &mut dyn GameEventCollector) -> HandlerResult {
-
-
+    fn handle_rainy_weather(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        game_events: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         // reduce friction for every player
         for (&player_id, player_state) in game_state.players.iter() {
-            let body = physics_state
-                .get_entity_rigid_body_mut(player_id)
-                .unwrap();
+            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
             body.set_linear_damping(0.);
 
-            let collider = physics_state
-                .get_entity_collider_mut(player_id)
-                .unwrap();
+            let collider = physics_state.get_entity_collider_mut(player_id).unwrap();
             collider.set_friction(RAINY_FRICTION);
 
             // add rain particles every one second
             if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
-                game_events.add(GameEvent::ParticleEvent(ParticleSpec::new(
-                    ParticleType::RAIN,
-                    player_state.transform.translation,
-                    -Vector::y(),
-                    Vector::y(),
-                    glm::vec4(1.0, 1.0, 1.0, 0.8),
-                    "rain".to_string(),
-                )), Recipients::One(player_id as u8)
+                game_events.add(
+                    GameEvent::ParticleEvent(ParticleSpec::new(
+                        ParticleType::RAIN,
+                        player_state.transform.translation,
+                        -Vector::y(),
+                        Vector::y(),
+                        glm::vec4(1.0, 1.0, 1.0, 0.8),
+                        "rain".to_string(),
+                    )),
+                    Recipients::One(player_id as u8),
                 )
             }
         }
         Ok(())
     }
 
-    fn handle_windy_weather(&self, game_state: &mut GameState, physics_state: &mut PhysicsState, game_events: &mut dyn GameEventCollector) -> HandlerResult {
+    fn handle_windy_weather(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        game_events: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         let wind_dir = match game_state.world.weather {
             Some(Weather::Windy(wind_dir)) => wind_dir,
             _ => return Ok(()),
         };
         for (&player_id, _) in game_state.players.iter() {
             // apply a force to the player
-            let body = physics_state
-                .get_entity_rigid_body_mut(player_id)
-                .unwrap();
+            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
 
             body.reset_forces(false);
             body.add_force(wind_dir * WIND_FORCE_MANGNITUDE, true);
@@ -160,7 +167,12 @@ impl WeatherEffectCommandHandler {
         Ok(())
     }
 
-    fn handle_reset_weather(&self, game_state: &mut GameState, physics_state: &mut PhysicsState, game_events: &mut dyn GameEventCollector) -> HandlerResult {
+    fn handle_reset_weather(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        game_events: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
         // reset friction for every player
         for (&player_id, _) in game_state.players.iter() {
             physics_state
@@ -168,9 +180,7 @@ impl WeatherEffectCommandHandler {
                 .unwrap()
                 .set_friction(1.0);
 
-            let body = physics_state
-                .get_entity_rigid_body_mut(player_id)
-                .unwrap();
+            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
 
             body.reset_forces(false);
             body.set_linear_damping(0.5);

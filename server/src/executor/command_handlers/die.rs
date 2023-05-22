@@ -8,8 +8,8 @@ use rapier3d::math::Isometry;
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 
 extern crate nalgebra_glm as glm;
-use rapier3d::prelude as rapier;
 use common::configs::game_config::ConfigGame;
+use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
 pub struct DieCommandHandler {
@@ -41,7 +41,7 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, SPAWN_COOLDOWN);
+        player_state.insert_cooldown(Command::Spawn, self.game_config.spawn_cooldown);
 
         Ok(())
     }

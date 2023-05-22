@@ -14,6 +14,7 @@ mod weather;
 
 pub mod prelude;
 
+use common::configs::ConfigurationManager;
 use derive_more::{Constructor, Display, Error};
 use nalgebra_glm as glm;
 use nalgebra_glm::Vec3;
@@ -22,7 +23,6 @@ use std::cell::RefMut;
 use std::fmt::Debug;
 
 use crate::Recipients;
-use common::configs::parameters::{INVINCIBLE_EFFECTIVE_DISTANCE, INVINCIBLE_EFFECTIVE_IMPULSE};
 use common::core::events::GameEvent;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::{calculate_distance, GameState};
@@ -74,6 +74,8 @@ pub fn handle_invincible_players(
     {
         return;
     }
+    let config_instance = ConfigurationManager::get_configuration();
+    let game_config = config_instance.game.clone();
     let game_state_clone = game_state.clone();
     for (id, player_state) in game_state.players.iter_mut() {
         if player_state
@@ -88,7 +90,7 @@ pub fn handle_invincible_players(
                     && calculate_distance(
                         player_state.transform.translation,
                         other_player_state.transform.translation,
-                    ) < INVINCIBLE_EFFECTIVE_DISTANCE
+                    ) < game_config.powerup_config.invincible_effective_distance
                 {
                     // get launched
                     let player_pos = player_state.transform.translation;
@@ -166,7 +168,8 @@ pub fn handle_invincible_players(
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec = vec_to_other * INVINCIBLE_EFFECTIVE_IMPULSE;
+                    let impulse_vec =
+                        vec_to_other * game_config.powerup_config.invincible_effective_impulse;
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

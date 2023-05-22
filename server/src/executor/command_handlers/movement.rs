@@ -1,7 +1,7 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
-use common::configs::parameters::{DAMPING, GAIN, STEP_SIZE, WALKING_COOLDOWN};
+use common::configs::physics_config::ConfigPhysics;
 use common::core::action_states::ActionState;
 use common::core::command::MoveDirection;
 use common::core::events::{GameEvent, SoundSpec};
@@ -11,7 +11,6 @@ use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use std::time::Duration;
-use common::configs::physics_config::ConfigPhysics;
 
 #[derive(Constructor)]
 pub struct MoveCommandHandler {
@@ -83,18 +82,22 @@ impl CommandHandler for MoveCommandHandler {
 
         // Step 3: Calculate the difference between the current and desired angular velocities
 
-        player_rigid_body.set_angular_damping(DAMPING);
+        player_rigid_body.set_angular_damping(self.physics_config.movement_config.damping);
         let current_angular_velocity = player_rigid_body.angvel();
         let angular_velocity_difference = desired_angular_velocity - current_angular_velocity;
 
         // Step 4: Calculate the required torque using the gain factor
-        let required_torque = angular_velocity_difference * GAIN;
+        let required_torque =
+            angular_velocity_difference * self.physics_config.movement_config.gain;
 
         // Step 5: Apply the torque to the player's rigid body
         player_rigid_body.apply_torque_impulse(required_torque, true);
 
         let dir_vec = rotation * dir_vec;
-        physics_state.move_character_with_velocity(self.player_id, dir_vec * STEP_SIZE);
+        physics_state.move_character_with_velocity(
+            self.player_id,
+            dir_vec * self.physics_config.movement_config.step_size,
+        );
 
         // TODO: replace this example with actual implementation
         game_events.add(
@@ -108,7 +111,7 @@ impl CommandHandler for MoveCommandHandler {
 
         player_state.active_action_states.insert((
             ActionState::Walking,
-            Duration::from_secs_f32(WALKING_COOLDOWN),
+            Duration::from_secs_f32(self.physics_config.movement_config.walking_cooldown),
         ));
 
         Ok(())

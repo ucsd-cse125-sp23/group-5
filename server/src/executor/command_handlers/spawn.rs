@@ -1,7 +1,6 @@
 use super::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
-use common::configs::parameters::MAX_WIND_CHARGE;
-use common::configs::player_config::ConfigPlayer;
+use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
 use common::core::states::{GameState, PlayerState};
 use derive_more::Constructor;
@@ -13,7 +12,7 @@ use rapier3d::math::AngVector;
 #[derive(Constructor)]
 pub struct SpawnCommandHandler {
     player_id: u32,
-    config_player: ConfigPlayer,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for SpawnCommandHandler {
@@ -24,7 +23,7 @@ impl CommandHandler for SpawnCommandHandler {
         _game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // get spawn-locations with corresponding id
-        let spawn_position = self.config_player.spawn_points[self.player_id as usize - 1];
+        let spawn_position = self.game_config.spawn_points[self.player_id as usize - 1];
 
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
@@ -37,7 +36,10 @@ impl CommandHandler for SpawnCommandHandler {
                 }
 
                 player.is_dead = false;
-                player.refill_wind_charge(Some(MAX_WIND_CHARGE));
+                player.refill_wind_charge(
+                    Some(self.game_config.max_wind_charge),
+                    self.game_config.max_wind_charge,
+                );
             }
         } else {
             let collider = geometry::ColliderBuilder::capsule_y(0.5, 0.25)
@@ -63,7 +65,7 @@ impl CommandHandler for SpawnCommandHandler {
                 PlayerState {
                     id: self.player_id,
                     is_dead: false,
-                    wind_charge: MAX_WIND_CHARGE,
+                    wind_charge: self.game_config.max_wind_charge,
                     on_flag_time: 0.0,
                     spawn_point: spawn_position,
                     power_up: None,

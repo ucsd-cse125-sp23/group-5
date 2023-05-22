@@ -85,8 +85,8 @@ impl Executor {
                 Some(Command::Move(
                     val.command.unwrap_move()
                         + acc
-                        .unwrap_or(Command::Move(MoveDirection::zeros()))
-                        .unwrap_move(),
+                            .unwrap_or(Command::Move(MoveDirection::zeros()))
+                            .unwrap_move(),
                 ))
             })
             .iter()
@@ -123,7 +123,7 @@ impl Executor {
         let physics_config = self.config_instance.physics.clone();
 
         #[cfg(not(feature = "debug-ready-sync"))]
-            let player_upper_bound = 4;
+        let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
         let player_upper_bound = 2;

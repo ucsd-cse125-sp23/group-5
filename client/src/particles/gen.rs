@@ -399,11 +399,10 @@ impl ParticleGenerator for LineGenerator {
     }
 }
 
-
 pub struct RainGenerator {
-    source: glm::Vec3, // Central point of the rain area
+    source: glm::Vec3,     // Central point of the rain area
     area: (f32, f32, f32), // 3d box of the rain area
-    dir: glm::Vec3, // Direction of rain (usually down)
+    dir: glm::Vec3,        // Direction of rain (usually down)
     linear_speed: f32,
     linear_variance: f32,
     size: f32,
@@ -455,12 +454,13 @@ impl ParticleGenerator for RainGenerator {
         let x_dist = Uniform::new(-self.area.0 / 2.0, self.area.0 / 2.0);
         let z_dist = Uniform::new(-self.area.1 / 2.0, self.area.1 / 2.0);
         let y_dist = Uniform::new(-self.area.2 / 2.0, self.area.2 / 2.0);
-        
+
         let v_dist = LogNormal::new(self.linear_speed, self.linear_variance).unwrap();
-        
+
         while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
             let v = self.dir * v_dist.sample(rng);
-            let pos = self.source + glm::vec3(x_dist.sample(rng), y_dist.sample(rng), z_dist.sample(rng));
+            let pos =
+                self.source + glm::vec3(x_dist.sample(rng), y_dist.sample(rng), z_dist.sample(rng));
             list.push(Particle {
                 start_pos: [pos[0], pos[1], pos[2], 0.0],
                 color: color.into(),

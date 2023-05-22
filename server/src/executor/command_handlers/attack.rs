@@ -1,9 +1,5 @@
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
-use common::configs::parameters::{
-    ATTACKING_COOLDOWN, ATTACK_COEFF, ATTACK_COOLDOWN, ATTACK_COST, ATTACK_IMPULSE,
-    MAX_ATTACK_ANGLE, MAX_ATTACK_DIST, WIND_ENHANCEMENT_SCALAR,
-};
 use common::core::action_states::ActionState;
 use common::core::command::Command;
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
@@ -19,9 +15,9 @@ extern crate nalgebra_glm as glm;
 use crate::executor::command_handlers::{
     CommandHandler, GameEventCollector, HandlerError, HandlerResult,
 };
-use rapier3d::prelude as rapier;
 use common::configs::game_config::ConfigGame;
 use common::configs::physics_config::ConfigPhysics;
+use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
 pub struct AttackCommandHandler {
@@ -52,7 +48,8 @@ impl CommandHandler for AttackCommandHandler {
 
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::Attack)
-            || !player_state.try_consume_wind_charge(Some(ATTACK_COST))
+            || !player_state
+                .try_consume_wind_charge(Some(self.physics_config.attack_config.attack_cost))
         {
             return Ok(());
         }
@@ -88,7 +85,10 @@ impl CommandHandler for AttackCommandHandler {
         let rotation = UnitQuaternion::face_towards(&horizontal_camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Attack, ATTACK_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Attack,
+            self.physics_config.attack_config.attack_cooldown,
+        );
 
         // send game events for attack sound/particles
         // TODO: replace this example with actual implementation
@@ -117,14 +117,14 @@ impl CommandHandler for AttackCommandHandler {
             .status_effects
             .contains_key(&StatusEffect::EnhancedWind);
         let scalar = if wind_enhanced {
-            WIND_ENHANCEMENT_SCALAR
+            self.game_config.powerup_config.wind_enhancement_scalar
         } else {
             1.0
         };
 
         player_state.active_action_states.insert((
             ActionState::Attacking,
-            Duration::from_secs_f32(ATTACKING_COOLDOWN),
+            Duration::from_secs_f32(self.physics_config.attack_config.attack_cooldown),
         ));
 
         // loop over all other players
@@ -150,7 +150,7 @@ impl CommandHandler for AttackCommandHandler {
             let angle = glm::angle(&horizontal_camera_forward, &vec_to_other);
 
             // if object in attack range
-            if angle <= MAX_ATTACK_ANGLE * scalar {
+            if angle <= self.physics_config.attack_config.max_attack_angle * scalar {
                 // send ray to other player (may need multiple later)
                 let solid = true;
                 let filter =
@@ -164,7 +164,7 @@ impl CommandHandler for AttackCommandHandler {
                     &physics_state.bodies,
                     &physics_state.colliders,
                     &ray,
-                    MAX_ATTACK_DIST,
+                    self.physics_config.attack_config.max_attack_dist,
                     solid,
                     filter,
                 ) {
@@ -186,8 +186,10 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
-                        let impulse_vec =
-                            scalar * vec_to_other * (ATTACK_IMPULSE - (ATTACK_COEFF * toi));
+                        let impulse_vec = scalar
+                            * vec_to_other
+                            * (self.physics_config.attack_config.attack_impulse
+                                - (self.physics_config.attack_config.attack_coeff * toi));
 
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],

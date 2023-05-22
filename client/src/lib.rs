@@ -44,11 +44,11 @@ use common::configs;
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::GameLifeCycleState::Running;
-use common::core::states::{GameState, ParticleQueue};
+use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
+use common::core::weather::Weather;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use common::core::weather::Weather;
 
 struct State {
     surface: wgpu::Surface,
@@ -747,8 +747,9 @@ impl State {
         let game_state_clone = game_state.lock().unwrap().clone();
 
         // check whether all players are ready, if so launch the game
-        if game_state_clone.life_cycle_state == Running {
+        if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
             self.display.current = self.display.game_display.clone();
+            println!("Game started at {}", timestamp);
         }
 
         // check if the game has ended and set corresponding end screen
@@ -855,7 +856,9 @@ impl State {
 
             // update weather icon
             {
-                let screen_id = self.display.groups
+                let screen_id = self
+                    .display
+                    .groups
                     .get(&self.display.game_display)
                     .unwrap()
                     .screen
@@ -866,7 +869,10 @@ impl State {
                 let wind_ind = *screen.icon_id_map.get("icon:windy").unwrap();
 
                 screen.icons[wind_ind].inst_range = 0..{
-                    if matches!(game_state.lock().unwrap().world.weather, Some(Weather::Windy(_)))  {
+                    if matches!(
+                        game_state.lock().unwrap().world.weather,
+                        Some(Weather::Windy(_))
+                    ) {
                         1
                     } else {
                         0
@@ -875,7 +881,10 @@ impl State {
 
                 let rain_ind = *screen.icon_id_map.get("icon:rainy").unwrap();
                 screen.icons[rain_ind].inst_range = 0..{
-                    if matches!(game_state.lock().unwrap().world.weather, Some(Weather::Rainy))  {
+                    if matches!(
+                        game_state.lock().unwrap().world.weather,
+                        Some(Weather::Rainy)
+                    ) {
                         1
                     } else {
                         0
@@ -1149,7 +1158,7 @@ impl State {
                     let time = 2.;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::RainGenerator::new(
-                        p.position + Vec3::new(0., 20.,0.),
+                        p.position + Vec3::new(0., 20., 0.),
                         (20.0, 20.0, 20.0),
                         p.direction,
                         3.0,

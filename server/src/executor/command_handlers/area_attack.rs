@@ -1,10 +1,6 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
-use common::configs::parameters::{
-    AREA_ATTACK_COEFF, AREA_ATTACK_COOLDOWN, AREA_ATTACK_COST, AREA_ATTACK_IMPULSE,
-    MAX_AREA_ATTACK_DIST,
-};
 use common::core::command::Command;
 use common::core::events::{GameEvent, ParticleSpec, ParticleType};
 use common::core::states::GameState;
@@ -12,8 +8,8 @@ use derive_more::Constructor;
 use rapier3d::{geometry, pipeline};
 
 extern crate nalgebra_glm as glm;
-use rapier3d::prelude as rapier;
 use common::configs::physics_config::ConfigPhysics;
+use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
 pub struct AreaAttackCommandHandler {
@@ -34,7 +30,8 @@ impl CommandHandler for AreaAttackCommandHandler {
 
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::AreaAttack)
-            || !player_state.try_consume_wind_charge(Some(AREA_ATTACK_COST))
+            || !player_state
+                .try_consume_wind_charge(Some(self.physics_config.attack_config.area_attack_cost))
         {
             return Ok(());
         }
@@ -53,7 +50,10 @@ impl CommandHandler for AreaAttackCommandHandler {
                 self.player_id
             )))?;
 
-        player_state.insert_cooldown(Command::AreaAttack, AREA_ATTACK_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::AreaAttack,
+            self.physics_config.attack_config.area_attack_cooldown,
+        );
 
         // TODO: add sound/particles for area attack
         /*
@@ -100,7 +100,7 @@ impl CommandHandler for AreaAttackCommandHandler {
                 &physics_state.bodies,
                 &physics_state.colliders,
                 &ray,
-                MAX_AREA_ATTACK_DIST,
+                self.physics_config.attack_config.max_area_attack_dist,
                 solid,
                 filter,
             ) {
@@ -121,8 +121,9 @@ impl CommandHandler for AreaAttackCommandHandler {
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec =
-                        vec_to_other * (AREA_ATTACK_IMPULSE - (AREA_ATTACK_COEFF * toi));
+                    let impulse_vec = vec_to_other
+                        * (self.physics_config.attack_config.area_attack_impulse
+                            - (self.physics_config.attack_config.area_attack_coeff * toi));
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,

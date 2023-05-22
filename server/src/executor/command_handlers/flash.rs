@@ -1,4 +1,5 @@
 use crate::simulation::physics_state::PhysicsState;
+use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
@@ -6,7 +7,6 @@ use derive_more::Constructor;
 use nalgebra::{zero, UnitQuaternion};
 use nalgebra_glm::Vec3;
 use rapier3d::math::Isometry;
-use common::configs::game_config::ConfigGame;
 
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 
@@ -72,7 +72,10 @@ impl CommandHandler for FlashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Flash, SPECIAL_MOVEMENT_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Flash,
+            self.game_config.powerup_config.special_movement_cooldown,
+        );
 
         // TODO::
         // Flashy particle effect would be cool here
@@ -97,8 +100,8 @@ impl CommandHandler for FlashCommandHandler {
             .transform
             .translation;
 
-        new_coordinates.x += FLASH_DISTANCE_SCALAR * x_dir;
-        new_coordinates.z += FLASH_DISTANCE_SCALAR * z_dir;
+        new_coordinates.x += self.game_config.powerup_config.flash_distance_scalar * x_dir;
+        new_coordinates.z += self.game_config.powerup_config.flash_distance_scalar * z_dir;
 
         let new_position = Isometry::new(new_coordinates, zero());
         player_rigid_body.set_position(new_position, true);

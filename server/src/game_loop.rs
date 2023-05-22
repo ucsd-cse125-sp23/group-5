@@ -4,13 +4,13 @@ use crate::Recipients;
 use bus::Bus;
 use common::core::command::Command;
 
+use common::core::command::Command::{UpdateWeather, WeatherEffects};
 use log::debug;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use common::core::command::Command::{UpdateWeather, WeatherEffects};
 
 pub const TICK_RATE: u64 = 30; // 30 fps
 
@@ -27,7 +27,10 @@ impl ClientCommand {
     }
 
     pub fn server_issued(command: Command) -> ClientCommand {
-        ClientCommand { client_id: 0, command }
+        ClientCommand {
+            client_id: 0,
+            command,
+        }
     }
 
     pub fn is_server_issued(&self) -> bool {

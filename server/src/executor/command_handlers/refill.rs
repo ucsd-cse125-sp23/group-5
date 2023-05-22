@@ -1,10 +1,10 @@
 use super::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
+use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
 use derive_more::Constructor;
-use common::configs::game_config::ConfigGame;
 
 #[derive(Constructor)]
 pub struct RefillCommandHandler {
@@ -33,15 +33,18 @@ impl CommandHandler for RefillCommandHandler {
 
         if !player_state.is_in_circular_area(
             (spawn_position.x, spawn_position.z),
-            REFILL_RADIUS,
+            self.game_config.refill_radius,
             (None, None),
         ) || player_state.command_on_cooldown(Command::Refill)
         {
             // signal player that he/she is not in refill area
             return Ok(());
         }
-        player_state.refill_wind_charge(Some(ONE_CHARGE));
-        player_state.insert_cooldown(Command::Refill, REFILL_RATE_LIMIT);
+        player_state.refill_wind_charge(
+            Some(self.game_config.one_charge),
+            self.game_config.max_wind_charge,
+        );
+        player_state.insert_cooldown(Command::Refill, self.game_config.refill_rate_limit);
         Ok(())
     }
 }

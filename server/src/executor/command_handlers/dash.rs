@@ -4,14 +4,11 @@ use common::core::states::GameState;
 use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
-
+extern crate nalgebra_glm as glm;
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
-
-extern crate nalgebra_glm as glm;
-
-use rapier3d::prelude as rapier;
 use common::configs::game_config::ConfigGame;
+use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
 pub struct DashCommandHandler {
@@ -75,7 +72,10 @@ impl CommandHandler for DashCommandHandler {
         let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
         player_rigid_body.set_rotation(rotation, true);
 
-        player_state.insert_cooldown(Command::Dash, SPECIAL_MOVEMENT_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::Dash,
+            self.game_config.powerup_config.special_movement_cooldown,
+        );
 
         // TODO::
         // some particle at the end would be cool, but probably different
@@ -93,9 +93,9 @@ impl CommandHandler for DashCommandHandler {
 
         player_rigid_body.apply_impulse(
             rapier::vector![
-                player_state.camera_forward.x * DASH_IMPULSE,
+                player_state.camera_forward.x * self.game_config.powerup_config.dash_impulse,
                 0.0,
-                player_state.camera_forward.z * DASH_IMPULSE
+                player_state.camera_forward.z * self.game_config.powerup_config.dash_impulse
             ],
             true,
         );

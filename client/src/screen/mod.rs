@@ -16,9 +16,9 @@ use crate::other_players::OtherPlayer;
 use crate::particles::{self, ParticleDrawer};
 use crate::scene::{InstanceBundle, Scene};
 use crate::screen::display_helper::{create_display_group, create_screen_map};
+use crate::screen::object_transitions::Transition;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
-use crate::screen::object_transitions::Transition;
 
 use self::objects::Screen;
 

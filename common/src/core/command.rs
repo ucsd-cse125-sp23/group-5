@@ -34,7 +34,7 @@ pub enum Command {
     Dash,
     Flash,
     UpdateWeather,
-    WeatherEffects
+    WeatherEffects,
 }
 
 impl Command {

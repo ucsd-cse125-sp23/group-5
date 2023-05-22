@@ -1,12 +1,12 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
+use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
 use common::core::events::{GameEvent, SoundSpec};
 use common::core::powerup_system::{PowerUp, StatusEffect, POWER_UP_TO_EFFECT_MAP};
 use common::core::states::GameState;
 use derive_more::Constructor;
-use common::configs::game_config::ConfigGame;
 
 #[derive(Constructor)]
 pub struct CastPowerUpCommandHandler {
@@ -50,7 +50,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         other_player_status_changes.push((
                             id,
                             StatusEffect::Stun,
-                            POWER_UP_DEBUFF_DURATION,
+                            self.game_config.powerup_config.power_up_debuff_duration,
                         ));
                     }
                     _ => {
@@ -63,7 +63,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 x => {
                     player_state.status_effects.insert(
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
-                        POWER_UP_BUFF_DURATION,
+                        self.game_config.powerup_config.power_up_buff_duration,
                     );
                 }
             }
@@ -71,7 +71,10 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         // by now the player should have casted the powerup successfully, resetting player powerup states
         player_state.power_up = None;
-        player_state.insert_cooldown(Command::CastPowerUp, POWER_UP_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::CastPowerUp,
+            self.game_config.powerup_config.power_up_cooldown,
+        );
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
         let player_pos = player_state.transform.translation;

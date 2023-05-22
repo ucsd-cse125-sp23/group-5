@@ -12,12 +12,12 @@ use std::collections::{HashMap, HashSet};
 use crate::configs::game_config::ConfigGame;
 use crate::core::action_states::ActionState;
 use crate::core::choices::FinalChoices;
-use std::time::Duration;
 use crate::core::weather::Weather;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {
-    pub weather: Option<Weather>
+    pub weather: Option<Weather>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

@@ -1,6 +1,5 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
-use common::configs::parameters::{JUMP_IMPULSE, MAX_JUMP_COUNT};
 use common::core::action_states::ActionState;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
@@ -12,8 +11,8 @@ use std::time::Duration;
 
 extern crate nalgebra_glm as glm;
 
-use rapier3d::prelude as rapier;
 use common::configs::physics_config::ConfigPhysics;
+use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
 pub struct JumpCommandHandler {
@@ -81,9 +80,9 @@ impl CommandHandler for JumpCommandHandler {
             .status_effects
             .contains_key(&StatusEffect::TripleJump)
         {
-            MAX_JUMP_COUNT + 1
+            self.physics_config.movement_config.max_jump_count + 1
         } else {
-            MAX_JUMP_COUNT
+            self.physics_config.movement_config.max_jump_count
         };
 
         if player_state.jump_count >= jump_limit {
@@ -95,7 +94,10 @@ impl CommandHandler for JumpCommandHandler {
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)
             .unwrap();
-        player_rigid_body.apply_impulse(rapier::vector![0.0, JUMP_IMPULSE, 0.0], true);
+        player_rigid_body.apply_impulse(
+            rapier::vector![0.0, self.physics_config.movement_config.jump_impulse, 0.0],
+            true,
+        );
 
         player_state.active_action_states.insert((
             ActionState::Jumping,
