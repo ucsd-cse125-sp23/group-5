@@ -1,7 +1,5 @@
 use phf::phf_map;
 
-pub const DECAY_RATE: f32 = 1.0 / 3.0;
-
 // powerup
 pub const POWER_UP_1_XYZ: (f32, f32, f32) = (5.0, -5.0, -5.0);
 pub const POWER_UP_2_XYZ: (f32, f32, f32) = (-5.0, -5.0, 5.0);

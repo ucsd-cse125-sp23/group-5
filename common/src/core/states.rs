@@ -1,6 +1,4 @@
-use crate::configs::parameters::{
-    DECAY_RATE, POWER_UP_LOCATIONS, POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN,
-};
+use crate::configs::parameters::{POWER_UP_LOCATIONS, POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN};
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
@@ -228,7 +226,8 @@ impl GameState {
     ) -> Option<u32> {
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            let provisional_on_flag_time = player_state.on_flag_time - delta_time * DECAY_RATE;
+            let provisional_on_flag_time =
+                player_state.on_flag_time - delta_time * game_config.decay_rate;
             player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
                 provisional_on_flag_time
             } else {
@@ -239,7 +238,8 @@ impl GameState {
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time += delta_time * (1.0 + DECAY_RATE);
+                self.player_mut(id).unwrap().on_flag_time +=
+                    delta_time * (1.0 + game_config.decay_rate);
                 if self.player_mut(id).unwrap().on_flag_time > game_config.winning_threshold {
                     Some(id)
                 } else {
