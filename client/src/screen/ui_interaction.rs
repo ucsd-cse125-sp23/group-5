@@ -18,19 +18,16 @@ pub static BUTTON_MAP: phf::Map<
     &'static str,
     fn(&mut screen::Display, Option<MeshColor>, Option<String>),
 > = phf_map! {
-    "go_to_lobby" => go_to_lobby,
     "next_model" => next_model,
     "change_player_color" => change_player_color,
     "customize_body" => customize_body,
     "customize_leaf" => customize_leaf,
     "game_start" => be_ready,
+    "go_to_lobby" => go_to_lobby,
+    "go_to_title" => go_to_title,
 };
 
 /// ---------------------------------- Place click events here -------------------------------------
-fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
-    display.change_to("display:lobby".to_owned());
-}
-
 fn be_ready(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
     let final_choices = FinalChoices::new(&display.customization_choices);
     // println!("{:#?}", final_choices);
@@ -109,7 +106,15 @@ fn change_player_color(
     }
 }
 
-fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>) {
+fn go_to_lobby(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+    display.change_to("display:lobby".to_owned());
+}
+
+fn go_to_title(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
+    display.current = "display:title".to_owned();
+}
+
+fn next_model(display: &mut screen::Display, _: Option<MeshColor>, _: Option<String>){
     let curr_group = display.groups.get_mut(&display.current).unwrap();
     match curr_group.scene.clone() {
         None => {}
@@ -189,6 +194,7 @@ fn update_curr_selection(
                 display.customization_choices.prev_type_selection = (prev_id, prev_tex);
             }
             b.default_texture = b.hover_texture.clone();
+            b.selected = true;
         }
     }
 }

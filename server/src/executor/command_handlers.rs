@@ -535,7 +535,7 @@ impl CommandHandler for AttackCommandHandler {
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::ATTACK,
                 player_pos,
-                camera_forward,
+                horizontal_camera_forward,
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
                 glm::vec4(0.4, 0.9, 0.7, 1.0),
@@ -578,7 +578,7 @@ impl CommandHandler for AttackCommandHandler {
             let vec_to_other = glm::normalize(&(other_player_pos - player_pos));
 
             // check dot product between direction to other player and attack direction
-            let angle = glm::angle(&camera_forward, &vec_to_other);
+            let angle = glm::angle(&horizontal_camera_forward, &vec_to_other);
 
             // if object in attack range
             if angle <= self.physics_config.attack_config.max_attack_angle * scalar {

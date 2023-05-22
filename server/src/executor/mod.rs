@@ -15,7 +15,7 @@ use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 
-use common::core::states::GameLifeCycleState::{Running, Waiting};
+use common::core::states::GameLifeCycleState::{Running, Waiting, Ended};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
 use std::cell::{RefCell, RefMut};
@@ -247,7 +247,9 @@ impl Executor {
         game_state.update_powerup_locations(delta_time, game_config.clone());
 
         if let Some(id) = game_state.update_player_on_flag_times(delta_time, game_config.clone()) {
-            panic!("Winner is {}, game finished!", id)
+            println!("Winner is {}, game finished!", id);
+            game_state.game_winner = Some(id);
+            game_state.life_cycle_state = Ended;
         }
         game_state.previous_tick_winner = game_state.has_single_winner(game_config);
     }
@@ -276,6 +278,28 @@ impl Executor {
             })
             .map(|(&id, _)| id)
             .collect::<Vec<_>>()
+    }
+
+    pub fn reset_game(&self) {
+        // If game ended, reset game back to waiting state
+        let mut game_state = self.game_state.lock().unwrap();
+        if game_state.life_cycle_state == Ended {
+            let mut physics_state = self.physics_state.borrow_mut();
+            let mut game_events = self.game_events.borrow_mut();
+            let mut ready_players = self.ready_players.borrow_mut();
+            let mut spawn_command_pushed = self.spawn_command_pushed.borrow_mut();
+            
+            // Remove all players from physics state 
+            for player_id in game_state.players.keys() {
+                physics_state.remove_entity(*player_id);
+            }
+            
+            // Reset other instance variables 
+            *game_state = GameState::new();
+            game_events.clear();
+            ready_players.clear(); 
+            *spawn_command_pushed = false; 
+        }
     }
 
     /// get a clone of the game state
