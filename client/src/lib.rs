@@ -1,7 +1,4 @@
-
-use common::configs::model_config::ModelIndex;
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
-use mesh_color::MeshColor;
 
 use glm::vec3;
 use other_players::OtherPlayer;
@@ -852,14 +849,14 @@ impl State {
                 let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
+                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / physics_config.attack_config.attack_cooldown;
                     self.display.transition_map.insert(atk_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
                     self.display.transition_map.remove(&atk_load);
                 }
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
+                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / physics_config.attack_config.area_attack_cooldown;
                     self.display.transition_map.insert(atk_area_load.clone(), screen::object_transitions::Transition::SqueezeDown(cd_left));
                 } else {
                     self.display.transition_map.remove(&atk_area_load);

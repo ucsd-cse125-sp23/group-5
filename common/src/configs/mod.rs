@@ -6,6 +6,7 @@ pub mod particle_config;
 pub mod physics_config;
 pub mod scene_config;
 pub mod texture_config;
+pub mod parameters;
 
 use once_cell::sync::Lazy as OnceCellLazy;
 use serde::Serialize;
