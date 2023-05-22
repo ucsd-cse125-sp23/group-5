@@ -1028,31 +1028,6 @@ impl State {
 
         let size = &self.window.inner_size();
 
-        // render respawn cooldown
-        if self.player.on_cooldown.contains_key(&Command::Spawn) {
-            let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-            self.glyph_brush.queue(Section {
-                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![
-                    Text::new("You died!\n")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(100.0),
-                    Text::new("Respawning in ")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                    Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                        .with_color([1.0, 1.0, 1.0, 1.0])
-                        .with_scale(60.0),
-                    Text::new(" seconds")
-                        .with_color([1.0, 1.0, 0.0, 1.0])
-                        .with_scale(60.0),
-                ],
-                layout: Layout::default().h_align(HorizontalAlign::Center),
-                ..Section::default()
-            });
-        }
-
         // TODO: ONLY DISPLAY ONCE THE PLAYER CLICKS "GO" BUTTON
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
@@ -1074,6 +1049,30 @@ impl State {
         }
 
         if self.display.current == self.display.game_display.clone() {
+            // render respawn cooldown
+            if self.player.on_cooldown.contains_key(&Command::Spawn) {
+                let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+                self.glyph_brush.queue(Section {
+                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
+                    bounds: (size.width as f32, size.height as f32),
+                    text: vec![
+                        Text::new("You died!\n")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(100.0),
+                        Text::new("Respawning in ")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                            .with_color([1.0, 1.0, 1.0, 1.0])
+                            .with_scale(60.0),
+                        Text::new(" seconds")
+                            .with_color([1.0, 1.0, 0.0, 1.0])
+                            .with_scale(60.0),
+                    ],
+                    layout: Layout::default().h_align(HorizontalAlign::Center),
+                    ..Section::default()
+                });
+            }
             // render status effect and powerup held
             self.glyph_brush.queue(Section {
                 screen_position: (600.0, 20.0),
