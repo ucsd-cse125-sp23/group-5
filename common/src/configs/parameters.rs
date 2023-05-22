@@ -1,12 +1,4 @@
-use phf::phf_map;
-
 // powerup
-pub const POWER_UP_RADIUS: f32 = 1.0;
-pub const POWER_UP_RESPAWN_COOLDOWN: f32 = 15.0;
-pub const POWER_UP_BUFF_DURATION: f32 = 10.0;
-pub const POWER_UP_DEBUFF_DURATION: f32 = 3.0;
-pub const POWER_UP_COOLDOWN: f32 = 5.0;
-
 pub const WIND_ENHANCEMENT_SCALAR: f32 = 1.5;
 pub const DASH_IMPULSE: f32 = 100.0;
 

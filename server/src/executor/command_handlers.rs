@@ -17,8 +17,7 @@ use rapier3d::prelude as rapier;
 use common::configs::model_config::ConfigModels;
 use common::configs::parameters::{
     DASH_IMPULSE, FLASH_DISTANCE_SCALAR, INVINCIBLE_EFFECTIVE_DISTANCE,
-    INVINCIBLE_EFFECTIVE_IMPULSE, POWER_UP_BUFF_DURATION, POWER_UP_COOLDOWN,
-    POWER_UP_DEBUFF_DURATION, SPECIAL_MOVEMENT_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
+    INVINCIBLE_EFFECTIVE_IMPULSE, SPECIAL_MOVEMENT_COOLDOWN, WIND_ENHANCEMENT_SCALAR,
 };
 use common::configs::physics_config::ConfigPhysics;
 use common::configs::scene_config::ConfigSceneGraph;
@@ -809,6 +808,7 @@ impl CommandHandler for RefillCommandHandler {
 #[derive(Constructor)]
 pub struct CastPowerUpCommandHandler {
     player_id: u32,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for CastPowerUpCommandHandler {
@@ -847,7 +847,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         other_player_status_changes.push((
                             id,
                             StatusEffect::Stun,
-                            POWER_UP_DEBUFF_DURATION,
+                            self.game_config.powerup_config.power_up_debuff_duration,
                         ));
                     }
                     _ => {
@@ -860,7 +860,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 x => {
                     player_state.status_effects.insert(
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
-                        POWER_UP_BUFF_DURATION,
+                        self.game_config.powerup_config.power_up_buff_duration,
                     );
                 }
             }
@@ -868,7 +868,10 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         // by now the player should have casted the powerup successfully, resetting player powerup states
         player_state.power_up = None;
-        player_state.insert_cooldown(Command::CastPowerUp, POWER_UP_COOLDOWN);
+        player_state.insert_cooldown(
+            Command::CastPowerUp,
+            self.game_config.powerup_config.power_up_cooldown,
+        );
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
         let player_pos = player_state.transform.translation;

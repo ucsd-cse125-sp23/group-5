@@ -1,4 +1,3 @@
-use crate::configs::parameters::{POWER_UP_RADIUS, POWER_UP_RESPAWN_COOLDOWN};
 use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
@@ -262,6 +261,8 @@ impl GameState {
     }
 
     pub fn update_powerup_locations(&mut self, delta_time: f32, game_config: ConfigGame) {
+        let powerup_radius = game_config.powerup_config.power_up_radius;
+        let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;
         for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
             if powerup.clone().is_none() {
                 // case where the powerup is empty, we need to refill the powerup for the map
@@ -282,16 +283,16 @@ impl GameState {
                     if player_state.power_up.is_none()
                         && player_state.is_in_circular_area(
                             (power_up_location.0, power_up_location.2),
-                            POWER_UP_RADIUS,
+                            powerup_radius,
                             (
-                                Some(power_up_location.1 - POWER_UP_RADIUS),
-                                Some(power_up_location.1 + POWER_UP_RADIUS),
+                                Some(power_up_location.1 - powerup_radius),
+                                Some(power_up_location.1 + powerup_radius),
                             ),
                         )
                     {
                         // player should get it, powerup is gone
                         player_state.power_up = powerup.clone();
-                        *vacancy_time = POWER_UP_RESPAWN_COOLDOWN;
+                        *vacancy_time = powerup_respawn_cd;
                         *powerup = None;
                     }
                 }

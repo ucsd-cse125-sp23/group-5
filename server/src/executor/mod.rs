@@ -189,9 +189,10 @@ impl Executor {
                     client_command.client_id,
                     game_config,
                 )),
-                Command::CastPowerUp => {
-                    Box::new(CastPowerUpCommandHandler::new(client_command.client_id))
-                }
+                Command::CastPowerUp => Box::new(CastPowerUpCommandHandler::new(
+                    client_command.client_id,
+                    game_config,
+                )),
                 Command::Dash => Box::new(DashCommandHandler::new(client_command.client_id)),
                 Command::Flash => Box::new(FlashCommandHandler::new(client_command.client_id)),
                 _ => {
