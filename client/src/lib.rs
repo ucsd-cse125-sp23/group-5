@@ -29,6 +29,7 @@ mod screen;
 mod texture;
 
 use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
 
 mod animation;
 pub mod audio;
@@ -43,7 +44,8 @@ use common::configs;
 use common::core::command::Command;
 use common::core::events;
 use common::core::states::GameLifeCycleState::Running;
-use common::core::states::{GameState, ParticleQueue};
+use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
+use common::core::weather::Weather;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
@@ -615,7 +617,7 @@ impl State {
             game_state,
         );
 
-        let other_players: Vec<OtherPlayer> = (1..5)
+        let _other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| OtherPlayer {
                 id: ind,
                 visible: false,
@@ -624,7 +626,7 @@ impl State {
             })
             .collect();
 
-        let other_players: Vec<OtherPlayer> = (1..5)
+        let _other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| OtherPlayer {
                 id: ind,
                 visible: false,
@@ -745,8 +747,9 @@ impl State {
         let game_state_clone = game_state.lock().unwrap().clone();
 
         // check whether all players are ready, if so launch the game
-        if game_state_clone.life_cycle_state == Running {
+        if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
             self.display.current = self.display.game_display.clone();
+            println!("Game started at {}", timestamp);
         }
 
         // check if the game has ended and set corresponding end screen
@@ -815,13 +818,12 @@ impl State {
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                 for i in 1..5 {
-                    let ind = screen
+                    let ind = *screen
                         .icon_id_map
                         .get(&format!("icon:score_p{}", i))
-                        .unwrap()
-                        .clone();
+                        .unwrap();
                     let score: f32 = self.other_players[i as usize - 1].score;
-                    let mut location = screen.icons[ind].location.clone();
+                    let mut location = screen.icons[ind].location;
                     location.horz_disp = (
                         0.0,
                         game_config.score_lower_x
@@ -848,14 +850,52 @@ impl State {
                     .unwrap();
 
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
+                let ind = *screen.icon_id_map.get("icon:charge").unwrap();
                 screen.icons[ind].inst_range = 0..self.player.wind_charge;
+            }
+
+            // update weather icon
+            {
+                let screen_id = self
+                    .display
+                    .groups
+                    .get(&self.display.game_display)
+                    .unwrap()
+                    .screen
+                    .as_ref()
+                    .unwrap();
+
+                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                let wind_ind = *screen.icon_id_map.get("icon:windy").unwrap();
+
+                screen.icons[wind_ind].inst_range = 0..{
+                    if matches!(
+                        game_state.lock().unwrap().world.weather,
+                        Some(Weather::Windy(_))
+                    ) {
+                        1
+                    } else {
+                        0
+                    }
+                };
+
+                let rain_ind = *screen.icon_id_map.get("icon:rainy").unwrap();
+                screen.icons[rain_ind].inst_range = 0..{
+                    if matches!(
+                        game_state.lock().unwrap().world.weather,
+                        Some(Weather::Rainy)
+                    ) {
+                        1
+                    } else {
+                        0
+                    }
+                };
             }
 
             // update cooldowns
             // hard coded for now... TODO: separate function
             // is it necessary? would need to pass around lots of references
-            // might be better to create dedicated function in screen/mod.rs
+            // might be better to create dedicated function in screen/command_handlers
             {
                 let screen_id = self
                     .display
@@ -981,7 +1021,7 @@ impl State {
                     Text::new("Respawning in ")
                         .with_color([1.0, 1.0, 0.0, 1.0])
                         .with_scale(60.0),
-                    Text::new(&format!("{:.1}", spawn_cooldown).as_str())
+                    Text::new(format!("{:.1}", spawn_cooldown).as_str())
                         .with_color([1.0, 1.0, 1.0, 1.0])
                         .with_scale(60.0),
                     Text::new(" seconds")
@@ -1089,7 +1129,6 @@ impl State {
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
                     let time = area_attack_cd / time_divider;
-                    println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
                         max_area_attack_dist / time,
@@ -1109,6 +1148,33 @@ impl State {
                         p.color,
                         atk_gen,
                         (1, 4),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::RAIN => {
+                    let time = 2.;
+                    println!("adding particle: {:?}", p);
+                    let atk_gen = particles::gen::RainGenerator::new(
+                        p.position + Vec3::new(0., 20., 0.),
+                        (20.0, 20.0, 20.0),
+                        p.direction,
+                        3.0,
+                        0.3,
+                        25.0,
+                        PI,
+                        0.0,
+                        false,
+                    );
+                    // System
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        2500.0,
+                        p.color,
+                        atk_gen,
+                        (11, 12),
                         &self.device,
                         &mut self.rng,
                     );

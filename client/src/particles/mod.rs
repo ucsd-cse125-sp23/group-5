@@ -116,7 +116,7 @@ impl ParticleSystem {
 /// Should only have one in the entire client
 /// This struct stores the buffers and layouts
 /// to prevent (more) clutter in State::new()
-/// systems: should always
+/// command_handlers: should always
 pub struct ParticleDrawer {
     vbuf: wgpu::Buffer,
     ibuf: wgpu::Buffer,
@@ -246,7 +246,7 @@ impl ParticleDrawer {
         camera: &crate::camera::Camera,
         to_draw: &mut Vec<Particle>,
     ) {
-        // remove dead systems
+        // remove dead command_handlers
         self.systems = self.systems.drain(..).filter(|x| x.not_done()).collect();
         // Camera info
         let cam_dir: glm::Vec3 = glm::normalize(&(camera.position - camera.target));
@@ -271,6 +271,7 @@ impl ParticleDrawer {
             }
             to_draw.extend_from_slice(&ps.particles[..end_ind]);
         }
+
         // sort by depth
         to_draw.sort_by(|a, b| {
             a.z_pos

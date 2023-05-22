@@ -39,7 +39,7 @@ impl MeshColorInstance {
         });
 
         let color_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &color_bind_group_layout,
+            layout: color_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: color_buffer.as_entire_binding(),
