@@ -6,7 +6,9 @@ use common::core::command::Command;
 use common::core::events::{GameEvent, SoundSpec};
 use common::core::powerup_system::OtherEffects::Stun;
 use common::core::powerup_system::PowerUpEffects::Invincible;
-use common::core::powerup_system::{PowerUp, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP};
+use common::core::powerup_system::{
+    PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use common::core::states::GameState;
 use derive_more::Constructor;
 
@@ -56,7 +58,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                             StatusEffect::Other(Stun),
                             self.game_config.powerup_config.power_up_debuff_duration,
                         ));
-                        
+
                         // special case
                         player_state.power_up = None;
                     }
@@ -68,6 +70,9 @@ impl CommandHandler for CastPowerUpCommandHandler {
                     }
                 },
                 x => {
+                    if x == PowerUp::Invincible {
+                        super::reset_weather(physics_state, self.player_id);
+                    }
                     player_state.status_effects.insert(
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
                         self.game_config.powerup_config.power_up_buff_duration,
@@ -80,8 +85,6 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 }
             }
         };
-
-        
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
         let player_pos = player_state.transform.translation;

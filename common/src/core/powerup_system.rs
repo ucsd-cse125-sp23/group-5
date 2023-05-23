@@ -6,7 +6,7 @@ use rand::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum PowerUp {
     Lightning,
     WindEnhancement,
