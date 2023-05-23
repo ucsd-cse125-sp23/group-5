@@ -22,6 +22,7 @@ mod lights;
 mod model;
 mod other_players;
 mod particles;
+mod skybox;
 mod player;
 mod resources;
 mod scene;
@@ -289,6 +290,29 @@ impl State {
                 ],
                 label: Some("2d_texture_bind_group_layout"),
             });
+        
+            let mask_texture_bind_group_layout_2d =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("2d_mask_texture_bind_group_layout"),
+            });
 
         let mask_texture_bind_group_layout_2d =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -550,6 +574,18 @@ impl State {
             particle_tex,
         );
 
+        let skybox_tex = 
+            texture::Texture::cube(&config_instance.texture.skybox, &device, &queue)
+            .await
+            .unwrap();
+        let skybox = skybox::SkyBoxDrawer::from_texture(skybox_tex, parameters::SKYBOX_SCALE, &device, &config, &camera_state.camera_bind_group_layout);
+
+        let skybox_tex = 
+            texture::Texture::cube(&config_instance.texture.skybox, &device, &queue)
+            .await
+            .unwrap();
+        let skybox = skybox::SkyBoxDrawer::from_texture(skybox_tex, parameters::SKYBOX_SCALE, &device, &config, &camera_state.camera_bind_group_layout);
+
        
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
         for model_config in model_configs.models.clone() {
@@ -607,6 +643,7 @@ impl State {
             light_state,
             render_pipeline,
             render_pipeline_2d,
+            skybox,
             particle_renderer,
             rect_ibuf,
             depth_texture,
