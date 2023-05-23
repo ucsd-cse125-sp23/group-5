@@ -90,10 +90,13 @@ impl CommandHandler for JumpCommandHandler {
 
         if player_state.jump_count > 1 {
             // when multi-jumping, remove invisibility
-            player_state
-                .status_effects
-                .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-            player_state.power_up = None;
+            if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible))
+            {
+                player_state
+                    .status_effects
+                    .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+                player_state.power_up = None;
+            }
         }
 
         let player_rigid_body = physics_state

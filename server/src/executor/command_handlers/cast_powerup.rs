@@ -160,9 +160,12 @@ fn flash(
     }
 
     // when flashing, remove invisibility
-    player_state
-        .status_effects
-        .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+    if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
+        player_state
+            .status_effects
+            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+        player_state.power_up = None;
+    }
 
     let _player_pos = player_state.transform.translation;
 
@@ -248,10 +251,13 @@ fn dash(
         return Ok(());
     }
 
-    // when dashing, remove invisible
-    player_state
-        .status_effects
-        .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+    // when dashing, remove invisibility
+    if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
+        player_state
+            .status_effects
+            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+        player_state.power_up = None;
+    }
 
     let _player_pos = player_state.transform.translation;
 
