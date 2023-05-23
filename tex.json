@@ -12,6 +12,14 @@
         "particles/p10.png",
         "particles/rain_particle.png"
     ],
+    "skybox": [
+        "skybox/px.png",
+        "skybox/nx.png",
+        "skybox/py.png",
+        "skybox/ny.png",
+        "skybox/pz.png",
+        "skybox/nz.png"
+    ],
     "textures": [
         {
             "name": "bkgd:title",

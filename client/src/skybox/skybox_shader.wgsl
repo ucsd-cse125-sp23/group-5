@@ -1,5 +1,5 @@
 @group(0) @binding(0) var box_tex: texture_cube<f32>;
-@group(0) @binding(1) var sampler: sampler;
+@group(0) @binding(1) var box_sampler: sampler;
 
 struct CameraUniform {
     view_pos: vec4<f32>,
@@ -26,12 +26,12 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coords = model.position;
-    // move the vertex, then calculate clip position
-    out.clip_position = vec4(model.position, 1.0) + camera.location;
+    out.clip_position = vec4(model.position, 0.0) + camera.location;
     out.clip_position = camera.proj * camera.view * out.clip_position;
+    return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(box_tex, samples, in.tex_coords);
+    return textureSample(box_tex, box_sampler, in.tex_coords);
 }

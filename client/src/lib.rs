@@ -22,6 +22,7 @@ mod lights;
 mod model;
 mod other_players;
 mod particles;
+mod skybox;
 mod player;
 mod resources;
 mod scene;
@@ -561,6 +562,12 @@ impl State {
             particle_tex,
         );
 
+        let skybox_tex = 
+            texture::Texture::cube(&config_instance.texture.skybox, &device, &queue)
+            .await
+            .unwrap();
+        let skybox = skybox::SkyBoxDrawer::from_texture(skybox_tex, parameters::SKYBOX_SCALE, &device, &config, &camera_state.camera_bind_group_layout);
+
         // TODO: fix later -> currently loading all models again for new scene and couldn't figure out lifetime errors if we were to use references
         let model_configs = config_instance.models.clone();
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
@@ -626,6 +633,7 @@ impl State {
             light_state,
             render_pipeline,
             render_pipeline_2d,
+            skybox,
             particle_renderer,
             rect_ibuf,
             depth_texture,
