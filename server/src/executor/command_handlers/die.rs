@@ -29,6 +29,7 @@ impl CommandHandler for DieCommandHandler {
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         player_state.reset_status_effects();
+        player_state.power_up = None;
 
         let spawn_position = player_state.spawn_point;
 
