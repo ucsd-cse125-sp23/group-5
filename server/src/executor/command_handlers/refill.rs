@@ -21,7 +21,6 @@ impl CommandHandler for RefillCommandHandler {
     ) -> HandlerResult {
         super::handle_invincible_players(game_state, physics_state, self.player_id);
 
-        let spawn_position = game_state.player(self.player_id).unwrap().spawn_point;
         let player_state = game_state.player_mut(self.player_id).unwrap();
 
         // if player is stunned
@@ -29,11 +28,8 @@ impl CommandHandler for RefillCommandHandler {
             return Ok(());
         }
 
-        if !player_state.is_in_circular_area(
-            (spawn_position.x, spawn_position.z),
-            self.game_config.refill_radius,
-            (None, None),
-        ) || player_state.command_on_cooldown(Command::Refill)
+        if !player_state.is_in_refill_area(self.game_config.clone())
+            || player_state.command_on_cooldown(Command::Refill)
         {
             // signal player that he/she is not in refill area
             return Ok(());
