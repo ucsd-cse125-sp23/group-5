@@ -1,7 +1,6 @@
 use crate::camera::CameraState;
 use crate::instance::{Instance, Transform};
-use crate::mesh_color::MeshColor;
-use crate::model::{self, Model, StaticModel};
+use crate::model::{Model, StaticModel};
 
 use glm::TMat4;
 use log::debug;
@@ -13,6 +12,7 @@ use nalgebra_glm as glm;
 
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
+use common::core::mesh_color::MeshColor;
 use common::core::powerup_system::StatusEffect;
 use common::core::states::GameState;
 
@@ -225,10 +225,15 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
-                
-                // TODO: possibly change model and color with player choices here
-                // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
-                // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
+            }
+
+            for (id, final_choices) in game_state.players_customization.iter() {
+                if (*id != player_id) && invisible_players.contains(id) {
+                    continue;
+                }
+                let node_id = NodeKind::Player.node_id(id.to_string());
+                self.scene_graph.get_mut(&node_id).unwrap().colors = Some(final_choices.color.clone()); // change color
+                self.scene_graph.get_mut(&node_id).unwrap().model = Some(final_choices.model.clone()); // change model
             }
         }
     }
@@ -293,19 +298,19 @@ impl Scene {
                 match curr_model {
                     Some(obj) => {
                         // add the Instance to the existing model entry
-                        obj.push(InstanceBundle::from_transform(
-                            &model_view,
-                            cur_node.id.clone(),
-                        ).add_color(curr_color));
+                        obj.push(
+                            InstanceBundle::from_transform(&model_view, cur_node.id.clone())
+                                .add_color(curr_color),
+                        );
                     }
                     None => {
                         // add the new model to the hashmap
                         self.objects_and_instances.insert(
                             model_index,
-                            vec![InstanceBundle::from_transform(
-                                &model_view,
-                                cur_node.id.clone(),
-                            ).add_color(curr_color)],
+                            vec![
+                                InstanceBundle::from_transform(&model_view, cur_node.id.clone())
+                                    .add_color(curr_color),
+                            ],
                         );
                     }
                 }

@@ -26,26 +26,24 @@ pub struct ConfigScreen {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigScreenBackground{
+pub struct ConfigScreenBackground {
     pub tex: String,
     pub aspect: f32,
     pub mask_tex: String,
-    pub color: Option<[f32; 3]>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ConfigButton{
+pub struct ConfigButton {
     pub id: Option<String>,
     pub location: ScreenLocation,
-    pub aspect: f32,    // both textures must be the same aspect ratio
-    pub height: f32,    // relative to screen height
+    pub aspect: f32, // both textures must be the same aspect ratio
+    pub height: f32, // relative to screen height
     pub default_tint: [f32; 4],
     pub hover_tint: [f32; 4],
     pub default_tex: String,
     pub hover_tex: String,
     pub selected_tex: Option<String>,
     pub mask_tex: String,
-    pub color: Option<[f32; 3]>,
     pub on_click: String,
 }
 

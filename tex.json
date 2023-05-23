@@ -9,7 +9,8 @@
         "particles/p7.png",
         "particles/p8.png",
         "particles/p9.png",
-        "particles/p10.png"
+        "particles/p10.png",
+        "particles/rain_particle.png"
     ],
     "textures": [
         {
@@ -52,29 +53,34 @@
             "name": "icon:defeat",
             "path": "defeat.jpg"
         },
+
         {
-            "name": "btn:down_arrow",
-            "path": "down_arrow.png"
+            "name": "btn:option",
+            "path": "option.png"
         },
         {
-            "name": "btn:down_arrow_hover",
-            "path": "down_arrow_hover.png"
+            "name": "btn:option_hover",
+            "path": "option_hover.png"
         },
         {
-            "name": "btn:color_button",
-            "path": "button_icon.png"
+            "name": "btn:go",
+            "path": "go_btn.png"
         },
         {
-            "name": "btn:checkmark",
-            "path": "checkmark.png"
+            "name": "icon:option_selected",
+            "path": "option_selected.png"
         },
         {
-            "name": "btn:leaf",
-            "path": "leaf_btn.png"
+            "name": "icon:select_leaf_txt",
+            "path": "select_your_leaf_text.png"
         },
         {
-            "name": "btn:body",
-            "path": "body_btn.png"
+            "name": "icon:select_leaf_color_txt",
+            "path": "select_leaf_color_text.png"
+        },
+        {
+            "name": "icon:select_wood_color_txt",
+            "path": "select_wood_color_text.png"
         },
         {
             "name": "mask:none",
@@ -83,6 +89,14 @@
         {
             "name": "mask:circle",
             "path": "circle_mask.png"
+        },
+        {
+            "name": "icon:rainy",
+            "path": "rainy.png"
+        },
+        {
+            "name": "icon:windy",
+            "path": "windy.png"
         }
     ]
 }

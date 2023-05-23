@@ -1,13 +1,9 @@
-use common::configs::display_config::{ScreenLocation, ConfigScreenTransform};
-use nalgebra_glm as glm;
-
-use std::collections::HashMap;
-use wgpu::util::DeviceExt;
-
 use crate::screen::location_helper::get_coords;
-
 use crate::screen::location_helper::to_absolute;
-use crate::mesh_color::{MeshColor, MeshColorInstance};
+use common::configs::display_config::{ConfigScreenTransform, ScreenLocation};
+use common::core::mesh_color::{MeshColor, MeshColorInstance};
+use nalgebra_glm as glm;
+use std::collections::HashMap;
 
 // Vertex
 #[repr(C)]
@@ -117,7 +113,7 @@ pub struct Screen {
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
     pub icon_id_map: HashMap<String, usize>,
-    pub default_color: MeshColorInstance,
+    pub btn_id_map: HashMap<String, usize>,
 }
 
 #[derive(Debug)]
@@ -126,13 +122,12 @@ pub struct ScreenBackground {
     pub vbuf: wgpu::Buffer,
     pub texture: String,
     pub mask_texture: String,
-    pub color: Option<MeshColorInstance>,
 }
 
 ///
 /// Note that the tint variables are currently useless
 #[derive(Debug)]
-pub struct Button{
+pub struct Button {
     pub id: Option<String>,
     pub location: ScreenLocation,
     pub aspect: f32, // both textures must be the same aspect ratio
@@ -145,7 +140,6 @@ pub struct Button{
     pub hover_texture: String,
     pub selected_texture: Option<String>,
     pub mask_texture: String,
-    pub color: Option<MeshColorInstance>,
     pub on_click: String,
     pub selected: bool,
 }
@@ -257,31 +251,37 @@ impl Icon {
             screen_height,
             &mut self.vertices,
         );
-        for v in &mut self.vertices{
+        for v in &mut self.vertices {
             v.color = self.tint.into();
         }
         queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));
         let instances: Vec<ScreenInstance> = self
-                .instance_raw
-                .iter()
-                .map(|instance_info| {
-                    let mut inst_matrix: glm::Mat4 = glm::identity();
-                    inst_matrix = glm::scale(
-                        &inst_matrix,
-                        &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
-                    );
-                    inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
-                    let t = to_absolute(&instance_info.translation, screen_width, screen_height);
-                    inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
-                    ScreenInstance {
-                        transform: inst_matrix.into(),
-                    }
-                })
-                .collect();
+            .instance_raw
+            .iter()
+            .map(|instance_info| {
+                let mut inst_matrix: glm::Mat4 = glm::identity();
+                inst_matrix = glm::scale(
+                    &inst_matrix,
+                    &glm::vec3(instance_info.scale.0, instance_info.scale.1, 1.0),
+                );
+                inst_matrix = glm::rotate_z(&inst_matrix, instance_info.rotation);
+                let t = to_absolute(&instance_info.translation, screen_width, screen_height);
+                inst_matrix = glm::translate(&inst_matrix, &glm::vec3(t[0], t[1], 0.0));
+                ScreenInstance {
+                    transform: inst_matrix.into(),
+                }
+            })
+            .collect();
         queue.write_buffer(&self.inst_buf, 0, bytemuck::cast_slice(&instances));
     }
 
-    pub fn relocate(&mut self, location: common::configs::display_config::ScreenLocation, screen_width: u32, screen_height: u32, queue: &wgpu::Queue){
+    pub fn relocate(
+        &mut self,
+        location: common::configs::display_config::ScreenLocation,
+        screen_width: u32,
+        screen_height: u32,
+        queue: &wgpu::Queue,
+    ) {
         get_coords(
             &location,
             self.aspect,
@@ -290,7 +290,7 @@ impl Icon {
             screen_height,
             &mut self.vertices,
         );
-        for v in &mut self.vertices{
+        for v in &mut self.vertices {
             v.color = self.tint.into();
         }
         queue.write_buffer(&self.vbuf, 0, bytemuck::cast_slice(&self.vertices));

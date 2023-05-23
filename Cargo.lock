@@ -532,6 +532,7 @@ dependencies = [
  "image",
  "instant",
  "log",
+ "nalgebra",
  "nalgebra-glm",
  "phf",
  "pollster",
@@ -592,6 +593,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "bytemuck",
  "byteorder",
  "derive_more",
  "env_logger",
@@ -605,6 +607,8 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt",
+ "wgpu",
+ "wgpu_glyph",
 ]
 
 [[package]]
@@ -2786,6 +2790,7 @@ dependencies = [
  "nalgebra-glm",
  "once_cell",
  "rand",
+ "rand_distr",
  "rapier3d",
  "serde_json",
  "threadpool",

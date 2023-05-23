@@ -1,800 +1,1477 @@
 {
-    "default_display": "display:title",
-    "game_display": "display:game",
-    "displays": [
+  "default_display": "display:title",
+  "game_display": "display:game",
+  "displays": [
+    {
+      "id": "display:title",
+      "screen": "screen:title"
+    },
+    {
+      "id": "display:lobby",
+      "screen": "screen:lobby",
+      "scene": "scene:lobby"
+    },
+    {
+      "id": "display:game",
+      "screen": "screen:game",
+      "scene": "scene:game"
+    },
+    {
+      "id": "display:victory",
+      "screen": "screen:victory",
+      "scene": "scene:game"
+    },
+    {
+      "id": "display:defeat",
+      "screen": "screen:defeat",
+      "scene": "scene:game"
+    }
+  ],
+  "screens": [
+    {
+      "id": "screen:title",
+      "background": {
+        "tex": "bkgd:title",
+        "mask_tex": "mask:none",
+        "aspect": 1.77777778
+      },
+      "buttons": [
         {
-            "id": "display:title",
-            "screen": "screen:title"
-        },
-        {
-            "id": "display:lobby",
-            "screen": "screen:lobby",
-            "scene":"scene:lobby"
-        },
-        {
-            "id": "display:game",
-            "screen": "screen:game",
-            "scene": "scene:game"
-        },
-        {
-            "id": "display:victory",
-            "screen": "screen:victory",
-            "scene": "scene:game"
-        }, 
-        {
-            "id": "display:defeat",
-            "screen": "screen:defeat",
-            "scene": "scene:game"
+          "location": {
+            "vert_disp": [
+              0.0,
+              -0.5
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.0,
+          "height": 0.926,
+          "default_tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "hover_tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "default_tex": "btn:title",
+          "hover_tex": "btn:title_hover",
+          "mask_tex": "mask:none",
+          "on_click": "go_to_lobby"
         }
-    ],
-    "screens": [
-        {
-            "id": "screen:title",
-            "background": {
-                "tex": "bkgd:title",
+      ],
+      "icons": []
+    },
+    {
+    "id": "screen:lobby",
+        "buttons": [
+            {
+                "id": "korok",
+                "location": {
+                    "vert_disp": [0.0,0.555],
+                    "horz_disp": [0.0, -1.333]
+                },
+                "aspect": 1.0,
+                "height": 0.3,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
                 "mask_tex": "mask:none",
-                "aspect": 1.77777778
+                "on_click": "change_leaf_type"
             },
-            "buttons": [
-                {
-                    "location": {
-                        "vert_disp": [0.0, -0.5],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.926,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:title",
-                    "hover_tex": "btn:title_hover",
-                    "mask_tex": "mask:none",
-                    "on_click": "go_to_lobby"
-                }
-            ],
-            "icons": []
-        },
-        {
-            "id": "screen:lobby",
-            "buttons": [
-                {
-                    "location": {
-                        "vert_disp": [0.0,-0.5],
-                        "horz_disp": [-0.5, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.5,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:down_arrow",
-                    "hover_tex": "btn:down_arrow_hover",
-                    "mask_tex": "mask:none",
-                    "on_click": "next_model"
+            {
+                "id": "ferris",
+                "location": {
+                    "vert_disp": [0.0,0.555],
+                    "horz_disp": [0.0, -0.963]
                 },
-                {
-                    "id": "color_btn_1",
-                    "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:color_button",
-                    "selected_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "color": [1.0,0.0,0.0],
-                    "on_click": "change_player_color"
-                },
-                {
-                    "id": "color_btn_2",
-                    "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.25, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "color": [0.0,1.0,0.0],
-                    "on_click": "change_player_color"
-                },
-                {
-                    "id": "color_btn_3",
-                    "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.5, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "color": [0.0,0.0,1.0],
-                    "on_click": "change_player_color"
-                },
-                {
-                    "id": "color_btn_4",
-                    "location": {
-                        "vert_disp": [0.0,0.5],
-                        "horz_disp": [0.75, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "color": [1.0,1.0,0.0],
-                    "on_click": "change_player_color"
-                },
-                {
-                    "id": "cust_leaf",
-                    "location": {
-                        "vert_disp": [0.0,0.75],
-                        "horz_disp": [0.18, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:checkmark",
-                    "hover_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "on_click": "customize_leaf"
-                },
-                {
-                    "id": "cust_body",
-                    "location": {
-                        "vert_disp": [0.0,0.75],
-                        "horz_disp": [0.54, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:body",
-                    "hover_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "on_click": "customize_body"
-                },
-                {
-                    "location": {
-                        "vert_disp": [0.0,-0.5],
-                        "horz_disp": [0.5, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.25,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:color_button",
-                    "hover_tex": "btn:checkmark",
-                    "mask_tex": "mask:none",
-                    "on_click": "game_start"
-                }
-            ],
-            "icons": []
-        },
-        {
-            "id": "screen:game",
-            "buttons": [],
-            "icons": [
-                {
-                    "id": "icon:score_back",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 6.5,
-                    "height": 0.14,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:score_back",
-                    "mask_tex": "mask:none",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:score_p1",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.078,
-                    "tint": [0.0, 0.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_body_p1",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.05,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_leaf_p1",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.01,
-                    "tint": [0.0, 0.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:score_p2",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.078,
-                    "tint": [1.0, 0.0, 0.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_body_p2",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.05,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_leaf_p2",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.01,
-                    "tint": [1.0, 0.0, 0.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:score_p3",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.078,
-                    "tint": [0.0, 1.0, 0.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_body_p3",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.05,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_leaf_p3",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.01,
-                    "tint": [0.0, 1.0, 0.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:score_p4",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.078,
-                    "tint": [1.0, 1.0, 0.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_body_p4",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.05,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:profile_leaf_p4",
-                    "location": {
-                        "vert_disp": [0.0, 0.87],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.01,
-                    "tint": [1.0, 1.0, 0.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:atk_back",
-                    "location": {
-                        "vert_disp": [0.0, -0.93],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 12.5,
-                    "height": 0.1482,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:atk_back",
-                    "mask_tex": "mask:none",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:charge",
-                    "location": {
-                        "vert_disp": [0.0, -0.919],
-                        "horz_disp": [0.0, -0.859]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.074,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:none",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.096]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.193]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.289]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.385]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.481]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.578]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.674]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.770]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        },
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.867]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:atk_forward",
-                    "location": {
-                        "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.237]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.222,
-                    "tint": [0.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:atk_forward_overlay",
-                    "location": {
-                        "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.237]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.222,
-                    "tint": [1.0, 1.0, 1.0, 0.0],
-                    "tex": "icon:loading",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:atk_wave",
-                    "location": {
-                        "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.504]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.222,
-                    "tint": [0.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:atk_wave_overlay",
-                    "location": {
-                        "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.504]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.222,
-                    "tint": [1.0, 1.0, 1.0, 0.0],
-                    "tex": "icon:loading",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                },
-                {
-                    "id": "icon:atk_ult",
-                    "location": {
-                        "vert_disp": [0.0, -0.852],
-                        "horz_disp": [0.0, 0.770]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.222,
-                    "tint": [0.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:place_circle",
-                    "mask_tex": "mask:circle",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "screen:victory",
-            "background":  {
-                "tex": "bkgd:end_screen",
+                "aspect": 1.0,
+                "height": 0.3,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
                 "mask_tex": "mask:none",
-                "aspect": 1.77777778
+                "on_click": "change_leaf_type"
             },
-            "buttons": [
-                {
-                    "location": {
-                        "vert_disp": [0.0, -0.5],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.926,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:title",
-                    "hover_tex": "btn:title_hover",
-                    "mask_tex": "mask:none",
-                    "on_click": "go_to_title"
-                }
+            {
+                "id": "player",
+                "location": {
+                    "vert_disp": [0.0,0.555],
+                    "horz_disp": [0.0, -0.593]
+                },
+                "aspect": 1.0,
+                "height": 0.3,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_type"
+            },
+            {
+                "id": "cube",
+                "location": {
+                    "vert_disp": [0.0,0.555],
+                    "horz_disp": [0.0, -0.223]
+                },
+                "aspect": 1.0,
+                "height": 0.3,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_type"
+            },
+
+
+            {
+                "id": "leaf_color_1",
+                "location": {
+                    "vert_disp": [0.0, 0.055],
+                    "horz_disp": [0.0, -1.388]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [0.6, 0.0, 0.0, 1.0],
+                "hover_tint": [1.0, 0.0, 0.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_2",
+                "location": {
+                    "vert_disp": [0.0, 0.055],
+                    "horz_disp": [0.0, -1.144]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [0.0, 0.6, 0.0, 1.0],
+                "hover_tint": [0.0, 1.0, 0.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_3",
+                "location": {
+                    "vert_disp": [0.0, 0.055],
+                    "horz_disp": [0.0, -0.9]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [0.0, 0.0, 0.6, 1.0],
+                "hover_tint": [0.0, 0.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option_hover",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_4",
+                "location": {
+                    "vert_disp": [0.0, 0.055],
+                    "horz_disp": [0.0, -0.656]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_5",
+                "location": {
+                    "vert_disp": [0.0, 0.055],
+                    "horz_disp": [0.0, -0.412]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_6",
+                "location": {
+                    "vert_disp": [0.0, 0.055],
+                    "horz_disp": [0.0, -0.168]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_7",
+                "location": {
+                    "vert_disp": [0.0, -0.171],
+                    "horz_disp": [0.0, -1.388]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_8",
+                "location": {
+                    "vert_disp": [0.0, -0.171],
+                    "horz_disp": [0.0, -1.144]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_9",
+                "location": {
+                    "vert_disp": [0.0, -0.171],
+                    "horz_disp": [0.0, -0.9]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_10",
+                "location": {
+                    "vert_disp": [0.0, -0.171],
+                    "horz_disp": [0.0, -0.656]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_11",
+                "location": {
+                    "vert_disp": [0.0, -0.171],
+                    "horz_disp": [0.0, -0.412]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+            {
+                "id": "leaf_color_12",
+                "location": {
+                    "vert_disp": [0.0, -0.171],
+                    "horz_disp": [0.0, -0.168]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_leaf_color"
+            },
+
+
+            {
+                "id": "wood_color_1",
+                "location": {
+                    "vert_disp": [0.0, -0.633],
+                    "horz_disp": [0.0, -1.388]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_wood_color"
+            },
+            {
+                "id": "wood_color_2",
+                "location": {
+                    "vert_disp": [0.0, -0.633],
+                    "horz_disp": [0.0, -1.144]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_wood_color"
+            },
+            {
+                "id": "wood_color_3",
+                "location": {
+                    "vert_disp": [0.0, -0.633],
+                    "horz_disp": [0.0, -0.9]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_wood_color"
+            },
+            {
+                "id": "wood_color_4",
+                "location": {
+                    "vert_disp": [0.0, -0.633],
+                    "horz_disp": [0.0, -0.656]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_wood_color"
+            },
+            {
+                "id": "wood_color_5",
+                "location": {
+                    "vert_disp": [0.0, -0.633],
+                    "horz_disp": [0.0, -0.412]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_wood_color"
+            },
+            {
+                "id": "wood_color_6",
+                "location": {
+                    "vert_disp": [0.0, -0.633],
+                    "horz_disp": [0.0, -0.168]
+                },
+                "aspect": 1.0,
+                "height": 0.185,
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "default_tex": "btn:option",
+                "hover_tex": "btn:option",
+                "mask_tex": "mask:none",
+                "on_click": "change_wood_color"
+            },
+
+            
+            {
+                "id": "start_game",
+                "location": {
+                    "vert_disp": [0.0, -0.806],
+                    "horz_disp": [0.0, 1.426]
+                },
+                "aspect": 1.692,
+                "height": 0.241,
+                "default_tint": [0.0, 0.0, 0.0, 1.0],
+                "hover_tint": [0.0, 0.0, 0.0, 1.0],
+                "default_tex": "btn:go",
+                "hover_tex": "btn:go",
+                "mask_tex": "mask:none",
+                "on_click": "game_start"
+            }
+        ],
+        "icons": [
+            {
+                "id": "select_leaf_text",
+                "location": {
+                    "vert_disp": [0.0, 0.780],
+                    "horz_disp": [0.0, -1.305]
+                },
+                "aspect": 5.428,
+                "height": 0.065,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:select_leaf_txt",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
+                ]
+            },
+            {
+                "id": "select_leaf_color_text",
+                "location": {
+                    "vert_disp": [0.0, 0.221],
+                    "horz_disp": [0.0, -1.297]
+                },
+                "aspect": 6.161,
+                "height": 0.0574,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:select_leaf_color_txt",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
+                ]
+            },
+            {
+                "id": "select_wood_color_text",
+                "location": {
+                    "vert_disp": [0.0, -0.467],
+                    "horz_disp": [0.0, -1.303]
+                },
+                "aspect": 8.391,
+                "height": 0.0425,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:select_wood_color_txt",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
+                ]
+            },
+            {
+                "id": "leaf_type_selector",
+                "location": {
+                    "vert_disp": [0.0,0.555],
+                    "horz_disp": [0.0, -1.333]
+                },
+                "aspect": 1.0,
+                "height": 0.37,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:option_selected",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
+                ]
+            },
+            {
+                "id": "leaf_color_selector",
+                "location": {
+                    "vert_disp": [0.0, 1000],
+                    "horz_disp": [0.0, 1000]
+                },
+                "aspect": 1.0,
+                "height": 0.222,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:option_selected",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
+                ]
+            },
+            {
+                "id": "wood_color_selector",
+                "location": {
+                    "vert_disp": [0.0, 1000],
+                    "horz_disp": [0.0, 1000]
+                },
+                "aspect": 1.0,
+                "height": 0.222,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:option_selected",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
+                ]                
+            }
+        ]
+    },
+    {
+      "id": "screen:game",
+      "buttons": [],
+      "icons": [
+        {
+          "id": "icon:score_back",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
             ],
-            "icons": [                
-                {
-                    "id": "icon:victory",
-                    "location": {
-                        "vert_disp": [0.0, 0.0],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.77777778,
-                    "height": 1.8,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:victory",
-                    "mask_tex": "mask:none",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                }
+            "horz_disp": [
+              0.0,
+              0.0
             ]
+          },
+          "aspect": 6.5,
+          "height": 0.14,
+          "tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:score_back",
+          "mask_tex": "mask:none",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
         },
         {
-            "id": "screen:defeat",
-            "background":  {
-                "tex": "bkgd:end_screen",
-                "mask_tex": "mask:none",
-                "aspect": 1.77777778
-            },
-            "buttons": [
-                {
-                    "location": {
-                        "vert_disp": [0.0, -0.5],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.0,
-                    "height": 0.926,
-                    "default_tint": [1.0, 1.0, 1.0, 1.0],
-                    "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                    "default_tex": "btn:title",
-                    "hover_tex": "btn:title_hover",
-                    "mask_tex": "mask:none",
-                    "on_click": "go_to_title"
-                }
+          "id": "icon:score_p1",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
             ],
-            "icons": [
-                {
-                    "id": "icon:defeat",
-                    "location": {
-                        "vert_disp": [0.0, 0.0],
-                        "horz_disp": [0.0, 0.0]
-                    },
-                    "aspect": 1.77777778,
-                    "height": 1.8,
-                    "tint": [1.0, 1.0, 1.0, 1.0],
-                    "tex": "icon:defeat",
-                    "mask_tex": "mask:none",
-                    "instances": [
-                        {
-                            "translation": {
-                                "vert_disp": [0.0, 0.0],
-                                "horz_disp": [0.0, 0.0]
-                            },
-                            "rotation": 0.0,
-                            "scale": [1.0, 1.0]
-                        }
-                    ]
-                }
+            "horz_disp": [
+              0.0,
+              0.0
             ]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [
+            1.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "tex": "icon:place_circle",
+          "mask_tex": "mask:circle",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "icon:score_p2",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "tex": "icon:place_circle",
+          "mask_tex": "mask:circle",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "icon:score_p3",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [
+            0.0,
+            0.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:place_circle",
+          "mask_tex": "mask:circle",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "icon:score_p4",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:place_circle",
+          "mask_tex": "mask:circle",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "icon:atk_back",
+          "location": {
+            "vert_disp": [
+              0.0,
+              -0.93
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 12.5,
+          "height": 0.1482,
+          "tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:atk_back",
+          "mask_tex": "mask:none",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "icon:windy",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:windy",
+          "mask_tex": "mask:none",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  -0.52
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }]
+            },
+        {
+          "id": "icon:rainy",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.87
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:rainy",
+          "mask_tex": "mask:none",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  -0.52
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }]
+        },
+            {
+              "id": "icon:charge",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.919
+                ],
+                "horz_disp": [
+                  0.0,
+                  -0.859
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.074,
+              "tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "tex": "icon:place_circle",
+              "mask_tex": "mask:none",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.096
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.193
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.289
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.385
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.481
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.578
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.674
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.770
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                },
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.867
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "icon:atk_forward",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.852
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.237
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [
+                0.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "tex": "icon:place_circle",
+              "mask_tex": "mask:circle",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "icon:atk_forward_overlay",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.852
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.237
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+              ],
+              "tex": "icon:loading",
+              "mask_tex": "mask:circle",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "icon:atk_wave",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.852
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.504
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [
+                0.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "tex": "icon:place_circle",
+              "mask_tex": "mask:circle",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "icon:atk_wave_overlay",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.852
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.504
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+              ],
+              "tex": "icon:loading",
+              "mask_tex": "mask:circle",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "icon:atk_ult",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.852
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.770
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [
+                0.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "tex": "icon:place_circle",
+              "mask_tex": "mask:circle",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "screen:victory",
+          "background": {
+            "tex": "bkgd:end_screen",
+            "mask_tex": "mask:none",
+            "aspect": 1.77777778
+          },
+          "buttons": [
+            {
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.5
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.926,
+              "default_tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "hover_tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "default_tex": "btn:title",
+              "hover_tex": "btn:title_hover",
+              "mask_tex": "mask:none",
+              "on_click": "go_to_title"
+            }
+          ],
+          "icons": [
+            {
+              "id": "icon:victory",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "aspect": 1.77777778,
+              "height": 1.8,
+              "tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "tex": "icon:victory",
+              "mask_tex": "mask:none",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "screen:defeat",
+          "background": {
+            "tex": "bkgd:end_screen",
+            "mask_tex": "mask:none",
+            "aspect": 1.77777778
+          },
+          "buttons": [
+            {
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  -0.5
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "aspect": 1.0,
+              "height": 0.926,
+              "default_tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "hover_tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "default_tex": "btn:title",
+              "hover_tex": "btn:title_hover",
+              "mask_tex": "mask:none",
+              "on_click": "go_to_title"
+            }
+          ],
+          "icons": [
+            {
+              "id": "icon:defeat",
+              "location": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "aspect": 1.77777778,
+              "height": 1.8,
+              "tint": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "tex": "icon:defeat",
+              "mask_tex": "mask:none",
+              "instances": [
+                {
+                  "translation": {
+                    "vert_disp": [
+                      0.0,
+                      0.0
+                    ],
+                    "horz_disp": [
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "rotation": 0.0,
+                  "scale": [
+                    1.0,
+                    1.0
+                  ]
+                }
+              ]
+            }
+          ]
         }
-    ]
-}
+      ]
+    }

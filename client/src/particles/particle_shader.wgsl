@@ -52,6 +52,10 @@ fn vs_main(
     var start_angle = instance.start_pos[3];
     var linear_v = vec3<f32>(instance.velocity[0], instance.velocity[1], instance.velocity[2]);
     var angular_v = instance.velocity[3];
+    // find center coordinate
+    var time_alive = instance.time_elapsed - instance.spawn_time;
+    start_disp += time_alive * linear_v;
+
     // assuming camera homogenous coord is always 1.0
     var cpos = vec3<f32>(camera.view_pos[0], camera.view_pos[1], camera.view_pos[2]);
     var z_prime = normalize(cpos - start_disp);
@@ -63,8 +67,6 @@ fn vs_main(
         x_prime = normalize(cross(up, z_prime));
     }
     var y_prime = cross(z_prime, x_prime);
-    // get time
-    var time_alive = instance.time_elapsed - instance.spawn_time;
     // scale first
     var size = instance.size;
     if (instance.size_growth != 0.0){
@@ -85,11 +87,7 @@ fn vs_main(
         y_prime,
         z_prime,
     );
-    position = coord_matrix * position;
-    // then move to start position
-    position += start_disp;
-    // then move according to velocity
-    position += time_alive * linear_v;
+    position = coord_matrix * position + start_disp;
     // then project
     out.clip_position = camera.view * vec4<f32>(position, 1.0);
     // set z, for ordering issues
