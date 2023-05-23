@@ -1,5 +1,6 @@
 use common::configs::ConfigurationManager;
 use nalgebra_glm as glm;
+use rand::rngs::adapter::ReadError;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
@@ -21,6 +22,7 @@ use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
 
 use self::objects::Screen;
+use crate::skybox;
 
 pub mod display_helper;
 pub mod location_helper;
@@ -38,8 +40,10 @@ pub struct Display {
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
     pub transition_map: HashMap<String, Transition>,
-    pub light_state: lights::LightState,
     // Grandfathered in, we don't really use lights
+    pub light_state: lights::LightState,
+    // Assumes we only want 1 skybox, it is drawn all the time
+    pub skybox: skybox::SkyBoxDrawer,
     pub scene_pipeline: wgpu::RenderPipeline,
     pub ui_pipeline: wgpu::RenderPipeline,
     pub particles: ParticleDrawer,
@@ -60,6 +64,7 @@ impl Display {
         light_state: lights::LightState,
         scene_pipeline: wgpu::RenderPipeline,
         ui_pipeline: wgpu::RenderPipeline,
+        skybox: skybox::SkyBoxDrawer,
         particles: ParticleDrawer,
         rect_ibuf: wgpu::Buffer,
         depth_texture: texture::Texture,
@@ -81,6 +86,7 @@ impl Display {
             scene_map,
             transition_map: HashMap::new(),
             light_state,
+            skybox,
             scene_pipeline,
             ui_pipeline,
             particles,
@@ -119,7 +125,7 @@ impl Display {
         let config_instance = ConfigurationManager::get_configuration();
         let game_config = config_instance.game.clone();
 
-        // inability to find the scene would be a major bug
+        // inability to find the display group would be a major bug
         // panicking is fine
         let display_group = self.groups.get(&self.current).unwrap();
 
@@ -244,6 +250,14 @@ impl Display {
                     stencil_ops: None,
                 }),
             });
+
+            // draw skybox
+            render_pass.set_pipeline(&self.skybox.render_pipeline);
+            render_pass.set_bind_group(0, &self.skybox.tex_bind_group, &[]);
+            render_pass.set_bind_group(1, &camera_state.camera_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.skybox.vbuf.slice(..));
+            render_pass.set_index_buffer(self.skybox.ibuf.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..36, 0, 0..1);
 
             // Optionally draw scene
             if !instanced_objs.is_empty() {
