@@ -392,7 +392,7 @@ impl State {
         ));
         let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
 
-        let camera_state = camera::CameraState::new(
+        let mut camera_state = camera::CameraState::new(
             &device,
             glm::vec3(
                 DEFAULT_CAMERA_POS.0,
@@ -412,6 +412,8 @@ impl State {
             100.0,
         );
 
+        camera_state.camera.ambient_multiplier = glm::vec3(0.2, 0.2, 0.2).into();
+
         scene.draw_scene_dfs();
 
         let animation_controller = animation::AnimationController::default();
@@ -421,9 +423,9 @@ impl State {
 
         #[rustfmt::skip]
             let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
-            lights::Light { position: glm::vec4(1.0, 1.0, 1.0, 0.0), color: glm::vec3(1.0, 1.0, 1.0) },
-            lights::Light { position: glm::vec4(-1.0, -1.0, -1.0, 0.0), color: glm::vec3(1.0, 0.7, 0.4) },
-            lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
+            lights::Light { position: glm::vec4(0.0, 0.5, 0.0, 1.0), color: glm::vec3(10.0, 10.0, 10.0) },
+            // lights::Light { position: glm::vec4(-1.0, -1.0, -1.0, 0.0), color: glm::vec3(1.0, 0.7, 0.4) },
+            // lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 

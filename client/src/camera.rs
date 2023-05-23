@@ -3,6 +3,7 @@ use wgpu::util::DeviceExt;
 
 #[derive(Debug)]
 pub struct Camera {
+    pub ambient_multiplier: glm::TVec3<f32>,
     pub position: glm::TVec3<f32>,
     pub target: glm::TVec3<f32>,
     up: glm::TVec3<f32>,
@@ -11,6 +12,7 @@ pub struct Camera {
 impl Camera {
     pub fn new(position: glm::TVec3<f32>, target: glm::TVec3<f32>, up: glm::TVec3<f32>) -> Self {
         Self {
+            ambient_multiplier: glm::vec3(1.0, 1.0, 1.0),
             position,
             target,
             up,
@@ -109,6 +111,10 @@ impl CameraUniform {
     }
 
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
+        self.ambient_multiplier[0] = camera.ambient_multiplier[0];
+        self.ambient_multiplier[1] = camera.ambient_multiplier[1];
+        self.ambient_multiplier[2] = camera.ambient_multiplier[2];
+        self.ambient_multiplier[3] = 1.0;
         self.view = camera.calc_matrix().into();
         self.proj = projection.calc_matrix().into();
         self.inv_view_proj =

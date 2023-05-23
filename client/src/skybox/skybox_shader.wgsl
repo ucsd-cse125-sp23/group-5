@@ -33,5 +33,5 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(box_tex, box_sampler, in.tex_coords);
+    return textureSample(box_tex, box_sampler, in.tex_coords) * camera.ambient_multiplier;
 }

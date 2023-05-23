@@ -176,12 +176,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var eye_dirn : vec3<f32> = normalize(c_loc - in.world_coords);
 
     color += diffuse;
+    // We're assuming everything comes from ambient lighting
+    // extra lighting just changes the amount of light we get
+    var light = camera.ambient_multiplier;
 
     for (var ind: u32 = 0u; ind < lights.num_lights; ind = ind + 1u) {
         var light_dir : vec3<f32>;
         var attenuation: f32 = 1.0;
         var light_col  = vec3<f32>(lights.colors[ind][0], lights.colors[ind][1], lights.colors[ind][2]);
         if (lights.positions[ind][3] == 0.0){ // directional light
+            // TODO! make line?? lights for lightning
             light_dir = normalize(vec3<f32>(
                 lights.positions[ind][0], 
                 lights.positions[ind][1], 
@@ -193,25 +197,26 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                 lights.positions[ind][1] / lights.positions[ind][3], 
                 lights.positions[ind][2] / lights.positions[ind][3],
             ) - in.world_coords;
-            attenuation = 1.0 / (0.01 * dot(disp, disp) + 1.0);
+            attenuation = 1.0 / (0.5 * dot(disp, disp) + 1.0);
             light_dir = normalize(disp);
         }
 
         // diffuse
-        // var d_int = clamp(dot(normal, light_dir), 0.0, 1.0);
+        var d_int = clamp(dot(normal, light_dir), 0.0, 1.0);
+        // alpha set to 0 since we're adding and it should already be 1.0
+        // light += vec4<f32>(light_col, 0.0) * attenuation; // w.o normals
+        light += vec4<f32>(light_col, 0.0) * d_int * attenuation;
         // if ((HAS_DIFFUSE_TEXTURE & flags) != EMPTY_FLAG){
         //     var t = textureSample(t_diffuse, s_diffuse, vec2<f32>(0.0, d_int));
         //     diffuse = vec3<f32>(t[0], t[1], t[2]);
         // }
- 
-        // color += light_col * diffuse; //* max(d_int, 0.0);
         
         // specular
-        var half_vec : vec3<f32> = normalize(eye_dirn + light_dir);
-        var nDotH : f32 = dot(normal, half_vec);
-        if (s > 0.0 && pow (max(nDotH, 0.0), s) > 0.8){
-            color += light_col * specular * gloss; 
-        }
+        // var half_vec : vec3<f32> = normalize(eye_dirn + light_dir);
+        // var nDotH : f32 = dot(normal, half_vec);
+        // if (s > 0.0 && pow (max(nDotH, 0.0), s) > 0.8){
+        //     color += light_col * specular * gloss; 
+        // }
         // if (s > 0.0){
         //     color += light_col * specular * pow(max(nDotH, 0.0), s) * gloss; 
         // }
@@ -220,5 +225,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     color = color * texture_color;
 
     // color = vec3<f32>(in.tex_coords, 0.0);
-    return vec4<f32>( clamp(color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)) , 1.0) ;
+    return clamp(vec4<f32>(color, 1.0) * light, vec4<f32>(0.0, 0.0, 0.0, 1.0), vec4<f32>(1.0, 1.0, 1.0, 1.0));
 }
