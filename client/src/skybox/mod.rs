@@ -4,7 +4,7 @@ mod constants;
 
 use wgpu::util::DeviceExt;
 
-pub struct SkyBoxDrawer{
+pub struct SkyBoxDrawer {
     pub vbuf: wgpu::Buffer,
     pub ibuf: wgpu::Buffer,
     pub texture: texture::Texture,
@@ -13,19 +13,19 @@ pub struct SkyBoxDrawer{
     pub render_pipeline: wgpu::RenderPipeline,
 }
 
-impl SkyBoxDrawer{
+impl SkyBoxDrawer {
     pub fn from_texture(
         texture: texture::Texture,
         scale: f32,
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
         camera_layout: &wgpu::BindGroupLayout,
-    ) -> Self{
+    ) -> Self {
         //vertex and index
         let mut vertices = constants::SKYBOX_VTX.clone();
         println!("skybox vtxs: {:?}", vertices);
-        for vtx in vertices.iter_mut(){
-            for coord in vtx.iter_mut(){
+        for vtx in vertices.iter_mut() {
+            for coord in vtx.iter_mut() {
                 *coord *= scale;
             }
         }
@@ -124,7 +124,7 @@ impl SkyBoxDrawer{
             },
             multiview: None,
         });
-        Self{
+        Self {
             vbuf,
             ibuf,
             texture,

@@ -1,5 +1,5 @@
 use common::core::command::Command;
-use common::core::powerup_system::{PowerUp, StatusEffect};
+use common::core::powerup_system::{PowerUp, PowerUpStatus, StatusEffect};
 use common::core::states::PlayerState;
 use instant::Duration;
 use std::collections::HashMap;
@@ -45,7 +45,7 @@ pub struct Player {
     pub is_dead: bool,
     pub wind_charge: u32,
     pub on_cooldown: HashMap<Command, f32>,
-    pub power_up: Option<PowerUp>,
+    pub power_up: Option<(PowerUp, PowerUpStatus)>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
 }
 

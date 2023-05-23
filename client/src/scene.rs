@@ -13,7 +13,7 @@ use nalgebra_glm as glm;
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
 use common::core::mesh_color::MeshColor;
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 
 use crate::player::{Player, PlayerController};
@@ -200,7 +200,8 @@ impl Scene {
 
         // only render when i'm there
         if game_state.players.contains_key(&player_id) {
-            let invisible_players = game_state.get_affected_players(StatusEffect::Invisible);
+            let invisible_players =
+                game_state.get_affected_players(StatusEffect::Power(PowerUpEffects::Invisible));
 
             game_state.players.iter().for_each(|(id, _player_state)| {
                 let node_id = NodeKind::Player.node_id(id.to_string());
@@ -232,8 +233,10 @@ impl Scene {
                     continue;
                 }
                 let node_id = NodeKind::Player.node_id(id.to_string());
-                self.scene_graph.get_mut(&node_id).unwrap().colors = Some(final_choices.color.clone()); // change color
-                self.scene_graph.get_mut(&node_id).unwrap().model = Some(final_choices.model.clone()); // change model
+                self.scene_graph.get_mut(&node_id).unwrap().colors =
+                    Some(final_choices.color.clone()); // change color
+                self.scene_graph.get_mut(&node_id).unwrap().model =
+                    Some(final_choices.model.clone()); // change model
             }
         }
     }
