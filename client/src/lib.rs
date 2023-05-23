@@ -572,8 +572,8 @@ impl State {
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
-        
 
+        // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
@@ -616,10 +616,9 @@ impl State {
             1920,
             1080,
             &device,
-            &color_bind_group_layout,
+            sender,
             game_state,
         );
-        
 
         let _other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| OtherPlayer {
@@ -629,7 +628,7 @@ impl State {
                 score: 0.0,
             })
             .collect();
-        let other_players: Vec<OtherPlayer> = (1..5)
+
         let _other_players: Vec<OtherPlayer> = (1..5)
             .map(|ind| OtherPlayer {
                 id: ind,
@@ -638,8 +637,8 @@ impl State {
                 score: 0.0,
             })
             .collect();
+
         let other_players: Vec<OtherPlayer> = (1..5)
-            .map(|ind| 
             .map(|ind| OtherPlayer {
                 id: ind,
                 visible: false,
@@ -647,6 +646,7 @@ impl State {
                 score: 0.0,
             })
             .collect();
+
         Self {
             window,
             surface,
@@ -719,8 +719,8 @@ impl State {
                 ..
             } => {
                 self.display.click(&self.mouse_position);
-                true
                 self.relocate_selectors();
+                true
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_position[0] = 2.0 * (position.x as f32) / self.window_size[0] - 1.0;
@@ -731,7 +731,6 @@ impl State {
         }
     }
 
-    fn update(
     fn relocate_selectors(&mut self){
         if self.display.current == "display:lobby".to_string() {
             let screen = self.display.screen_map.get_mut("screen:lobby").unwrap();
@@ -748,38 +747,38 @@ impl State {
         }
     }
 
+    fn update(
         &mut self,
         game_state: Arc<Mutex<GameState>>,
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
     ) {
         // Only update if we're in game/lobby
-        if self.display.current != self.display.game_display.clone() && self.display.current != "display:lobby" {
         if self.display.current != self.display.game_display.clone()
             && self.display.current != "display:lobby"
         {
             return;
-
+        }
         // config setup
         let config_instance = ConfigurationManager::get_configuration();
         let physics_config = config_instance.physics.clone();
         let game_config = config_instance.game.clone();
+
         let game_state_clone = game_state.lock().unwrap().clone();
 
-        // check if the game has ended and set corresponding end screen
         // check whether all players are ready, if so launch the game
         if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
             self.display.current = self.display.game_display.clone();
         }
 
+        // check if the game has ended and set corresponding end screen
         if game_state_clone.life_cycle_state == Ended {
-            if game_state_clone.game_winner.unwrap() == self.client_id as u32{
             if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
+                self.display.current = "display:victory".to_owned();
             } else {
-                self.display.current = "display:defeat".to_owned(); 
                 self.display.current = "display:defeat".to_owned();
+            }
 
-            // Reset camera and player for lobby 
             // Reset camera and player for lobby
             self.camera_state.camera.position = glm::vec3(
                 DEFAULT_CAMERA_POS.0,
@@ -792,7 +791,8 @@ impl State {
                 DEFAULT_CAMERA_TARGET.2,
             );
             return;
-
+        }
+        // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
             // it borrows self
@@ -817,7 +817,6 @@ impl State {
                     dt,
                     self.client_id,
                 );
-            
 
             other_players::load_game_state(
                 &mut self.other_players,
@@ -825,8 +824,8 @@ impl State {
                 game_config.clone(),
             );
 
+            // update player scores
             {
-                let screen_id = self.display.groups
                 let screen_id = self
                     .display
                     .groups
@@ -835,32 +834,42 @@ impl State {
                     .screen
                     .as_ref()
                     .unwrap();
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                // TODO: update profile color/textures using gamestate 
-                for i in 1..5{
-                    let ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
-                    let score_ind = screen.icon_id_map.get(&format!("icon:score_p{}",i)).unwrap().clone();
-                    let profile_body_ind = screen.icon_id_map.get(&format!("icon:profile_body_p{}",i)).unwrap().clone();
-                    let profile_leaf_ind = screen.icon_id_map.get(&format!("icon:profile_leaf_p{}",i)).unwrap().clone();
-                    let score : f32 = self.other_players[i as usize - 1].score;
 
-                    // move positions of profile icons according to score
+                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                for i in 1..5 {
+                    let score_ind = *screen
+                        .icon_id_map
+                        .get(&format!("icon:score_p{}", i))
+                        .unwrap();
+                    let profile_body_ind = *screen
+                        .icon_id_map
+                        .get(&format!("icon:profile_body_p{}",i))
+                        .unwrap();
+                    let profile_leaf_ind = *screen
+                        .icon_id_map
+                        .get(&format!("icon:profile_leaf_p{}",i))
+                        .unwrap();
+                    let score: f32 = self.other_players[i as usize - 1].score;
+                    
                     for ind in [score_ind, profile_body_ind, profile_leaf_ind] {
-                        let mut location = screen.icons[ind].location.clone();
-                        location.horz_disp = (0.0, parameters::SCORE_LOWER_X + score * (parameters::SCORE_UPPER_X - parameters::SCORE_LOWER_X));
+                        let mut location = screen.icons[ind].location;
+                        location.horz_disp = (
+                            0.0,
+                            game_config.score_lower_x
+                                + score * (game_config.score_upper_x - game_config.score_lower_x),
+                        );
                         screen.icons[ind].relocate(
                             location,
                             self.config.width,
                             self.config.height,
-                            &self.queue
+                            &self.queue,
                         );
                     }
-
                 }
+            }
 
             // update player number of charges
             {
-                let screen_id = self.display.groups
                 let screen_id = self
                     .display
                     .groups
@@ -869,12 +878,12 @@ impl State {
                     .screen
                     .as_ref()
                     .unwrap();
+
                 let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = screen.icon_id_map.get("icon:charge").unwrap().clone();
                 let ind = *screen.icon_id_map.get("icon:charge").unwrap();
+                screen.icons[ind].inst_range = 0..self.player.wind_charge;
             }
 
-            // update cooldowns
             // update weather icon
             {
                 let screen_id = self
@@ -913,11 +922,11 @@ impl State {
                 };
             }
 
+            // update cooldowns
             // hard coded for now... TODO: separate function
             // is it necessary? would need to pass around lots of references
-            // might be better to create dedicated function in screen/mod.rs
             // might be better to create dedicated function in screen/command_handlers
-                let screen_id = self.display.groups
+            {
                 let screen_id = self
                     .display
                     .groups
@@ -926,29 +935,30 @@ impl State {
                     .screen
                     .as_ref()
                     .unwrap();
+
                 // TODO: Magic constants here seem a little unavoidable?
                 let atk_load = String::from("icon:atk_forward_overlay");
                 let atk_area_load = String::from("icon:atk_wave_overlay");
 
                 if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
                     let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
                         / physics_config.attack_config.attack_cooldown;
                     self.display.transition_map.insert(
                         atk_load.clone(),
                         screen::object_transitions::Transition::SqueezeDown(cd_left),
                     );
+                } else {
                     self.display.transition_map.remove(&atk_load);
                 }
 
                 if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap() / common::configs::parameters::ATTACK_COOLDOWN;
                     let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
                         / physics_config.attack_config.area_attack_cooldown;
                     self.display.transition_map.insert(
                         atk_area_load.clone(),
                         screen::object_transitions::Transition::SqueezeDown(cd_left),
                     );
+                } else {
                     self.display.transition_map.remove(&atk_area_load);
                 }
             }
@@ -967,11 +977,11 @@ impl State {
                 .get_player_positions();
 
             // ASSUME: Ids should always be 1-4
-            for p in &mut self.other_players{
             for p in &mut self.other_players {
+                p.visible = false;
             }
-            for (i, loc) in player_loc{
             for (i, loc) in player_loc {
+                self.other_players[i as usize - 1].location = loc;
                 self.other_players[i as usize - 1].visible = true;
             }
 
@@ -1028,7 +1038,6 @@ impl State {
 
         let size = &self.window.inner_size();
 
-        // TODO: maybe refactor later?
         // TODO: ONLY DISPLAY ONCE THE PLAYER CLICKS "GO" BUTTON
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
@@ -1096,6 +1105,7 @@ impl State {
                 ..Section::default()
             });
         }
+        // Draw the text!
         self.glyph_brush
             .draw_queued(
                 &self.device,
@@ -1120,7 +1130,6 @@ impl State {
     }
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
-        for p in &particle_queue.particles {
         let config_instance = ConfigurationManager::get_configuration();
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
@@ -1133,59 +1142,60 @@ impl State {
         // particle consts
         let time_divider = particle_config.time_divider;
 
+        for p in &particle_queue.particles {
             println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
-                //TODO: move to config
+                // generator
                 events::ParticleType::ATTACK => {
-                    let time = parameters::ATTACK_COOLDOWN / 2.0;
                     let time = attack_cd / time_divider;
+                    println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
-                        parameters::MAX_ATTACK_ANGLE,
                         max_attack_angle,
                         max_attack_dist / time,
                         particle_config.attack_particle_config.linear_variance,
-                        0.5,
+                        PI,
                         particle_config.attack_particle_config.angular_variance,
                         particle_config.attack_particle_config.size,
                         particle_config.attack_particle_config.size_variance,
                         particle_config.attack_particle_config.size_growth,
+                        false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        2000.0,
                         particle_config.attack_particle_config.gen_speed,
+                        p.color,
                         atk_gen,
                         (1, 4),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-                },
                 }
+                events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
-                    let time = parameters::AREA_ATTACK_COOLDOWN / 2.0;
                     let time = area_attack_cd / time_divider;
+                    let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
-                        parameters::MAX_AREA_ATTACK_DIST / time,
                         max_area_attack_dist / time,
                         particle_config.area_attack_particle_config.linear_variance,
-                        0.5,
+                        PI,
                         particle_config.area_attack_particle_config.angular_variance,
                         particle_config.area_attack_particle_config.size,
                         particle_config.area_attack_particle_config.size_variance,
                         particle_config.area_attack_particle_config.size_growth,
+                        false,
                     );
                     // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        4000.0,
                         particle_config.area_attack_particle_config.gen_speed,
+                        p.color,
                         atk_gen,
                         (1, 4),
                         &self.device,
@@ -1193,7 +1203,6 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
                 }
-            }
                 events::ParticleType::RAIN => {
                     let time = 2.;
                     println!("adding particle: {:?}", p);
@@ -1221,6 +1230,7 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
                 }
+            }
         }
         particle_queue.particles.clear();
     }
