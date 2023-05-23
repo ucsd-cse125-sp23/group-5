@@ -28,9 +28,8 @@ impl CommandHandler for RefillCommandHandler {
             return Ok(());
         }
 
-        if !player_state.is_in_refill_area(
-            self.game_config.clone(),
-        ) || player_state.command_on_cooldown(Command::Refill)
+        if !player_state.is_in_refill_area(self.game_config.clone())
+            || player_state.command_on_cooldown(Command::Refill)
         {
             // signal player that he/she is not in refill area
             return Ok(());
