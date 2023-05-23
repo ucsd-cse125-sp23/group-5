@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigGame {
     pub spawn_points: Vec<rapier3d::prelude::Vector<f32>>,
+    pub refill_points: Vec<rapier3d::prelude::Vector<f32>>,
     pub spawn_cooldown: f32,
     pub score_lower_x: f32,
     pub score_upper_x: f32,
