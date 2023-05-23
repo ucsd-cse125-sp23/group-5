@@ -51,6 +51,7 @@ impl CommandHandler for AreaAttackCommandHandler {
         player_state
             .status_effects
             .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+        player_state.power_up = None;
 
         let wind_enhanced = player_state
             .status_effects

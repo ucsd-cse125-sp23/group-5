@@ -93,6 +93,7 @@ impl CommandHandler for JumpCommandHandler {
             player_state
                 .status_effects
                 .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+            player_state.power_up = None;
         }
 
         let player_rigid_body = physics_state

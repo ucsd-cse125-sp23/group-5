@@ -1,9 +1,23 @@
+use std::cell::RefMut;
+use std::fmt::Debug;
+
+use derive_more::{Constructor, Display, Error};
+use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
+use rapier3d::prelude as rapier;
+
+use common::configs::ConfigurationManager;
+use common::core::events::GameEvent;
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
+use common::core::states::{calculate_distance, GameState};
+
+use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
+
 mod area_attack;
 mod attack;
 mod cast_powerup;
-mod dash;
 mod die;
-mod flash;
 mod jump;
 mod movement;
 mod refill;
@@ -13,21 +27,6 @@ mod update_camera_facing;
 mod weather;
 
 pub mod prelude;
-
-use common::configs::ConfigurationManager;
-use derive_more::{Constructor, Display, Error};
-use nalgebra_glm as glm;
-use nalgebra_glm::Vec3;
-use rapier3d::prelude as rapier;
-use std::cell::RefMut;
-use std::fmt::Debug;
-
-use crate::Recipients;
-use common::core::events::GameEvent;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
-use common::core::states::{calculate_distance, GameState};
-
-use crate::simulation::physics_state::PhysicsState;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {

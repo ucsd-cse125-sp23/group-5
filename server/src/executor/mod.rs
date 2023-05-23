@@ -196,14 +196,6 @@ impl Executor {
                     client_command.client_id,
                     game_config,
                 )),
-                Command::Dash => Box::new(DashCommandHandler::new(
-                    client_command.client_id,
-                    game_config,
-                )),
-                Command::Flash => Box::new(FlashCommandHandler::new(
-                    client_command.client_id,
-                    game_config,
-                )),
                 // weather systems
                 Command::UpdateWeather => Box::new(UpdateWeatherCommandHandler::new()),
                 Command::WeatherEffects => Box::new(WeatherEffectCommandHandler::new()),

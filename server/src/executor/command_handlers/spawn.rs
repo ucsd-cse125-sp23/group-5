@@ -29,7 +29,10 @@ impl CommandHandler for SpawnCommandHandler {
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
-            if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
+            if !player.is_dead {
+                return Ok(());
+            }
+            if !player.on_cooldown.contains_key(&Command::Spawn) {
                 if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {

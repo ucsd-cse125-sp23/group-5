@@ -56,6 +56,7 @@ impl CommandHandler for AttackCommandHandler {
         player_state
             .status_effects
             .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+        player_state.power_up = None;
 
         let player_pos = player_state.transform.translation;
 

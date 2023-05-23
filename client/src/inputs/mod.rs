@@ -79,10 +79,8 @@ impl InputEventProcessor {
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),
             VirtualKeyCode::RShift => Some((GameKeyKind::Pressable, Die)),
-            VirtualKeyCode::X => Some((GameKeyKind::Pressable, CastPowerUp)), // TODO: Change
-            VirtualKeyCode::Q => Some((GameKeyKind::Pressable, Dash)),        // TODO: Change
-            VirtualKeyCode::E => Some((GameKeyKind::Pressable, Flash)),       // TODO: Change
-
+            VirtualKeyCode::C => Some((GameKeyKind::Pressable, CastPowerUp)), // TODO: Change
+            
             // match PressRelease keys
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
             VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
