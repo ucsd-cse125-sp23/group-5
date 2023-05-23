@@ -75,6 +75,8 @@ impl MarkovState<Option<Weather>> for Option<Weather> {
     }
 }
 
+const WEATHER_START_DELAY: u64 = 60 * TICK_RATE;
+
 #[derive(Constructor)]
 /// Handles the command to start the weather
 pub struct UpdateWeatherCommandHandler {}
@@ -86,6 +88,12 @@ impl CommandHandler for UpdateWeatherCommandHandler {
         _: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+
+        // don't do anything for the fist 1 min
+        if game_state.life_cycle_state.unwrap_running() < WEATHER_START_DELAY {
+            return Ok(());
+        }
+
         game_state.world.weather = game_state.world.weather.next();
 
         Ok(())
