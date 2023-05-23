@@ -27,12 +27,12 @@ impl CurrentSelections {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FinalChoices{
+pub struct FinalChoices {
     pub color: HashMap<String, MeshColor>,
     pub model: ModelIndex,
 }
 
-impl FinalChoices{
+impl FinalChoices {
     fn default() -> Self {
         Self {
             color: HashMap::new(),

@@ -24,7 +24,7 @@ use std::fmt::Debug;
 
 use crate::Recipients;
 use common::core::events::GameEvent;
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::{calculate_distance, GameState};
 
 use crate::simulation::physics_state::PhysicsState;
@@ -69,8 +69,7 @@ pub fn handle_invincible_players(
         .players
         .get(&command_casting_player_id)
         .unwrap()
-        .status_effects
-        .contains_key(&StatusEffect::Invincible)
+        .holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible))
     {
         return;
     }
@@ -78,14 +77,10 @@ pub fn handle_invincible_players(
     let game_config = config_instance.game.clone();
     let game_state_clone = game_state.clone();
     for (id, player_state) in game_state.players.iter_mut() {
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Invincible)
-        {
+        if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
             for (other_player_id, other_player_state) in game_state_clone.players.iter() {
                 if !other_player_state
-                    .status_effects
-                    .contains_key(&StatusEffect::Invisible)
+                    .holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible))
                     && *other_player_id != *id
                     && calculate_distance(
                         player_state.transform.translation,
@@ -178,4 +173,16 @@ pub fn handle_invincible_players(
             }
         }
     }
+}
+
+pub fn reset_weather(physics_state: &mut PhysicsState, player_id: u32) {
+    physics_state
+        .get_entity_collider_mut(player_id)
+        .unwrap()
+        .set_friction(1.0);
+
+    let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
+
+    body.reset_forces(false);
+    body.set_linear_damping(0.5);
 }

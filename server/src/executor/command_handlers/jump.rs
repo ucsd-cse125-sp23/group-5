@@ -1,7 +1,7 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use common::core::action_states::ActionState;
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
 use itertools::Itertools;
@@ -65,10 +65,8 @@ impl CommandHandler for JumpCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Stun)
-        {
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 
@@ -77,8 +75,7 @@ impl CommandHandler for JumpCommandHandler {
         }
 
         let jump_limit = if player_state
-            .status_effects
-            .contains_key(&StatusEffect::TripleJump)
+            .holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::TripleJump))
         {
             self.physics_config.movement_config.max_jump_count + 1
         } else {
@@ -90,6 +87,13 @@ impl CommandHandler for JumpCommandHandler {
         }
 
         player_state.jump_count += 1;
+
+        if player_state.jump_count > 1 {
+            // when multi-jumping, remove invisibility
+            player_state
+                .status_effects
+                .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+        }
 
         let player_rigid_body = physics_state
             .get_entity_rigid_body_mut(self.player_id)

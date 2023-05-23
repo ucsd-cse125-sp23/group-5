@@ -1,6 +1,6 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{OtherEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
 use nalgebra_glm::Vec3;
@@ -25,10 +25,8 @@ impl CommandHandler for UpdateCameraFacingCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Stun)
-        {
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 

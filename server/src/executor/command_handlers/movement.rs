@@ -5,7 +5,7 @@ use common::configs::physics_config::ConfigPhysics;
 use common::core::action_states::ActionState;
 use common::core::command::MoveDirection;
 use common::core::events::{GameEvent, SoundSpec};
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{OtherEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
@@ -40,10 +40,8 @@ impl CommandHandler for MoveCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Stun)
-        {
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 

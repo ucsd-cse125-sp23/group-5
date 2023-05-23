@@ -49,12 +49,22 @@ impl Distribution<PowerUp> for Standard {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum StatusEffect {
+    Power(PowerUpEffects),
+    Other(OtherEffects),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum PowerUpEffects {
     EnhancedWind,
     EnabledDash,
     EnabledFlash,
     Invisible,
     TripleJump,
     Invincible,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum OtherEffects {
     Stun,
     // for later weather effect
     Blinded,
@@ -62,12 +72,12 @@ pub enum StatusEffect {
 }
 
 pub static POWER_UP_TO_EFFECT_MAP: phf::Map<u32, StatusEffect> = phf_map! {
-    2u32 => StatusEffect::EnhancedWind,
-    3u32 => StatusEffect::EnabledDash,
-    4u32 => StatusEffect::EnabledFlash,
-    5u32 => StatusEffect::Invisible,
-    6u32 => StatusEffect::TripleJump,
-    7u32 => StatusEffect::Invincible,
+    2u32 => StatusEffect::Power(PowerUpEffects::EnhancedWind),
+    3u32 => StatusEffect::Power(PowerUpEffects::EnabledDash),
+    4u32 => StatusEffect::Power(PowerUpEffects::EnabledFlash),
+    5u32 => StatusEffect::Power(PowerUpEffects::Invisible),
+    6u32 => StatusEffect::Power(PowerUpEffects::TripleJump),
+    7u32 => StatusEffect::Power(PowerUpEffects::Invincible),
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -87,4 +97,10 @@ impl PowerUpLocations {
             PowerUpLocations::PowerUp4XYZ => 4,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum PowerUpStatus {
+    Active,
+    Held,
 }

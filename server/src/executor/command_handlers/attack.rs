@@ -3,7 +3,7 @@ use crate::Recipients;
 use common::core::action_states::ActionState;
 use common::core::command::Command;
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
@@ -39,10 +39,8 @@ impl CommandHandler for AttackCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Stun)
-        {
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 
@@ -54,7 +52,10 @@ impl CommandHandler for AttackCommandHandler {
             return Ok(());
         }
 
-        player_state.status_effects.remove(&StatusEffect::Invisible);
+        // when attacking, remove invisibility
+        player_state
+            .status_effects
+            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
 
         let player_pos = player_state.transform.translation;
 
@@ -115,7 +116,7 @@ impl CommandHandler for AttackCommandHandler {
 
         let wind_enhanced = player_state
             .status_effects
-            .contains_key(&StatusEffect::EnhancedWind);
+            .contains_key(&StatusEffect::Power(PowerUpEffects::EnhancedWind));
         let scalar = if wind_enhanced {
             self.game_config.powerup_config.wind_enhancement_scalar
         } else {
@@ -133,11 +134,9 @@ impl CommandHandler for AttackCommandHandler {
                 continue;
             }
 
-            if game_state
-                .player(*other_player_id)
-                .unwrap()
-                .status_effects
-                .contains_key(&StatusEffect::Invincible)
+            // other player not affected if invincible
+            if other_player_state
+                .holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible))
             {
                 continue;
             }

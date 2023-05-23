@@ -2,6 +2,7 @@ use crate::inputs::Input;
 use crate::State;
 use common::core::states::{GameState, ParticleQueue};
 use log::{debug, warn};
+use nalgebra_glm as glm;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use winit::platform::run_return::EventLoopExtRunReturn;
@@ -10,7 +11,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use nalgebra_glm as glm;
 
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)

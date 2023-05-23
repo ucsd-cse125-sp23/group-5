@@ -4,7 +4,9 @@ use crate::Recipients;
 use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
 use common::core::events::{GameEvent, SoundSpec};
-use common::core::powerup_system::{PowerUp, StatusEffect, POWER_UP_TO_EFFECT_MAP};
+use common::core::powerup_system::OtherEffects::Stun;
+use common::core::powerup_system::PowerUpEffects::Invincible;
+use common::core::powerup_system::{PowerUp, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP};
 use common::core::states::GameState;
 use derive_more::Constructor;
 
@@ -30,7 +32,9 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         if player_state
             .status_effects
-            .contains_key(&StatusEffect::Stun)
+            .contains_key(&StatusEffect::Other(Stun))
+            || !(player_state.power_up.clone().is_some()
+                && player_state.power_up.clone().unwrap().1 == PowerUpStatus::Held)
         {
             return Ok(());
         } // Maybe Add Cleanse?
@@ -43,15 +47,18 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         let mut other_player_status_changes: Vec<(u32, StatusEffect, f32)> = vec![];
 
-        if let Some(x) = player_state.power_up.clone() {
+        if let Some((x, _)) = player_state.power_up.clone() {
             match x {
                 PowerUp::Lightning => match game_state_clone.find_closest_player(self.player_id) {
                     Some(id) => {
                         other_player_status_changes.push((
                             id,
-                            StatusEffect::Stun,
+                            StatusEffect::Other(Stun),
                             self.game_config.powerup_config.power_up_debuff_duration,
                         ));
+                        
+                        // special case
+                        player_state.power_up = None;
                     }
                     _ => {
                         // TODO:
@@ -65,16 +72,16 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
                         self.game_config.powerup_config.power_up_buff_duration,
                     );
+                    // by now the player should have casted the powerup successfully, change powerup status
+                    player_state.power_up = Some((
+                        player_state.power_up.clone().unwrap().0,
+                        PowerUpStatus::Active,
+                    ));
                 }
             }
         };
 
-        // by now the player should have casted the powerup successfully, resetting player powerup states
-        player_state.power_up = None;
-        player_state.insert_cooldown(
-            Command::CastPowerUp,
-            self.game_config.powerup_config.power_up_cooldown,
-        );
+        
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
         let player_pos = player_state.transform.translation;
@@ -93,7 +100,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
             let other_player_state = game_state.player_mut(*id).unwrap();
             if !other_player_state
                 .status_effects
-                .contains_key(&StatusEffect::Invincible)
+                .contains_key(&StatusEffect::Power(Invincible))
             {
                 other_player_state.status_effects.insert(*effect, *duration);
             }

@@ -11,7 +11,7 @@ use std::{
 };
 
 use common::configs::*;
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
@@ -328,16 +328,14 @@ impl State {
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
             if model_config.animated() {
-                let model = 
-                    AnimatedModel::load(&model_config.path, model_loading_resources)
+                let model = AnimatedModel::load(&model_config.path, model_loading_resources)
                     .await
                     .unwrap();
                 anim_loaded_models.insert(model_config.name, model);
-            }
-            else{
+            } else {
                 let model = StaticModel::load(&model_config.path, model_loading_resources)
-                        .await
-                        .unwrap();
+                    .await
+                    .unwrap();
                 static_loaded_models.insert(model_config.name, model);
             }
         }
@@ -349,7 +347,9 @@ impl State {
                 let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
                 Box::new(anim_model.clone())
             } else {
-                let static_model = static_loaded_models.get(model_config.name.as_str()).unwrap();
+                let static_model = static_loaded_models
+                    .get(model_config.name.as_str())
+                    .unwrap();
                 Box::new(static_model.clone())
             };
             models.insert(model_config.name, model);
@@ -550,14 +550,15 @@ impl State {
             particle_tex,
         );
 
-       
         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
         for model_config in model_configs.models.clone() {
             let model: Box<dyn Model> = if model_config.animated() {
                 let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
                 Box::new(anim_model.clone())
             } else {
-                let static_model = static_loaded_models.get(model_config.name.as_str()).unwrap();
+                let static_model = static_loaded_models
+                    .get(model_config.name.as_str())
+                    .unwrap();
                 Box::new(static_model.clone())
             };
             models.insert(model_config.name, model);
@@ -731,18 +732,17 @@ impl State {
         }
     }
 
-    fn relocate_selectors(&mut self){
+    fn relocate_selectors(&mut self) {
         if self.display.current == "display:lobby".to_string() {
             let screen = self.display.screen_map.get_mut("screen:lobby").unwrap();
-            for s in vec!["leaf_type_selector", "leaf_color_selector", "wood_color_selector"] {
+            for s in vec![
+                "leaf_type_selector",
+                "leaf_color_selector",
+                "wood_color_selector",
+            ] {
                 let ind = screen.icon_id_map.get(s).unwrap().clone();
                 let loc = screen.icons[ind].location.clone();
-                screen.icons[ind].relocate(
-                    loc,
-                    self.config.width,
-                    self.config.height,
-                    &self.queue
-                );
+                screen.icons[ind].relocate(loc, self.config.width, self.config.height, &self.queue);
             }
         }
     }
@@ -974,7 +974,8 @@ impl State {
                 self.other_players[i as usize - 1].visible = true;
             }
 
-            self.invisible_players = game_state_clone.get_affected_players(StatusEffect::Invisible);
+            self.invisible_players = game_state_clone
+                .get_affected_players(StatusEffect::Power(PowerUpEffects::Invisible));
             self.existing_powerups = game_state_clone.get_existing_powerups();
         }
 
@@ -1030,21 +1031,23 @@ impl State {
         // TODO: ONLY DISPLAY ONCE THE PLAYER CLICKS "GO" BUTTON
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
-            self.animation_controller.play_animation("attack".to_string(), "object:player_model".to_string());
+            self.animation_controller
+                .play_animation("attack".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("READY! WAITING ON OTHER PLAYERS...").as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
+                text: vec![
+                    Text::new(format!("READY! WAITING ON OTHER PLAYERS...").as_str())
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(40.0),
+                ],
                 ..Section::default()
             });
         }
         // temporary fix
         else if self.display.current == "display:game" {
-            self.animation_controller.stop_animation("object:player_model".to_string());
+            self.animation_controller
+                .stop_animation("object:player_model".to_string());
         }
 
         if self.display.current == self.display.game_display.clone() {

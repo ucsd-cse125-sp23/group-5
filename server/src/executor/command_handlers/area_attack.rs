@@ -1,20 +1,26 @@
-use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
-use crate::simulation::physics_state::PhysicsState;
-use crate::Recipients;
-use common::core::command::Command;
-use common::core::events::{GameEvent, ParticleSpec, ParticleType};
-use common::core::states::GameState;
+extern crate nalgebra_glm as glm;
+
+use common::configs::game_config::ConfigGame;
 use derive_more::Constructor;
+use rapier3d::prelude as rapier;
 use rapier3d::{geometry, pipeline};
 
-extern crate nalgebra_glm as glm;
 use common::configs::physics_config::ConfigPhysics;
-use rapier3d::prelude as rapier;
+use common::core::command::Command;
+use common::core::events::{GameEvent, ParticleSpec, ParticleType};
+use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
+use common::core::states::GameState;
+
+use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
+
+use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 
 #[derive(Constructor)]
 pub struct AreaAttackCommandHandler {
     player_id: u32,
     physics_config: ConfigPhysics,
+    game_config: ConfigGame,
 }
 
 impl CommandHandler for AreaAttackCommandHandler {
@@ -28,6 +34,11 @@ impl CommandHandler for AreaAttackCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
+            return Ok(());
+        }
+
         // if attack on cooldown, or cannot consume charge, do nothing for now
         if player_state.command_on_cooldown(Command::AreaAttack)
             || !player_state
@@ -35,6 +46,20 @@ impl CommandHandler for AreaAttackCommandHandler {
         {
             return Ok(());
         }
+
+        // when attacking, remove invisibility
+        player_state
+            .status_effects
+            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+
+        let wind_enhanced = player_state
+            .status_effects
+            .contains_key(&StatusEffect::Power(PowerUpEffects::EnhancedWind));
+        let scalar = if wind_enhanced {
+            self.game_config.powerup_config.wind_enhancement_scalar
+        } else {
+            1.0
+        };
 
         let player_pos = player_state.transform.translation;
 
@@ -84,6 +109,13 @@ impl CommandHandler for AreaAttackCommandHandler {
                 continue;
             }
 
+            // other player not affected if invincible
+            if other_player_state
+                .holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible))
+            {
+                continue;
+            }
+
             // get direction from this player to other player
             let other_player_pos = other_player_state.transform.translation;
             let vec_to_other = glm::normalize(&(other_player_pos - player_pos));
@@ -121,7 +153,8 @@ impl CommandHandler for AreaAttackCommandHandler {
                     let other_player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
-                    let impulse_vec = vec_to_other
+                    let impulse_vec = scalar
+                        * vec_to_other
                         * (self.physics_config.attack_config.area_attack_impulse
                             - (self.physics_config.attack_config.area_attack_coeff * toi));
                     other_player_rigid_body.apply_impulse(

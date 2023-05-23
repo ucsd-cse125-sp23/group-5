@@ -1,14 +1,18 @@
-use common::core::command::Command;
-use common::core::powerup_system::StatusEffect;
-use common::core::states::GameState;
+extern crate nalgebra_glm as glm;
+
 use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
-extern crate nalgebra_glm as glm;
-use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
-use crate::simulation::physics_state::PhysicsState;
-use common::configs::game_config::ConfigGame;
 use rapier3d::prelude as rapier;
+
+use common::configs::game_config::ConfigGame;
+use common::core::command::Command;
+use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
+use common::core::states::GameState;
+
+use crate::simulation::physics_state::PhysicsState;
+
+use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 
 #[derive(Constructor)]
 pub struct DashCommandHandler {
@@ -27,23 +31,23 @@ impl CommandHandler for DashCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Stun)
-        {
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 
         // if dash on cooldown, or should not be able to dash, do nothing for now
         if player_state.command_on_cooldown(Command::Dash)
             || !player_state
-                .status_effects
-                .contains_key(&StatusEffect::EnabledDash)
+                .holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::EnabledDash))
         {
             return Ok(());
         }
 
-        player_state.status_effects.remove(&StatusEffect::Invisible);
+        // when dashing, remove invisible
+        player_state
+            .status_effects
+            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
 
         let _player_pos = player_state.transform.translation;
 

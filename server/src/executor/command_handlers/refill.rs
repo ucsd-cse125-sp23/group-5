@@ -2,7 +2,7 @@ use super::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
-use common::core::powerup_system::StatusEffect;
+use common::core::powerup_system::{OtherEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
 
@@ -24,10 +24,8 @@ impl CommandHandler for RefillCommandHandler {
         let spawn_position = game_state.player(self.player_id).unwrap().spawn_point;
         let player_state = game_state.player_mut(self.player_id).unwrap();
 
-        if player_state
-            .status_effects
-            .contains_key(&StatusEffect::Stun)
-        {
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 

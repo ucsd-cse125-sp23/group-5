@@ -187,6 +187,7 @@ impl Executor {
                 Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(
                     client_command.client_id,
                     physics_config,
+                    game_config,
                 )),
                 Command::Refill => Box::new(RefillCommandHandler::new(
                     client_command.client_id,
