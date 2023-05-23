@@ -70,7 +70,7 @@ impl Projection {
 pub struct CameraUniform {
     // We can't use cgmath with bytemuck directly so we'll have
     // to convert the Matrix4 into a 4x4 f32 array
-    pub view_position: [f32; 4],
+    pub ambient_multiplier: [f32; 4],
     // pub view_proj: [[f32; 4]; 4],
     pub view: [[f32; 4]; 4],
     pub proj: [[f32; 4]; 4],
@@ -82,7 +82,7 @@ pub struct CameraUniform {
 impl CameraUniform {
     pub fn new() -> Self {
         Self {
-            view_position: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
+            ambient_multiplier: glm::vec4(1.0, 1.0, 1.0, 1.0).into(),
             view: glm::mat4(
                 1.0, 0.0, 0.0, 0.0,
                 0.0, 1.0, 0.0, 0.0,
@@ -109,8 +109,6 @@ impl CameraUniform {
     }
 
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
-        self.view_position =
-            glm::vec4(camera.position.x, camera.position.y, camera.position.z, 1.0).into();
         self.view = camera.calc_matrix().into();
         self.proj = projection.calc_matrix().into();
         self.inv_view_proj =
