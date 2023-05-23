@@ -89,7 +89,6 @@ impl CommandHandler for UpdateWeatherCommandHandler {
         _: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-
         // don't do anything for the fist 1 min
         if game_state.life_cycle_state.unwrap_running() < WEATHER_START_DELAY {
             return Ok(());

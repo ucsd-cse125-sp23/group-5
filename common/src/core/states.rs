@@ -115,6 +115,16 @@ impl PlayerState {
         };
     }
 
+    pub fn is_in_refill_area(&self, game_config: ConfigGame) -> bool {
+        let radius = game_config.refill_radius;
+        for i in game_config.refill_points {
+            if self.is_in_circular_area((i.x, i.z), radius, (None, None)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: f32) {
         let cd_secs = Duration::from_secs_f32(cooldown_in_sec).as_secs_f32();
         //let cd_until = SystemTime::now().checked_add(cd_secs).unwrap();
