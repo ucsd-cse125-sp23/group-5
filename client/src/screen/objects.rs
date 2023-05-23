@@ -113,7 +113,7 @@ pub struct Screen {
     pub icons: Vec<Icon>,
     pub buttons: Vec<Button>,
     pub icon_id_map: HashMap<String, usize>,
-    pub default_color: MeshColorInstance,
+    pub btn_id_map: HashMap<String, usize>,
 }
 
 #[derive(Debug)]
@@ -122,7 +122,6 @@ pub struct ScreenBackground {
     pub vbuf: wgpu::Buffer,
     pub texture: String,
     pub mask_texture: String,
-    pub color: Option<MeshColorInstance>,
 }
 
 ///
@@ -141,7 +140,6 @@ pub struct Button {
     pub hover_texture: String,
     pub selected_texture: Option<String>,
     pub mask_texture: String,
-    pub color: Option<MeshColorInstance>,
     pub on_click: String,
     pub selected: bool,
 }

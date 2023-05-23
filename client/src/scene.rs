@@ -225,10 +225,15 @@ impl Scene {
                     player_state.transform.translation,
                     player_state.transform.rotation,
                 );
+            }
 
-                // TODO: possibly change model and color with player choices here
-                // self.scene_graph.get_mut(&node_id).unwrap().colors = Some(); // change color
-                // self.scene_graph.get_mut(&node_id).unwrap().model = Some(); // change model
+            for (id, final_choices) in game_state.players_customization.iter() {
+                if (*id != player_id) && invisible_players.contains(id) {
+                    continue;
+                }
+                let node_id = NodeKind::Player.node_id(id.to_string());
+                self.scene_graph.get_mut(&node_id).unwrap().colors = Some(final_choices.color.clone()); // change color
+                self.scene_graph.get_mut(&node_id).unwrap().model = Some(final_choices.model.clone()); // change model
             }
         }
     }

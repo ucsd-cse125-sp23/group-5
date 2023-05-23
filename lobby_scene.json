@@ -4,10 +4,10 @@
   "nodes": [
     {
       "id": "object:player_model",
-      "model": "cube",
+      "model": "korok",
       "transform": {
-        "position": [4.0, -3.0, -4.0],
-        "rotation": [0, 0, 0, 1]
+        "position": [0.0, -0.25, 1.4],
+        "rotation": [-0.2949345, -0.7971848, -0.13986267, 0.5079111]
       },
       "children": [
       ]

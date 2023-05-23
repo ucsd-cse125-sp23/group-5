@@ -25,20 +25,15 @@ pub fn create_screen_map(
     device: &wgpu::Device,
     screen_width: u32,
     screen_height: u32,
-    color_bind_group_layout: &wgpu::BindGroupLayout,
 ) -> HashMap<String, objects::Screen> {
     let mut screen_map = HashMap::new();
     for s in &config.screens {
-        let background = create_background(s, device, color_bind_group_layout);
-        let mut icon_id_map: HashMap<String, usize> = HashMap::new();
+        let background = create_background(s, device);
+        let mut icon_id_map : HashMap<String, usize> = HashMap::new();
         let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
-        let buttons = create_button(
-            s,
-            device,
-            screen_width,
-            screen_height,
-            color_bind_group_layout,
-        );
+        
+        let mut btn_id_map : HashMap<String, usize> = HashMap::new();
+        let buttons = create_button(s, device, &mut btn_id_map, screen_width, screen_height);
 
         let screen = objects::Screen {
             id: s.id.clone(),
@@ -46,11 +41,7 @@ pub fn create_screen_map(
             icons,
             icon_id_map,
             buttons,
-            default_color: MeshColorInstance::new(
-                device,
-                color_bind_group_layout,
-                MeshColor::default(),
-            ),
+            btn_id_map,
         };
         screen_map.insert(s.id.clone(), screen);
     }
@@ -60,7 +51,6 @@ pub fn create_screen_map(
 fn create_background(
     s: &ConfigScreen,
     device: &wgpu::Device,
-    color_bind_group_layout: &wgpu::BindGroupLayout,
 ) -> Option<objects::ScreenBackground> {
     s.background.as_ref().map(|bg| {
         let vertices = objects::TITLE_VERT;
@@ -75,14 +65,6 @@ fn create_background(
             vbuf,
             texture: bg.tex.clone(),
             mask_texture: bg.mask_tex.clone(),
-            color: match bg.color {
-                None => None,
-                Some(c) => Some(MeshColorInstance::new(
-                    device,
-                    color_bind_group_layout,
-                    MeshColor::new(c),
-                )),
-            },
         }
     })
 }
@@ -165,13 +147,18 @@ fn create_icon(
 fn create_button(
     s: &ConfigScreen,
     device: &wgpu::Device,
+    map: &mut HashMap<String, usize>,
     screen_width: u32,
     screen_height: u32,
-    color_bind_group_layout: &wgpu::BindGroupLayout,
 ) -> Vec<objects::Button> {
+    let mut ind = 0;
     s.buttons
         .iter()
         .map(|b| {
+            match &b.id {
+                None => {}, Some(btn_id) => {map.insert(btn_id.clone(), ind);}
+            }
+            ind += 1;
             let mut vertices = objects::TITLE_VERT;
             get_coords(
                 &b.location,
@@ -181,6 +168,10 @@ fn create_button(
                 screen_height,
                 &mut vertices,
             );
+
+            for v in &mut vertices {
+                v.color = b.default_tint.clone();
+            }
             let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(" Some button (implement ids for more useful messages!) Vertex Buffer"),
                 contents: bytemuck::cast_slice(&vertices),
@@ -200,14 +191,6 @@ fn create_button(
                 hover_texture: b.hover_tex.clone(),
                 selected_texture: b.selected_tex.clone(),
                 mask_texture: b.mask_tex.clone(),
-                color: match b.color {
-                    None => None,
-                    Some(c) => Some(MeshColorInstance::new(
-                        device,
-                        color_bind_group_layout,
-                        MeshColor::new(c),
-                    )),
-                },
                 on_click: b.on_click.clone(),
                 selected: false,
             }

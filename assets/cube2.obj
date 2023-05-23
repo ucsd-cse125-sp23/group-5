@@ -1,7 +1,7 @@
 # Blender v3.5.0 OBJ File: ''
 # www.blender.org
 mtllib cube.mtl
-o eyes_eyes_mesh
+o korok
 v 1.000000 1.000000 -1.000000
 v 1.000000 -1.000000 -1.000000
 v 1.000000 1.000000 1.000000
