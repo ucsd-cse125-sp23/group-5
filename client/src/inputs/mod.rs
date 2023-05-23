@@ -80,7 +80,7 @@ impl InputEventProcessor {
             VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),
             VirtualKeyCode::RShift => Some((GameKeyKind::Pressable, Die)),
             VirtualKeyCode::C => Some((GameKeyKind::Pressable, CastPowerUp)), // TODO: Change
-            
+
             // match PressRelease keys
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
             VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
