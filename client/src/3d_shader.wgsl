@@ -187,7 +187,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         var attenuation: f32 = 1.0;
         var light_col  = vec3<f32>(lights.colors[ind][0], lights.colors[ind][1], lights.colors[ind][2]);
         if (lights.positions[ind][3] == 0.0){ // directional light
-            // TODO! make line?? lights for lightning
             light_dir = normalize(vec3<f32>(
                 lights.positions[ind][0], 
                 lights.positions[ind][1], 
