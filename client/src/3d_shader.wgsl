@@ -209,17 +209,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                 max_dist = lights.positions[ind].w + (lights.positions_2[ind].w - lights.positions[ind].w) * proj_dist;
                 light_dir = p1 + (p2 - p1) * proj_dist - in.world_coords;
             }
-            //debug
-            max_dist = 10.0;
             // calculate attenuation
             var dist = sqrt(dot(light_dir, light_dir)) / max_dist;
             if (dist > 1.0){
                 // zero contribution
-                // continue;
+                continue;
             }
-            attenuation = 1.0 / (0.001 + dist); //1.0 - (3.0 * pow(dist, 2.0) - 2.0 * pow(dist, 3.0));
-            return clamp(vec4(loc / 10.0, 1.0), vec4<f32>(0.0), vec4<f32>(1.0));
-            // return vec4(1.0 - dist, 0.0, 0.0, 1.0);
+            attenuation = 1.0 - (3.0 * pow(dist, 2.0) - 2.0 * pow(dist, 3.0));
         }
         else if (lights.positions[ind].w == 0.0){ // directional light
             light_dir = normalize(vec3<f32>(
@@ -234,7 +230,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                 lights.positions[ind][1] / lights.positions[ind][3], 
                 lights.positions[ind][2] / lights.positions[ind][3],
             ) - in.world_coords;
-            attenuation = 1.0 / (0.5 * dot(disp, disp) + 1.0);
+            attenuation = 1.0 / (dot(disp, disp) + 1.0);
             light_dir = normalize(disp);
         }
 

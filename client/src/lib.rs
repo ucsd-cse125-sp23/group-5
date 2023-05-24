@@ -424,11 +424,11 @@ impl State {
 
         #[rustfmt::skip]
             let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
-            // lights::Light { position: glm::vec4(0.0, 0.5, 0.0, 1.0), color: glm::vec3(10.0, 10.0, 10.0) },
+            lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
             // sun
             // lights::Light::sun(),
             lights::Light{
-                position: glm::vec4(0.0, 0.5, 0.0, 2.0),
+                position: glm::vec4(0.0, -9.1, 0.0, 2.0),
                 position_2: glm::vec4(0.0, 15.0, 0.0, 10.0),
                 color: glm::vec3(1.0, 1.0, 1.0),
             }
