@@ -26,7 +26,7 @@ struct VertexOutput {
 };
 
 struct CameraUniform {
-    view_pos: vec4<f32>,
+    ambient_multiplier: vec4<f32>,
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
     inv_view_proj: mat4x4<f32>,
@@ -57,7 +57,7 @@ fn vs_main(
     start_disp += time_alive * linear_v;
 
     // assuming camera homogenous coord is always 1.0
-    var cpos = vec3<f32>(camera.view_pos[0], camera.view_pos[1], camera.view_pos[2]);
+    var cpos = vec3<f32>(camera.location[0], camera.location[1], camera.location[2]);
     var z_prime = normalize(cpos - start_disp);
     var up = vec3<f32>(0.0, 1.0, 0.0);
     var x_prime = normalize(cross(up, z_prime));
@@ -106,5 +106,5 @@ var s_diffuse: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords, in.tex_id);
-    return t * in.color;
+    return t * in.color * camera.ambient_multiplier;
 }
