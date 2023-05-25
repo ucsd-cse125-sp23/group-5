@@ -11,6 +11,7 @@ pub type Transform = nalgebra_glm::TMat4<f32>;
 pub struct Instance {
     pub transform: Transform,
     pub mesh_colors: Option<HashMap<String, MeshColor>>,
+    pub chosen_materials: Option<HashMap<String, String>>,
 }
 
 pub struct InstanceState {
@@ -23,6 +24,7 @@ impl Default for Instance {
         Self {
             transform: glm::identity(),
             mesh_colors: None,
+            chosen_materials: None,
         }
     }
 }
@@ -43,6 +45,7 @@ impl Instance {
         Self {
             transform: *transform,
             mesh_colors: None,
+            chosen_materials: None,
         }
     }
 

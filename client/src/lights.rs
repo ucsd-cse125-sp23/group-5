@@ -8,12 +8,12 @@ pub struct Light {
     pub color: glm::TVec3<f32>,
 }
 
-impl Light{
+impl Light {
     pub fn sun() -> Self {
-        Light{ 
+        Light {
             position: glm::vec4(1.0, 1.0, -1.0, 0.0),
             position_2: glm::vec4(0.0, 0.0, 0.0, 0.0),
-            color: glm::vec3(1.0, 1.0, 1.0)
+            color: glm::vec3(1.0, 1.0, 1.0),
         }
     }
 }
@@ -114,9 +114,13 @@ impl LightState {
         }
     }
 
-    pub fn update_lights(&mut self, queue: &wgpu::Queue){
+    pub fn update_lights(&mut self, queue: &wgpu::Queue) {
         self.light_uniform = LightsUniform::new(&self.lighting);
-        queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
+        queue.write_buffer(
+            &self.light_buffer,
+            0,
+            bytemuck::cast_slice(&[self.light_uniform]),
+        );
         todo!();
     }
 }

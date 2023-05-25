@@ -411,22 +411,16 @@ impl Display {
             Some(s) => self.screen_map.get(s).unwrap(),
         };
         let mut to_call: Option<&str> = None;
-        let mut color: Option<MeshColor> = None;
         let mut button_id: Option<String> = None;
         for button in &screen.buttons {
             if button.is_hover(mouse) {
                 to_call = Some(&button.on_click[..]);
-                color = Some(MeshColor::new([
-                    button.default_tint[0],
-                    button.default_tint[1],
-                    button.default_tint[2],
-                ]));
                 button_id = button.id.clone();
             }
         }
         match to_call {
             None => {}
-            Some(id) => BUTTON_MAP.get(id).unwrap()(self, color, button_id),
+            Some(id) => BUTTON_MAP.get(id).unwrap()(self, button_id),
         };
     }
 }
