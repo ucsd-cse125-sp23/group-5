@@ -448,6 +448,13 @@ impl Model for AnimatedModel {
         }
     }
 
+    fn mat_ind(&self) -> Option<&ahash::AHashMap<String, usize>> {
+        match self.get_active_key_frame() {
+            Some(key_frame) => key_frame.frame_model.mat_ind(),
+            None => None,
+        }
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
