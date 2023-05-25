@@ -303,6 +303,9 @@ fn dash(
     //     Recipients::All,
     // );
 
+    // clear velocity of target before applying attack 
+    player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true); 
+    
     player_rigid_body.apply_impulse(
         rapier::vector![
             player_state.camera_forward.x * game_config.powerup_config.dash_impulse,

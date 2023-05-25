@@ -160,6 +160,10 @@ impl CommandHandler for AreaAttackCommandHandler {
                         * vec_to_other
                         * (self.physics_config.attack_config.area_attack_impulse
                             - (self.physics_config.attack_config.area_attack_coeff * toi));
+
+                    // clear velocity of target before applying impulse 
+                    other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true); 
+                    
                     other_player_rigid_body.apply_impulse(
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,
