@@ -2,6 +2,7 @@ use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEF
 
 use glm::vec3;
 use other_players::OtherPlayer;
+use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
 use std::sync::{mpsc, MutexGuard};
@@ -50,8 +51,6 @@ use common::core::weather::Weather;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-
-const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok/korok_texture_lib.mtl";
 
 struct State {
     surface: wgpu::Surface,
@@ -352,7 +351,9 @@ impl State {
         let mut anim_loaded_models = HashMap::new();
 
         // load korok material library
-        let korok_mtl_lib = resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources).await.unwrap();
+        KOROK_MTL_LIB.set(
+            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources).await.unwrap()
+        );
         
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {

@@ -14,6 +14,13 @@ use crate::{
     texture,
 };
 
+use once_cell::sync::OnceCell;
+
+pub const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok/korok_texture_lib.mtl";
+pub type MtlLib = (Arc<Vec<Material>>,Option<Arc<AHashMap<String, usize>>>);
+pub static KOROK_MTL_LIB: OnceCell<MtlLib> = OnceCell::new();
+
+
 //assuming we run from root (group-5 folder)
 #[rustfmt::skip]
 const SEARCH_PATH : [&str; 4] = [
@@ -335,19 +342,29 @@ pub async fn load_model(
         })
         .collect::<Vec<_>>();
 
-    Ok(model::StaticModel {
-        meshes: Arc::new(meshes),
-        materials: Arc::new(materials),
-        path: file_path.to_string(),
-        mat_ind: None,
-    })
+    if !file_path.contains("korok") {
+        Ok(model::StaticModel {
+            meshes: Arc::new(meshes),
+            materials: Arc::new(materials),
+            path: file_path.to_string(),
+            mat_ind: None,
+        })
+    }
+    else {
+        Ok(model::StaticModel {
+            meshes: Arc::new(meshes),
+            materials: KOROK_MTL_LIB.get().unwrap().0.clone(),
+            path: file_path.to_string(),
+            mat_ind: KOROK_MTL_LIB.get().unwrap().1.clone(),
+        })
+    }
 }
 
 
 pub async fn load_material_library(
     file_path: &str,
     resources: ModelLoadingResources<'_>,
-    ) -> anyhow::Result<(Arc<Vec<Material>>, Option<Arc<AHashMap<String, usize>>>)> {
+    ) -> anyhow::Result<MtlLib> {
     let (device, queue, layout) = resources;
     let mtl_path = load_string(file_path).await?;
     let (obj_materials, mat_ind) = tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mtl_path))).context(format!("error loading mtllib {}", file_path)).unwrap();
