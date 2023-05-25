@@ -29,6 +29,7 @@ impl CurrentSelections {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FinalChoices {
     pub color: HashMap<String, MeshColor>,
+    pub materials: HashMap<String, String>,
     pub model: ModelIndex,
 }
 
@@ -36,6 +37,7 @@ impl FinalChoices {
     fn default() -> Self {
         Self {
             color: HashMap::new(),
+            materials: HashMap::new(),
             model: LOBBY_STARTING_MODEL.to_owned(),
         }
     }

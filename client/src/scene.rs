@@ -27,6 +27,7 @@ pub struct Node {
     pub model: Option<ModelIndex>,
     pub transform: Transform,
     pub colors: Option<HashMap<String, MeshColor>>,
+    pub materials: Option<HashMap<String, String>>,
 }
 
 impl Node {
@@ -37,6 +38,7 @@ impl Node {
             model: None,
             transform: Transform::default(),
             colors: None,
+            materials: None,
         }
     }
 
@@ -47,6 +49,7 @@ impl Node {
             model: None,
             transform,
             colors: None,
+            materials: None,
         }
     }
 
@@ -79,6 +82,11 @@ impl InstanceBundle {
 
     pub fn add_color(&mut self, colors: Option<HashMap<String, MeshColor>>) -> Self {
         self.instance.mesh_colors = colors;
+        self.clone()
+    }
+
+    pub fn add_mtl(&mut self, mtls: Option<HashMap<String, String>>) -> Self {
+        self.instance.chosen_materials = mtls;
         self.clone()
     }
 
@@ -237,6 +245,8 @@ impl Scene {
                     Some(final_choices.color.clone()); // change color
                 self.scene_graph.get_mut(&node_id).unwrap().model =
                     Some(final_choices.model.clone()); // change model
+                self.scene_graph.get_mut(&node_id).unwrap().materials =
+                    Some(final_choices.materials.clone()); // change material
             }
         }
     }
@@ -270,14 +280,18 @@ impl Scene {
         let mut dfs_stack: Vec<&Node> = Vec::new();
         let mut matrix_stack: Vec<TMat4<f32>> = Vec::new();
         let mut color_stack: Vec<Option<HashMap<String, MeshColor>>> = Vec::new();
+        let mut mtl_stack: Vec<Option<HashMap<String, String>>> = Vec::new();
+
 
         // state needed for DFS:
         let mut cur_node: &Node = self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;
         let mut curr_color = None;
+        let mut curr_mtl = None;
         dfs_stack.push(cur_node);
         matrix_stack.push(current_view_matrix);
         color_stack.push(curr_color);
+        mtl_stack.push(curr_mtl);
 
         let mut total_number_of_edges: usize = 0;
         for n in self.scene_graph.iter() {
@@ -294,6 +308,7 @@ impl Scene {
             cur_node = dfs_stack.pop().unwrap();
             current_view_matrix = matrix_stack.pop().unwrap();
             curr_color = color_stack.pop().unwrap();
+            curr_mtl = mtl_stack.pop().unwrap();
 
             if let Some(model_index) = cur_node.model.clone() {
                 let model_view: TMat4<f32> = current_view_matrix;
@@ -303,7 +318,8 @@ impl Scene {
                         // add the Instance to the existing model entry
                         obj.push(
                             InstanceBundle::from_transform(&model_view, cur_node.id.clone())
-                                .add_color(curr_color),
+                                .add_color(curr_color)
+                                .add_mtl(curr_mtl),
                         );
                     }
                     None => {
@@ -312,7 +328,8 @@ impl Scene {
                             model_index,
                             vec![
                                 InstanceBundle::from_transform(&model_view, cur_node.id.clone())
-                                    .add_color(curr_color),
+                                    .add_color(curr_color)
+                                    .add_mtl(curr_mtl),
                             ],
                         );
                     }
@@ -324,6 +341,7 @@ impl Scene {
                     dfs_stack.push(node);
                     matrix_stack.push(current_view_matrix * node.transform);
                     color_stack.push(node.colors.clone());
+                    mtl_stack.push(node.materials.clone());
                 } // else it is invisible
             }
         }

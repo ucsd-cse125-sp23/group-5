@@ -1,16 +1,21 @@
-use crate::inputs::Input;
-use crate::State;
-use common::core::states::{GameState, ParticleQueue};
-use log::{debug, warn};
-use nalgebra_glm as glm;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
+
+use log::{debug, warn};
+use nalgebra_glm as glm;
 use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
+
+use common::core::states::{GameState, ParticleQueue};
+
+use crate::inputs::Input;
+use crate::State;
 
 pub struct PlayerLoop {
     // commands is a channel that receives commands from the clients (multi-producer, single-consumer)
@@ -19,6 +24,9 @@ pub struct PlayerLoop {
     particle_queue: Arc<Mutex<ParticleQueue>>,
     // current player id
     client_id: u8,
+    // audio flag
+    audio_flag: Arc<AtomicBool>,
+    audio_thread_handle: JoinHandle<()>,
 }
 
 impl PlayerLoop {
@@ -30,12 +38,16 @@ impl PlayerLoop {
         game_state: Arc<Mutex<GameState>>,
         particle_queue: Arc<Mutex<ParticleQueue>>,
         id: u8,
+        audio_flag: Arc<AtomicBool>,
+        audio_thread_handle: JoinHandle<()>,
     ) -> PlayerLoop {
         PlayerLoop {
             inputs: commands,
             game_state,
             particle_queue,
             client_id: id,
+            audio_flag,
+            audio_thread_handle,
         }
     }
 
@@ -66,6 +78,10 @@ impl PlayerLoop {
         )
         .await;
 
+        // notify audio thread to play bg track
+        self.audio_flag.store(true, Ordering::Release);
+        self.audio_thread_handle.thread().unpark();
+
         //To check
         let mut last_render_time = instant::Instant::now();
 
@@ -95,28 +111,29 @@ impl PlayerLoop {
                                     let mut node: &mut crate::scene::Node = &mut crate::scene::Node::new("random".to_string());
                                     let mut rot = nalgebra::Quaternion::new(1.0, 0.0, 0.0, 0.0);
                                     match scene.scene_graph.get_mut("object:player_model") {
-                                        None =>(), Some(n) => node = n,
+                                        None => (),
+                                        Some(n) => node = n,
                                     }
 
                                     match input {
-                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::W), ..} => {
-                                            rot = glm::quat_rotate(&rot, -glm::pi::<f32>()/10.0,&glm::vec3(1.0,0.0,0.0));
-                                        },
-                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::A), ..} => {
-                                            rot = glm::quat_rotate(&rot, -glm::pi::<f32>()/10.0,&glm::vec3(0.0,1.0,0.0));
-                                        },
-                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::S), ..} => {
-                                            rot = glm::quat_rotate(&rot, glm::pi::<f32>()/10.0,&glm::vec3(1.0,0.0,0.0));
-                                        },
-                                        KeyboardInput {virtual_keycode: Some(VirtualKeyCode::D), ..} => {
-                                            rot = glm::quat_rotate(&rot, glm::pi::<f32>()/10.0,&glm::vec3(0.0,1.0,0.0));
-                                        },
-                                        _ => {},
+                                        KeyboardInput { virtual_keycode: Some(VirtualKeyCode::W), .. } => {
+                                            rot = glm::quat_rotate(&rot, -glm::pi::<f32>() / 10.0, &glm::vec3(1.0, 0.0, 0.0));
+                                        }
+                                        KeyboardInput { virtual_keycode: Some(VirtualKeyCode::A), .. } => {
+                                            rot = glm::quat_rotate(&rot, -glm::pi::<f32>() / 10.0, &glm::vec3(0.0, 1.0, 0.0));
+                                        }
+                                        KeyboardInput { virtual_keycode: Some(VirtualKeyCode::S), .. } => {
+                                            rot = glm::quat_rotate(&rot, glm::pi::<f32>() / 10.0, &glm::vec3(1.0, 0.0, 0.0));
+                                        }
+                                        KeyboardInput { virtual_keycode: Some(VirtualKeyCode::D), .. } => {
+                                            rot = glm::quat_rotate(&rot, glm::pi::<f32>() / 10.0, &glm::vec3(0.0, 1.0, 0.0));
+                                        }
+                                        _ => {}
                                     }
                                     node.transform *= glm::quat_to_mat4(&rot);
                                     println!("QUAT: {:#?}", glm::to_quat(&node.transform.clone()));
                                     scene.draw_scene_dfs();
-                                    std::thread::sleep(instant::Duration::new(0,10));
+                                    std::thread::sleep(instant::Duration::new(0, 10));
                                 }
                                 match self
                                     .inputs
@@ -138,14 +155,14 @@ impl PlayerLoop {
                             _ => {}
                         }
                     }
-                },
+                }
                 // event
                 Event::DeviceEvent {
-                    event: DeviceEvent::MouseMotion{ delta, },
+                    event: DeviceEvent::MouseMotion { delta, },
                     .. // We're not using device_id currently
                 } => {
                     state.player_controller.process_mouse(delta.0, delta.1)
-                },
+                }
                 Event::DeviceEvent { ref event, .. } => match event {
                     DeviceEvent::MouseWheel { .. }
                     | DeviceEvent::Button { .. } => {

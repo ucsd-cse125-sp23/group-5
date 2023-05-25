@@ -2,6 +2,7 @@ use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEF
 
 use glm::vec3;
 use other_players::OtherPlayer;
+use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
 use std::sync::{mpsc, MutexGuard};
@@ -349,6 +350,11 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
 
+        // load korok material library
+        KOROK_MTL_LIB.set(
+            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources).await.unwrap()
+        );
+        
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
             if model_config.animated() {
@@ -1088,7 +1094,7 @@ impl State {
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
-                .play_animation("attack".to_string(), "object:player_model".to_string());
+                .play_animation("power_up".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
