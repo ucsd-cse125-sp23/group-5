@@ -132,7 +132,7 @@ impl CommandHandler for AttackCommandHandler {
         ));
 
         // loop over all other players
-        for (other_player_id, other_player_state) in game_state.players.iter() {
+        for (other_player_id, other_player_state) in game_state.players.iter_mut() {
             if &self.player_id == other_player_id {
                 continue;
             }
@@ -188,14 +188,18 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
+                        let attack_strength = self.physics_config.attack_config.attack_impulse
+                            - (self.physics_config.attack_config.attack_coeff * toi);
                         let impulse_vec = scalar
                             * vec_to_other
-                            * (self.physics_config.attack_config.attack_impulse
-                                - (self.physics_config.attack_config.attack_coeff * toi));
+                            * attack_strength;
                         
                         // clear velocity of target before applying attack 
                         other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true); 
 
+                        // apply_stun
+                        super::apply_stun(other_player_state, attack_strength / self.physics_config.attack_config.attack_impulse
+                            * self.physics_config.attack_config.max_attack_stun_duration);
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,

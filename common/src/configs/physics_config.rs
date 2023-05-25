@@ -19,6 +19,7 @@ pub struct ConfigAttack {
     pub area_attack_coeff: f32,
     pub area_attack_cost: u32,
     pub area_attack_cooldown: f32,
+    pub max_attack_stun_duration: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
