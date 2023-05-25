@@ -2,7 +2,7 @@
   "models": [
     {
       "name": "islands_set",
-      "path": "assets/islands_set_low_fi.obj"
+      "path": "assets/islands_set_final.obj"
     },
     {
       "name": "player",
