@@ -104,7 +104,7 @@ fn main() {
         particle_queue.clone(),
         client_id,
         audio_flag,
-        audio_thread_handle
+        audio_thread_handle,
     );
 
     // spawn a thread to handle user inputs (received from event loop)
