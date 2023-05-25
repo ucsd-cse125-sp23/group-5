@@ -836,6 +836,7 @@ impl State {
 
         // check if the game has ended and set corresponding end screen
         if game_state_clone.life_cycle_state == Ended {
+            println!("{:?}", game_state_clone.life_cycle_state);
             if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
                 self.display.current = "display:victory".to_owned();
             } else {
