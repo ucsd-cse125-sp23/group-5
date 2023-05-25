@@ -59,7 +59,7 @@
   ],
   "winning_threshold": 10.0,
   "decay_rate": 0.3333,
-  "refill_radius": 2. 0,
+  "refill_radius": 2.0,
   "refill_rate_limit": 0.5,
   "powerup_config": {
     "power_up_locations": {
