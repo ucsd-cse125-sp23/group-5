@@ -396,7 +396,7 @@ impl State {
             DEFAULT_PLAYER_POS.1,
             DEFAULT_PLAYER_POS.2,
         ));
-        let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
+        let player_controller = player::PlayerController::new(4. * 0.8, 0.7 * 0.8, 0.1);
 
         let mut camera_state = camera::CameraState::new(
             &device,
