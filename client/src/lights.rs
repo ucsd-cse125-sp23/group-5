@@ -4,7 +4,18 @@ extern crate nalgebra_glm as glm;
 #[derive(Debug)]
 pub struct Light {
     pub position: glm::TVec4<f32>,
+    pub position_2: glm::TVec4<f32>,
     pub color: glm::TVec3<f32>,
+}
+
+impl Light{
+    pub fn sun() -> Self {
+        Light{ 
+            position: glm::vec4(1.0, 1.0, -1.0, 0.0),
+            position_2: glm::vec4(0.0, 0.0, 0.0, 0.0),
+            color: glm::vec3(1.0, 1.0, 1.0)
+        }
+    }
 }
 
 const MAX_LIGHT: usize = 16;
@@ -15,6 +26,7 @@ const MAX_LIGHT: usize = 16;
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct LightsUniform {
     positions: [[f32; 4]; MAX_LIGHT],
+    positions_2: [[f32; 4]; MAX_LIGHT],
     colors: [[f32; 4]; MAX_LIGHT],
     num_lights: u32,
     _padding: [f32; 3],
@@ -23,6 +35,7 @@ pub struct LightsUniform {
 impl LightsUniform {
     pub fn new(arr: &Vec<Light>) -> Self {
         let mut positions: [[f32; 4]; MAX_LIGHT] = [[0.0; 4]; MAX_LIGHT];
+        let mut positions_2: [[f32; 4]; MAX_LIGHT] = [[0.0; 4]; MAX_LIGHT];
         let mut colors = [[0.0; 4]; MAX_LIGHT];
         let num_lights = std::cmp::min(MAX_LIGHT, arr.len());
         // print!("num lights: {}\n", num_lights);
@@ -33,6 +46,10 @@ impl LightsUniform {
             positions[ind][1] = arr[ind].position[1];
             positions[ind][2] = arr[ind].position[2];
             positions[ind][3] = arr[ind].position[3];
+            positions_2[ind][0] = arr[ind].position_2[0];
+            positions_2[ind][1] = arr[ind].position_2[1];
+            positions_2[ind][2] = arr[ind].position_2[2];
+            positions_2[ind][3] = arr[ind].position_2[3];
             colors[ind][0] = arr[ind].color[0];
             colors[ind][1] = arr[ind].color[1];
             colors[ind][2] = arr[ind].color[2];
@@ -40,6 +57,7 @@ impl LightsUniform {
 
         Self {
             positions,
+            positions_2,
             colors,
             num_lights: num_lights as u32,
             _padding: [0.0, 0.0, 0.0],
@@ -94,5 +112,11 @@ impl LightState {
             light_bind_group_layout,
             light_bind_group,
         }
+    }
+
+    pub fn update_lights(&mut self, queue: &wgpu::Queue){
+        self.light_uniform = LightsUniform::new(&self.lighting);
+        queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
+        todo!();
     }
 }

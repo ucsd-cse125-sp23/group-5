@@ -2,7 +2,7 @@
 @group(0) @binding(1) var box_sampler: sampler;
 
 struct CameraUniform {
-    view_pos: vec4<f32>,
+    ambient_multiplier: vec4<f32>,
     view: mat4x4<f32>,
     proj: mat4x4<f32>,
     inv_view_proj: mat4x4<f32>,
@@ -33,5 +33,5 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(box_tex, box_sampler, in.tex_coords);
+    return textureSample(box_tex, box_sampler, in.tex_coords) * camera.ambient_multiplier;
 }
