@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 use crate::simulation::entity::{Entity, EntityHandles};
 
 use rapier3d::parry::utils::hashmap::HashMap;
@@ -194,7 +194,7 @@ impl PhysicsState {
         let mut velocity = corrected_movement.translation / dt;
 
         // add back y component of velocity
-        velocity.add(character_body.linvel());
+        velocity.add_assign(character_body.linvel());
         velocity.y = character_body.linvel().y;
 
         character_body.set_linvel(velocity, true);
