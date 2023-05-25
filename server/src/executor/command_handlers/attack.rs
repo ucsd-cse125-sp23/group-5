@@ -201,6 +201,8 @@ impl CommandHandler for AttackCommandHandler {
                             attack_strength / self.physics_config.attack_config.attack_impulse
                                 * self.physics_config.attack_config.max_attack_stun_duration,
                         );
+
+                        // apply attack impulse
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,
