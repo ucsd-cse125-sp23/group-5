@@ -287,6 +287,12 @@ impl AnimatedModel {
 
         for entry in dir {
             let entry = entry.context("Could not read animation directory entry")?;
+
+            // if entry is a file, skip it
+            if entry.file_type().unwrap().is_file() {
+                continue;
+            }
+
             let path = entry.path();
             let path = path
                 .to_str()
