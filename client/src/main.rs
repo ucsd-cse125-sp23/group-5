@@ -1,26 +1,24 @@
 extern crate queues;
 
 use std::env;
-
-use client::audio::{Audio, SoundQueue};
-use common::configs::*;
-use log::{debug, error, info};
 use std::fs::File;
-
-use bus::Bus;
-use env_logger::Builder;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
+use bus::Bus;
+use env_logger::Builder;
+use log::{debug, error, info};
+
+use client::audio::{Audio, SoundQueue};
 use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-
+use common::configs::*;
 use common::core::events::GameEvent;
-
 use common::core::states::{GameState, ParticleQueue};
 
 fn main() {
@@ -77,8 +75,37 @@ fn main() {
     #[cfg(feature = "debug-recon")]
     dump_ids(session_data_path, client_id + 1, session_id);
 
-    let mut player_loop =
-        PlayerLoop::new(tx, game_state.clone(), particle_queue.clone(), client_id);
+    // audio blocking flag
+    let audio_flag = Arc::new(AtomicBool::new(false));
+    let _audio_flag = Arc::clone(&audio_flag);
+
+    // spawn a thread to handle game state updates and events
+    let game_state_clone = game_state.clone();
+    let sound_queue_clone = sound_queue.clone();
+    // thread for audio
+    let audio_thread_handle = thread::spawn(move || {
+        let config_instance = ConfigurationManager::get_configuration();
+        let audio_config = config_instance.audio.clone();
+
+        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
+
+        // wait till screen is spawned
+        while !_audio_flag.load(Ordering::Acquire) {
+            thread::park();
+        }
+
+        audio.play_background_track([0.0, 25.0, 0.0]); // add position of background track to config
+        audio.handle_audio_updates(game_state_clone, client_id);
+    });
+
+    let mut player_loop = PlayerLoop::new(
+        tx,
+        game_state.clone(),
+        particle_queue.clone(),
+        client_id,
+        audio_flag,
+        audio_thread_handle
+    );
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
@@ -89,9 +116,6 @@ fn main() {
         input_processor.listen();
     });
 
-    // spawn a thread to handle game state updates and events
-    let game_state_clone = game_state.clone();
-    let sound_queue_clone = sound_queue.clone();
     thread::spawn(move || {
         recv_server_updates(
             protocol.try_clone().unwrap(),
@@ -100,16 +124,6 @@ fn main() {
             sound_queue.clone(),
             game_events_bus,
         );
-    });
-
-    // thread for audio
-    thread::spawn(move || {
-        let config_instance = ConfigurationManager::get_configuration();
-        let audio_config = config_instance.audio.clone();
-
-        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
-        audio.play_background_track([0.0, 25.0, 0.0]); // add position of background track to config
-        audio.handle_audio_updates(game_state_clone, client_id);
     });
 
     pollster::block_on(player_loop.run());
