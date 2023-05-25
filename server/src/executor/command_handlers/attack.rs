@@ -190,16 +190,17 @@ impl CommandHandler for AttackCommandHandler {
 
                         let attack_strength = self.physics_config.attack_config.attack_impulse
                             - (self.physics_config.attack_config.attack_coeff * toi);
-                        let impulse_vec = scalar
-                            * vec_to_other
-                            * attack_strength;
-                        
-                        // clear velocity of target before applying attack 
-                        other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true); 
+                        let impulse_vec = scalar * vec_to_other * attack_strength;
+
+                        // clear velocity of target before applying attack
+                        other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
 
                         // apply_stun
-                        super::apply_stun(other_player_state, attack_strength / self.physics_config.attack_config.attack_impulse
-                            * self.physics_config.attack_config.max_attack_stun_duration);
+                        super::apply_stun(
+                            other_player_state,
+                            attack_strength / self.physics_config.attack_config.attack_impulse
+                                * self.physics_config.attack_config.max_attack_stun_duration,
+                        );
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,

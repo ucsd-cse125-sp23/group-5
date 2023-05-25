@@ -352,9 +352,11 @@ impl State {
 
         // load korok material library
         KOROK_MTL_LIB.set(
-            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources).await.unwrap()
+            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
+                .await
+                .unwrap(),
         );
-        
+
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
             if model_config.animated() {

@@ -5,21 +5,20 @@ use std::sync::Arc;
 
 extern crate nalgebra_glm as glm;
 
-use const_format::formatcp;
-use wgpu::util::DeviceExt;
-use ahash::AHashMap;
 use crate::model::Material;
 use crate::{
     model::{self},
     texture,
 };
+use ahash::AHashMap;
+use const_format::formatcp;
+use wgpu::util::DeviceExt;
 
 use once_cell::sync::OnceCell;
 
 pub const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok/korok_texture_lib.mtl";
-pub type MtlLib = (Arc<Vec<Material>>,Option<Arc<AHashMap<String, usize>>>);
+pub type MtlLib = (Arc<Vec<Material>>, Option<Arc<AHashMap<String, usize>>>);
 pub static KOROK_MTL_LIB: OnceCell<MtlLib> = OnceCell::new();
-
 
 //assuming we run from root (group-5 folder)
 #[rustfmt::skip]
@@ -349,8 +348,7 @@ pub async fn load_model(
             path: file_path.to_string(),
             mat_ind: None,
         })
-    }
-    else {
+    } else {
         Ok(model::StaticModel {
             meshes: Arc::new(meshes),
             materials: KOROK_MTL_LIB.get().unwrap().0.clone(),
@@ -360,14 +358,15 @@ pub async fn load_model(
     }
 }
 
-
 pub async fn load_material_library(
     file_path: &str,
     resources: ModelLoadingResources<'_>,
-    ) -> anyhow::Result<MtlLib> {
+) -> anyhow::Result<MtlLib> {
     let (device, queue, layout) = resources;
     let mtl_path = load_string(file_path).await?;
-    let (obj_materials, mat_ind) = tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mtl_path))).context(format!("error loading mtllib {}", file_path)).unwrap();
+    let (obj_materials, mat_ind) = tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mtl_path)))
+        .context(format!("error loading mtllib {}", file_path))
+        .unwrap();
     let mut materials: Vec<Material> = Vec::new();
     for m in obj_materials {
         // println!("Material: {m:?}");

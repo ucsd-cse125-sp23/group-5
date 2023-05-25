@@ -25,7 +25,7 @@ pub struct StaticModel {
     pub path: String,
     pub meshes: Arc<Vec<Mesh>>,
     pub materials: Arc<Vec<Material>>,
-    pub mat_ind: Option<Arc<ahash::AHashMap<String, usize>>>
+    pub mat_ind: Option<Arc<ahash::AHashMap<String, usize>>>,
 }
 
 impl Debug for StaticModel {
@@ -50,7 +50,7 @@ impl Model for StaticModel {
     fn mat_ind(&self) -> Option<&ahash::AHashMap<String, usize>> {
         match &self.mat_ind {
             None => None,
-            Some(s) =>  Some(&*s)
+            Some(s) => Some(&*s),
         }
     }
 
@@ -105,7 +105,7 @@ impl InstancedModel {
                 .iter()
                 .map(|x| to_mesh_color_inst(x, device, color_bind_group_layout))
                 .collect::<Vec<_>>(),
-            chosen_mats:instances
+            chosen_mats: instances
                 .iter()
                 .map(|x| x.chosen_materials.clone())
                 .collect::<Vec<_>>(),
@@ -279,7 +279,7 @@ where
             self.set_vertex_buffer(1, instance_state.buffer.slice(..));
             for i in 0..instanced_model.model.meshes().len() {
                 let mesh_name = &instanced_model.model.meshes()[i].name;
-                
+
                 // assume each mesh has a material
                 let mut mat_id = instanced_model.model.meshes()[i].material;
                 if let Some(mtls) = &instanced_model.chosen_mats[j] {
@@ -292,7 +292,7 @@ where
                         }
                     }
                 }
-               
+
                 self.set_vertex_buffer(
                     0,
                     instanced_model.model.meshes()[i].vertex_buffer.slice(..),
