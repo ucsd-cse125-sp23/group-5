@@ -423,16 +423,17 @@ impl State {
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         #[rustfmt::skip]
-            let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
-            lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
+        let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
+            // point light example
+            // lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
             // sun
-            // lights::Light::sun(),
-            lights::Light{
-                position: glm::vec4(0.0, -9.1, 0.0, 2.0),
-                position_2: glm::vec4(0.0, 15.0, 0.0, 10.0),
-                color: glm::vec3(1.0, 1.0, 1.0),
-            }
-            // lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
+            lights::Light::sun(),
+            // line segment light example
+            // lights::Light{
+            //     position: glm::vec4(0.0, -9.1, 0.0, 2.0),
+            //     position_2: glm::vec4(0.0, 15.0, 0.0, 10.0),
+            //     color: glm::vec3(1.0, 1.0, 1.0),
+            // }
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
