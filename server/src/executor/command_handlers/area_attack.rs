@@ -170,7 +170,7 @@ impl CommandHandler for AreaAttackCommandHandler {
                     // apply_stun
                     super::apply_stun(
                         other_player_state,
-                        attack_strength / self.physics_config.attack_config.attack_impulse
+                        attack_strength / self.physics_config.attack_config.area_attack_impulse
                             * self.physics_config.attack_config.max_attack_stun_duration,
                     );
 
