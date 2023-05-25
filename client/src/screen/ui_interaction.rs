@@ -10,6 +10,7 @@ use common::core::choices::CurrentSelections;
 use common::core::mesh_color::MeshColor;
 use log::warn;
 use phf::phf_map;
+use nalgebra_glm as glm;
 
 const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 const LEAF_MESH: &str = "eyes_eyes_mesh";
@@ -124,6 +125,8 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
     {
         if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
             let default_color = MeshColor::new([0.5, 0.5, 0.5]);
+            display.customization_choices.final_choices.color.clear();
+            display.customization_choices.final_choices.materials.clear();
             display
                 .customization_choices
                 .final_choices
@@ -134,6 +137,11 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
                 "korok".to_string(),
                 default_color,
             )]));
+            if let Some(mtls) = &mut node.materials {mtls.clear();}
+
+            // reset position
+            let rot = glm::Quat::new(0.5079111, -0.2949345, -0.7971848, -0.13986267);
+            node.transform = glm::TMat4::<f32>::new_translation(&glm::Vec3::new(0.0, -0.25, 1.4)) * glm::quat_to_mat4(&rot);
         }
         scene.draw_scene_dfs();
     }
@@ -194,13 +202,14 @@ fn change_leaf_color(
         .btn_id_map
         .get(&button_id.clone().unwrap())
         .unwrap()];
-    display.customization_choices.curr_leaf_color = button_id.unwrap();
+    display.customization_choices.curr_leaf_color = button_id.clone().unwrap();
     curr_button.selected = true;
 
     let curr_leaf_color =
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
 
     let actual_color = MeshColor::new([curr_button.default_tint[0], curr_button.default_tint[1], curr_button.default_tint[2]]);
+    let actual_mtl = button_id.clone().unwrap();
 
     if let Some(scene) = display
         .scene_map
@@ -217,7 +226,13 @@ fn change_leaf_color(
                 .final_choices
                 .color
                 .insert(CURR_MESH.to_owned(), actual_color);
+            display
+                .customization_choices
+                .final_choices
+                .materials
+                .insert(CURR_MESH.to_owned(), actual_mtl);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
+            node.materials = Some(display.customization_choices.final_choices.materials.clone());
             curr_leaf_color.location = curr_button.location;
         }
         scene.draw_scene_dfs();
