@@ -24,6 +24,7 @@ pub struct StaticModel {
     pub path: String,
     pub meshes: Arc<Vec<Mesh>>,
     pub materials: Arc<Vec<Material>>,
+    pub mat_ind: Option<Arc<HashMap<String, usize>>>
 }
 
 impl Debug for StaticModel {

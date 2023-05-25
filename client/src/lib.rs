@@ -51,6 +51,8 @@ use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
 
+const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok/korok_texture_lib.mtl";
+
 struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -349,6 +351,9 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
 
+        // load korok material library
+        let korok_mtl_lib = resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources).await.unwrap();
+        
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
             if model_config.animated() {
@@ -413,7 +418,7 @@ impl State {
         );
 
         // to demonstrate changing global illumination
-        camera_state.camera.ambient_multiplier = glm::vec3(0.1, 0.1, 0.1).into();
+        camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
 
         scene.draw_scene_dfs();
 
