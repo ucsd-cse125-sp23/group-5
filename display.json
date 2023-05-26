@@ -621,9 +621,9 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [
+            0.431,
+            0.729,
             1.0,
-            0.0,
-            0.0,
             1.0
           ],
           "tex": "icon:place_circle",
@@ -646,6 +646,50 @@
                 1.0
               ]
             }
+          ]
+        },
+        {
+          "id": "icon:profile_body_p1",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [1.0, 1.0, 1.0, 1.0],
+          "tex": "icon:profile_wood",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
+          ]
+        },
+        {
+          "id": "icon:profile_leaf_p1",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [0.0, 0.0, 1.0, 1.0],
+          "tex": "icon:profile_leaf_1",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
           ]
         },
         {
@@ -663,9 +707,9 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [
-            0.0,
-            1.0,
-            0.0,
+            0.859,
+            0.31,
+            0.31,
             1.0
           ],
           "tex": "icon:place_circle",
@@ -688,6 +732,50 @@
                 1.0
               ]
             }
+          ]
+        },
+        {
+          "id": "icon:profile_body_p2",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [1.0, 1.0, 1.0, 1.0],
+          "tex": "icon:profile_wood",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
+          ]
+        },
+        {
+          "id": "icon:profile_leaf_p2",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [1.0, 0.0, 0.0, 1.0],
+          "tex": "icon:profile_leaf_1",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
           ]
         },
         {
@@ -705,9 +793,9 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [
-            0.0,
-            0.0,
-            1.0,
+            0.31,
+            0.859,
+            0.455,
             1.0
           ],
           "tex": "icon:place_circle",
@@ -733,6 +821,50 @@
           ]
         },
         {
+          "id": "icon:profile_body_p3",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [1.0, 1.0, 1.0, 1.0],
+          "tex": "icon:profile_wood",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
+          ]
+        },
+        {
+          "id": "icon:profile_leaf_p3",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [0.0, 1.0, 0.0, 1.0],
+          "tex": "icon:profile_leaf_1",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
+          ]
+        },
+        {
           "id": "icon:score_p4",
           "location": {
             "vert_disp": [
@@ -747,9 +879,9 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [
-            1.0,
-            1.0,
-            1.0,
+            0.859,
+            0.831,
+            0.31,
             1.0
           ],
           "tex": "icon:place_circle",
@@ -772,6 +904,50 @@
                 1.0
               ]
             }
+          ]
+        },
+        {
+          "id": "icon:profile_body_p4",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [1.0, 1.0, 1.0, 1.0],
+          "tex": "icon:profile_wood",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
+          ]
+        },
+        {
+          "id": "icon:profile_leaf_p4",
+          "location": {
+              "vert_disp": [0.0, 0.87],
+              "horz_disp": [0.0, 0.0]
+          },
+          "aspect": 1.0,
+          "height": 0.078,
+          "tint": [1.0, 1.0, 0.0, 1.0],
+          "tex": "icon:profile_leaf_1",
+          "mask_tex": "mask:none",
+          "instances": [
+              {
+                  "translation": {
+                      "vert_disp": [0.0, 0.0],
+                      "horz_disp": [0.0, 0.0]
+                  },
+                  "rotation": 0.0,
+                  "scale": [1.0, 1.0]
+              }
           ]
         },
         {

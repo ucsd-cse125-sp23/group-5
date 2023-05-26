@@ -12,10 +12,10 @@ use log::warn;
 use nalgebra_glm as glm;
 use phf::phf_map;
 
-const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-const LEAF_MESH: &str = "eyes_eyes_mesh";
-const BODY_MESH: &str = "leg0R_leg0R_mesh";
-const CURR_MESH: &str = "korok";
+pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
+pub const LEAF_MESH: &str = "eyes_eyes_mesh";
+pub const BODY_MESH: &str = "leg0R_leg0R_mesh";
+pub const CURR_MESH: &str = "korok";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
     "game_start" => game_start,
