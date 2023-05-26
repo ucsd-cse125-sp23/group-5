@@ -917,7 +917,10 @@ impl State {
                         
                         // Set colors/textures 
                         if let Some(player_customization) = game_state_clone.players_customization.get(&i) {
-                            let body_color = player_customization.color.get("korok").unwrap().rgb_color;
+                            let leaf_color = player_customization.color.get(screen::ui_interaction::LEAF_MESH).unwrap().rgb_color;
+                            screen.icons[profile_leaf_ind].tint = glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0);
+
+                            let body_color = player_customization.color.get(screen::ui_interaction::BODY_MESH).unwrap().rgb_color;
                             screen.icons[profile_body_ind].tint = glm::vec4(body_color[0], body_color[1], body_color[2], 1.0);
                         } 
 
