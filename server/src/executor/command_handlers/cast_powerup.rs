@@ -259,6 +259,10 @@ fn dash(
         player_state.power_up = None;
     }
 
+    player_state
+        .status_effects
+        .insert(StatusEffect::Other(OtherEffects::MovementDisabled), 0.2);
+
     let _player_pos = player_state.transform.translation;
 
     // TODO: replace this example with actual implementation
