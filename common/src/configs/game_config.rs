@@ -34,4 +34,5 @@ pub struct ConfigPowerUp {
     pub invincible_effective_impulse: f32,
     pub special_movement_cooldown: f32,
     pub spawn_invincible_duration: f32,
+    pub dash_blocking_duration: f32,
 }

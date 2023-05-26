@@ -259,9 +259,10 @@ fn dash(
         player_state.power_up = None;
     }
 
-    player_state
-        .status_effects
-        .insert(StatusEffect::Other(OtherEffects::MovementDisabled), 0.2);
+    player_state.status_effects.insert(
+        StatusEffect::Other(OtherEffects::MovementDisabled),
+        game_config.powerup_config.dash_blocking_duration,
+    );
 
     let _player_pos = player_state.transform.translation;
 

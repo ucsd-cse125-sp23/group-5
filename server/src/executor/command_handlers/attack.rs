@@ -196,8 +196,15 @@ impl CommandHandler for AttackCommandHandler {
                         other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
 
                         // apply_stun
-                        super::apply_stun(
-                            other_player_state,
+                        // super::apply_stun(
+                        //     other_player_state,
+                        //     attack_strength / self.physics_config.attack_config.attack_impulse
+                        //         * self.physics_config.attack_config.max_attack_stun_duration,
+                        // );
+
+                        // TODO:
+                        other_player_state.status_effects.insert(
+                            StatusEffect::Other(OtherEffects::MovementDisabled),
                             attack_strength / self.physics_config.attack_config.attack_impulse
                                 * self.physics_config.attack_config.max_attack_stun_duration,
                         );
@@ -207,11 +214,6 @@ impl CommandHandler for AttackCommandHandler {
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,
                         );
-
-                        // TODO:
-                        // other_player_state
-                        //     .status_effects
-                        //     .insert(StatusEffect::Other(OtherEffects::MovementDisabled), some config constant);
                     }
                 }
             }

@@ -160,16 +160,21 @@ impl CommandHandler for AreaAttackCommandHandler {
                     let attack_strength = self.physics_config.attack_config.area_attack_impulse
                         - (self.physics_config.attack_config.area_attack_coeff * toi);
 
-                    let impulse_vec = scalar
-                        * vec_to_other
-                        * attack_strength;
+                    let impulse_vec = scalar * vec_to_other * attack_strength;
 
                     // clear velocity of target before applying impulse
                     other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
-                    
+
                     // apply_stun
-                    super::apply_stun(
-                        other_player_state,
+                    // super::apply_stun(
+                    //     other_player_state,
+                    //     attack_strength / self.physics_config.attack_config.area_attack_impulse
+                    //         * self.physics_config.attack_config.max_attack_stun_duration,
+                    // );
+
+                    // TODO:
+                    other_player_state.status_effects.insert(
+                        StatusEffect::Other(OtherEffects::MovementDisabled),
                         attack_strength / self.physics_config.attack_config.area_attack_impulse
                             * self.physics_config.attack_config.max_attack_stun_duration,
                     );
@@ -179,11 +184,6 @@ impl CommandHandler for AreaAttackCommandHandler {
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,
                     );
-
-                    // TODO:
-                    // other_player_state
-                    //     .status_effects
-                    //     .insert(StatusEffect::Other(OtherEffects::MovementDisabled), some config constant);
                 }
             }
         }
