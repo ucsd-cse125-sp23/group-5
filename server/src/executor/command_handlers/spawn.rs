@@ -38,7 +38,7 @@ impl CommandHandler for SpawnCommandHandler {
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
                     player_rigid_body.set_enabled(true);
-                    // clear velocity of spawned player 
+                    // clear velocity of spawned player
                     player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
                 }
 

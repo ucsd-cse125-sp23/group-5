@@ -882,8 +882,8 @@ impl State {
                     dt,
                     self.client_id,
                 );
-            
-            // only update game-related info if we're in game 
+
+            // only update game-related info if we're in game
             if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
                 other_players::load_game_state(
                     &mut self.other_players,
@@ -910,29 +910,42 @@ impl State {
                             .unwrap();
                         let profile_body_ind = *screen
                             .icon_id_map
-                            .get(&format!("icon:profile_body_p{}",i))
+                            .get(&format!("icon:profile_body_p{}", i))
                             .unwrap();
                         let profile_leaf_ind = *screen
                             .icon_id_map
-                            .get(&format!("icon:profile_leaf_p{}",i))
+                            .get(&format!("icon:profile_leaf_p{}", i))
                             .unwrap();
                         let score: f32 = self.other_players[i as usize - 1].score;
-                        
-                        // Set colors/textures 
-                        if let Some(player_customization) = game_state_clone.players_customization.get(&i) {
-                            let leaf_color = player_customization.color.get(screen::ui_interaction::LEAF_MESH).unwrap().rgb_color;
-                            screen.icons[profile_leaf_ind].tint = glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0);
 
-                            let body_color = player_customization.color.get(screen::ui_interaction::BODY_MESH).unwrap().rgb_color;
-                            screen.icons[profile_body_ind].tint = glm::vec4(body_color[0], body_color[1], body_color[2], 1.0);
-                        } 
+                        // Set colors/textures
+                        if let Some(player_customization) =
+                            game_state_clone.players_customization.get(&i)
+                        {
+                            let leaf_color = player_customization
+                                .color
+                                .get(screen::ui_interaction::LEAF_MESH)
+                                .unwrap()
+                                .rgb_color;
+                            screen.icons[profile_leaf_ind].tint =
+                                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0);
+
+                            let body_color = player_customization
+                                .color
+                                .get(screen::ui_interaction::BODY_MESH)
+                                .unwrap()
+                                .rgb_color;
+                            screen.icons[profile_body_ind].tint =
+                                glm::vec4(body_color[0], body_color[1], body_color[2], 1.0);
+                        }
 
                         for ind in [score_ind, profile_body_ind, profile_leaf_ind] {
                             let mut location = screen.icons[ind].location;
                             location.horz_disp = (
                                 0.0,
                                 game_config.score_lower_x
-                                    + score * (game_config.score_upper_x - game_config.score_lower_x),
+                                    + score
+                                        * (game_config.score_upper_x - game_config.score_lower_x),
                             );
                             screen.icons[ind].relocate(
                                 location,
@@ -1055,10 +1068,10 @@ impl State {
                     self.other_players[i as usize - 1].visible = true;
                 }
 
-            self.invisible_players = game_state_clone
-                .get_affected_players(StatusEffect::Power(PowerUpEffects::Invisible));
-            self.existing_powerups = game_state_clone.get_existing_powerups();
-        }
+                self.invisible_players = game_state_clone
+                    .get_affected_players(StatusEffect::Power(PowerUpEffects::Invisible));
+                self.existing_powerups = game_state_clone.get_existing_powerups();
+            }
 
             self.display
                 .scene_map

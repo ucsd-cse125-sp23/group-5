@@ -192,10 +192,7 @@ fn flash(
     let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
     player_rigid_body.set_rotation(rotation, true);
 
-    player_state.insert_cooldown(
-        Command::Flash,
-        game_config.powerup_config.flash_cooldown,
-    );
+    player_state.insert_cooldown(Command::Flash, game_config.powerup_config.flash_cooldown);
 
     // TODO::
     // Flashy particle effect would be cool here
@@ -289,10 +286,7 @@ fn dash(
     let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
     player_rigid_body.set_rotation(rotation, true);
 
-    player_state.insert_cooldown(
-        Command::Dash,
-        game_config.powerup_config.dash_cooldown,
-    );
+    player_state.insert_cooldown(Command::Dash, game_config.powerup_config.dash_cooldown);
 
     // TODO::
     // some particle at the end would be cool, but probably different

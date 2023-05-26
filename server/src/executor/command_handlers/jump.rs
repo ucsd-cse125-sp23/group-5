@@ -11,10 +11,10 @@ use std::time::Duration;
 
 extern crate nalgebra_glm as glm;
 
-use common::configs::physics_config::ConfigPhysics;
-use rapier3d::prelude as rapier;
-use common::core::command::Command;
 use crate::game_loop::{ClientCommand, TICK_RATE};
+use common::configs::physics_config::ConfigPhysics;
+use common::core::command::Command;
+use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
 pub struct JumpCommandHandler {
@@ -30,7 +30,11 @@ impl CommandHandler for JumpCommandHandler {
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // reset jump
-        JumpResetCommandHandler::new(self.player_id).handle(game_state, physics_state, game_events)?;
+        JumpResetCommandHandler::new(self.player_id).handle(
+            game_state,
+            physics_state,
+            game_events,
+        )?;
 
         let mut player_state = game_state
             .player_mut(self.player_id)
@@ -52,8 +56,6 @@ impl CommandHandler for JumpCommandHandler {
         } else {
             self.physics_config.movement_config.max_jump_count
         };
-
-
 
         if player_state.jump_count >= jump_limit {
             return Ok(());
@@ -112,7 +114,6 @@ impl CommandHandler for JumpResetCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-
         let mut player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
@@ -147,7 +148,6 @@ impl CommandHandler for JumpResetCommandHandler {
                 }
             }
         }
-
 
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
