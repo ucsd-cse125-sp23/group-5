@@ -11,7 +11,7 @@
     "area_attack_coeff": 5.0,
     "area_attack_cost": 2,
     "area_attack_cooldown": 1.0,
-    "max_attack_stun_duration": 1.0
+    "max_attack_stun_duration": 0.5
   },
   "movement_config": {
     "walking_cooldown": 0.5,
