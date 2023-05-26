@@ -11,6 +11,7 @@ use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use std::time::Duration;
+use crate::executor::command_handlers::jump::JumpResetCommandHandler;
 
 #[derive(Constructor)]
 pub struct MoveCommandHandler {
@@ -111,6 +112,10 @@ impl CommandHandler for MoveCommandHandler {
             ActionState::Walking,
             Duration::from_secs_f32(self.physics_config.movement_config.walking_cooldown),
         ));
+
+
+        // reset jump if player is on the ground
+        JumpResetCommandHandler::new(self.player_id).handle(game_state, physics_state, game_events)?;
 
         Ok(())
     }
