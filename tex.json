@@ -50,14 +50,6 @@
             "path": "circle_mask.png"
         },
         {
-            "name": "icon:profile_wood",
-            "path": "profile_wood.png"
-        },
-        {
-            "name": "icon:profile_leaf_1",
-            "path": "profile_leaf_1.png"
-        },
-        {
             "name": "icon:loading",
             "path": "loading.jpg"
         },
