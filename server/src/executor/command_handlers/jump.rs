@@ -13,6 +13,8 @@ extern crate nalgebra_glm as glm;
 
 use common::configs::physics_config::ConfigPhysics;
 use rapier3d::prelude as rapier;
+use common::core::command::Command;
+use crate::game_loop::{ClientCommand, TICK_RATE};
 
 #[derive(Constructor)]
 pub struct JumpCommandHandler {
@@ -36,6 +38,10 @@ impl CommandHandler for JumpCommandHandler {
 
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
+            return Ok(());
+        }
+
+        if player_state.on_cooldown.contains_key(&Command::Jump) {
             return Ok(());
         }
 
@@ -83,6 +89,11 @@ impl CommandHandler for JumpCommandHandler {
             }),
         ));
 
+        player_state.insert_cooldown(
+            Command::Jump,
+            0.2,
+        );
+
         super::handle_invincible_players(game_state, physics_state, self.player_id);
 
         Ok(())
@@ -101,6 +112,15 @@ impl CommandHandler for JumpResetCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+
+        let mut player_state = game_state
+            .player_mut(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+
+        if player_state.on_cooldown.contains_key(&Command::Jump) {
+            return Ok(());
+        }
+
         let player_collider_handle = physics_state
             .get_entity_handles(self.player_id)
             .ok_or(HandlerError::new(format!(
@@ -128,9 +148,6 @@ impl CommandHandler for JumpResetCommandHandler {
             }
         }
 
-        let mut player_state = game_state
-            .player_mut(self.player_id)
-            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
