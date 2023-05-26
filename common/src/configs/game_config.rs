@@ -32,7 +32,8 @@ pub struct ConfigPowerUp {
     pub flash_distance_scalar: f32,
     pub invincible_effective_distance: f32,
     pub invincible_effective_impulse: f32,
-    pub special_movement_cooldown: f32,
+    pub flash_cooldown: f32,
     pub spawn_invincible_duration: f32,
     pub dash_blocking_duration: f32,
+    pub dash_cooldown: f32,
 }

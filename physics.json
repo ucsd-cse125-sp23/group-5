@@ -19,7 +19,8 @@
     "gain": 0.1,
     "damping": 10.0,
     "max_jump_count": 2,
-    "jump_impulse": 90.0
+    "jump_impulse": 90.0,
+    "jump_cooldown": 0.1
 
   }
 }

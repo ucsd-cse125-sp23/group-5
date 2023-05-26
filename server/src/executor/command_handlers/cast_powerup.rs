@@ -194,7 +194,7 @@ fn flash(
 
     player_state.insert_cooldown(
         Command::Flash,
-        game_config.powerup_config.special_movement_cooldown,
+        game_config.powerup_config.flash_cooldown,
     );
 
     // TODO::
@@ -291,7 +291,7 @@ fn dash(
 
     player_state.insert_cooldown(
         Command::Dash,
-        game_config.powerup_config.special_movement_cooldown,
+        game_config.powerup_config.dash_cooldown,
     );
 
     // TODO::

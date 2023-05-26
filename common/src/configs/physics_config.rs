@@ -30,4 +30,5 @@ pub struct ConfigAction {
     pub damping: f32,
     pub max_jump_count: u32,
     pub jump_impulse: f32,
+    pub jump_cooldown: f32,
 }

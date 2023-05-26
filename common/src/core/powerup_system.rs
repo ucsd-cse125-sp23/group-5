@@ -43,6 +43,7 @@ impl Distribution<PowerUp> for Standard {
             8 | 9 => PowerUp::Invisible,
             10 | 11 => PowerUp::TripleJump,
             _ => PowerUp::Invincible,
+            // _ => PowerUp::Dash,
         }
     }
 }

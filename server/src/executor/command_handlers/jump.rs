@@ -91,7 +91,7 @@ impl CommandHandler for JumpCommandHandler {
 
         player_state.insert_cooldown(
             Command::Jump,
-            0.2,
+            self.physics_config.movement_config.jump_cooldown,
         );
 
         super::handle_invincible_players(game_state, physics_state, self.player_id);
