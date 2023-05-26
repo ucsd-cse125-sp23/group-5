@@ -287,6 +287,12 @@ impl AnimatedModel {
 
         for entry in dir {
             let entry = entry.context("Could not read animation directory entry")?;
+
+            // if entry is a file, skip it
+            if entry.file_type().unwrap().is_file() {
+                continue;
+            }
+
             let path = entry.path();
             let path = path
                 .to_str()
@@ -439,6 +445,13 @@ impl Model for AnimatedModel {
         match self.get_active_key_frame() {
             Some(key_frame) => key_frame.frame_model.materials(),
             None => &[],
+        }
+    }
+
+    fn mat_ind(&self) -> Option<&ahash::AHashMap<String, usize>> {
+        match self.get_active_key_frame() {
+            Some(key_frame) => key_frame.frame_model.mat_ind(),
+            None => None,
         }
     }
 

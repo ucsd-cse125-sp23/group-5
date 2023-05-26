@@ -29,10 +29,10 @@ pub fn create_screen_map(
     let mut screen_map = HashMap::new();
     for s in &config.screens {
         let background = create_background(s, device);
-        let mut icon_id_map : HashMap<String, usize> = HashMap::new();
+        let mut icon_id_map: HashMap<String, usize> = HashMap::new();
         let icons = create_icon(s, device, &mut icon_id_map, screen_width, screen_height);
-        
-        let mut btn_id_map : HashMap<String, usize> = HashMap::new();
+
+        let mut btn_id_map: HashMap<String, usize> = HashMap::new();
         let buttons = create_button(s, device, &mut btn_id_map, screen_width, screen_height);
 
         let screen = objects::Screen {
@@ -48,10 +48,7 @@ pub fn create_screen_map(
     screen_map
 }
 
-fn create_background(
-    s: &ConfigScreen,
-    device: &wgpu::Device,
-) -> Option<objects::ScreenBackground> {
+fn create_background(s: &ConfigScreen, device: &wgpu::Device) -> Option<objects::ScreenBackground> {
     s.background.as_ref().map(|bg| {
         let vertices = objects::TITLE_VERT;
         let vbuf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -156,7 +153,10 @@ fn create_button(
         .iter()
         .map(|b| {
             match &b.id {
-                None => {}, Some(btn_id) => {map.insert(btn_id.clone(), ind);}
+                None => {}
+                Some(btn_id) => {
+                    map.insert(btn_id.clone(), ind);
+                }
             }
             ind += 1;
             let mut vertices = objects::TITLE_VERT;

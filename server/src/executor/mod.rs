@@ -1,22 +1,21 @@
+use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
+use itertools::Itertools;
+use log::{debug, error, info, warn};
+
+use command_handlers::prelude::*;
 use common::configs::*;
+use common::core::command::Command::{UpdateWeather, WeatherEffects};
 use common::core::command::{Command, MoveDirection, ServerSync};
 use common::core::events::GameEvent;
+use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use common::core::states::GameState;
 
 use crate::game_loop::ClientCommand;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
-
-use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
-use itertools::Itertools;
-use log::{debug, error, info, warn};
-use std::cell::RefCell;
-use std::time::Duration;
-
-use command_handlers::prelude::*;
-use common::core::command::Command::{UpdateWeather, WeatherEffects};
 
 pub mod command_handlers;
 
@@ -187,20 +186,13 @@ impl Executor {
                 Command::AreaAttack => Box::new(AreaAttackCommandHandler::new(
                     client_command.client_id,
                     physics_config,
+                    game_config,
                 )),
                 Command::Refill => Box::new(RefillCommandHandler::new(
                     client_command.client_id,
                     game_config,
                 )),
                 Command::CastPowerUp => Box::new(CastPowerUpCommandHandler::new(
-                    client_command.client_id,
-                    game_config,
-                )),
-                Command::Dash => Box::new(DashCommandHandler::new(
-                    client_command.client_id,
-                    game_config,
-                )),
-                Command::Flash => Box::new(FlashCommandHandler::new(
                     client_command.client_id,
                     game_config,
                 )),
@@ -316,12 +308,9 @@ impl Executor {
         commands.push(ClientCommand::server_issued(UpdateWeather));
         commands.push(ClientCommand::server_issued(WeatherEffects));
 
-
-
         for player in self.game_state.lock().unwrap().players.values() {
             commands.push(ClientCommand::new(player.id, Command::Refill));
         }
-
 
         // automatically spawning the 4 players if gamestate is running now
         self.game_init(commands);

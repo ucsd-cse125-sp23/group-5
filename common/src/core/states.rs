@@ -1,19 +1,19 @@
-use crate::core::command::Command;
-use crate::core::components::{Physics, Transform};
-use crate::core::events::ParticleSpec;
+use std::collections::{HashMap, HashSet};
+use std::time::Duration;
 
-use crate::core::powerup_system::{PowerUp, PowerUpLocations, StatusEffect};
 use nalgebra_glm::Vec3;
 use rapier3d::prelude::Vector;
-
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 
 use crate::configs::game_config::ConfigGame;
 use crate::core::action_states::ActionState;
 use crate::core::choices::FinalChoices;
+use crate::core::command::Command;
+use crate::core::components::{Physics, Transform};
+use crate::core::events::ParticleSpec;
+use crate::core::powerup_system::StatusEffect::Power;
+use crate::core::powerup_system::{PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect};
 use crate::core::weather::Weather;
-use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {
@@ -60,7 +60,7 @@ pub struct PlayerState {
     pub wind_charge: u32,
     pub on_flag_time: f32,
     pub spawn_point: Vector<f32>,
-    pub power_up: Option<PowerUp>,
+    pub power_up: Option<(PowerUp, PowerUpStatus)>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
 }
@@ -113,6 +113,16 @@ impl PlayerState {
         } else {
             charges
         };
+    }
+
+    pub fn is_in_refill_area(&self, game_config: ConfigGame) -> bool {
+        let radius = game_config.refill_radius;
+        for i in game_config.refill_points {
+            if self.is_in_circular_area((i.x, i.z), radius, (None, None)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: f32) {
@@ -177,6 +187,13 @@ impl PlayerState {
             })
             .collect();
         self.active_action_states = updated_action_states;
+    }
+
+    pub fn holds_status_effect(&self, effect: StatusEffect) -> bool {
+        self.status_effects.contains_key(&effect)
+    }
+    pub fn holds_status_effect_mut(&mut self, effect: StatusEffect) -> bool {
+        self.status_effects.contains_key(&effect)
     }
 }
 
@@ -262,15 +279,21 @@ impl GameState {
         }
     }
 
+    // Process the status_effect map, remove all ones reached time, remove powerups accordingly
     pub fn update_player_status_effect(&mut self, delta_time: f32) {
         for (_, player_state) in self.players.iter_mut() {
-            player_state.status_effects = player_state
+            let (new_status_effects, to_process) = player_state
                 .status_effects
                 .clone()
                 .into_iter()
                 .map(|(key, time_remaining)| (key, time_remaining - delta_time))
-                .filter(|(_, time_remaining)| (*time_remaining > 0.0))
-                .collect();
+                .partition(|(_, time_remaining)| *time_remaining > 0.0);
+            player_state.status_effects = new_status_effects;
+            for (effect, _) in to_process {
+                if let Power(_) = effect {
+                    player_state.power_up = None;
+                }
+            }
         }
     }
 
@@ -305,7 +328,8 @@ impl GameState {
                         )
                     {
                         // player should get it, powerup is gone
-                        player_state.power_up = powerup.clone();
+                        player_state.power_up =
+                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));
                         *vacancy_time = powerup_respawn_cd;
                         *powerup = None;
                     }

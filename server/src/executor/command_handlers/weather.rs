@@ -1,4 +1,5 @@
 use common::core::events::{GameEvent, ParticleSpec, ParticleType};
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 use common::core::weather::Weather;
 use derive_more::Constructor;
@@ -75,6 +76,8 @@ impl MarkovState<Option<Weather>> for Option<Weather> {
     }
 }
 
+const WEATHER_START_DELAY: u64 = 60 * TICK_RATE;
+
 #[derive(Constructor)]
 /// Handles the command to start the weather
 pub struct UpdateWeatherCommandHandler {}
@@ -86,6 +89,11 @@ impl CommandHandler for UpdateWeatherCommandHandler {
         _: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        // don't do anything for the fist 1 min
+        if game_state.life_cycle_state.unwrap_running() < WEATHER_START_DELAY {
+            return Ok(());
+        }
+
         game_state.world.weather = game_state.world.weather.next();
 
         Ok(())
@@ -123,6 +131,11 @@ impl WeatherEffectCommandHandler {
     ) -> HandlerResult {
         // reduce friction for every player
         for (&player_id, player_state) in game_state.players.iter() {
+            if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
+                super::reset_weather(physics_state, player_id);
+                continue;
+            }
+
             let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
             body.set_linear_damping(0.);
 
@@ -157,8 +170,14 @@ impl WeatherEffectCommandHandler {
             Some(Weather::Windy(wind_dir)) => wind_dir,
             _ => return Ok(()),
         };
-        for (&player_id, _) in game_state.players.iter() {
+        for (&player_id, player_state) in game_state.players.iter() {
             // apply a force to the player
+
+            if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
+                super::reset_weather(physics_state, player_id);
+                continue;
+            }
+
             let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
 
             body.reset_forces(false);
@@ -175,15 +194,7 @@ impl WeatherEffectCommandHandler {
     ) -> HandlerResult {
         // reset friction for every player
         for (&player_id, _) in game_state.players.iter() {
-            physics_state
-                .get_entity_collider_mut(player_id)
-                .unwrap()
-                .set_friction(1.0);
-
-            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
-
-            body.reset_forces(false);
-            body.set_linear_damping(0.5);
+            super::reset_weather(physics_state, player_id);
         }
         Ok(())
     }

@@ -2,6 +2,7 @@ use super::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::{GameState, PlayerState};
 use derive_more::Constructor;
 use nalgebra::Point;
@@ -28,7 +29,10 @@ impl CommandHandler for SpawnCommandHandler {
         // if player already spawned
         if let Some(player) = game_state.player_mut(self.player_id) {
             // if player died and has no spawn cooldown
-            if player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn) {
+            if !player.is_dead {
+                return Ok(());
+            }
+            if !player.on_cooldown.contains_key(&Command::Spawn) {
                 if let Some(player_rigid_body) =
                     physics_state.get_entity_rigid_body_mut(self.player_id)
                 {
@@ -73,6 +77,17 @@ impl CommandHandler for SpawnCommandHandler {
                 },
             );
         }
+
+        // give just spawned player some invincibility
+        super::reset_weather(physics_state, self.player_id);
+        game_state
+            .player_mut(self.player_id)
+            .unwrap()
+            .status_effects
+            .insert(
+                StatusEffect::Power(PowerUpEffects::Invincible),
+                self.game_config.powerup_config.spawn_invincible_duration,
+            );
         Ok(())
     }
 }
