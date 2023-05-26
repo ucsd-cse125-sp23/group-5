@@ -42,7 +42,10 @@ impl CommandHandler for MoveCommandHandler {
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // if player is stunned
-        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun))
+            || player_state
+                .holds_status_effect_mut(StatusEffect::Other(OtherEffects::MovementDisabled))
+        {
             return Ok(());
         }
 

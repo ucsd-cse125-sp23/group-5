@@ -179,6 +179,11 @@ impl CommandHandler for AreaAttackCommandHandler {
                         rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                         true,
                     );
+
+                    // TODO:
+                    // other_player_state
+                    //     .status_effects
+                    //     .insert(StatusEffect::Other(OtherEffects::MovementDisabled), some config constant);
                 }
             }
         }

@@ -66,6 +66,7 @@ pub enum PowerUpEffects {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum OtherEffects {
     Stun,
+    MovementDisabled,
     // for later weather effect
     Blinded,
     Slippery,
