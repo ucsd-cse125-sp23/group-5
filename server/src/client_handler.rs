@@ -43,11 +43,11 @@ impl ClientHandler {
     }
 
     pub fn run(mut self) {
-        let read_protocol = self.protocol.try_clone().unwrap();
-        let write_protocol = self.protocol.try_clone().unwrap();
+        let mut write_protocol = self.protocol.try_clone().unwrap();
+        let mut read_protocol = self.protocol.try_clone_into().unwrap();
 
         // connect with client
-        if let Ok(msg) = self.protocol.read_message::<Message>() {
+        if let Ok(msg) = read_protocol.read_message::<Message>() {
             if let Message {
                 host_role: HostRole::Client(_),
                 payload: Payload::Init((incoming_client_id, incoming_session_id)),
@@ -61,7 +61,7 @@ impl ClientHandler {
                     info!("Client reconnected");
                     self.client_id = Some(incoming_client_id);
                 }
-                self.protocol
+                write_protocol
                     .send_message(&Message::new(
                         HostRole::Server,
                         // by this point client id is assigned by the server
