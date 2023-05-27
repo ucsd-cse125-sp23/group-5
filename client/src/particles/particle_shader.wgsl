@@ -16,13 +16,37 @@ struct InstanceInput {
     // option B) size = (2*size) / (1 + e^{-size_growth * (t)}) - size
     @location(9) size_growth: f32,
     @location(10) halflife: f32,
+    @location(11) FLAG: u32,
 }
+
+struct RibbonInstance{
+    pos_1: vec4<f32>,
+    pos_2: vec4<f32>,
+    color: vec4<f32>,
+    t1: f32,
+    t2: f32,
+    tex_id: i32,
+    z_min: f32,
+    time_elapsed: f32,
+    _size_growth: f32,
+    visible_time: f32,
+}
+
+const POINT_PARTICLE : u32 = 0u;
+const RIBBON_PARTICLE: u32 = 1u;
+const TRAIL_PARTICLE : u32 = 2u;
+// color wise: plan to fade ends of ribbons/trails, but not the sides
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
     @location(1) color: vec4<f32>,
     @location(2) tex_id: i32,
+    @location(3) FLAG: u32,
+    // only useful for ribbon/trails
+    @location(4) pos_1: vec3<f32>,
+    @location(5) pos_2: vec3<f32>,
+    @location(6) pos: vec3<f32>,
 };
 
 struct CameraUniform {
@@ -35,10 +59,30 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
-const NUM_TEXTURES: f32 = 10.0;
-
 @vertex
 fn vs_main(
+    model: VertexInput,
+    instance: InstanceInput,
+) -> VertexOutput {
+    if (instance.FLAG == POINT_PARTICLE){
+        return vs_point(model, instance);
+    } else {
+        // only implement ribbon for now
+        var ribbon: RibbonInstance;
+        ribbon.pos_1 = instance.start_pos;
+        ribbon.pos_2 = instance.velocity;
+        ribbon.color = instance.color;
+        ribbon.t1 = instance.spawn_time;
+        ribbon.t2 = instance.size;
+        ribbon.tex_id = instance.tex_id;
+        ribbon.z_min = instance.z_pos;
+        ribbon.time_elapsed = instance.time_elapsed;
+        ribbon.visible_time = instance.halflife;
+        return vs_ribbon(model, ribbon);
+    }
+}
+
+fn vs_point(
     model: VertexInput,
     instance: InstanceInput,
 ) -> VertexOutput {
@@ -94,6 +138,15 @@ fn vs_main(
     out.clip_position[2] = instance.z_pos;
     out.clip_position = camera.proj * out.clip_position;
     out.color = instance.color;
+    out.FLAG = POINT_PARTICLE;
+    return out;
+}
+
+fn vs_ribbon(
+    model: VertexInput,
+    instance: RibbonInstance,
+) -> VertexOutput {
+    var out: VertexOutput;
     return out;
 }
 

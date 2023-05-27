@@ -28,7 +28,7 @@ pub struct Particle {
     pub time_elapsed: f32,
     pub size_growth: f32,
     pub halflife: f32,
-    pub _pad2: f32,
+    pub FLAG: u32,
 }
 
 impl Particle {
@@ -36,7 +36,7 @@ impl Particle {
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
         4 => Float32 ,  5 => Float32,   6 => Sint32,
         7 => Float32,   8 => Float32,   9 => Float32,
-        10 => Float32, 11 => Float32,
+        10 => Float32, 11 => Uint32,
     ];
 }
 

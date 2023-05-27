@@ -4,6 +4,7 @@ use rand_distr::{Distribution, Geometric, LogNormal, Normal, Poisson, Uniform};
 use std::f32::consts::{FRAC_PI_2, PI};
 
 use crate::particles::Particle;
+use crate::particles::constants::{POINT_PARTICLE};
 
 pub trait ParticleGenerator {
     ////
@@ -104,7 +105,7 @@ impl ParticleGenerator for SphereGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
@@ -210,7 +211,7 @@ impl ParticleGenerator for ConeGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
@@ -306,7 +307,7 @@ impl ParticleGenerator for FanGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
@@ -388,7 +389,7 @@ impl ParticleGenerator for LineGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
@@ -472,7 +473,7 @@ impl ParticleGenerator for RainGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),

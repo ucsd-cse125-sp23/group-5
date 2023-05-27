@@ -184,7 +184,7 @@ impl Display {
                     time_elapsed: 0.0,
                     size_growth: 0.0,
                     halflife: 1.0,
-                    _pad2: 0.0,
+                    FLAG: particles::constants::POINT_PARTICLE,
                 });
             }
 
@@ -211,7 +211,7 @@ impl Display {
                     time_elapsed: 0.0,
                     size_growth: 0.0,
                     halflife: 1.0,
-                    _pad2: 0.0,
+                    FLAG: particles::constants::POINT_PARTICLE,
                 });
             }
         }
