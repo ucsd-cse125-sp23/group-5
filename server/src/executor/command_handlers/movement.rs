@@ -1,4 +1,5 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
+use crate::executor::command_handlers::jump::JumpResetCommandHandler;
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 use common::configs::physics_config::ConfigPhysics;
@@ -11,7 +12,6 @@ use derive_more::Constructor;
 use nalgebra::UnitQuaternion;
 use nalgebra_glm::Vec3;
 use std::time::Duration;
-use crate::executor::command_handlers::jump::JumpResetCommandHandler;
 
 #[derive(Constructor)]
 pub struct MoveCommandHandler {
@@ -42,7 +42,10 @@ impl CommandHandler for MoveCommandHandler {
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
         // if player is stunned
-        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun))
+            || player_state
+                .holds_status_effect_mut(StatusEffect::Other(OtherEffects::MovementDisabled))
+        {
             return Ok(());
         }
 
@@ -113,9 +116,12 @@ impl CommandHandler for MoveCommandHandler {
             Duration::from_secs_f32(self.physics_config.movement_config.walking_cooldown),
         ));
 
-
         // reset jump if player is on the ground
-        JumpResetCommandHandler::new(self.player_id).handle(game_state, physics_state, game_events)?;
+        JumpResetCommandHandler::new(self.player_id).handle(
+            game_state,
+            physics_state,
+            game_events,
+        )?;
 
         Ok(())
     }

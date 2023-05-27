@@ -192,10 +192,7 @@ fn flash(
     let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
     player_rigid_body.set_rotation(rotation, true);
 
-    player_state.insert_cooldown(
-        Command::Flash,
-        game_config.powerup_config.special_movement_cooldown,
-    );
+    player_state.insert_cooldown(Command::Flash, game_config.powerup_config.flash_cooldown);
 
     // TODO::
     // Flashy particle effect would be cool here
@@ -259,6 +256,11 @@ fn dash(
         player_state.power_up = None;
     }
 
+    player_state.status_effects.insert(
+        StatusEffect::Other(OtherEffects::MovementDisabled),
+        game_config.powerup_config.dash_blocking_duration,
+    );
+
     let _player_pos = player_state.transform.translation;
 
     // TODO: replace this example with actual implementation
@@ -284,10 +286,7 @@ fn dash(
     let rotation = UnitQuaternion::face_towards(&camera_forward, &Vec3::y());
     player_rigid_body.set_rotation(rotation, true);
 
-    player_state.insert_cooldown(
-        Command::Dash,
-        game_config.powerup_config.special_movement_cooldown,
-    );
+    player_state.insert_cooldown(Command::Dash, game_config.powerup_config.dash_cooldown);
 
     // TODO::
     // some particle at the end would be cool, but probably different
@@ -302,6 +301,9 @@ fn dash(
     //     )),
     //     Recipients::All,
     // );
+
+    // clear velocity of target before applying attack
+    player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
 
     player_rigid_body.apply_impulse(
         rapier::vector![

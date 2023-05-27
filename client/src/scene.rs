@@ -282,7 +282,6 @@ impl Scene {
         let mut color_stack: Vec<Option<HashMap<String, MeshColor>>> = Vec::new();
         let mut mtl_stack: Vec<Option<HashMap<String, String>>> = Vec::new();
 
-
         // state needed for DFS:
         let mut cur_node: &Node = self.scene_graph.get(&NodeKind::World.base_id()).unwrap();
         let mut current_view_matrix: TMat4<f32> = mat4_identity;

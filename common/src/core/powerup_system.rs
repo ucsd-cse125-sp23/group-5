@@ -43,6 +43,7 @@ impl Distribution<PowerUp> for Standard {
             8 | 9 => PowerUp::Invisible,
             10 | 11 => PowerUp::TripleJump,
             _ => PowerUp::Invincible,
+            // _ => PowerUp::Dash,
         }
     }
 }
@@ -66,6 +67,7 @@ pub enum PowerUpEffects {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum OtherEffects {
     Stun,
+    MovementDisabled,
     // for later weather effect
     Blinded,
     Slippery,
