@@ -7,6 +7,7 @@ use wgpu::util::DeviceExt;
 //exports
 pub mod constants;
 pub mod gen;
+pub mod ribbon;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -38,6 +39,37 @@ impl Particle {
         7 => Float32,   8 => Float32,   9 => Float32,
         10 => Float32, 11 => Uint32,
     ];
+
+    pub fn dead_partition_pred(&self, lifetime: f32, elapsed: f32) -> bool{
+        if self.FLAG == constants::POINT_PARTICLE {
+            return self.spawn_time + lifetime < elapsed;
+        } else {
+            // since time 2 is stored in size
+            return self.size < elapsed;
+        }
+    }
+
+    pub fn spawned_partition_pred(&self, elapsed: f32) -> bool{
+        return self.spawn_time < elapsed;
+    }
+
+    pub fn calc_z(&mut self, cam_dir: &glm::Vec3, cpos: &glm::Vec3, elapsed: f32){
+        if self.FLAG == constants::POINT_PARTICLE {
+            let pos: glm::Vec3 = glm::make_vec3(&self.start_pos[0..3])
+                + (elapsed - self.spawn_time) * glm::make_vec3(&self.velocity[0..3]);
+            self.z_pos = glm::dot(&(pos - cpos), cam_dir);
+        } else {
+            let p1 = glm::make_vec3(&self.start_pos[0..3]);
+            let p2 = glm::make_vec3(&self.velocity[0..3]);
+            let z1 = glm::dot(&(p1 - cpos), cam_dir);
+            let z2 = glm::dot(&(p2 - cpos), cam_dir);
+            if z1 < z2 {
+                self.z_pos = z1;
+            } else {
+                self.z_pos = z2;
+            }
+        }
+    }
 }
 
 impl crate::model::Vertex for Particle {
@@ -85,11 +117,11 @@ impl ParticleSystem {
         // Time
         let last_particle_death =
             generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
-        println!("number of particles: {}", num_instances);
-        println!(
-            "last particle death: {:?}",
-            last_particle_death.as_secs_f32()
-        );
+        // println!("number of particles: {}", num_instances);
+        // println!(
+        //     "last particle death: {:?}",
+        //     last_particle_death.as_secs_f32()
+        // );
         Self {
             start_time: std::time::Instant::now(),
             particle_lifetime,
@@ -103,7 +135,7 @@ impl ParticleSystem {
         if self.start_time.elapsed() < self.last_particle_death {
             return Some(self);
         }
-        //TODO if necessary: comtinued generation
+        //TODO if necessary: continued generation
         None
     }
 
@@ -257,15 +289,13 @@ impl ParticleDrawer {
 
             // order instances first, then set instance buffer
             for p in &mut ps.particles {
-                let pos: glm::Vec3 = glm::make_vec3(&p.start_pos[0..3])
-                    + (elapsed - p.spawn_time) * glm::make_vec3(&p.velocity[0..3]);
-                p.z_pos = glm::dot(&(pos - cpos), &cam_dir);
+                p.calc_z(&cam_dir, cpos, elapsed);
             }
             let start_ind = ps
                 .particles
-                .partition_point(|&a| a.spawn_time + ps.particle_lifetime < elapsed);
+                .partition_point(|&a| a.dead_partition_pred(ps.particle_lifetime, elapsed));
             ps.particles.drain(0..start_ind);
-            let end_ind = ps.particles.partition_point(|&a| a.spawn_time < elapsed);
+            let end_ind = ps.particles.partition_point(|&a| a.spawned_partition_pred(elapsed));
             for p in &mut ps.particles[..end_ind] {
                 p.time_elapsed = elapsed;
             }
