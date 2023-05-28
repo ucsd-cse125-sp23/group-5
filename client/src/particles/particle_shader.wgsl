@@ -5,24 +5,28 @@ struct InstanceInput {
     @location(1) start_pos: vec4<f32>,
     @location(2) velocity: vec4<f32>,
     @location(3) color: vec4<f32>,
-    @location(4) spawn_time: f32,
-    @location(5) size: f32,
-    @location(6) tex_id: i32,
-    @location(7) z_pos: f32,
-    @location(8) time_elapsed: f32,
+    @location(4) n1: vec4<f32>,
+    @location(5) n2: vec4<f32>,
+    @location(6) spawn_time: f32,
+    @location(7) size: f32,
+    @location(8) tex_id: i32,
+    @location(9) z_pos: f32,
+    @location(10) time_elapsed: f32,
     // allow size to grow
     // if it's non-zero: 
     // option A) size = (size) / (1 + e^{-size_growth * (t - halflife)})
     // option B) size = (2*size) / (1 + e^{-size_growth * (t)}) - size
-    @location(9) size_growth: f32,
-    @location(10) halflife: f32,
-    @location(11) FLAG: u32,
+    @location(11) size_growth: f32,
+    @location(12) halflife: f32,
+    @location(13) FLAG: u32,
 }
 
 struct RibbonInstance{
     pos_1: vec4<f32>,
     pos_2: vec4<f32>,
     color: vec4<f32>,
+    n1: vec4<f32>,
+    n2: vec4<f32>,
     t1: f32,
     t2: f32,
     tex_id: i32,
@@ -74,6 +78,8 @@ fn vs_main(
         ribbon.color = instance.color;
         ribbon.t1 = instance.spawn_time;
         ribbon.t2 = instance.size;
+        ribbon.n1 = instance.n1;
+        ribbon.n2 = instance.n2;
         ribbon.tex_id = instance.tex_id;
         ribbon.z_max = instance.z_pos;
         ribbon.time_elapsed = instance.time_elapsed;
@@ -166,9 +172,11 @@ fn vs_ribbon(
     // pick which position
     var which = instance.pos_1;
     out.time = instance.t1;
+    var ribbon_dir = instance.n1.xyz;
     if (model.tex[0] > 0.0){
         which = instance.pos_2;
         out.time = instance.t2;
+        ribbon_dir = instance.n2.xyz;
     }
     var pos = which.xyz;
 
@@ -176,7 +184,6 @@ fn vs_ribbon(
     // assuming camera homogenous coord is always 1.0
     var cpos = vec3<f32>(camera.location[0], camera.location[1], camera.location[2]);
     var z_prime = normalize(cpos - pos);
-    var ribbon_dir = instance.pos_2.xyz - instance.pos_1.xyz;
     var y_prime = normalize(cross(z_prime, ribbon_dir));
 
     if (model.tex[1] > 0.0){ // lower vertex

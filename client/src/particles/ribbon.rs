@@ -13,6 +13,8 @@ pub struct RibbonSection{
     pub width_1: f32,
     pub width_2: f32,
     pub color: glm::Vec4,
+    pub n1: glm::Vec4,
+    pub n2: glm::Vec4,
     pub t1: f32,
     pub t2: f32,
     pub tex_id: i32,
@@ -26,6 +28,8 @@ impl RibbonSection{
             start_pos: [self.pos_1[0], self.pos_1[1], self.pos_1[2], self.width_1],
             velocity: [self.pos_2[0], self.pos_2[1], self.pos_2[2], self.width_2],
             color: self.color.into(),
+            normal_1: self.n1.into(),
+            normal_2: self.n2.into(),
             spawn_time: self.t1,
             size: self.t2,
             tex_id: self.tex_id,
@@ -104,12 +108,12 @@ impl ParticleGenerator for LineRibbonGenerator {
         let mut spawn_time = 0.0;
         while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
             let v = self.v_dir * lin_dist.sample(rng);
-            let origin = glm::vec3(
+            let origin:glm::Vec3 = glm::vec3(
                 x_dist.sample(rng),
                 y_dist.sample(rng),
                 z_dist.sample(rng),
             );
-            // let end = origin + v * halflife * 2.0;
+            let end: glm::Vec3 = origin + v * halflife * 2.0;
             let width = size_dist.sample(rng);
             let section_time = halflife * 2.0 / (self.subdivisions as f32);
             for i in 0..self.subdivisions {
@@ -118,6 +122,8 @@ impl ParticleGenerator for LineRibbonGenerator {
                     pos_2: origin + (i as f32 + 1.0) * section_time * v,
                     width_1: width,
                     width_2: width,
+                    n1: glm::vec3_to_vec4(&glm::normalize(&(end - origin))),
+                    n2: glm::vec3_to_vec4(&glm::normalize(&(end - origin))),
                     color,
                     t1: spawn_time + (i as f32) * section_time,
                     t2: spawn_time + (i as f32 + 1.0) * section_time,

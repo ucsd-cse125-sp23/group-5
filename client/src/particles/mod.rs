@@ -22,6 +22,8 @@ pub struct Particle {
     pub start_pos: [f32; 4],
     pub velocity: [f32; 4],
     pub color: [f32; 4],
+    pub normal_1: [f32; 4],
+    pub normal_2: [f32; 4],
     pub spawn_time: f32,
     pub size: f32,
     pub tex_id: i32,
@@ -33,11 +35,12 @@ pub struct Particle {
 }
 
 impl Particle {
-    const ATTRIBS: [wgpu::VertexAttribute; 11] = wgpu::vertex_attr_array![
+    const ATTRIBS: [wgpu::VertexAttribute; 13] = wgpu::vertex_attr_array![
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
-        4 => Float32 ,  5 => Float32,   6 => Sint32,
-        7 => Float32,   8 => Float32,   9 => Float32,
-        10 => Float32, 11 => Uint32,
+        4 => Float32x4, 5 => Float32x4, 6 => Float32 ,
+        7 => Float32,   8 => Sint32,    9 => Float32,
+        10 => Float32,   11 => Float32,  12 => Float32, 
+        13 => Uint32,
     ];
 
     pub fn dead_partition_pred(&self, lifetime: f32, elapsed: f32) -> bool{
