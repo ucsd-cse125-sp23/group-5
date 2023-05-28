@@ -32,7 +32,20 @@ struct RibbonInstance{
     tex_id: i32,
     z_max: f32,
     time_elapsed: f32,
-    _size_growth: f32,
+    visible_time: f32,
+}
+
+struct TrailInstance{
+    pos_1: vec4<f32>,
+    pos_2: vec4<f32>,
+    pos_3: vec4<f32>,
+    pos_4: vec4<f32>,
+    color: vec4<f32>,
+    t1: f32,
+    t2: f32,
+    tex_id: i32,
+    z_max: f32,
+    time_elapsed: f32,
     visible_time: f32,
 }
 
@@ -70,7 +83,7 @@ fn vs_main(
 ) -> VertexOutput {
     if (instance.FLAG == POINT_PARTICLE){
         return vs_point(model, instance);
-    } else {
+    } else if (instance.FLAG == RIBBON_PARTICLE) {
         // only implement ribbon for now
         var ribbon: RibbonInstance;
         ribbon.pos_1 = instance.start_pos;
@@ -85,6 +98,20 @@ fn vs_main(
         ribbon.time_elapsed = instance.time_elapsed;
         ribbon.visible_time = instance.halflife;
         return vs_ribbon(model, ribbon);
+    } else {
+        var trail: TrailInstance;
+        trail.pos_1 = instance.start_pos;
+        trail.pos_2 = instance.velocity;
+        trail.pos_3 = instance.n1;
+        trail.pos_4 = instance.n2;
+        trail.color = instance.color;
+        trail.t1 = instance.spawn_time;
+        trail.t2 = instance.size;
+        trail.tex_id = instance.tex_id;
+        trail.z_max = instance.z_pos;
+        trail.time_elapsed = instance.time_elapsed;
+        trail.visible_time = instance.halflife;
+        return vs_trail(model, trail);
     }
 }
 
@@ -152,17 +179,6 @@ fn vs_ribbon(
     model: VertexInput,
     instance: RibbonInstance,
 ) -> VertexOutput {
-    // struct VertexOutput {
-    //     @builtin(position) clip_position: vec4<f32>,
-    //     @location(0) tex_coords: vec2<f32>,
-    //     @location(1) color: vec4<f32>,
-    //     @location(2) tex_id: i32,
-    //     @location(3) FLAG: u32,
-    //     // only useful for ribbon/trails
-    //     @location(4) pos_1: vec3<f32>,
-    //     @location(5) pos_2: vec3<f32>,
-    //     @location(6) pos: vec3<f32>,
-    // };
     var out: VertexOutput;
     out.tex_coords = model.tex;
     out.color = instance.color;
@@ -196,6 +212,44 @@ fn vs_ribbon(
         out.clip_position[2] = instance.z_max;
     }
     out.clip_position = camera.proj * out.clip_position;
+
+    // fill out constants
+    out.time_elapsed = instance.time_elapsed;
+    out.visible_time = instance.visible_time;
+    return out;
+}
+
+fn vs_trail(
+    model: VertexInput,
+    instance: TrailInstance,
+) -> VertexOutput {
+    var out: VertexOutput;
+    out.tex_coords = model.tex;
+    out.color = instance.color;
+    out.tex_id = instance.tex_id;
+    out.FLAG = TRAIL_PARTICLE;
+
+    // pick which position
+    var which: vec4<f32>;
+    if (model.tex[0] > 0.0){
+        which = instance.pos_3;
+        out.time = instance.t2;
+        if (model.tex[0] > 0.0) {
+            which = instance.pos_4;
+        }
+    } else{
+        out.time = instance.t1;
+        which = instance.pos_2;
+        if (model.tex[0] > 0.0) {
+            which = instance.pos_1;
+        }
+    }
+    var pos = which.xyz;
+    out.clip_position = camera.view * vec4<f32>(pos, 1.0);
+    if (out.clip_position[2] > instance.z_max){
+        out.clip_position[2] = instance.z_max;
+    }
+    out.clip_position =  camera.proj * out.clip_position;    
 
     // fill out constants
     out.time_elapsed = instance.time_elapsed;

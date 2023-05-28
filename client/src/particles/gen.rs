@@ -22,7 +22,7 @@ pub trait ParticleGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32;
+    ) -> f32;
 }
 
 pub struct SphereGenerator {
@@ -73,7 +73,7 @@ impl ParticleGenerator for SphereGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let dir_dist = Normal::new(0.0, 1.0).unwrap();
@@ -114,7 +114,7 @@ impl ParticleGenerator for SphereGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -182,7 +182,7 @@ impl ParticleGenerator for ConeGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let dir_r_dist = Uniform::new(0.0, self.r);
@@ -222,7 +222,7 @@ impl ParticleGenerator for ConeGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -288,7 +288,7 @@ impl ParticleGenerator for FanGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let ang_dir = Uniform::new(-self.half_spread, self.half_spread);
@@ -320,7 +320,7 @@ impl ParticleGenerator for FanGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -376,7 +376,7 @@ impl ParticleGenerator for LineGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
@@ -404,7 +404,7 @@ impl ParticleGenerator for LineGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -456,7 +456,7 @@ impl ParticleGenerator for RainGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
         let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
         let mut spawn_time = 0.0;
@@ -490,6 +490,6 @@ impl ParticleGenerator for RainGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }

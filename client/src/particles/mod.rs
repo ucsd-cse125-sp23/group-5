@@ -8,6 +8,7 @@ use wgpu::util::DeviceExt;
 pub mod constants;
 pub mod gen;
 pub mod ribbon;
+pub mod trail;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -113,7 +114,7 @@ impl ParticleSystem {
         rng: &mut rand::rngs::ThreadRng,
     ) -> Self {
         let mut particles = vec![];
-        let num_instances = gen.generate(
+        let last_particle_death = gen.generate(
             &mut particles,
             generation_time,
             generation_speed,
@@ -122,24 +123,25 @@ impl ParticleSystem {
             color,
             rng,
         );
-        // Time
-        let mut last_particle_death =
-            generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
-        if particles[0].FLAG != constants::POINT_PARTICLE {
-            last_particle_death = 
-                std::time::Duration::from_secs_f32(particle_lifetime + particles[particles.len()-1].size);
-        }
+        // // Time
+        // let mut last_particle_death =
+        //     generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
+        // if particles[0].FLAG != constants::POINT_PARTICLE {
+        //     last_particle_death = 
+        //         std::time::Duration::from_secs_f32(particle_lifetime + particles[particles.len()-1].size);
+        // }
         // println!("number of particles: {}", num_instances);
         // println!(
         //     "last particle death: {:?}",
         //     last_particle_death.as_secs_f32()
         // );
+        let num_instances = particles.len() as u32;
         Self {
             start_time: std::time::Instant::now(),
             particle_lifetime,
-            last_particle_death,
+            last_particle_death: std::time::Duration::from_secs_f32(last_particle_death),
             particles,
-            num_instances,
+            num_instances
         }
     }
 

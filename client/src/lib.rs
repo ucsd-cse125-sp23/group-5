@@ -1239,6 +1239,7 @@ impl State {
                 // generator
                 events::ParticleType::ATTACK => {
                     // switching it out just to test ribbon particle
+                    // ribbon sample
                     let gen = particles::ribbon::LineRibbonGenerator::new(
                         glm::vec3(-10., -10., -10.),
                         glm::vec3(10., -8., 10.),
@@ -1258,6 +1259,26 @@ impl State {
                         p.color,
                         gen,
                         (12, 13),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+
+                    let gen = particles::trail::PathTrailGenerator::new(
+                        vec![glm::vec3(-5.0, -10.0, -5.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(5.0, -10.0, 5.0)],
+                        vec![0.0, 0.5, 1.0],
+                        vec![40.0, 20.0, 40.0],
+                        glm::vec3(0.0, 1.0, 0.0),
+                        10,
+                        5.0,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(60.),
+                        20.0,
+                        5.0,
+                        glm::vec4(1.0, 0.8, 0.4, 0.8),
+                        gen,
+                        (0, 1),
                         &self.device,
                         &mut self.rng,
                     );

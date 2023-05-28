@@ -97,7 +97,7 @@ impl ParticleGenerator for LineRibbonGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
         let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
@@ -138,6 +138,6 @@ impl ParticleGenerator for LineRibbonGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + self.visible_time
     }
 }
