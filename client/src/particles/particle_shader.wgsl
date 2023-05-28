@@ -26,7 +26,7 @@ struct RibbonInstance{
     t1: f32,
     t2: f32,
     tex_id: i32,
-    z_min: f32,
+    z_max: f32,
     time_elapsed: f32,
     _size_growth: f32,
     visible_time: f32,
@@ -75,7 +75,7 @@ fn vs_main(
         ribbon.t1 = instance.spawn_time;
         ribbon.t2 = instance.size;
         ribbon.tex_id = instance.tex_id;
-        ribbon.z_min = instance.z_pos;
+        ribbon.z_max = instance.z_pos;
         ribbon.time_elapsed = instance.time_elapsed;
         ribbon.visible_time = instance.halflife;
         return vs_ribbon(model, ribbon);
@@ -185,8 +185,8 @@ fn vs_ribbon(
         pos += which.w * y_prime * 0.01;
     }
     out.clip_position = camera.view * vec4<f32>(pos, 1.0);
-    if (out.clip_position[2] < instance.z_min){
-        out.clip_position[2] = instance.z_min;
+    if (out.clip_position[2] > instance.z_max){
+        out.clip_position[2] = instance.z_max;
     }
     out.clip_position = camera.proj * out.clip_position;
 

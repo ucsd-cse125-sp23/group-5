@@ -68,7 +68,7 @@ impl Particle {
             let p2 = glm::make_vec3(&self.velocity[0..3]);
             let z1 = glm::dot(&(p1 - cpos), cam_dir);
             let z2 = glm::dot(&(p2 - cpos), cam_dir);
-            if z1 < z2 {
+            if z1 > z2 {
                 self.z_pos = z1;
             } else {
                 self.z_pos = z2;

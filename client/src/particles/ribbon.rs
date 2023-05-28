@@ -16,7 +16,7 @@ pub struct RibbonSection{
     pub t1: f32,
     pub t2: f32,
     pub tex_id: i32,
-    pub z_min: f32, // we'll let the shader calculate z's and clamp it from below
+    pub z_max: f32, // we'll let the shader calculate z's and clamp it from below
     pub visible_time: f32,
 }
 
@@ -122,7 +122,7 @@ impl ParticleGenerator for LineRibbonGenerator {
                     t1: spawn_time + (i as f32) * section_time,
                     t2: spawn_time + (i as f32 + 1.0) * section_time,
                     tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
-                    z_min: 0.0,
+                    z_max: 0.0,
                     visible_time: self.visible_time,
                 };
                 list.push(ribbon.to_particle());

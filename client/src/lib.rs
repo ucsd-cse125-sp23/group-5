@@ -1243,17 +1243,17 @@ impl State {
                         glm::vec3(-10., -10., -10.),
                         glm::vec3(10., -8., 10.),
                         glm::vec3(0., 1., 0.),
-                        2.5,
+                        10.0,
                         0.0,
                         0.5,
-                        30.,
+                        20.,
                         0.0,
-                        3,
+                        50,
                         false,
                     );
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(60.),
-                        6.0,
+                        2.0,
                         5.0,
                         p.color,
                         gen,
@@ -1263,7 +1263,7 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
 
-                    // ORIGINAL
+                    // ORIGINAL 
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
