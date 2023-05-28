@@ -10,7 +10,8 @@
         "particles/p8.png",
         "particles/p9.png",
         "particles/p10.png",
-        "particles/rain_particle.png"
+        "particles/rain_particle.png",
+        "particles/streak.png"
     ],
     "skybox": [
         "skybox/px.png",

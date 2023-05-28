@@ -188,9 +188,7 @@ fn recv_server_updates(
                 payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),
                 ..
             } => {
-                print!("Receiving PARTICLE: {:?}...", p);
                 particle_queue.lock().unwrap().add_particle(p);
-                println!("Done!");
             }
             Message {
                 host_role: HostRole::Server,

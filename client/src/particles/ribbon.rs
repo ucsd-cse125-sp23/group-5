@@ -6,6 +6,7 @@ use crate::particles::Particle;
 use crate::particles::gen::ParticleGenerator;
 use crate::particles::constants;
 
+#[derive(Copy, Clone, Debug)]
 pub struct RibbonSection{
     pub pos_1: glm::Vec3,
     pub pos_2: glm::Vec3,
@@ -23,7 +24,7 @@ impl RibbonSection{
     pub fn to_particle(self) -> Particle{
         Particle{
             start_pos: [self.pos_1[0], self.pos_1[1], self.pos_1[2], self.width_1],
-            velocity: [self.pos_1[0], self.pos_1[1], self.pos_1[2], self.width_2],
+            velocity: [self.pos_2[0], self.pos_2[1], self.pos_2[2], self.width_2],
             color: self.color.into(),
             spawn_time: self.t1,
             size: self.t2,
@@ -31,7 +32,7 @@ impl RibbonSection{
             z_pos: 0.0,
             time_elapsed: 0.0,
             size_growth: 0.0,
-            halflife: 0.0,
+            halflife: self.visible_time,
             FLAG: constants::RIBBON_PARTICLE,
         }
     }
@@ -48,7 +49,7 @@ pub struct LineRibbonGenerator {
     visible_time: f32,
     size: f32,
     size_variance: f32,
-    size_growth: f32,
+    subdivisions: u32,
     poisson_generation: bool,
 }
 
@@ -62,7 +63,7 @@ impl LineRibbonGenerator{
         visible_time: f32,
         size: f32,
         size_variance: f32,
-        size_growth: f32,
+        subdivisions: u32,
         poisson_generation: bool,
     ) -> Self{
         Self{
@@ -74,7 +75,7 @@ impl LineRibbonGenerator{
             visible_time,
             size,
             size_variance,
-            size_growth,
+            subdivisions,
             poisson_generation,
         }
     }
@@ -108,21 +109,24 @@ impl ParticleGenerator for LineRibbonGenerator {
                 y_dist.sample(rng),
                 z_dist.sample(rng),
             );
-            let end = origin + v * halflife * 2.0;
+            // let end = origin + v * halflife * 2.0;
             let width = size_dist.sample(rng);
-            let ribbon = RibbonSection{
-                pos_1: origin,
-                pos_2: end,
-                width_1: width,
-                width_2: width,
-                color,
-                t1: spawn_time,
-                t2: halflife * 2.0,
-                tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
-                z_min: 0.0,
-                visible_time: self.visible_time,
-            };
-            list.push(ribbon.to_particle());
+            let section_time = halflife * 2.0 / (self.subdivisions as f32);
+            for i in 0..self.subdivisions {
+                let ribbon = RibbonSection{
+                    pos_1: origin + (i as f32) * section_time * v,
+                    pos_2: origin + (i as f32 + 1.0) * section_time * v,
+                    width_1: width,
+                    width_2: width,
+                    color,
+                    t1: spawn_time + (i as f32) * section_time,
+                    t2: spawn_time + (i as f32 + 1.0) * section_time,
+                    tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
+                    z_min: 0.0,
+                    visible_time: self.visible_time,
+                };
+                list.push(ribbon.to_particle());
+            }
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
                 false => 1.0 / spawn_rate,

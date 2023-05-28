@@ -44,9 +44,9 @@ struct VertexOutput {
     @location(2) tex_id: i32,
     @location(3) FLAG: u32,
     // only useful for ribbon/trails
-    @location(4) pos_1: vec3<f32>,
-    @location(5) pos_2: vec3<f32>,
-    @location(6) pos: vec3<f32>,
+    @location(4) time_elapsed: f32,
+    @location(5) visible_time: f32,
+    @location(6) time: f32,
 };
 
 struct CameraUniform {
@@ -146,7 +146,53 @@ fn vs_ribbon(
     model: VertexInput,
     instance: RibbonInstance,
 ) -> VertexOutput {
+    // struct VertexOutput {
+    //     @builtin(position) clip_position: vec4<f32>,
+    //     @location(0) tex_coords: vec2<f32>,
+    //     @location(1) color: vec4<f32>,
+    //     @location(2) tex_id: i32,
+    //     @location(3) FLAG: u32,
+    //     // only useful for ribbon/trails
+    //     @location(4) pos_1: vec3<f32>,
+    //     @location(5) pos_2: vec3<f32>,
+    //     @location(6) pos: vec3<f32>,
+    // };
     var out: VertexOutput;
+    out.tex_coords = model.tex;
+    out.color = instance.color;
+    out.tex_id = instance.tex_id;
+    out.FLAG = RIBBON_PARTICLE;
+
+    // pick which position
+    var which = instance.pos_1;
+    out.time = instance.t1;
+    if (model.tex[0] > 0.0){
+        which = instance.pos_2;
+        out.time = instance.t2;
+    }
+    var pos = which.xyz;
+
+    // build coordinates
+    // assuming camera homogenous coord is always 1.0
+    var cpos = vec3<f32>(camera.location[0], camera.location[1], camera.location[2]);
+    var z_prime = normalize(cpos - pos);
+    var ribbon_dir = instance.pos_2.xyz - instance.pos_1.xyz;
+    var y_prime = normalize(cross(z_prime, ribbon_dir));
+
+    if (model.tex[1] > 0.0){ // lower vertex
+        pos -= which.w * y_prime * 0.01;
+    } else { // upper vertex
+        pos += which.w * y_prime * 0.01;
+    }
+    out.clip_position = camera.view * vec4<f32>(pos, 1.0);
+    if (out.clip_position[2] < instance.z_min){
+        out.clip_position[2] = instance.z_min;
+    }
+    out.clip_position = camera.proj * out.clip_position;
+
+    // fill out constants
+    out.time_elapsed = instance.time_elapsed;
+    out.visible_time = instance.visible_time;
     return out;
 }
 
@@ -156,8 +202,27 @@ var t_diffuse: texture_2d_array<f32>;
 @group(1) @binding(1)
 var s_diffuse: sampler;
 
+// we will use the first and last 5% of the visible portion to fade in/out for ribbon
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords, in.tex_id);
-    return t * in.color * camera.ambient_multiplier;
+    if (in.FLAG == POINT_PARTICLE){
+        return t * in.color * camera.ambient_multiplier;
+    } else {
+        var time = in.time;
+        // return vec4<f32>(in.time / 10.0 * vec3<f32>(1.0, 1.0, 1.0), 1.0);
+        if (time < in.time_elapsed || time > in.time_elapsed + in.visible_time){
+            return vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        }
+        // return t * in.color * camera.ambient_multiplier;
+        var time_multiplier = 1.0;
+        var percent_time = (time - in.time_elapsed) / in.visible_time;
+        if (percent_time < 0.8){
+            var x = percent_time * 1.25; // dividing by 0.8
+            time_multiplier = 3.0 * x * x - 2.0 * x * x * x;
+        }
+        var c = t * in.color * camera.ambient_multiplier;
+        c[3] *= time_multiplier;
+        return c;
+    }
 }

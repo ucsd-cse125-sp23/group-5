@@ -637,8 +637,6 @@ impl State {
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
-        // end debug code that needs to be replaced
-
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
             &device,
@@ -1236,10 +1234,36 @@ impl State {
         let time_divider = particle_config.time_divider;
 
         for p in &particle_queue.particles {
-            println!("Handling particle of type: {:?}", p.p_type);
+            // println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
+                    // switching it out just to test ribbon particle
+                    let gen = particles::ribbon::LineRibbonGenerator::new(
+                        glm::vec3(-10., -10., -10.),
+                        glm::vec3(10., -8., 10.),
+                        glm::vec3(0., 1., 0.),
+                        2.5,
+                        0.0,
+                        0.5,
+                        30.,
+                        0.0,
+                        3,
+                        false,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(60.),
+                        6.0,
+                        5.0,
+                        p.color,
+                        gen,
+                        (12, 13),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+
+                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
@@ -1290,7 +1314,7 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (1, 4),
+                        (0, 4),
                         &self.device,
                         &mut self.rng,
                     );

@@ -19,9 +19,13 @@ pub trait MarkovState<T> {
 }
 
 // Constants for fraction of visits in long term (derived from limiting distribution)
-const RAIN_FRACTION: f64 = 0.3;
-const WIND_FRACTION: f64 = 0.2;
-const NONE_FRACTION: f64 = 0.5;
+// const RAIN_FRACTION: f64 = 0.3;
+// const WIND_FRACTION: f64 = 0.2;
+// const NONE_FRACTION: f64 = 0.5;
+
+const RAIN_FRACTION: f64 = 0.0;
+const WIND_FRACTION: f64 = 0.0;
+const NONE_FRACTION: f64 = 1.0;
 
 #[allow(clippy::assertions_on_constants)]
 const _: () = assert!(RAIN_FRACTION + WIND_FRACTION + NONE_FRACTION == 1.0);
