@@ -4,6 +4,7 @@ use std::env;
 use std::fs::File;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -45,7 +46,8 @@ fn main() {
     let protocol = Protocol::connect(dest).unwrap();
 
     // need to clone the protocol to be able to receive events and game states from different threads
-    let mut protocol_clone = protocol.try_clone().unwrap();
+    let mut write_protocol = protocol.try_clone().unwrap();
+    let mut read_protocol = protocol.try_clone_into().unwrap();
 
     // TODO: make the string path a Const/Static, debug mode for reconnection
     let session_data_path = env::current_dir()
@@ -56,7 +58,7 @@ fn main() {
     let (client_id, session_id) = restore_ids(&session_data_path);
 
     // send local ids to see if I am a "broken pipe"
-    protocol_clone
+   write_protocol
         .send_message(&Message::new(
             HostRole::Client(client_id),
             Payload::Init((client_id, session_id)),
@@ -64,7 +66,7 @@ fn main() {
         .expect("send message fails");
 
     // init connection with server and get client id
-    let (client_id, session_id) = init_connection(&mut protocol_clone).unwrap();
+    let (client_id, session_id) = init_connection(&mut read_protocol).unwrap();
 
     // prod
     // write the client_id, session_id to file
@@ -109,7 +111,7 @@ fn main() {
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
-        let mut input_processor = InputEventProcessor::new(protocol_clone, client_id, rx);
+        let mut input_processor = InputEventProcessor::new(write_protocol, client_id, rx);
 
         input_processor.start_poller();
 
@@ -118,7 +120,7 @@ fn main() {
 
     thread::spawn(move || {
         recv_server_updates(
-            protocol.try_clone().unwrap(),
+            read_protocol,
             game_state.clone(),
             particle_queue,
             sound_queue.clone(),
@@ -145,8 +147,8 @@ fn dump_ids(session_data_path: PathBuf, client_id: u8, session_id: u64) {
     serde_json::to_writer(&file, &ids).unwrap();
 }
 
-fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
-    while let Ok(msg) = protocol_clone.read_message::<Message>() {
+fn init_connection(read_protocol: &mut Protocol) -> Result<(u8, u64), ()> {
+    while let Ok(msg) = read_protocol.read_message::<Message>() {
         if let Message {
             host_role: HostRole::Server,
             payload: Payload::Init(incoming_ids),
@@ -162,6 +164,7 @@ fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
     Err(())
 }
 
+#[allow(unreachable_code)]
 fn recv_server_updates(
     mut protocol: Protocol,
     game_state: Arc<Mutex<GameState>>,
@@ -170,34 +173,45 @@ fn recv_server_updates(
     _game_events: Bus<GameEvent>,
 ) {
     // check for new state & update local game state
-    while let Ok(msg) = protocol.read_message::<Message>() {
-        match msg {
-            Message {
-                host_role: HostRole::Server,
-                payload: Payload::StateSync(update_game_state),
-                ..
-            } => {
-                // update state
-                let mut game_state = game_state.lock().unwrap();
-                *game_state = update_game_state;
-                // according to the state, render world
-                debug!("Received game state: {:?}", game_state);
+    loop {
+        match protocol.read_message::<Message>() {
+            Ok(msg) => {
+                match msg {
+                    Message {
+                        host_role: HostRole::Server,
+                        payload: Payload::StateSync(update_game_state),
+                        ..
+                    } => {
+                        // update state
+                        let mut game_state = game_state.lock().unwrap();
+                        *game_state = update_game_state;
+                        // according to the state, render world
+                        debug!("Received game state: {:?}", game_state);
+                    }
+                    Message {
+                        host_role: HostRole::Server,
+                        payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),
+                        ..
+                    } => {
+                        print!("Receiving PARTICLE: {:?}...", p);
+                        particle_queue.lock().unwrap().add_particle(p);
+                        println!("Done!");
+                    }
+                    Message {
+                        host_role: HostRole::Server,
+                        payload: Payload::ServerEvent(GameEvent::SoundEvent(s)),
+                        ..
+                    } => {
+                        sound_queue.lock().unwrap().add_sound(s);
+                    }
+                    _ => {}
+                }
+            },
+            Err(e) => {
+                error!("Error reading message: {:?}", e);
+                exit(1);
+                break;
             }
-            Message {
-                host_role: HostRole::Server,
-                payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),
-                ..
-            } => {
-                particle_queue.lock().unwrap().add_particle(p);
-            }
-            Message {
-                host_role: HostRole::Server,
-                payload: Payload::ServerEvent(GameEvent::SoundEvent(s)),
-                ..
-            } => {
-                sound_queue.lock().unwrap().add_sound(s);
-            }
-            _ => {}
         }
     }
 }
