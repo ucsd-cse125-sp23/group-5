@@ -4,6 +4,7 @@ use rand_distr::{Distribution, Geometric, LogNormal, Normal, Poisson, Uniform};
 use std::f32::consts::{FRAC_PI_2, PI};
 
 use crate::particles::Particle;
+use crate::particles::constants::{POINT_PARTICLE};
 
 pub trait ParticleGenerator {
     ////
@@ -21,7 +22,7 @@ pub trait ParticleGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32;
+    ) -> f32;
 }
 
 pub struct SphereGenerator {
@@ -72,7 +73,7 @@ impl ParticleGenerator for SphereGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let dir_dist = Normal::new(0.0, 1.0).unwrap();
@@ -97,6 +98,8 @@ impl ParticleGenerator for SphereGenerator {
                     v[2] * lin_scale,
                     ang_dist.sample(rng),
                 ],
+                normal_1: [0., 0., 0., 0.],
+                normal_2: [0., 0., 0., 0.],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
@@ -104,14 +107,14 @@ impl ParticleGenerator for SphereGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -179,7 +182,7 @@ impl ParticleGenerator for ConeGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let dir_r_dist = Uniform::new(0.0, self.r);
@@ -203,6 +206,8 @@ impl ParticleGenerator for ConeGenerator {
                     v[2] * lin_scale,
                     ang_dist.sample(rng),
                 ],
+                normal_1: [0., 0., 0., 0.],
+                normal_2: [0., 0., 0., 0.],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
@@ -210,14 +215,14 @@ impl ParticleGenerator for ConeGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -283,7 +288,7 @@ impl ParticleGenerator for FanGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let ang_dir = Uniform::new(-self.half_spread, self.half_spread);
@@ -299,6 +304,8 @@ impl ParticleGenerator for FanGenerator {
                 start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                 color: color.into(),
                 velocity: [v[0], v[1], v[2], ang_dist.sample(rng)],
+                normal_1: [0., 0., 0., 0.],
+                normal_2: [0., 0., 0., 0.],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
@@ -306,14 +313,14 @@ impl ParticleGenerator for FanGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -369,7 +376,7 @@ impl ParticleGenerator for LineGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
@@ -381,6 +388,8 @@ impl ParticleGenerator for LineGenerator {
                 start_pos: [self.source[0], self.source[1], self.source[2], 0.0],
                 color: color.into(),
                 velocity: [v[0], v[1], v[2], ang_dist.sample(rng)],
+                normal_1: [0., 0., 0., 0.],
+                normal_2: [0., 0., 0., 0.],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
@@ -388,14 +397,14 @@ impl ParticleGenerator for LineGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }
 
@@ -447,7 +456,7 @@ impl ParticleGenerator for RainGenerator {
         tex_range: (u32, u32),
         color: glm::Vec4,
         rng: &mut rand::rngs::ThreadRng,
-    ) -> u32 {
+    ) -> f32 {
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
         let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
         let mut spawn_time = 0.0;
@@ -465,6 +474,8 @@ impl ParticleGenerator for RainGenerator {
                 start_pos: [pos[0], pos[1], pos[2], 0.0],
                 color: color.into(),
                 velocity: [v[0], v[1], v[2], 0.0],
+                normal_1: [0., 0., 0., 0.],
+                normal_2: [0., 0., 0., 0.],
                 spawn_time,
                 size: size_dist.sample(rng),
                 tex_id: rng.gen_range(tex_range.0..tex_range.1) as i32,
@@ -472,13 +483,13 @@ impl ParticleGenerator for RainGenerator {
                 time_elapsed: 0.0,
                 size_growth: self.size_growth,
                 halflife,
-                _pad2: 0.0,
+                FLAG: POINT_PARTICLE,
             });
             spawn_time += match self.poisson_generation {
                 true => time_dist.sample(rng),
                 false => 1.0 / spawn_rate,
             };
         }
-        list.len() as u32
+        list[list.len()-1].spawn_time + halflife * 2.0
     }
 }

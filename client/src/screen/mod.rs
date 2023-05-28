@@ -177,6 +177,8 @@ impl Display {
                     start_pos: pos.into(),
                     velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
                     color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
+                    normal_1: [0., 0., 0., 0.],
+                    normal_2: [0., 0., 0., 0.],
                     spawn_time: 0.0,
                     size: 75.0,
                     tex_id: id as i32 + 4,
@@ -184,7 +186,7 @@ impl Display {
                     time_elapsed: 0.0,
                     size_growth: 0.0,
                     halflife: 1.0,
-                    _pad2: 0.0,
+                    FLAG: particles::constants::POINT_PARTICLE,
                 });
             }
 
@@ -202,6 +204,8 @@ impl Display {
                     start_pos: pos.into(),
                     velocity: glm::vec4(0.0, 0.0, 0.0, 0.0).into(),
                     color: glm::vec4(1.0, 1.0, 1.0, 1.0).into(), // was blue intended to be 0?
+                    normal_1: [0., 0., 0., 0.],
+                    normal_2: [0., 0., 0., 0.],
                     spawn_time: 0.0,
                     size: 75.0,
                     tex_id: 9, // TODO: Find more icons for powerup
@@ -211,7 +215,7 @@ impl Display {
                     time_elapsed: 0.0,
                     size_growth: 0.0,
                     halflife: 1.0,
-                    _pad2: 0.0,
+                    FLAG: particles::constants::POINT_PARTICLE,
                 });
             }
         }
