@@ -13,8 +13,8 @@ use nalgebra_glm as glm;
 use phf::phf_map;
 
 pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-pub const LEAF_MESH: &str = "eyes_eyes_mesh";
-pub const BODY_MESH: &str = "leg0R_leg0R_mesh";
+pub const LEAF_MESH: &str = "korok";
+pub const BODY_MESH: &str = "eyes_eyes_mesh";
 pub const CURR_MESH: &str = "korok";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
@@ -42,7 +42,9 @@ fn game_start(display: &mut screen::Display, _: Option<String>) {
 
     if sel_2 && !display.customization_choices.ready {
         let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 1.0, 0.0, 1.0);
+        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
+        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
+
         display.customization_choices.ready = true;
 
         let final_choices = display.customization_choices.final_choices.clone();
@@ -102,7 +104,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
 
     // reset go button
     let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-    let def_col = nalgebra_glm::Vec4::new(0.0, 0.0, 0.0, 1.0);
+    let def_col = nalgebra_glm::Vec4::new(1.0, 1.0, 1.0, 1.0);
     curr_screen.buttons[ind].default_tint = def_col;
     curr_screen.buttons[ind].hover_tint = def_col;
 
@@ -332,8 +334,8 @@ fn selected_2colors(
     if len >= 2 {
         if change_color {
             let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(1.0, 1.0, 1.0, 1.0);
-            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 1.0, 0.0, 1.0);
+            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.9, 0.0, 0.0, 1.0);
+            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.65, 0.0, 0.0, 1.0);
         }
         return true;
     }

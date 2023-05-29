@@ -1123,6 +1123,7 @@ impl State {
             &self.color_bind_group_layout,
             &output,
             self.client_id as u32,
+            &self.config,
         );
 
         let size = &self.window.inner_size();
