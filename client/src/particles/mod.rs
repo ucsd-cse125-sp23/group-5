@@ -40,11 +40,11 @@ impl Particle {
         1 => Float32x4, 2 => Float32x4, 3 => Float32x4,
         4 => Float32x4, 5 => Float32x4, 6 => Float32 ,
         7 => Float32,   8 => Sint32,    9 => Float32,
-        10 => Float32,   11 => Float32,  12 => Float32, 
+        10 => Float32,   11 => Float32,  12 => Float32,
         13 => Uint32,
     ];
 
-    pub fn dead_partition_pred(&self, lifetime: f32, elapsed: f32) -> bool{
+    pub fn dead_partition_pred(&self, lifetime: f32, elapsed: f32) -> bool {
         if self.FLAG == constants::POINT_PARTICLE {
             return self.spawn_time + lifetime < elapsed;
         } else {
@@ -53,7 +53,7 @@ impl Particle {
         }
     }
 
-    pub fn spawned_partition_pred(&self, lifetime: f32, elapsed: f32) -> bool{
+    pub fn spawned_partition_pred(&self, lifetime: f32, elapsed: f32) -> bool {
         // return true;
         if self.FLAG == constants::POINT_PARTICLE {
             return self.spawn_time < elapsed;
@@ -62,7 +62,7 @@ impl Particle {
         }
     }
 
-    pub fn calc_z(&mut self, cam_dir: &glm::Vec3, cpos: &glm::Vec3, elapsed: f32){
+    pub fn calc_z(&mut self, cam_dir: &glm::Vec3, cpos: &glm::Vec3, elapsed: f32) {
         if self.FLAG == constants::POINT_PARTICLE {
             let pos: glm::Vec3 = glm::make_vec3(&self.start_pos[0..3])
                 + (elapsed - self.spawn_time) * glm::make_vec3(&self.velocity[0..3]);
@@ -127,7 +127,7 @@ impl ParticleSystem {
         // let mut last_particle_death =
         //     generation_time + std::time::Duration::from_secs_f32(particle_lifetime);
         // if particles[0].FLAG != constants::POINT_PARTICLE {
-        //     last_particle_death = 
+        //     last_particle_death =
         //         std::time::Duration::from_secs_f32(particle_lifetime + particles[particles.len()-1].size);
         // }
         // println!("number of particles: {}", num_instances);
@@ -141,7 +141,7 @@ impl ParticleSystem {
             particle_lifetime,
             last_particle_death: std::time::Duration::from_secs_f32(last_particle_death),
             particles,
-            num_instances
+            num_instances,
         }
     }
 
@@ -309,7 +309,9 @@ impl ParticleDrawer {
                 .particles
                 .partition_point(|&a| a.dead_partition_pred(ps.particle_lifetime, elapsed));
             ps.particles.drain(0..start_ind);
-            let end_ind = ps.particles.partition_point(|&a| a.spawned_partition_pred(ps.particle_lifetime, elapsed));
+            let end_ind = ps
+                .particles
+                .partition_point(|&a| a.spawned_partition_pred(ps.particle_lifetime, elapsed));
             for p in &mut ps.particles[..end_ind] {
                 p.time_elapsed = elapsed;
             }

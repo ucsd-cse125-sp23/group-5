@@ -2,12 +2,12 @@ use nalgebra_glm as glm;
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Poisson, Uniform};
 
-use crate::particles::Particle;
-use crate::particles::gen::ParticleGenerator;
 use crate::particles::constants;
+use crate::particles::gen::ParticleGenerator;
+use crate::particles::Particle;
 
 #[derive(Copy, Clone, Debug)]
-pub struct RibbonSection{
+pub struct RibbonSection {
     pub pos_1: glm::Vec3,
     pub pos_2: glm::Vec3,
     pub width_1: f32,
@@ -22,9 +22,9 @@ pub struct RibbonSection{
     pub visible_time: f32,
 }
 
-impl RibbonSection{
-    pub fn to_particle(self) -> Particle{
-        Particle{
+impl RibbonSection {
+    pub fn to_particle(self) -> Particle {
+        Particle {
             start_pos: [self.pos_1[0], self.pos_1[1], self.pos_1[2], self.width_1],
             velocity: [self.pos_2[0], self.pos_2[1], self.pos_2[2], self.width_2],
             color: self.color.into(),
@@ -57,7 +57,7 @@ pub struct LineRibbonGenerator {
     poisson_generation: bool,
 }
 
-impl LineRibbonGenerator{
+impl LineRibbonGenerator {
     pub fn new(
         bounds_min: glm::Vec3,
         bounds_max: glm::Vec3,
@@ -69,8 +69,8 @@ impl LineRibbonGenerator{
         size_variance: f32,
         subdivisions: u32,
         poisson_generation: bool,
-    ) -> Self{
-        Self{
+    ) -> Self {
+        Self {
             bounds_min,
             bounds_max,
             v_dir: glm::normalize(&v_dir),
@@ -108,16 +108,13 @@ impl ParticleGenerator for LineRibbonGenerator {
         let mut spawn_time = 0.0;
         while std::time::Duration::from_secs_f32(spawn_time) < spawning_time {
             let v = self.v_dir * lin_dist.sample(rng);
-            let origin:glm::Vec3 = glm::vec3(
-                x_dist.sample(rng),
-                y_dist.sample(rng),
-                z_dist.sample(rng),
-            );
+            let origin: glm::Vec3 =
+                glm::vec3(x_dist.sample(rng), y_dist.sample(rng), z_dist.sample(rng));
             let end: glm::Vec3 = origin + v * halflife * 2.0;
             let width = size_dist.sample(rng);
             let section_time = halflife * 2.0 / (self.subdivisions as f32);
             for i in 0..self.subdivisions {
-                let ribbon = RibbonSection{
+                let ribbon = RibbonSection {
                     pos_1: origin + (i as f32) * section_time * v,
                     pos_2: origin + (i as f32 + 1.0) * section_time * v,
                     width_1: width,
@@ -138,6 +135,6 @@ impl ParticleGenerator for LineRibbonGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list[list.len()-1].spawn_time + self.visible_time
+        list[list.len() - 1].spawn_time + self.visible_time
     }
 }
