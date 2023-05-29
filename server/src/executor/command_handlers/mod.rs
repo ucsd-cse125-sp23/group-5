@@ -26,6 +26,7 @@ mod spawn;
 mod startup;
 mod update_camera_facing;
 mod weather;
+mod cheat_code;
 
 pub mod prelude;
 

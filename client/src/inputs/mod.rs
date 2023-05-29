@@ -12,6 +12,7 @@ use nalgebra_glm as glm;
 
 use common::communication::message::{HostRole, Message, Payload};
 use common::core::choices::FinalChoices;
+use common::core::powerup_system::PowerUp;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Condvar, Mutex};
@@ -85,6 +86,39 @@ impl InputEventProcessor {
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
             VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
             VirtualKeyCode::G => Some((GameKeyKind::PressRelease, AreaAttack)),
+
+            //  Lightning,
+            //     WindEnhancement,
+            //     Dash,
+            //     Flash,
+            //     Invisible,
+            //     TripleJump,
+            //     Invincible, // maybe
+
+            // cheatkeys
+            VirtualKeyCode::F1 => Some((
+                GameKeyKind::Pressable,
+                Command::CheatCode(PowerUp::Lightning),
+            )),
+            VirtualKeyCode::F2 => Some((
+                GameKeyKind::Pressable,
+                Command::CheatCode(PowerUp::WindEnhancement),
+            )),
+            VirtualKeyCode::F3 => {
+                Some((GameKeyKind::Pressable, Command::CheatCode(PowerUp::Flash)))
+            }
+            VirtualKeyCode::F4 => Some((
+                GameKeyKind::Pressable,
+                Command::CheatCode(PowerUp::Invisible),
+            )),
+            VirtualKeyCode::F5 => Some((
+                GameKeyKind::Pressable,
+                Command::CheatCode(PowerUp::TripleJump),
+            )),
+            VirtualKeyCode::F6 => Some((
+                GameKeyKind::Pressable,
+                Command::CheatCode(PowerUp::Invincible),
+            )),
             _ => None,
         }
     }

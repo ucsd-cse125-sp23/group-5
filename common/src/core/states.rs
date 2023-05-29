@@ -12,7 +12,9 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use crate::core::powerup_system::StatusEffect::Power;
-use crate::core::powerup_system::{PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect};
+use crate::core::powerup_system::{
+    PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use crate::core::weather::Weather;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -291,7 +293,16 @@ impl GameState {
             player_state.status_effects = new_status_effects;
             for (effect, _) in to_process {
                 if let Power(_) = effect {
-                    player_state.power_up = None;
+                    if let Some((current_powerup, powerup_status)) = player_state.power_up.clone() {
+                        if (*POWER_UP_TO_EFFECT_MAP
+                            .get(&current_powerup.value())
+                            .unwrap()
+                            == effect)
+                            && powerup_status == PowerUpStatus::Active
+                        {
+                            player_state.power_up = None;
+                        }
+                    }
                 }
             }
         }

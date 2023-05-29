@@ -1,6 +1,7 @@
 extern crate nalgebra_glm as glm;
 
 use crate::core::choices::FinalChoices;
+use crate::core::powerup_system::PowerUp;
 use glm::Quat;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -35,6 +36,7 @@ pub enum Command {
     Flash,
     UpdateWeather,
     WeatherEffects,
+    CheatCode(PowerUp),
 }
 
 impl Command {

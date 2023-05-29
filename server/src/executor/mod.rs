@@ -199,6 +199,10 @@ impl Executor {
                 // weather systems
                 Command::UpdateWeather => Box::new(UpdateWeatherCommandHandler::new()),
                 Command::WeatherEffects => Box::new(WeatherEffectCommandHandler::new()),
+                Command::CheatCode(powerup) => Box::new(CheatCodeCommandHandler::new(
+                    client_command.client_id,
+                    powerup
+                )),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;
