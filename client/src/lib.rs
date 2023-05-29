@@ -387,6 +387,7 @@ impl State {
         }
 
         let scene_config = config_instance.scene.clone();
+        let game_config = config_instance.game.clone();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -397,7 +398,11 @@ impl State {
             DEFAULT_PLAYER_POS.1,
             DEFAULT_PLAYER_POS.2,
         ));
-        let player_controller = player::PlayerController::new(4. * 0.8, 0.7 * 0.8, 0.1);
+        let player_controller = player::PlayerController::new(
+            game_config.camera_config.x_sensitivity,
+            game_config.camera_config.y_sensitivity,
+            game_config.camera_config.scroll_sensitivity,
+        );
 
         let mut camera_state = camera::CameraState::new(
             &device,
@@ -1238,8 +1243,9 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // switching it out just to test ribbon particle
+                    // test ribbon particle (maybe loop these for winning area?)
                     // ribbon sample
+                    /*
                     let gen = particles::ribbon::LineRibbonGenerator::new(
                         glm::vec3(-10., -10., -10.),
                         glm::vec3(10., -8., 10.),
@@ -1283,7 +1289,8 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-
+                    */ 
+                    
                     // ORIGINAL 
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
