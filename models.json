@@ -17,8 +17,18 @@
       "path": "assets/ferris.obj"
     },
     {
-      "name": "korok",
-      "path": "assets/korok",
+      "name": "korok_1",
+      "path": "assets/korok_1",
+      "animated": true
+    },
+    {
+      "name": "korok_2",
+      "path": "assets/korok_2",
+      "animated": true
+    },
+    {
+      "name": "korok_3",
+      "path": "assets/korok_3",
       "animated": true
     },
     {

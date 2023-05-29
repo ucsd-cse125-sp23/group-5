@@ -34,9 +34,9 @@ if __name__ == "__main__":
                         help="If specified, delete replaced .mtl files")
     args = parser.parse_args()
 
-    path_to_main_dir = "assets/korok"
+    path_to_main_dir = "assets/korok_1"
 
-    desired_mtl_filename = "../korok_texture_lib.mtl"
+    desired_mtl_filename = "../../korok_texture_lib.mtl"
 
     for root, dirs, files in os.walk(path_to_main_dir):
         process_obj_files(root, desired_mtl_filename, args.cleanup)

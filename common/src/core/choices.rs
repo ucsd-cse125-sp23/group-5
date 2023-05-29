@@ -3,7 +3,7 @@ use crate::core::mesh_color::MeshColor;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub const LOBBY_STARTING_MODEL: &str = "korok";
+pub const LOBBY_STARTING_MODEL: &str = "korok_1";
 
 #[derive(Debug, Clone)]
 pub struct CurrentSelections {

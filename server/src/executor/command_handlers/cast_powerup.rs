@@ -1,3 +1,4 @@
+use std::time::Duration;
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
@@ -15,6 +16,7 @@ use nalgebra::{zero, UnitQuaternion};
 use nalgebra_glm::Vec3;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
+use common::core::action_states::ActionState;
 
 #[derive(Constructor)]
 pub struct CastPowerUpCommandHandler {
@@ -48,32 +50,35 @@ impl CommandHandler for CastPowerUpCommandHandler {
             return Ok(());
         }
 
-        match player_state.power_up.clone() {
-            Some((x, PowerUpStatus::Active)) => {
-                return match x {
-                    PowerUp::Flash => flash(
-                        game_state,
-                        self.player_id,
-                        self.game_config.clone(),
-                        physics_state,
-                        game_events,
-                    ),
-                    PowerUp::Dash => dash(
-                        game_state,
-                        self.player_id,
-                        self.game_config.clone(),
-                        physics_state,
-                        game_events,
-                    ),
-                    _ => Ok(()),
-                }
+        if let Some((x, PowerUpStatus::Active)) = player_state.power_up.clone() {
+            return match x {
+                PowerUp::Flash => flash(
+                    game_state,
+                    self.player_id,
+                    self.game_config.clone(),
+                    physics_state,
+                    game_events,
+                ),
+                PowerUp::Dash => dash(
+                    game_state,
+                    self.player_id,
+                    self.game_config.clone(),
+                    physics_state,
+                    game_events,
+                ),
+                _ => Ok(()),
             }
-            _ => {}
         }
 
         let mut other_player_status_changes: Vec<(u32, StatusEffect, f32)> = vec![];
 
         if let Some((x, _)) = player_state.power_up.clone() {
+
+            player_state.active_action_states.insert((
+                ActionState::CastingPowerUp,
+                Duration::from_secs_f32(1.666),
+            ));
+
             match x {
                 PowerUp::Lightning => match game_state_clone.find_closest_player(self.player_id) {
                     Some(id) => {

@@ -13,8 +13,8 @@ use nalgebra_glm as glm;
 use phf::phf_map;
 
 pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-pub const LEAF_MESH: &str = "eyes_eyes_mesh";
-pub const BODY_MESH: &str = "leg0R_leg0R_mesh";
+pub const LEAF_MESH: &str = "leaf";
+pub const BODY_MESH: &str = "korok";
 pub const CURR_MESH: &str = "korok";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
@@ -111,7 +111,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
     unselect_button(&display.customization_choices.curr_leaf_color, curr_screen);
     unselect_button(&display.customization_choices.curr_wood_color, curr_screen);
 
-    let ind = *curr_screen.btn_id_map.get("korok").unwrap();
+    let ind = *curr_screen.btn_id_map.get("korok_1").unwrap();
     curr_screen.buttons[ind].selected = true;
     display.customization_choices = CurrentSelections::default();
 
@@ -133,7 +133,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
                 .final_choices
                 .color
                 .insert("korok".to_string(), default_color);
-            node.model = Some("korok".to_string());
+            node.model = Some("korok_1".to_string());
             node.colors = Some(std::collections::HashMap::from([(
                 "korok".to_string(),
                 default_color,
@@ -223,16 +223,16 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
                 .final_choices
                 .color
                 .insert(LEAF_MESH.to_owned(), actual_color);
-            display
-                .customization_choices
-                .final_choices
-                .color
-                .insert(CURR_MESH.to_owned(), actual_color);
-            display
-                .customization_choices
-                .final_choices
-                .materials
-                .insert(CURR_MESH.to_owned(), actual_mtl);
+            // display
+            //     .customization_choices
+            //     .final_choices
+            //     .color
+            //     .insert(CURR_MESH.to_owned(), actual_color);
+            // display
+            //     .customization_choices
+            //     .final_choices
+            //     .materials
+            //     .insert(CURR_MESH.to_owned(), actual_mtl);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             node.materials = Some(
                 display
