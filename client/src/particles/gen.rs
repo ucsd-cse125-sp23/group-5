@@ -3,8 +3,8 @@ use rand::Rng;
 use rand_distr::{Distribution, Geometric, LogNormal, Normal, Poisson, Uniform};
 use std::f32::consts::{FRAC_PI_2, PI};
 
+use crate::particles::constants::POINT_PARTICLE;
 use crate::particles::Particle;
-use crate::particles::constants::{POINT_PARTICLE};
 
 pub trait ParticleGenerator {
     ////
@@ -114,7 +114,7 @@ impl ParticleGenerator for SphereGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list[list.len()-1].spawn_time + halflife * 2.0
+        list[list.len() - 1].spawn_time + halflife * 2.0
     }
 }
 
@@ -222,7 +222,7 @@ impl ParticleGenerator for ConeGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list[list.len()-1].spawn_time + halflife * 2.0
+        list[list.len() - 1].spawn_time + halflife * 2.0
     }
 }
 
@@ -320,7 +320,7 @@ impl ParticleGenerator for FanGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list[list.len()-1].spawn_time + halflife * 2.0
+        list[list.len() - 1].spawn_time + halflife * 2.0
     }
 }
 
@@ -404,7 +404,7 @@ impl ParticleGenerator for LineGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list[list.len()-1].spawn_time + halflife * 2.0
+        list[list.len() - 1].spawn_time + halflife * 2.0
     }
 }
 
@@ -490,6 +490,6 @@ impl ParticleGenerator for RainGenerator {
                 false => 1.0 / spawn_rate,
             };
         }
-        list[list.len()-1].spawn_time + halflife * 2.0
+        list[list.len() - 1].spawn_time + halflife * 2.0
     }
 }

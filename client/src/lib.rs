@@ -387,6 +387,7 @@ impl State {
         }
 
         let scene_config = config_instance.scene.clone();
+        let game_config = config_instance.game.clone();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -397,7 +398,11 @@ impl State {
             DEFAULT_PLAYER_POS.1,
             DEFAULT_PLAYER_POS.2,
         ));
-        let player_controller = player::PlayerController::new(4. * 0.8, 0.7 * 0.8, 0.1);
+        let player_controller = player::PlayerController::new(
+            game_config.camera_config.x_sensitivity,
+            game_config.camera_config.y_sensitivity,
+            game_config.camera_config.scroll_sensitivity,
+        );
 
         let mut camera_state = camera::CameraState::new(
             &device,

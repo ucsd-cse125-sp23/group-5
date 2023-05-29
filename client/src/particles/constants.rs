@@ -10,9 +10,9 @@ pub const VTX_ATTRIBS: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
     0 => Float32x2,
 ];
 
-pub const POINT_PARTICLE : u32 = 0;
+pub const POINT_PARTICLE: u32 = 0;
 pub const RIBBON_PARTICLE: u32 = 1;
-pub const TRAIL_PARTICLE : u32 = 2;
+pub const TRAIL_PARTICLE: u32 = 2;
 
 pub fn vtx_desc<'a>() -> wgpu::VertexBufferLayout<'a> {
     use std::mem;

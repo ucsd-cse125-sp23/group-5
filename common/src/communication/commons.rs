@@ -58,7 +58,11 @@ impl Protocol {
     /// NOTE: Will block until there's data to read (or deserialize fails with io::ErrorKind::Interrupted)
     ///       so only use when a message is expected to arrive
     pub fn read_message<T: Deserialize>(&mut self) -> io::Result<T::Output> {
-        T::deserialize(self.reader.as_mut().expect("Protocol is cloned as write only initialized"))
+        T::deserialize(
+            self.reader
+                .as_mut()
+                .expect("Protocol is cloned as write only initialized"),
+        )
     }
 
     pub fn try_clone_into(self) -> io::Result<Self> {
