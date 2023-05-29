@@ -420,7 +420,7 @@ impl State {
         );
 
         // to demonstrate changing global illumination
-        camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
+        camera_state.camera.ambient_multiplier = glm::vec3(0.5, 0.5, 0.5).into();
 
         scene.draw_scene_dfs();
 

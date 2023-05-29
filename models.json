@@ -20,6 +20,10 @@
       "name": "korok",
       "path": "assets/korok",
       "animated": true
+    },
+    {
+      "name": "refill",
+      "path": "assets/refill.obj"
     }
   ]
 }

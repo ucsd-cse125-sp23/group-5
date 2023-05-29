@@ -126,7 +126,7 @@ impl Executor {
         let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
-        let player_upper_bound = 2;
+        let player_upper_bound = 1;
 
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
