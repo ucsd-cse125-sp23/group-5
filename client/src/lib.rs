@@ -1238,8 +1238,9 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // switching it out just to test ribbon particle
+                    // test ribbon particle (maybe loop these for winning area?)
                     // ribbon sample
+                    /*
                     let gen = particles::ribbon::LineRibbonGenerator::new(
                         glm::vec3(-10., -10., -10.),
                         glm::vec3(10., -8., 10.),
@@ -1283,7 +1284,8 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-
+                    */ 
+                    
                     // ORIGINAL 
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);

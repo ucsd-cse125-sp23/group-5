@@ -139,7 +139,7 @@ impl ConeGenerator {
         source: glm::Vec3,
         dir: glm::Vec3,
         up: glm::Vec3,
-        spread: f32, // in degrees
+        spread: f32, // in radians
         linear_speed: f32,
         linear_variance: f32,
         angular_velocity: f32,
@@ -150,7 +150,7 @@ impl ConeGenerator {
         poisson_generation: bool,
     ) -> Self {
         let right = glm::normalize(&glm::cross(&dir, &up));
-        let half_spread = spread.to_radians() / 2.0;
+        let half_spread = spread / 2.0;
         let r = half_spread.tan();
         Self {
             source,
