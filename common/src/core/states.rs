@@ -12,7 +12,9 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use crate::core::powerup_system::StatusEffect::Power;
-use crate::core::powerup_system::{PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect};
+use crate::core::powerup_system::{
+    PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use crate::core::weather::Weather;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -63,6 +65,7 @@ pub struct PlayerState {
     pub power_up: Option<(PowerUp, PowerUpStatus)>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
+    pub cheat_keys_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
@@ -291,7 +294,16 @@ impl GameState {
             player_state.status_effects = new_status_effects;
             for (effect, _) in to_process {
                 if let Power(_) = effect {
-                    player_state.power_up = None;
+                    if let Some((current_powerup, powerup_status)) = player_state.power_up.clone() {
+                        if (*POWER_UP_TO_EFFECT_MAP
+                            .get(&current_powerup.value())
+                            .unwrap_or(&StatusEffect::None)
+                            == effect)
+                            && powerup_status == PowerUpStatus::Active
+                        {
+                            player_state.power_up = None;
+                        }
+                    }
                 }
             }
         }

@@ -1289,9 +1289,9 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
-                    */ 
-                    
-                    // ORIGINAL 
+                    */
+
+                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(

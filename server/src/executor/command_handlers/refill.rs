@@ -23,6 +23,11 @@ impl CommandHandler for RefillCommandHandler {
 
         let player_state = game_state.player_mut(self.player_id).unwrap();
 
+        // if player is dead, don't do anything
+        if player_state.is_dead {
+            return Ok(());
+        }
+
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());

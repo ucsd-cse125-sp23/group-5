@@ -52,6 +52,7 @@ impl Distribution<PowerUp> for Standard {
 pub enum StatusEffect {
     Power(PowerUpEffects),
     Other(OtherEffects),
+    None,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
