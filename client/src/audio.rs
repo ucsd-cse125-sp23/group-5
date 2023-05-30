@@ -7,7 +7,7 @@ use ambisonic::{
 };
 use instant::{Duration, SystemTime};
 use nalgebra_glm as glm;
-
+use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::{
     fs::File,
@@ -16,14 +16,19 @@ use std::{
     thread,
 };
 
-use common::configs::audio_config::ConfigAudioAssets;
+use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 use common::core::{events::SoundSpec, states::GameState};
+
+pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
+pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
-    BACKGROUND = 0,
-    WIND = 1,
-    STEP = 2,
+    BKGND_MAIN = 0,
+    BKGND_WINNER = 1,
+    BKGND_LOSER = 2,
+    WIND = 3,
+    STEP = 4,
 }
 
 pub struct SoundInstance {
@@ -52,10 +57,12 @@ pub struct Audio {
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime,
     sfx_queue: Arc<Mutex<SoundQueue>>,
+    curr_state: GameLifeCycleState,
 }
 
 impl Audio {
     pub fn new(q: Arc<Mutex<SoundQueue>>) -> Self {
+        CURR_DISP.set(Mutex::new("display:title".to_string())).expect("failed to initialze CURR_DISP");
         Audio {
             audio_scene: AmbisonicBuilder::default().build(),
             audio_assets: Vec::new(),
@@ -63,16 +70,47 @@ impl Audio {
             sound_controller_background: (None, true),
             time: SystemTime::now(),
             sfx_queue: q,
+            curr_state: GameLifeCycleState::Waiting,
         }
     }
 
-    pub fn play_background_track(&mut self, pos: [f32; 3]) {
-        let source = self.audio_assets[AudioAsset::BACKGROUND as usize]
+    pub fn play_background_track(&mut self, bkgd: AudioAsset, pos: [f32; 3]) {
+        let source = self.audio_assets[bkgd as usize]
             .0
             .clone()
+            .fade_in(Duration::new(1, 0))
             .repeat_infinite();
         let sound = self.audio_scene.play_at(source.convert_samples(), pos);
         self.sound_controller_background = (Some(sound), false);
+    }
+
+    pub fn update_bkgd_track(&mut self, state: GameLifeCycleState, curr_player: u32, winner: u32){
+        if std::mem::discriminant(&self.curr_state) != std::mem::discriminant(&state) {
+            match state {
+                GameLifeCycleState::Waiting => {
+                    if CURR_DISP.get().unwrap().lock().unwrap().clone() == "display:title".to_string() {
+                        self.switch_background_track(AudioAsset::BKGND_MAIN, AUDIO_POS_AT_CLIENT);
+                        self.curr_state = state;
+                    }
+                },
+                GameLifeCycleState::Ended => {
+                    if curr_player == winner {
+                        self.switch_background_track(AudioAsset::BKGND_WINNER, AUDIO_POS_AT_CLIENT);
+                    }
+                    else {
+                        self.switch_background_track(AudioAsset::BKGND_LOSER, AUDIO_POS_AT_CLIENT);
+                    }
+                    self.curr_state = state;
+                },
+                _ => {}
+            }
+
+        }
+    }
+
+    pub fn switch_background_track(&mut self, bkgd: AudioAsset, pos: [f32; 3]) {
+        self.sound_controller_background.0.as_ref().unwrap().stop();
+        self.play_background_track(bkgd, pos);
     }
 
     // function in case a button to mute music will be added in the future:
@@ -191,6 +229,8 @@ impl Audio {
             let player_curr = gs.player(client_id as u32).ok_or_else(|| print!("")); //Player {} not found", client_id));
             let mut cf = glm::Vec3::new(0.0, 0.0, 0.0);
             let mut pos = glm::Vec3::new(0.0, 0.0, 0.0);
+
+            self.update_bkgd_track(gs.life_cycle_state.clone(), client_id as u32, gs.game_winner.unwrap_or(0));
 
             match player_curr {
                 Ok(player) => {

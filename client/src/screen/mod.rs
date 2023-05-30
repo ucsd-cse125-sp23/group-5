@@ -11,6 +11,7 @@ use common::core::choices::CurrentSelections;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameState;
 
+use crate::audio::CURR_DISP;
 use crate::inputs::Input;
 use crate::model::DrawModel;
 use crate::other_players::OtherPlayer;
@@ -103,6 +104,8 @@ impl Display {
     pub fn change_to(&mut self, new: String) {
         self.particles.systems.clear();
         self.current = new;
+        println!("curr: dpisy {}", self.current.clone());
+        *CURR_DISP.get().unwrap().lock().unwrap() = self.current.clone();
     }
 
     pub fn render(
