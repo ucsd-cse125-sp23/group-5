@@ -64,6 +64,10 @@
             "path": "attack_wave.png"
         },
         {
+            "name": "icon:attack_power_up",
+            "path": "attack_power_up.png"
+        },
+        {
             "name": "icon:place_circle",
             "path": "circle_mask.png"
         },

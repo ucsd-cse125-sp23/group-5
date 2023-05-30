@@ -1306,10 +1306,10 @@
               "aspect": 1.0,
               "height": 0.222,
               "tint": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
               ],
               "tex": "icon:attack_normal",
               "mask_tex": "mask:none",
@@ -1390,10 +1390,10 @@
               "aspect": 1.0,
               "height": 0.222,
               "tint": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
               ],
               "tex": "icon:attack_wave",
               "mask_tex": "mask:none",
@@ -1474,12 +1474,12 @@
               "aspect": 1.0,
               "height": 0.222,
               "tint": [
-                0.0,
+                1.0,
                 1.0,
                 1.0,
                 1.0
               ],
-              "tex": "icon:place_circle",
+              "tex": "icon:attack_power_up",
               "mask_tex": "mask:circle",
               "instances": [
                 {
