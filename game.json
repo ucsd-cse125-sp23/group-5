@@ -1,46 +1,46 @@
 {
   "spawn_points": [
     [
-      20.0,
-      0.0,
-      20.0
+      24.0,
+      -4.0,
+      24.0
     ],
     [
-      20.0,
-      0.0,
-      -20.0
+      24.0,
+      -4.0,
+      -24.0
     ],
     [
-      -20.0,
-      0.0,
-      20.0
+      -24.0,
+      -4.0,
+      24.0
     ],
     [
-      -20.0,
-      0.0,
-      -20.0
+      -24.0,
+      -4.0,
+      -24.0
     ]
   ],
   "refill_points": [
     [
-      20.0,
-      0.0,
-      20.0
+      24.0,
+      -4.0,
+      24.0
     ],
     [
-      20.0,
-      0.0,
-      -20.0
+      24.0,
+      -4.0,
+      -24.0
     ],
     [
-      -20.0,
-      0.0,
-      20.0
+      -24.0,
+      -4.0,
+      24.0
     ],
     [
-      -20.0,
-      0.0,
-      -20.0
+      -24.0,
+      -4.0,
+      -24.0
     ]
   ],
   "spawn_cooldown": 3.0,
@@ -57,31 +57,36 @@
     -10.0,
     0.0
   ],
-  "winning_threshold": 20.0,
-  "decay_rate": 0.3333,
+  "winning_threshold": 10.0,
+  "decay_rate": 0.2,
   "refill_radius": 2.0,
   "refill_rate_limit": 0.5,
+  "camera_config": {
+    "x_sensitivity": 3.2,
+    "y_sensitivity": 0.56, 
+    "scroll_sensitivity": 0.1
+  },
   "powerup_config": {
     "power_up_locations": {
       "1": [
-        5.0,
+        23.0,
         -5.0,
-        -5.0
+        0.0
       ],
       "2": [
+        -23.0,
         -5.0,
-        -5.0,
-        5.0
+        0.0
       ],
       "3": [
+        0.0,
         -5.0,
-        -5.0,
-        -5.0
+        23.0
       ],
       "4": [
-        5.0,
+        0.0,
         -5.0,
-        5.0
+        -23.0
       ]
     },
     "power_up_radius": 1.0,
@@ -90,11 +95,13 @@
     "power_up_debuff_duration": 3.0,
     "power_up_cooldown": 5.0,
     "wind_enhancement_scalar": 1.5,
-    "dash_impulse": 100.0,
+    "dash_impulse": 250.0,
     "flash_distance_scalar": 5.0,
     "invincible_effective_distance": 2.5,
     "invincible_effective_impulse": 20.0,
-    "special_movement_cooldown": 0.5,
-    "spawn_invincible_duration": 2.5
+    "flash_cooldown": 0.5,
+    "spawn_invincible_duration": 2.5,
+    "dash_blocking_duration": 0.2,
+    "dash_cooldown": 0.3
   }
 }

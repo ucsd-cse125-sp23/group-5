@@ -1,26 +1,25 @@
 extern crate queues;
 
 use std::env;
-
-use client::audio::{Audio, SoundQueue};
-use common::configs::*;
-use log::{debug, error, info};
 use std::fs::File;
-
-use bus::Bus;
-use env_logger::Builder;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::process::exit;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
+use bus::Bus;
+use env_logger::Builder;
+use log::{debug, error, info};
+
+use client::audio::{Audio, SoundQueue};
 use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
 use common::communication::message::{HostRole, Message, Payload};
-
+use common::configs::*;
 use common::core::events::GameEvent;
-
 use common::core::states::{GameState, ParticleQueue};
 
 fn main() {
@@ -47,7 +46,8 @@ fn main() {
     let protocol = Protocol::connect(dest).unwrap();
 
     // need to clone the protocol to be able to receive events and game states from different threads
-    let mut protocol_clone = protocol.try_clone().unwrap();
+    let mut write_protocol = protocol.try_clone().unwrap();
+    let mut read_protocol = protocol.try_clone_into().unwrap();
 
     // TODO: make the string path a Const/Static, debug mode for reconnection
     let session_data_path = env::current_dir()
@@ -58,7 +58,7 @@ fn main() {
     let (client_id, session_id) = restore_ids(&session_data_path);
 
     // send local ids to see if I am a "broken pipe"
-    protocol_clone
+    write_protocol
         .send_message(&Message::new(
             HostRole::Client(client_id),
             Payload::Init((client_id, session_id)),
@@ -66,7 +66,7 @@ fn main() {
         .expect("send message fails");
 
     // init connection with server and get client id
-    let (client_id, session_id) = init_connection(&mut protocol_clone).unwrap();
+    let (client_id, session_id) = init_connection(&mut read_protocol).unwrap();
 
     // prod
     // write the client_id, session_id to file
@@ -77,39 +77,55 @@ fn main() {
     #[cfg(feature = "debug-recon")]
     dump_ids(session_data_path, client_id + 1, session_id);
 
-    let mut player_loop =
-        PlayerLoop::new(tx, game_state.clone(), particle_queue.clone(), client_id);
+    // audio blocking flag
+    let audio_flag = Arc::new(AtomicBool::new(false));
+    let _audio_flag = Arc::clone(&audio_flag);
+
+    // spawn a thread to handle game state updates and events
+    let game_state_clone = game_state.clone();
+    let sound_queue_clone = sound_queue.clone();
+    // thread for audio
+    let audio_thread_handle = thread::spawn(move || {
+        let config_instance = ConfigurationManager::get_configuration();
+        let audio_config = config_instance.audio.clone();
+
+        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
+
+        // wait till screen is spawned
+        while !_audio_flag.load(Ordering::Acquire) {
+            thread::park();
+        }
+
+        audio.play_background_track([0.0, 25.0, 0.0]); // add position of background track to config
+        audio.handle_audio_updates(game_state_clone, client_id);
+    });
+
+    let mut player_loop = PlayerLoop::new(
+        tx,
+        game_state.clone(),
+        particle_queue.clone(),
+        client_id,
+        audio_flag,
+        audio_thread_handle,
+    );
 
     // spawn a thread to handle user inputs (received from event loop)
     thread::spawn(move || {
-        let mut input_processor = InputEventProcessor::new(protocol_clone, client_id, rx);
+        let mut input_processor = InputEventProcessor::new(write_protocol, client_id, rx);
 
         input_processor.start_poller();
 
         input_processor.listen();
     });
 
-    // spawn a thread to handle game state updates and events
-    let game_state_clone = game_state.clone();
-    let sound_queue_clone = sound_queue.clone();
     thread::spawn(move || {
         recv_server_updates(
-            protocol.try_clone().unwrap(),
+            read_protocol,
             game_state.clone(),
             particle_queue,
             sound_queue.clone(),
             game_events_bus,
         );
-    });
-
-    // thread for audio
-    thread::spawn(move || {
-        let config_instance = ConfigurationManager::get_configuration();
-        let audio_config = config_instance.audio.clone();
-
-        let mut audio = Audio::from_config(&audio_config, sound_queue_clone);
-        audio.play_background_track([0.0, 25.0, 0.0]); // add position of background track to config
-        audio.handle_audio_updates(game_state_clone, client_id);
     });
 
     pollster::block_on(player_loop.run());
@@ -131,8 +147,8 @@ fn dump_ids(session_data_path: PathBuf, client_id: u8, session_id: u64) {
     serde_json::to_writer(&file, &ids).unwrap();
 }
 
-fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
-    while let Ok(msg) = protocol_clone.read_message::<Message>() {
+fn init_connection(read_protocol: &mut Protocol) -> Result<(u8, u64), ()> {
+    while let Ok(msg) = read_protocol.read_message::<Message>() {
         if let Message {
             host_role: HostRole::Server,
             payload: Payload::Init(incoming_ids),
@@ -148,6 +164,7 @@ fn init_connection(protocol_clone: &mut Protocol) -> Result<(u8, u64), ()> {
     Err(())
 }
 
+#[allow(unreachable_code)]
 fn recv_server_updates(
     mut protocol: Protocol,
     game_state: Arc<Mutex<GameState>>,
@@ -156,36 +173,45 @@ fn recv_server_updates(
     _game_events: Bus<GameEvent>,
 ) {
     // check for new state & update local game state
-    while let Ok(msg) = protocol.read_message::<Message>() {
-        match msg {
-            Message {
-                host_role: HostRole::Server,
-                payload: Payload::StateSync(update_game_state),
-                ..
-            } => {
-                // update state
-                let mut game_state = game_state.lock().unwrap();
-                *game_state = update_game_state;
-                // according to the state, render world
-                debug!("Received game state: {:?}", game_state);
+    loop {
+        match protocol.read_message::<Message>() {
+            Ok(msg) => {
+                match msg {
+                    Message {
+                        host_role: HostRole::Server,
+                        payload: Payload::StateSync(update_game_state),
+                        ..
+                    } => {
+                        // update state
+                        let mut game_state = game_state.lock().unwrap();
+                        *game_state = update_game_state;
+                        // according to the state, render world
+                        debug!("Received game state: {:?}", game_state);
+                    }
+                    Message {
+                        host_role: HostRole::Server,
+                        payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),
+                        ..
+                    } => {
+                        print!("Receiving PARTICLE: {:?}...", p);
+                        particle_queue.lock().unwrap().add_particle(p);
+                        println!("Done!");
+                    }
+                    Message {
+                        host_role: HostRole::Server,
+                        payload: Payload::ServerEvent(GameEvent::SoundEvent(s)),
+                        ..
+                    } => {
+                        sound_queue.lock().unwrap().add_sound(s);
+                    }
+                    _ => {}
+                }
             }
-            Message {
-                host_role: HostRole::Server,
-                payload: Payload::ServerEvent(GameEvent::ParticleEvent(p)),
-                ..
-            } => {
-                print!("Receiving PARTICLE: {:?}...", p);
-                particle_queue.lock().unwrap().add_particle(p);
-                println!("Done!");
+            Err(e) => {
+                error!("Error reading message: {:?}", e);
+                exit(1);
+                break;
             }
-            Message {
-                host_role: HostRole::Server,
-                payload: Payload::ServerEvent(GameEvent::SoundEvent(s)),
-                ..
-            } => {
-                sound_queue.lock().unwrap().add_sound(s);
-            }
-            _ => {}
         }
     }
 }

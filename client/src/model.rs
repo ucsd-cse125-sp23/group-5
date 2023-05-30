@@ -14,6 +14,7 @@ use crate::texture;
 pub trait Model: Any + Debug {
     fn meshes(&self) -> &[Mesh];
     fn materials(&self) -> &[Material];
+    fn mat_ind(&self) -> Option<&ahash::AHashMap<String, usize>>;
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn clone_box(&self) -> Box<dyn Model>;
@@ -24,6 +25,7 @@ pub struct StaticModel {
     pub path: String,
     pub meshes: Arc<Vec<Mesh>>,
     pub materials: Arc<Vec<Material>>,
+    pub mat_ind: Option<Arc<ahash::AHashMap<String, usize>>>,
 }
 
 impl Debug for StaticModel {
@@ -43,6 +45,13 @@ impl Model for StaticModel {
 
     fn materials(&self) -> &[Material] {
         &self.materials
+    }
+
+    fn mat_ind(&self) -> Option<&ahash::AHashMap<String, usize>> {
+        match &self.mat_ind {
+            None => None,
+            Some(s) => Some(&*s),
+        }
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -73,6 +82,7 @@ pub struct InstancedModel {
     // pub instance_state: instance::InstanceState,
     pub instance_states: Vec<instance::InstanceState>,
     pub mesh_colors: Vec<HashMap<String, MeshColorInstance>>,
+    pub chosen_mats: Vec<Option<HashMap<String, String>>>,
     pub default_color: MeshColorInstance,
 }
 
@@ -94,6 +104,10 @@ impl InstancedModel {
                 .collect::<Vec<_>>()
                 .iter()
                 .map(|x| to_mesh_color_inst(x, device, color_bind_group_layout))
+                .collect::<Vec<_>>(),
+            chosen_mats: instances
+                .iter()
+                .map(|x| x.chosen_materials.clone())
                 .collect::<Vec<_>>(),
             default_color: MeshColorInstance::new(
                 device,
@@ -264,8 +278,21 @@ where
             let instance_state = &instanced_model.instance_states[j];
             self.set_vertex_buffer(1, instance_state.buffer.slice(..));
             for i in 0..instanced_model.model.meshes().len() {
+                let mesh_name = &instanced_model.model.meshes()[i].name;
+
                 // assume each mesh has a material
-                let mat_id = instanced_model.model.meshes()[i].material;
+                let mut mat_id = instanced_model.model.meshes()[i].material;
+                if let Some(mtls) = &instanced_model.chosen_mats[j] {
+                    if let Some(m) = mtls.get(mesh_name) {
+                        if let Some(hm) = instanced_model.model.mat_ind() {
+                            mat_id = match hm.get(m) {
+                                None => mat_id,
+                                Some(i) => *i,
+                            };
+                        }
+                    }
+                }
+
                 self.set_vertex_buffer(
                     0,
                     instanced_model.model.meshes()[i].vertex_buffer.slice(..),
@@ -275,7 +302,7 @@ where
                     wgpu::IndexFormat::Uint32,
                 );
 
-                match instanced_model.mesh_colors[j].get(&instanced_model.model.meshes()[i].name) {
+                match instanced_model.mesh_colors[j].get(mesh_name) {
                     Some(color) => {
                         self.set_bind_group(3, &color.color_bind_group, &[]);
                     }

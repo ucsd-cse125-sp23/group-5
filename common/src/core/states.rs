@@ -12,7 +12,9 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use crate::core::powerup_system::StatusEffect::Power;
-use crate::core::powerup_system::{PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect};
+use crate::core::powerup_system::{
+    PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use crate::core::weather::Weather;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -63,6 +65,7 @@ pub struct PlayerState {
     pub power_up: Option<(PowerUp, PowerUpStatus)>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
+    pub cheat_keys_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
@@ -291,16 +294,23 @@ impl GameState {
             player_state.status_effects = new_status_effects;
             for (effect, _) in to_process {
                 if let Power(_) = effect {
-                    player_state.power_up = None;
+                    if let Some((current_powerup, powerup_status)) = player_state.power_up.clone() {
+                        if (*POWER_UP_TO_EFFECT_MAP
+                            .get(&current_powerup.value())
+                            .unwrap_or(&StatusEffect::None)
+                            == effect)
+                            && powerup_status == PowerUpStatus::Active
+                        {
+                            player_state.power_up = None;
+                        }
+                    }
                 }
             }
         }
     }
 
-    pub fn update_powerup_locations(&mut self, delta_time: f32, game_config: ConfigGame) {
-        let powerup_radius = game_config.powerup_config.power_up_radius;
-        let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;
-        for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
+    pub fn update_powerup_respawn(&mut self, delta_time: f32) {
+        for (_, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
             if powerup.clone().is_none() {
                 // case where the powerup is empty, we need to refill the powerup for the map
                 *vacancy_time -= delta_time;
@@ -309,9 +319,19 @@ impl GameState {
                     *vacancy_time = 0.0;
                     *powerup = Some(rand::random());
                 }
-            } else {
+            } 
+        }
+    }
+
+    // check if any players should get a powerup and record powerup
+    pub fn check_powerup_players(&mut self, game_config: ConfigGame) -> HashSet<u32> {
+        let mut res = HashSet::new();
+        let powerup_radius = game_config.powerup_config.power_up_radius;
+        let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;
+        for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
+            if !powerup.clone().is_none() {
                 // check if a player should get the powerup now
-                for (_, player_state) in self.players.iter_mut() {
+                for (player_id, player_state) in self.players.iter_mut() {
                     let power_up_location = *game_config
                         .powerup_config
                         .power_up_locations
@@ -329,13 +349,15 @@ impl GameState {
                     {
                         // player should get it, powerup is gone
                         player_state.power_up =
-                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));
+                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));                
+                        res.insert(*player_id);
                         *vacancy_time = powerup_respawn_cd;
                         *powerup = None;
                     }
                 }
             }
         }
+        return res;
     }
 
     pub fn find_closest_player(&self, id_to_find: u32) -> Option<u32> {

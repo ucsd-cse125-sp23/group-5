@@ -10,7 +10,13 @@
         "particles/p8.png",
         "particles/p9.png",
         "particles/p10.png",
-        "particles/rain_particle.png"
+        "particles/rain_particle.png",
+        "particles/streak.png",
+        "particles/solid_color.png",
+        "particles/powerup1.png",
+        "particles/powerup2.png",
+        "particles/powerup3.png",
+        "particles/powerup4.png"
     ],
     "skybox": [
         "skybox/px.png",
@@ -60,6 +66,14 @@
         {
             "name": "icon:place_circle",
             "path": "circle_mask.png"
+        },
+        {
+            "name": "icon:profile_wood",
+            "path": "profile_wood.png"
+        },
+        {
+            "name": "icon:profile_leaf_1",
+            "path": "profile_leaf_1.png"
         },
         {
             "name": "icon:loading",
@@ -117,6 +131,78 @@
         {
             "name": "icon:windy",
             "path": "windy.png"
+        },
+        {
+            "name": "btn:wood_tex_1",
+            "path": "wood_color_1_texture.png"
+        },
+        {
+            "name": "btn:wood_tex_2",
+            "path": "wood_color_2_texture.png"
+        },
+        {
+            "name": "btn:wood_tex_3",
+            "path": "wood_color_3_texture.png"
+        },
+        {
+            "name": "btn:wood_tex_4",
+            "path": "wood_color_4_texture.png"
+        },
+        {
+            "name": "btn:wood_tex_5",
+            "path": "wood_color_5_texture.png"
+        },
+        {
+            "name": "btn:wood_tex_6",
+            "path": "wood_color_6_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_1",
+            "path": "leaf_color_1_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_2",
+            "path": "leaf_color_2_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_3",
+            "path": "leaf_color_3_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_4",
+            "path": "leaf_color_4_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_5",
+            "path": "leaf_color_5_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_6",
+            "path": "leaf_color_6_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_7",
+            "path": "leaf_color_7_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_8",
+            "path": "leaf_color_8_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_9",
+            "path": "leaf_color_9_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_10",
+            "path": "leaf_color_10_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_11",
+            "path": "leaf_color_11_texture.png"
+        },
+        {
+            "name": "btn:leaf_tex_12",
+            "path": "leaf_color_12_texture.png"
         }
     ]
 }

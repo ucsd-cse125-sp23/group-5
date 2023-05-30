@@ -8,8 +8,9 @@ use rapier3d::prelude as rapier;
 
 use common::configs::ConfigurationManager;
 use common::core::events::GameEvent;
+use common::core::powerup_system::OtherEffects::Stun;
 use common::core::powerup_system::{PowerUpEffects, StatusEffect};
-use common::core::states::{calculate_distance, GameState};
+use common::core::states::{calculate_distance, GameState, PlayerState};
 
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
@@ -17,6 +18,8 @@ use crate::Recipients;
 mod area_attack;
 mod attack;
 mod cast_powerup;
+mod give_powerup;
+mod cheat_code;
 mod die;
 mod jump;
 mod movement;
@@ -26,7 +29,9 @@ mod startup;
 mod update_camera_facing;
 mod weather;
 
+mod cheat_code_control;
 pub mod prelude;
+mod weather_cheat_key;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
@@ -184,4 +189,16 @@ pub fn reset_weather(physics_state: &mut PhysicsState, player_id: u32) {
 
     body.reset_forces(false);
     body.set_linear_damping(0.5);
+}
+
+pub fn apply_stun(player_state: &mut PlayerState, duration: f32) {
+    player_state.status_effects.insert(
+        StatusEffect::Other(Stun),
+        duration.max(
+            *player_state
+                .status_effects
+                .get(&StatusEffect::Other(Stun))
+                .unwrap_or(&0.0),
+        ),
+    );
 }

@@ -11,7 +11,9 @@ use std::time::Duration;
 
 extern crate nalgebra_glm as glm;
 
+use crate::game_loop::{ClientCommand, TICK_RATE};
 use common::configs::physics_config::ConfigPhysics;
+use common::core::command::Command;
 use rapier3d::prelude as rapier;
 
 #[derive(Constructor)]
@@ -25,53 +27,31 @@ impl CommandHandler for JumpCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        _: &mut dyn GameEventCollector,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        let player_collider_handle = physics_state
-            .get_entity_handles(self.player_id)
-            .ok_or(HandlerError::new(format!(
-                "Handlers for player {} not found",
-                self.player_id
-            )))?
-            .collider
-            .ok_or(HandlerError::new(format!(
-                "Collider for player {} not found",
-                self.player_id
-            )))?;
-
-        let _player_rigid_body = physics_state
-            .get_entity_rigid_body_mut(self.player_id)
-            .ok_or(HandlerError::new(format!(
-                "Rigid body for player {} not found",
-                self.player_id
-            )))?;
-
-        let contact_pairs = physics_state
-            .narrow_phase
-            .contacts_with(player_collider_handle)
-            .collect_vec();
-
-        let mut should_reset_jump = false;
-        for contact_pair in contact_pairs {
-            if let Some((manifold, _)) = contact_pair.find_deepest_contact() {
-                // see if player is above another collider by testing the normal angle
-                if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI / 3. {
-                    should_reset_jump = true;
-                }
-            }
-        }
+        // reset jump
+        JumpResetCommandHandler::new(self.player_id).handle(
+            game_state,
+            physics_state,
+            game_events,
+        )?;
 
         let mut player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+
+        // if player is dead, don't do anything
+        if player_state.is_dead {
+            return Ok(());
+        }
 
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
         }
 
-        if should_reset_jump {
-            player_state.jump_count = 0;
+        if player_state.on_cooldown.contains_key(&Command::Jump) {
+            return Ok(());
         }
 
         let jump_limit = if player_state
@@ -116,8 +96,72 @@ impl CommandHandler for JumpCommandHandler {
             }),
         ));
 
+        player_state.insert_cooldown(
+            Command::Jump,
+            self.physics_config.movement_config.jump_cooldown,
+        );
+
         super::handle_invincible_players(game_state, physics_state, self.player_id);
 
+        Ok(())
+    }
+}
+
+#[derive(Constructor)]
+pub(crate) struct JumpResetCommandHandler {
+    player_id: u32,
+}
+
+impl CommandHandler for JumpResetCommandHandler {
+    fn handle(
+        &self,
+        game_state: &mut GameState,
+        physics_state: &mut PhysicsState,
+        _: &mut dyn GameEventCollector,
+    ) -> HandlerResult {
+        let mut player_state = game_state
+            .player_mut(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+
+        if player_state.on_cooldown.contains_key(&Command::Jump) {
+            return Ok(());
+        }
+
+        let player_collider_handle = physics_state
+            .get_entity_handles(self.player_id)
+            .ok_or(HandlerError::new(format!(
+                "Handlers for player {} not found",
+                self.player_id
+            )))?
+            .collider
+            .ok_or(HandlerError::new(format!(
+                "Collider for player {} not found",
+                self.player_id
+            )))?;
+
+        let contact_pairs = physics_state
+            .narrow_phase
+            .contacts_with(player_collider_handle)
+            .collect_vec();
+
+        let mut should_reset_jump = false;
+        for contact_pair in contact_pairs {
+            if let Some((manifold, _)) = contact_pair.find_deepest_contact() {
+                // see if player is above another collider by testing the normal angle
+                if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI / 3. {
+                    should_reset_jump = true;
+                }
+            }
+        }
+
+        // if player is stunned
+        if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
+            return Ok(());
+        }
+
+        if should_reset_jump {
+            player_state.jump_count = 0;
+        }
         Ok(())
     }
 }

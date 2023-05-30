@@ -1,6 +1,6 @@
 # Blender v3.4.1 OBJ File: 'korok_1 (1).blend'
 # www.blender.org
-mtllib frame_0082.mtl
+mtllib ../korok_texture_lib.mtl
 o korok
 v -0.067359 -0.112265 0.264664
 v -0.072874 1.437672 0.280911

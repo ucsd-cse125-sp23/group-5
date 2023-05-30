@@ -39,6 +39,11 @@ impl CommandHandler for AttackCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
+        // if player is dead, don't do anything
+        if player_state.is_dead {
+            return Ok(());
+        }
+
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());
@@ -132,7 +137,7 @@ impl CommandHandler for AttackCommandHandler {
         ));
 
         // loop over all other players
-        for (other_player_id, other_player_state) in game_state.players.iter() {
+        for (other_player_id, other_player_state) in game_state.players.iter_mut() {
             if &self.player_id == other_player_id {
                 continue;
             }
@@ -188,11 +193,28 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
-                        let impulse_vec = scalar
-                            * vec_to_other
-                            * (self.physics_config.attack_config.attack_impulse
-                                - (self.physics_config.attack_config.attack_coeff * toi));
+                        let attack_strength = self.physics_config.attack_config.attack_impulse
+                            - (self.physics_config.attack_config.attack_coeff * toi);
+                        let impulse_vec = scalar * vec_to_other * attack_strength;
 
+                        // clear velocity of target before applying attack
+                        other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
+
+                        // apply_stun
+                        // super::apply_stun(
+                        //     other_player_state,
+                        //     attack_strength / self.physics_config.attack_config.attack_impulse
+                        //         * self.physics_config.attack_config.max_attack_stun_duration,
+                        // );
+
+                        // TODO:
+                        other_player_state.status_effects.insert(
+                            StatusEffect::Other(OtherEffects::MovementDisabled),
+                            attack_strength / self.physics_config.attack_config.attack_impulse
+                                * self.physics_config.attack_config.max_attack_stun_duration,
+                        );
+
+                        // apply attack impulse
                         other_player_rigid_body.apply_impulse(
                             rapier::vector![impulse_vec.x, impulse_vec.y, impulse_vec.z],
                             true,

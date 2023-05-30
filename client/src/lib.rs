@@ -2,6 +2,7 @@ use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEF
 
 use glm::vec3;
 use other_players::OtherPlayer;
+use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
 use std::sync::{mpsc, MutexGuard};
@@ -348,6 +349,12 @@ impl State {
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
+        // load korok material library
+        KOROK_MTL_LIB.set(
+            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
+                .await
+                .unwrap(),
+        );
 
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
@@ -380,6 +387,7 @@ impl State {
         }
 
         let scene_config = config_instance.scene.clone();
+        let game_config = config_instance.game.clone();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -390,7 +398,11 @@ impl State {
             DEFAULT_PLAYER_POS.1,
             DEFAULT_PLAYER_POS.2,
         ));
-        let player_controller = player::PlayerController::new(4.0, 0.7, 0.1);
+        let player_controller = player::PlayerController::new(
+            game_config.camera_config.x_sensitivity,
+            game_config.camera_config.y_sensitivity,
+            game_config.camera_config.scroll_sensitivity,
+        );
 
         let mut camera_state = camera::CameraState::new(
             &device,
@@ -413,7 +425,7 @@ impl State {
         );
 
         // to demonstrate changing global illumination
-        camera_state.camera.ambient_multiplier = glm::vec3(0.1, 0.1, 0.1).into();
+        camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
 
         scene.draw_scene_dfs();
 
@@ -423,16 +435,17 @@ impl State {
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         #[rustfmt::skip]
-            let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
-            lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
+        let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
+            // point light example
+            // lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
             // sun
-            // lights::Light::sun(),
-            lights::Light{
-                position: glm::vec4(0.0, -9.1, 0.0, 2.0),
-                position_2: glm::vec4(0.0, 15.0, 0.0, 10.0),
-                color: glm::vec3(1.0, 1.0, 1.0),
-            }
-            // lights::Light { position: glm::vec4(-10.0, 0.0, 0.0, 3.0), color: glm::vec3(0.0, 0.2, 0.2) },
+            lights::Light::sun(),
+            // line segment light example
+            // lights::Light{
+            //     position: glm::vec4(0.0, -9.1, 0.0, 2.0),
+            //     position_2: glm::vec4(0.0, 15.0, 0.0, 10.0),
+            //     color: glm::vec3(1.0, 1.0, 1.0),
+            // }
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
@@ -628,8 +641,6 @@ impl State {
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
-
-        // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
@@ -829,6 +840,7 @@ impl State {
 
         // check if the game has ended and set corresponding end screen
         if game_state_clone.life_cycle_state == Ended {
+            println!("{:?}", game_state_clone.life_cycle_state);
             if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
                 self.display.current = "display:victory".to_owned();
             } else {
@@ -874,138 +886,194 @@ impl State {
                     self.client_id,
                 );
 
-            other_players::load_game_state(
-                &mut self.other_players,
-                game_state.lock().unwrap(),
-                game_config.clone(),
-            );
+            // only update game-related info if we're in game
+            if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
+                other_players::load_game_state(
+                    &mut self.other_players,
+                    game_state.lock().unwrap(),
+                    game_config.clone(),
+                );
 
-            // update player scores
-            {
-                let screen_id = self
-                    .display
-                    .groups
-                    .get(&self.display.game_display)
-                    .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
-
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                for i in 1..5 {
-                    let ind = *screen
-                        .icon_id_map
-                        .get(&format!("icon:score_p{}", i))
+                // update player scores
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
                         .unwrap();
-                    let score: f32 = self.other_players[i as usize - 1].score;
-                    let mut location = screen.icons[ind].location;
-                    location.horz_disp = (
-                        0.0,
-                        game_config.score_lower_x
-                            + score * (game_config.score_upper_x - game_config.score_lower_x),
-                    );
-                    screen.icons[ind].relocate(
-                        location,
-                        self.config.width,
-                        self.config.height,
-                        &self.queue,
-                    );
-                }
-            }
 
-            // update player number of charges
-            {
-                let screen_id = self
-                    .display
-                    .groups
-                    .get(&self.display.game_display)
-                    .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                    for i in 1..5 {
+                        let score_ind = *screen
+                            .icon_id_map
+                            .get(&format!("icon:score_p{}", i))
+                            .unwrap();
+                        let profile_body_ind = *screen
+                            .icon_id_map
+                            .get(&format!("icon:profile_body_p{}", i))
+                            .unwrap();
+                        let profile_leaf_ind = *screen
+                            .icon_id_map
+                            .get(&format!("icon:profile_leaf_p{}", i))
+                            .unwrap();
+                        let score: f32 = self.other_players[i as usize - 1].score;
 
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let ind = *screen.icon_id_map.get("icon:charge").unwrap();
-                screen.icons[ind].inst_range = 0..self.player.wind_charge;
-            }
+                        // Set colors/textures
+                        if let Some(player_customization) =
+                            game_state_clone.players_customization.get(&i)
+                        {
+                            let leaf_color = player_customization
+                                .color
+                                .get(screen::ui_interaction::LEAF_MESH)
+                                .unwrap()
+                                .rgb_color;
+                            screen.icons[profile_leaf_ind].tint =
+                                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0);
 
-            // update weather icon
-            {
-                let screen_id = self
-                    .display
-                    .groups
-                    .get(&self.display.game_display)
-                    .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
+                            let body_color = player_customization
+                                .color
+                                .get(screen::ui_interaction::BODY_MESH)
+                                .unwrap()
+                                .rgb_color;
+                            screen.icons[profile_body_ind].tint =
+                                glm::vec4(body_color[0], body_color[1], body_color[2], 1.0);
+                        }
 
-                let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                let wind_ind = *screen.icon_id_map.get("icon:windy").unwrap();
-
-                screen.icons[wind_ind].inst_range = 0..{
-                    if matches!(
-                        game_state.lock().unwrap().world.weather,
-                        Some(Weather::Windy(_))
-                    ) {
-                        1
-                    } else {
-                        0
+                        for ind in [score_ind, profile_body_ind, profile_leaf_ind] {
+                            let mut location = screen.icons[ind].location;
+                            location.horz_disp = (
+                                0.0,
+                                game_config.score_lower_x
+                                    + score
+                                        * (game_config.score_upper_x - game_config.score_lower_x),
+                            );
+                            screen.icons[ind].relocate(
+                                location,
+                                self.config.width,
+                                self.config.height,
+                                &self.queue,
+                            );
+                        }
                     }
-                };
+                }
 
-                let rain_ind = *screen.icon_id_map.get("icon:rainy").unwrap();
-                screen.icons[rain_ind].inst_range = 0..{
-                    if matches!(
-                        game_state.lock().unwrap().world.weather,
-                        Some(Weather::Rainy)
-                    ) {
-                        1
+                // update player number of charges
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                    let ind = *screen.icon_id_map.get("icon:charge").unwrap();
+                    screen.icons[ind].inst_range = 0..self.player.wind_charge;
+                }
+
+                // update weather icon
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                    let wind_ind = *screen.icon_id_map.get("icon:windy").unwrap();
+
+                    screen.icons[wind_ind].inst_range = 0..{
+                        if matches!(
+                            game_state.lock().unwrap().world.weather,
+                            Some(Weather::Windy(_))
+                        ) {
+                            1
+                        } else {
+                            0
+                        }
+                    };
+
+                    let rain_ind = *screen.icon_id_map.get("icon:rainy").unwrap();
+                    screen.icons[rain_ind].inst_range = 0..{
+                        if matches!(
+                            game_state.lock().unwrap().world.weather,
+                            Some(Weather::Rainy)
+                        ) {
+                            1
+                        } else {
+                            0
+                        }
+                    };
+                }
+
+                // update cooldowns
+                // hard coded for now... TODO: separate function
+                // is it necessary? would need to pass around lots of references
+                // might be better to create dedicated function in screen/command_handlers
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    // TODO: Magic constants here seem a little unavoidable?
+                    let atk_load = String::from("icon:atk_forward_overlay");
+                    let atk_area_load = String::from("icon:atk_wave_overlay");
+
+                    if self.player.on_cooldown.contains_key(&Command::Attack) {
+                        let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
+                            / physics_config.attack_config.attack_cooldown;
+                        self.display.transition_map.insert(
+                            atk_load.clone(),
+                            screen::object_transitions::Transition::SqueezeDown(cd_left),
+                        );
                     } else {
-                        0
+                        self.display.transition_map.remove(&atk_load);
                     }
-                };
-            }
 
-            // update cooldowns
-            // hard coded for now... TODO: separate function
-            // is it necessary? would need to pass around lots of references
-            // might be better to create dedicated function in screen/command_handlers
-            {
-                let screen_id = self
+                    if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
+                        let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
+                            / physics_config.attack_config.area_attack_cooldown;
+                        self.display.transition_map.insert(
+                            atk_area_load.clone(),
+                            screen::object_transitions::Transition::SqueezeDown(cd_left),
+                        );
+                    } else {
+                        self.display.transition_map.remove(&atk_area_load);
+                    }
+                }
+
+                let player_loc = self
                     .display
-                    .groups
-                    .get(&self.display.game_display)
+                    .scene_map
+                    .get(scene_id)
                     .unwrap()
-                    .screen
-                    .as_ref()
-                    .unwrap();
+                    .get_player_positions();
 
-                // TODO: Magic constants here seem a little unavoidable?
-                let atk_load = String::from("icon:atk_forward_overlay");
-                let atk_area_load = String::from("icon:atk_wave_overlay");
-
-                if self.player.on_cooldown.contains_key(&Command::Attack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::Attack).unwrap()
-                        / physics_config.attack_config.attack_cooldown;
-                    self.display.transition_map.insert(
-                        atk_load.clone(),
-                        screen::object_transitions::Transition::SqueezeDown(cd_left),
-                    );
-                } else {
-                    self.display.transition_map.remove(&atk_load);
+                // ASSUME: Ids should always be 1-4
+                for p in &mut self.other_players {
+                    p.visible = false;
+                }
+                for (i, loc) in player_loc {
+                    self.other_players[i as usize - 1].location = loc;
+                    self.other_players[i as usize - 1].visible = true;
                 }
 
-                if self.player.on_cooldown.contains_key(&Command::AreaAttack) {
-                    let cd_left = self.player.on_cooldown.get(&Command::AreaAttack).unwrap()
-                        / physics_config.attack_config.area_attack_cooldown;
-                    self.display.transition_map.insert(
-                        atk_area_load.clone(),
-                        screen::object_transitions::Transition::SqueezeDown(cd_left),
-                    );
-                } else {
-                    self.display.transition_map.remove(&atk_area_load);
-                }
+                self.invisible_players = game_state_clone
+                    .get_affected_players(StatusEffect::Power(PowerUpEffects::Invisible));
+                self.existing_powerups = game_state_clone.get_existing_powerups();
             }
 
             self.display
@@ -1013,26 +1081,6 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .draw_scene_dfs();
-
-            let player_loc = self
-                .display
-                .scene_map
-                .get(scene_id)
-                .unwrap()
-                .get_player_positions();
-
-            // ASSUME: Ids should always be 1-4
-            for p in &mut self.other_players {
-                p.visible = false;
-            }
-            for (i, loc) in player_loc {
-                self.other_players[i as usize - 1].location = loc;
-                self.other_players[i as usize - 1].visible = true;
-            }
-
-            self.invisible_players = game_state_clone
-                .get_affected_players(StatusEffect::Power(PowerUpEffects::Invisible));
-            self.existing_powerups = game_state_clone.get_existing_powerups();
         }
 
         let particle_queue = particle_queue.lock().unwrap();
@@ -1088,7 +1136,7 @@ impl State {
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
-                .play_animation("attack".to_string(), "object:player_model".to_string());
+                .play_animation("power_up".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
@@ -1191,10 +1239,59 @@ impl State {
         let time_divider = particle_config.time_divider;
 
         for p in &particle_queue.particles {
-            println!("Handling particle of type: {:?}", p.p_type);
+            // println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
+                    // test ribbon particle (maybe loop these for winning area?)
+                    // ribbon sample
+                    /*
+                    let gen = particles::ribbon::LineRibbonGenerator::new(
+                        glm::vec3(-10., -10., -10.),
+                        glm::vec3(10., -8., 10.),
+                        glm::vec3(0., 1., 0.),
+                        10.0,
+                        0.0,
+                        0.5,
+                        20.,
+                        0.0,
+                        50,
+                        false,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(60.),
+                        2.0,
+                        5.0,
+                        p.color,
+                        gen,
+                        (12, 13),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+
+                    let gen = particles::trail::PathTrailGenerator::new(
+                        vec![glm::vec3(-5.0, -10.0, -5.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(5.0, -10.0, 5.0)],
+                        vec![0.0, 0.5, 1.0],
+                        vec![40.0, 20.0, 40.0],
+                        glm::vec3(0.0, 1.0, 0.0),
+                        10,
+                        5.0,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(60.),
+                        20.0,
+                        5.0,
+                        glm::vec4(1.0, 0.8, 0.4, 0.8),
+                        gen,
+                        (0, 1),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                    */
+
+                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
@@ -1245,11 +1342,38 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (1, 4),
+                        (0, 4),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::POWERUP => {
+                    // in this case, only position matters
+                    let time = particle_config.powerup_particle_config.time / time_divider;
+                    let powerup_gen = particles::gen::SphereGenerator::new(
+                        p.position,
+                        particle_config.powerup_particle_config.max_dist / time,
+                        particle_config.powerup_particle_config.linear_variance,
+                        PI,
+                        particle_config.powerup_particle_config.angular_variance,
+                        particle_config.powerup_particle_config.size,
+                        particle_config.powerup_particle_config.size_variance,
+                        particle_config.powerup_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let powerup = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.powerup_particle_config.gen_speed,
+                        p.color,
+                        powerup_gen,
+                        (14, 18),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(powerup);
                 }
                 events::ParticleType::RAIN => {
                     let time = 2.;

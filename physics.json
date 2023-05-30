@@ -2,23 +2,26 @@
   "attack_config": {
     "max_attack_dist": 10.0,
     "max_attack_angle": 0.5235987755982988,
-    "attack_impulse": 100.0,
+    "attack_impulse": 250.0,
     "attack_coeff": 5.0,
     "attack_cost": 1,
     "attack_cooldown": 1.0,
     "max_area_attack_dist": 5.0,
-    "area_attack_impulse": 75.0,
+    "area_attack_impulse": 150.0,
     "area_attack_coeff": 5.0,
     "area_attack_cost": 2,
-    "area_attack_cooldown": 1.0
+    "area_attack_cooldown": 1.0,
+    "max_attack_stun_duration": 0.5
   },
   "movement_config": {
     "walking_cooldown": 0.5,
-    "step_size": 0.1,
+    "step_size": 0.15,
     "gain": 0.1,
     "damping": 10.0,
     "max_jump_count": 2,
-    "jump_impulse": 70.0
+    "jump_impulse": 90.0,
+    "jump_cooldown": 0.1
+
   }
 }
 
