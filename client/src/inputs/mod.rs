@@ -118,18 +118,19 @@ impl InputEventProcessor {
                 GameKeyKind::Pressable,
                 Command::CheatCode(PowerUp::WindEnhancement),
             )),
-            VirtualKeyCode::F3 => {
+            VirtualKeyCode::F3 => Some((GameKeyKind::Pressable, Command::CheatCode(PowerUp::Dash))),
+            VirtualKeyCode::F4 => {
                 Some((GameKeyKind::Pressable, Command::CheatCode(PowerUp::Flash)))
             }
-            VirtualKeyCode::F4 => Some((
+            VirtualKeyCode::F5 => Some((
                 GameKeyKind::Pressable,
                 Command::CheatCode(PowerUp::Invisible),
             )),
-            VirtualKeyCode::F5 => Some((
+            VirtualKeyCode::F6 => Some((
                 GameKeyKind::Pressable,
                 Command::CheatCode(PowerUp::TripleJump),
             )),
-            VirtualKeyCode::F6 => Some((
+            VirtualKeyCode::F7 => Some((
                 GameKeyKind::Pressable,
                 Command::CheatCode(PowerUp::Invincible),
             )),
