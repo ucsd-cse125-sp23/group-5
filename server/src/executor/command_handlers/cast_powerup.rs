@@ -36,6 +36,11 @@ impl CommandHandler for CastPowerUpCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
+        // if player is dead, don't do anything
+        if player_state.is_dead {
+            return Ok(());
+        }
+
         if player_state
             .status_effects
             .contains_key(&StatusEffect::Other(Stun))

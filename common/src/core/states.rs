@@ -65,6 +65,7 @@ pub struct PlayerState {
     pub power_up: Option<(PowerUp, PowerUpStatus)>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
+    pub cheat_keys_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
@@ -296,7 +297,7 @@ impl GameState {
                     if let Some((current_powerup, powerup_status)) = player_state.power_up.clone() {
                         if (*POWER_UP_TO_EFFECT_MAP
                             .get(&current_powerup.value())
-                            .unwrap()
+                            .unwrap_or(&StatusEffect::None)
                             == effect)
                             && powerup_status == PowerUpStatus::Active
                         {

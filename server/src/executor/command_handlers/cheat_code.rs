@@ -19,13 +19,10 @@ impl CommandHandler for CheatCodeCommandHandler {
         _: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        if self.player_id != 1 {
-            return Ok(());
+        let player_state = game_state.player_mut(self.player_id).unwrap();
+        if player_state.cheat_keys_enabled {
+            player_state.power_up = Some((self.powerup.clone(), PowerUpStatus::Held));
         }
-
-        game_state.player_mut(1).unwrap().power_up =
-            Some((self.powerup.clone(), PowerUpStatus::Held));
-
         Ok(())
     }
 }

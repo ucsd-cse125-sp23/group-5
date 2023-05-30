@@ -1,24 +1,24 @@
-use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
-use common::communication::commons::Protocol;
-
-use common::core::command::Command::{
-    AreaAttack, Attack, CastPowerUp, Dash, Die, Flash, Jump, Refill, Spawn,
-};
-use common::core::command::{Command, ServerSync};
-
-use glm::{vec3, Vec3};
-use log::debug;
-use nalgebra_glm as glm;
-
-use common::communication::message::{HostRole, Message, Payload};
-use common::core::choices::FinalChoices;
-use common::core::powerup_system::PowerUp;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
+
+use glm::{vec3, Vec3};
+use log::debug;
+use nalgebra_glm as glm;
 use winit::event::{DeviceEvent, ElementState, KeyboardInput, VirtualKeyCode};
+
+use common::communication::commons::Protocol;
+use common::communication::message::{HostRole, Message, Payload};
+use common::core::choices::FinalChoices;
+use common::core::command::Command::{
+    AreaAttack, Attack, CastPowerUp, Dash, Die, Flash, Jump, Refill, Spawn,
+};
+use common::core::command::{CheatCodeControl, Command, ServerSync};
+use common::core::powerup_system::PowerUp;
+
+use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
 
 pub mod handlers;
 
@@ -43,6 +43,18 @@ pub enum ButtonState {
     Released,
 }
 
+#[derive(Debug, Clone)]
+pub enum CheatCodeState {
+    NotStarted,
+    F10,
+    M,
+    A,
+    S,
+    T,
+    E,
+    R,
+}
+
 /// Input polling interval
 pub const POLLER_INTERVAL: Duration = Duration::from_millis(60);
 
@@ -53,6 +65,7 @@ pub struct InputEventProcessor {
     button_states: Arc<Mutex<HashMap<VirtualKeyCode, ButtonState>>>,
     camera_forward: Arc<Mutex<Vec3>>,
     poller_signal: Arc<(Mutex<bool>, Condvar)>,
+    cheat_code_fsm: Arc<Mutex<CheatCodeState>>,
 }
 
 impl InputEventProcessor {
@@ -64,6 +77,7 @@ impl InputEventProcessor {
             button_states: Arc::new(Mutex::new(HashMap::new())),
             camera_forward: Arc::new(Mutex::new(Default::default())),
             poller_signal: Arc::new((Mutex::new(true), Condvar::new())),
+            cheat_code_fsm: Arc::new(Mutex::new(CheatCodeState::NotStarted)),
         }
     }
 
@@ -118,6 +132,10 @@ impl InputEventProcessor {
             VirtualKeyCode::F6 => Some((
                 GameKeyKind::Pressable,
                 Command::CheatCode(PowerUp::Invincible),
+            )),
+            VirtualKeyCode::F9 => Some((
+                GameKeyKind::Pressable,
+                Command::CheatCodeControl(CheatCodeControl::Deactivate),
             )),
             _ => None,
         }
@@ -190,6 +208,23 @@ impl InputEventProcessor {
                         self.button_states.lock().unwrap()
                     );
 
+                    // For activating cheatcode
+                    if state == ElementState::Pressed {
+                        let should_activate = self.proceed_cheat_code_fsm(key_code);
+                        if should_activate {
+                            // should send the activate cheatcode commend
+                            let message: Message = Message::new(
+                                HostRole::Client(self.client_id),
+                                Payload::Command(Command::CheatCodeControl(
+                                    CheatCodeControl::Activate,
+                                )),
+                            );
+                            self.protocol
+                                .send_message(&message)
+                                .expect("send message fails");
+                        }
+                    }
+
                     // Signal the poller to send data as soon as possible
                     // Should be only for "Pressable" keys since otherwise the sampling rate will be inconsistent
                     // This optimization will be significant if we decide to use a longer polling interval (e.g. > 100ms) to save bandwidth
@@ -260,5 +295,73 @@ impl InputEventProcessor {
             ButtonState::Pressed
         };
         button_states.insert(keycode, next_state);
+    }
+
+    pub fn proceed_cheat_code_fsm(&mut self, keycode: VirtualKeyCode) -> bool {
+        let mut current_fsm = self.cheat_code_fsm.lock().unwrap();
+
+        match current_fsm.clone() {
+            CheatCodeState::F10 => {
+                if keycode == VirtualKeyCode::M {
+                    *current_fsm = CheatCodeState::M;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+            CheatCodeState::M => {
+                if keycode == VirtualKeyCode::A {
+                    *current_fsm = CheatCodeState::A;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+            CheatCodeState::A => {
+                if keycode == VirtualKeyCode::S {
+                    *current_fsm = CheatCodeState::S;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+            CheatCodeState::S => {
+                if keycode == VirtualKeyCode::T {
+                    *current_fsm = CheatCodeState::T;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+            CheatCodeState::T => {
+                if keycode == VirtualKeyCode::E {
+                    *current_fsm = CheatCodeState::E;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+            CheatCodeState::E => {
+                if keycode == VirtualKeyCode::R {
+                    *current_fsm = CheatCodeState::R;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+            CheatCodeState::R => {
+                if keycode == VirtualKeyCode::Return {}
+                *current_fsm = CheatCodeState::NotStarted;
+                return true;
+            }
+            _ => {
+                if keycode == VirtualKeyCode::F10 {
+                    *current_fsm = CheatCodeState::F10;
+                } else {
+                    *current_fsm = CheatCodeState::NotStarted;
+                }
+                return false;
+            }
+        }
     }
 }

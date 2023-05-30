@@ -18,6 +18,13 @@ pub enum ServerSync {
     End,
 }
 
+/// Commands for activating/deactivating cheatkeys
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CheatCodeControl {
+    Activate,
+    Deactivate,
+}
+
 /// Commands that can be issued by the client
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
@@ -37,6 +44,7 @@ pub enum Command {
     UpdateWeather,
     WeatherEffects,
     CheatCode(PowerUp),
+    CheatCodeControl(CheatCodeControl),
 }
 
 impl Command {
