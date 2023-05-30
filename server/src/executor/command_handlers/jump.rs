@@ -85,9 +85,9 @@ impl CommandHandler for JumpCommandHandler {
         player_state.active_action_states.insert((
             ActionState::Jumping,
             Duration::from_secs_f32(if player_state.jump_count == 2 {
-                1.4
+                1.9
             } else {
-                0.9
+               1.2
             }),
         ));
 
