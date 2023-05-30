@@ -7,8 +7,7 @@ use log::{debug, error, info, warn};
 
 use command_handlers::prelude::*;
 use common::configs::*;
-use common::core::command::Command::{UpdateWeather, WeatherEffects};
-use common::core::command::{CheatCodeControl, Command, MoveDirection, ServerSync};
+use common::core::command::{Command, MoveDirection, ServerSync};
 use common::core::events::GameEvent;
 use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use common::core::states::GameState;
@@ -206,6 +205,10 @@ impl Executor {
                 Command::CheatCodeControl(_command) => Box::new(
                     CheatCodeControlCommandHandler::new(client_command.client_id, _command),
                 ),
+                Command::WeatherCheatKey(_weather) => Box::new(WeatherCheatKeyCommandHandler::new(
+                    client_command.client_id,
+                    _weather,
+                )),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;
@@ -312,8 +315,8 @@ impl Executor {
     }
 
     pub fn add_pretick_commands(&self, commands: &mut Vec<ClientCommand>) {
-        commands.push(ClientCommand::server_issued(UpdateWeather));
-        commands.push(ClientCommand::server_issued(WeatherEffects));
+        commands.push(ClientCommand::server_issued(Command::UpdateWeather));
+        commands.push(ClientCommand::server_issued(Command::WeatherEffects));
 
         for player in self.game_state.lock().unwrap().players.values() {
             commands.push(ClientCommand::new(player.id, Command::Refill));

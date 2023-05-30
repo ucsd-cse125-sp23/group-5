@@ -1,11 +1,13 @@
 extern crate nalgebra_glm as glm;
 
-use crate::core::choices::FinalChoices;
-use crate::core::powerup_system::PowerUp;
-use glm::Quat;
-use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 use std::mem;
+
+use glm::Quat;
+use serde::{Deserialize, Serialize};
+
+use crate::core::choices::FinalChoices;
+use crate::core::powerup_system::PowerUp;
 
 /// Direction of the movement
 pub type MoveDirection = glm::Vec3;
@@ -18,11 +20,19 @@ pub enum ServerSync {
     End,
 }
 
-/// Commands for activating/deactivating cheatkeys
+// Commands for activating/deactivating cheatkeys
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CheatCodeControl {
     Activate,
     Deactivate,
+}
+
+// Commands for manipulating weather with cheatkeys
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CheatKeyWeather {
+    Rain,
+    Wind,
+    Reset,
 }
 
 /// Commands that can be issued by the client
@@ -45,6 +55,7 @@ pub enum Command {
     WeatherEffects,
     CheatCode(PowerUp),
     CheatCodeControl(CheatCodeControl),
+    WeatherCheatKey(CheatKeyWeather),
 }
 
 impl Command {
@@ -67,6 +78,7 @@ impl PartialEq for Command {
         }
     }
 }
+
 impl Eq for Command {}
 
 impl Hash for Command {

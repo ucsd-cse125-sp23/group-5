@@ -30,6 +30,7 @@ mod weather;
 
 mod cheat_code_control;
 pub mod prelude;
+mod weather_cheat_key;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {

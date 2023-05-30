@@ -15,7 +15,7 @@ use common::core::choices::FinalChoices;
 use common::core::command::Command::{
     AreaAttack, Attack, CastPowerUp, Dash, Die, Flash, Jump, Refill, Spawn,
 };
-use common::core::command::{CheatCodeControl, Command, ServerSync};
+use common::core::command::{CheatCodeControl, CheatKeyWeather, Command, ServerSync};
 use common::core::powerup_system::PowerUp;
 
 use crate::inputs::handlers::{handle_camera_update, handle_game_key_input, GameKeyKind};
@@ -137,6 +137,18 @@ impl InputEventProcessor {
             VirtualKeyCode::F9 => Some((
                 GameKeyKind::Pressable,
                 Command::CheatCodeControl(CheatCodeControl::Deactivate),
+            )),
+            VirtualKeyCode::Minus => Some((
+                GameKeyKind::Pressable,
+                Command::WeatherCheatKey(CheatKeyWeather::Wind),
+            )),
+            VirtualKeyCode::Equals => Some((
+                GameKeyKind::Pressable,
+                Command::WeatherCheatKey(CheatKeyWeather::Rain),
+            )),
+            VirtualKeyCode::Back => Some((
+                GameKeyKind::Pressable,
+                Command::WeatherCheatKey(CheatKeyWeather::Reset),
             )),
             _ => None,
         }
