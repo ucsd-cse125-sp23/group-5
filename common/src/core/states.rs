@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use nalgebra_glm::Vec3;
 use rapier3d::prelude::Vector;
@@ -32,6 +32,7 @@ pub struct GameState {
         HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
     pub life_cycle_state: GameLifeCycleState,
     pub game_winner: Option<u32>,
+    pub game_start_time: Duration,
 }
 
 impl GameState {
@@ -257,10 +258,25 @@ impl GameState {
         delta_time: f32,
         game_config: ConfigGame,
     ) -> Option<u32> {
+        // calculate elapsed time since game start in seconds
+        let elapsed_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - self.game_start_time;
+        let elapsed_seconds = elapsed_time.as_secs();
+        // increase spawn_cooldown based on elapsed time
+        let decay_rate_decrease = elapsed_seconds as f32 * game_config.decay_coef;
+        let new_decay_rate = game_config.decay_rate - decay_rate_decrease;
+        let mut still_decay = true;
+        if new_decay_rate < 0.0 {
+            still_decay = false;
+        }
+
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            let provisional_on_flag_time =
-                player_state.on_flag_time - delta_time * game_config.decay_rate;
+            let mut provisional_on_flag_time =
+                player_state.on_flag_time;
+            if still_decay {
+                provisional_on_flag_time -= delta_time * new_decay_rate;
+            }
+
             player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
                 provisional_on_flag_time
             } else {
@@ -271,8 +287,12 @@ impl GameState {
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time +=
-                    delta_time * (1.0 + game_config.decay_rate);
+                if still_decay {
+                    self.player_mut(id).unwrap().on_flag_time +=
+                        delta_time * (1.0 + new_decay_rate);
+                } else {
+                    self.player_mut(id).unwrap().on_flag_time += delta_time;
+                }
                 if self.player_mut(id).unwrap().on_flag_time > game_config.winning_threshold {
                     Some(id)
                 } else {
@@ -438,6 +458,7 @@ mod tests {
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
             game_winner: None,
+            game_start_time: Default::default(),
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -453,6 +474,7 @@ mod tests {
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
             game_winner: None,
+            game_start_time: Default::default(),
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();

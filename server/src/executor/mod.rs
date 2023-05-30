@@ -1,9 +1,8 @@
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
-
 use itertools::Itertools;
 use log::{debug, error, info, warn};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use command_handlers::prelude::*;
 use common::configs::*;
@@ -63,10 +62,9 @@ impl Executor {
 
     pub fn game_init(&self, commands: &mut Vec<ClientCommand>) {
         if matches!(self.game_state().life_cycle_state, Running(_)) {
-            // TODO: still have bugs when handling multiple game in a row without exiting
             if !*self.spawn_command_pushed.borrow() {
+                self.game_state.lock().unwrap().game_start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
                 for client_id in self.ready_players.borrow().iter() {
-                    info!("Ready Players: {:?}", *self.ready_players.borrow());
                     commands.push(ClientCommand::new(*client_id, Command::Spawn));
                 }
                 *self.spawn_command_pushed.borrow_mut() = true;
