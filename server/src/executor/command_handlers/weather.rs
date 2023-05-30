@@ -1,4 +1,4 @@
-use common::core::events::{GameEvent, ParticleSpec, ParticleType};
+use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 use common::core::weather::Weather;
@@ -160,6 +160,17 @@ impl WeatherEffectCommandHandler {
                     Recipients::One(player_id as u8),
                 )
             }
+
+            // TODO: change to actual sound event
+            game_events.add(
+                GameEvent::SoundEvent(SoundSpec::new(
+                    player_state.transform.translation,
+                    "rain".to_string(),
+                    (0, false),
+                    (true, true)
+                )),
+                Recipients::One(player_id as u8),
+            )
         }
         Ok(())
     }
@@ -199,6 +210,17 @@ impl WeatherEffectCommandHandler {
         // reset friction for every player
         for (&player_id, _) in game_state.players.iter() {
             super::reset_weather(physics_state, player_id);
+
+            // TODO: change to actual sound event
+            game_events.add( // to stop rain sound
+                GameEvent::SoundEvent(SoundSpec::new(
+                    glm::Vec3::new(0.0, 0.0, 0.0),
+                    "rain".to_string(),
+                    (0, false),
+                    (true, false)
+                )),
+                Recipients::One(player_id as u8),
+            )
         }
         Ok(())
     }

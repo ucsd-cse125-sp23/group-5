@@ -104,7 +104,6 @@ impl Display {
     pub fn change_to(&mut self, new: String) {
         self.particles.systems.clear();
         self.current = new;
-        println!("curr: dpisy {}", self.current.clone());
         *CURR_DISP.get().unwrap().lock().unwrap() = self.current.clone();
     }
 

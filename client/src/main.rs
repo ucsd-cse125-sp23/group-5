@@ -96,7 +96,7 @@ fn main() {
             thread::park();
         }
 
-        audio.play_background_track(AudioAsset::BKGND_MAIN, AUDIO_POS_AT_CLIENT); // add position of background track to config
+        audio.play_background_track(AudioAsset::BKGND_WAIT, AUDIO_POS_AT_CLIENT); // add position of background track to config
         audio.handle_audio_updates(game_state_clone, client_id);
     });
 
