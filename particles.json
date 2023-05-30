@@ -21,9 +21,9 @@
     "max_dist": 2.5,
     "linear_variance": 0.3,
     "angular_variance": 0.5,
-    "size": 150.0,
+    "size": 75.0,
     "size_variance": 5.0,
     "size_growth": 7.0,
-    "gen_speed": 2000.0
+    "gen_speed": 1500.0
   }
 }
