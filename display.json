@@ -1094,7 +1094,7 @@
                 1.0,
                 1.0
               ],
-              "tex": "icon:place_circle",
+              "tex": "icon:ammos",
               "mask_tex": "mask:none",
               "instances": [
                 {
@@ -1285,12 +1285,12 @@
               "height": 0.222,
               "tint": [
                 0.0,
-                1.0,
-                1.0,
+                0.0,
+                0.0,
                 1.0
               ],
-              "tex": "icon:place_circle",
-              "mask_tex": "mask:circle",
+              "tex": "icon:attack_normal",
+              "mask_tex": "mask:none",
               "instances": [
                 {
                   "translation": {
@@ -1369,12 +1369,12 @@
               "height": 0.222,
               "tint": [
                 0.0,
-                1.0,
-                1.0,
+                0.0,
+                0.0,
                 1.0
               ],
-              "tex": "icon:place_circle",
-              "mask_tex": "mask:circle",
+              "tex": "icon:attack_wave",
+              "mask_tex": "mask:none",
               "instances": [
                 {
                   "translation": {
