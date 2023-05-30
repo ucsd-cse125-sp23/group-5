@@ -1,6 +1,7 @@
 pub use super::area_attack::AreaAttackCommandHandler;
 pub use super::attack::AttackCommandHandler;
 pub use super::cast_powerup::CastPowerUpCommandHandler;
+pub use super::give_powerup::GivePowerUpCommandHandler;
 pub use super::cheat_code::CheatCodeCommandHandler;
 pub use super::cheat_code_control::CheatCodeControlCommandHandler;
 pub use super::die::DieCommandHandler;

@@ -18,6 +18,7 @@ use crate::Recipients;
 mod area_attack;
 mod attack;
 mod cast_powerup;
+mod give_powerup;
 mod cheat_code;
 mod die;
 mod jump;
