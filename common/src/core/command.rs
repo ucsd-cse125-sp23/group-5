@@ -31,6 +31,7 @@ pub enum Command {
     AreaAttack,
     Refill,
     CastPowerUp,
+    GivePowerUp,
     Dash,
     Flash,
     UpdateWeather,

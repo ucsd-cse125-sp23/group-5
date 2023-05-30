@@ -12,7 +12,11 @@
         "particles/p10.png",
         "particles/rain_particle.png",
         "particles/streak.png",
-        "particles/solid_color.png"
+        "particles/solid_color.png",
+        "particles/powerup1.png",
+        "particles/powerup2.png",
+        "particles/powerup3.png",
+        "particles/powerup4.png"
     ],
     "skybox": [
         "skybox/px.png",

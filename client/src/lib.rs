@@ -1348,6 +1348,33 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
                 }
+                events::ParticleType::POWERUP => {
+                    // in this case, only position matters
+                    let time = particle_config.powerup_particle_config.time / time_divider;
+                    let powerup_gen = particles::gen::SphereGenerator::new(
+                        p.position,
+                        particle_config.powerup_particle_config.max_dist / time,
+                        particle_config.powerup_particle_config.linear_variance,
+                        PI,
+                        particle_config.powerup_particle_config.angular_variance,
+                        particle_config.powerup_particle_config.size,
+                        particle_config.powerup_particle_config.size_variance,
+                        particle_config.powerup_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let powerup = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.powerup_particle_config.gen_speed,
+                        p.color,
+                        powerup_gen,
+                        (14, 18),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(powerup);
+                }
                 events::ParticleType::RAIN => {
                     let time = 2.;
                     println!("adding particle: {:?}", p);
