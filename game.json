@@ -44,6 +44,7 @@
     ]
   ],
   "spawn_cooldown": 3.0,
+  "respawn_coef": 0.003,
   "score_lower_x": -0.385,
   "score_upper_x": 0.335,
   "max_wind_charge": 10,
@@ -59,6 +60,7 @@
   ],
   "winning_threshold": 10.0,
   "decay_rate": 0.2,
+  "decay_coef": 0.0002,
   "refill_radius": 2.0,
   "refill_rate_limit": 0.5,
   "camera_config": {
