@@ -964,6 +964,7 @@ impl State {
                 }
 
                 // update player number of charges
+                // TODO: change location and add a large wind symbol, and change pic and mechanisms
                 {
                     let screen_id = self
                         .display
@@ -1031,7 +1032,6 @@ impl State {
                         .as_ref()
                         .unwrap();
 
-                    // TODO: Magic constants here seem a little unavoidable?
                     let atk_load = String::from("icon:atk_forward_overlay");
                     let atk_area_load = String::from("icon:atk_wave_overlay");
 
@@ -1056,6 +1056,11 @@ impl State {
                     } else {
                         self.display.transition_map.remove(&atk_area_load);
                     }
+                }
+
+                // TODO: update powerup cooldown
+                {
+
                 }
 
                 let player_loc = self
