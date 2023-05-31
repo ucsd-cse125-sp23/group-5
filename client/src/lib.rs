@@ -13,7 +13,7 @@ use std::{
 };
 
 use common::configs::*;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
+use common::core::powerup_system::{PowerUp, PowerUpEffects, StatusEffect};
 use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
@@ -988,10 +988,9 @@ impl State {
 
                     // Update empty ammo
                     let ind_empty_ammo = *screen.icon_id_map.get("icon:empty_charge").unwrap();
-                    screen.icons[ind_empty_ammo].inst_range = self.player.wind_charge..10;  // Adjust the range as per your total ammos
+                    screen.icons[ind_empty_ammo].inst_range = self.player.wind_charge..10;
+                    // Adjust the range as per your total ammos
                 }
-
-
 
                 // update weather icon
                 {
@@ -1072,7 +1071,56 @@ impl State {
                 }
 
                 // TODO: update powerup cooldown
-                {}
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                    let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult").unwrap();
+
+                    if let Some(power_up) = self.player.power_up.as_ref() {
+                        match power_up.0 {
+                            PowerUp::Lightning => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_lightening");
+                            }
+                            PowerUp::WindEnhancement => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_wind");
+                            }
+                            PowerUp::Dash => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_dash");
+                            }
+                            PowerUp::Flash => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_flash");
+                            }
+                            PowerUp::Invisible => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_invisible");
+                            }
+                            PowerUp::TripleJump => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_triple_jump");
+                            }
+                            PowerUp::Invincible => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_invincible");
+                            }
+                        }
+                    }
+                    else {
+                        screen.icons[ind_atk_ult].texture =
+                            String::from("icon:attack_power_up");
+                    }
+                }
 
                 let player_loc = self
                     .display

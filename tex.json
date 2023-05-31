@@ -76,6 +76,34 @@
             "path": "attack_power_up.png"
         },
         {
+            "name": "icon:power_dash",
+            "path": "power_dash.png"
+        },
+        {
+            "name": "icon:power_flash",
+            "path": "power_flash.png"
+        },
+        {
+            "name": "icon:power_invincible",
+            "path": "power_invincible.png"
+        },
+        {
+            "name": "icon:power_invisible",
+            "path": "power_invisible.png"
+        },
+        {
+            "name": "icon:power_lightening",
+            "path": "power_lightening.png"
+        },
+        {
+            "name": "icon:power_triple_jump",
+            "path": "power_triple_jump.png"
+        },
+        {
+            "name": "icon:power_wind",
+            "path": "power_wind.png"
+        },
+        {
             "name": "icon:place_circle",
             "path": "circle_mask.png"
         },
