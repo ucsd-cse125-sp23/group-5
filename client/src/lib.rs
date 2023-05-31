@@ -987,7 +987,7 @@ impl State {
                     screen.icons[ind_charge].inst_range = 0..self.player.wind_charge;
 
                     // Update empty ammo
-                    let ind_empty_ammo = *screen.icon_id_map.get("icon:empty_empty").unwrap();
+                    let ind_empty_ammo = *screen.icon_id_map.get("icon:empty_charge").unwrap();
                     screen.icons[ind_empty_ammo].inst_range = self.player.wind_charge..10;  // Adjust the range as per your total ammos
                 }
 
