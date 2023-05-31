@@ -1733,15 +1733,15 @@
               "location": {
                   "vert_disp": [
                       0.0,
-                      -0.860
+                      -0.885
                   ],
                   "horz_disp": [
                       0.0,
                       0.770
                   ]
               },
-              "aspect": 1.15,
-              "height": 0.195,
+              "aspect": 1.05,
+              "height": 0.240,
               "tint": [
                   1.0,
                   1.0,

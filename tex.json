@@ -77,30 +77,58 @@
         },
         {
             "name": "icon:power_dash",
-            "path": "power_dash.png"
+            "path": "pure_power_dash.png"
         },
         {
             "name": "icon:power_flash",
-            "path": "power_flash.png"
+            "path": "pure_power_flash.png"
         },
         {
             "name": "icon:power_invincible",
-            "path": "power_invincible.png"
+            "path": "pure_power_invincible.png"
         },
         {
             "name": "icon:power_invisible",
-            "path": "power_invisible.png"
+            "path": "pure_power_invisible.png"
         },
         {
             "name": "icon:power_lightening",
-            "path": "power_lightening.png"
+            "path": "pure_power_lightening.png"
         },
         {
             "name": "icon:power_triple_jump",
-            "path": "power_triple_jump.png"
+            "path": "pure_power_triple_jump.png"
         },
         {
             "name": "icon:power_wind",
+            "path": "pure_power_wind.png"
+        },
+        {
+            "name": "icon:power_dash_overlay",
+            "path": "power_dash.png"
+        },
+        {
+            "name": "icon:power_flash_overlay",
+            "path": "power_flash.png"
+        },
+        {
+            "name": "icon:power_invincible_overlay",
+            "path": "power_invincible.png"
+        },
+        {
+            "name": "icon:power_invisible_overlay",
+            "path": "power_invisible.png"
+        },
+        {
+            "name": "icon:power_lightening_overlay",
+            "path": "power_lightening.png"
+        },
+        {
+            "name": "icon:power_triple_jump_overlay",
+            "path": "power_triple_jump.png"
+        },
+        {
+            "name": "icon:power_wind_overlay",
             "path": "power_wind.png"
         },
         {

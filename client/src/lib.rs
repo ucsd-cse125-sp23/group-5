@@ -13,7 +13,7 @@ use std::{
 };
 
 use common::configs::*;
-use common::core::powerup_system::{PowerUp, PowerUpEffects, StatusEffect};
+use common::core::powerup_system::{POWER_UP_TO_EFFECT_MAP, PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect};
 use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
@@ -52,6 +52,7 @@ use common::core::weather::Weather;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
+use common::core::powerup_system::StatusEffect::Power;
 
 struct State {
     surface: wgpu::Surface,
@@ -1070,7 +1071,7 @@ impl State {
                     }
                 }
 
-                // TODO: update powerup cooldown
+                // update for powerup
                 {
                     let screen_id = self
                         .display
@@ -1119,6 +1120,55 @@ impl State {
                     else {
                         screen.icons[ind_atk_ult].texture =
                             String::from("icon:attack_power_up");
+                    }
+                }
+
+                // update cooldown for powerup
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+
+                    let power_up_overlay_id = "icon:atk_powerup_overlay";
+                    let ind_atk_powerup_overlay = *screen.icon_id_map.get(power_up_overlay_id).unwrap();
+
+                    if let Some((power_up, status)) = self.player.power_up.as_ref() {
+                        if *status == PowerUpStatus::Active {
+                            // Set the overlay icon texture to the corresponding "pure" power-up icon
+                            let power_up_overlay_texture = match power_up {
+                                PowerUp::Lightning => "icon:power_lightening_overlay",
+                                PowerUp::WindEnhancement => "icon:power_wind_overlay",
+                                PowerUp::Dash => "icon:power_dash_overlay",
+                                PowerUp::Flash => "icon:power_flash_overlay",
+                                PowerUp::Invisible => "icon:power_invisible_overlay",
+                                PowerUp::TripleJump => "icon:power_triple_jump_overlay",
+                                PowerUp::Invincible => "icon:power_invincible_overlay",
+                            };
+                            screen.icons[ind_atk_powerup_overlay].texture = String::from(power_up_overlay_texture);
+
+                            let power_up_status = POWER_UP_TO_EFFECT_MAP.get(&power_up.value()).unwrap_or(&StatusEffect::None);
+                            // Calculate the fraction of the power-up time left
+                            if let Some(time_left) = self.player.status_effects.get(power_up_status) {
+                                //TODO: store that const into config
+                                let fraction_left = *time_left / 10.0;
+
+                                // Apply the SqueezeDown transition
+                                self.display.transition_map.insert(
+                                    String::from(power_up_overlay_id),
+                                    screen::object_transitions::Transition::SqueezeDown(fraction_left),
+                                );
+                            }
+                        } else {
+                            // Remove the overlay icon if the power-up is not active
+                            self.display.transition_map.remove(power_up_overlay_id);
+                        }
                     }
                 }
 
