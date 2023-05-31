@@ -16,6 +16,7 @@ pub struct SoundSpec {
     pub position: glm::Vec3,
     pub sound_id: String,
     pub at_client: (u32, bool),
+    pub ambient: (bool, bool), // (is_ambient, start_playing)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
