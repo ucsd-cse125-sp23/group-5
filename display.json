@@ -1101,15 +1101,15 @@
               "location": {
                   "vert_disp": [
                       0.0,
-                      -0.919
+                      -0.925
                   ],
                   "horz_disp": [
                       0.0,
-                      -0.859
+                      -0.780
                   ]
               },
-              "aspect": 1.0,
-              "height": 0.100,
+              "aspect": 2.0,
+              "height": 0.150,
               "tint": [
                   1.0,
                   1.0,
@@ -1143,7 +1143,7 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.919
+                  -0.925
                 ],
                 "horz_disp": [
                   0.0,
@@ -1336,7 +1336,7 @@
             {
               "id": "icon:empty_charge",
               "location": {
-                  "vert_disp": [0.0, -0.919],
+                  "vert_disp": [0.0, -0.925],
                   "horz_disp": [0.0, -0.600]
               },
               "aspect": 1.0,
@@ -1726,6 +1726,48 @@
                     1.0
                   ]
                 }
+              ]
+            },
+            {
+              "id": "icon:atk_powerup_overlay",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.852
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.504
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  0.0
+              ],
+              "tex": "icon:loading",
+              "mask_tex": "mask:circle",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
               ]
             }
           ]
