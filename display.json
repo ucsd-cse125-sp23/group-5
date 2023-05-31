@@ -1097,6 +1097,48 @@
             }]
         },
             {
+              "id": "icon:barhead",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.919
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      -0.859
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.100,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "icon:ammo_barhead",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+            {
               "id": "icon:charge",
               "location": {
                 "vert_disp": [
@@ -1105,18 +1147,18 @@
                 ],
                 "horz_disp": [
                   0.0,
-                  -0.859
+                  -0.600
                 ]
               },
               "aspect": 1.0,
-              "height": 0.074,
+              "height": 0.090,
               "tint": [
                 1.0,
                 1.0,
                 1.0,
                 1.0
               ],
-              "tex": "icon:ammos",
+              "tex": "icon:filled_ammos",
               "mask_tex": "mask:none",
               "instances": [
                 {
@@ -1144,7 +1186,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.096
+                      0.070
                     ]
                   },
                   "rotation": 0.0,
@@ -1161,7 +1203,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.193
+                      0.140
                     ]
                   },
                   "rotation": 0.0,
@@ -1178,7 +1220,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.289
+                      0.210
                     ]
                   },
                   "rotation": 0.0,
@@ -1195,7 +1237,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.385
+                      0.280
                     ]
                   },
                   "rotation": 0.0,
@@ -1212,7 +1254,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.481
+                      0.350
                     ]
                   },
                   "rotation": 0.0,
@@ -1229,7 +1271,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.578
+                      0.420
                     ]
                   },
                   "rotation": 0.0,
@@ -1246,7 +1288,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.674
+                      0.490
                     ]
                   },
                   "rotation": 0.0,
@@ -1263,7 +1305,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.770
+                      0.560
                     ]
                   },
                   "rotation": 0.0,
@@ -1280,7 +1322,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.867
+                      0.630
                     ]
                   },
                   "rotation": 0.0,
@@ -1291,6 +1333,191 @@
                 }
               ]
             },
+            {
+              "id": "icon:empty_charge",
+              "location": {
+                  "vert_disp": [0.0, -0.919],
+                  "horz_disp": [0.0, -0.600]
+              },
+              "aspect": 1.0,
+              "height": 0.090,
+              "tint": [1.0, 1.0, 1.0, 1.0],
+              "tex": "icon:empty_ammo",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.070
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.140
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.210
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.280
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.350
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.420
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.490
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.560
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.630
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+
             {
               "id": "icon:atk_forward",
               "location": {

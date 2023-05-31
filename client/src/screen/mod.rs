@@ -335,7 +335,6 @@ impl Display {
                         );
                     }
 
-
                     let mut curr_btn_loc = ScreenLocation {
                         vert_disp: (1000.0, 1000.0),
                         horz_disp: (1000.0, 1000.0),
@@ -345,7 +344,9 @@ impl Display {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
                             true => {
-                                if button.id != Some("start_game".to_string()) && !self.customization_choices.ready{
+                                if button.id != Some("start_game".to_string())
+                                    && !self.customization_choices.ready
+                                {
                                     curr_btn_loc = button.location.clone();
                                 }
                                 button_id = button.id.clone();
@@ -410,7 +411,7 @@ impl Display {
                             if icon.id == "hover_icon" {
                                 if let Some(b) = &button_id {
                                     icon.height = 0.37;
-                                    if b.contains("color"){
+                                    if b.contains("color") {
                                         icon.height = 0.222;
                                     }
                                 }

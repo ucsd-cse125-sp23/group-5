@@ -48,8 +48,16 @@
             "path": "score_back.png"
         },
         {
-            "name": "icon:ammos",
-            "path": "ammo.png"
+            "name": "icon:ammo_barhead",
+            "path": "ammo_barhead.png"
+        },
+        {
+            "name": "icon:filled_ammos",
+            "path": "ammo_filled.png"
+        },
+        {
+            "name": "icon:empty_ammo",
+            "path": "ammo_empty.png"
         },
         {
             "name": "icon:atk_back",

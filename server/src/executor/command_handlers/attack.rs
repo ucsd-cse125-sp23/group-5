@@ -106,7 +106,7 @@ impl CommandHandler for AttackCommandHandler {
                 player_pos,
                 "wind".to_string(),
                 (self.player_id, false),
-                (false, false)
+                (false, false),
             )),
             Recipients::All,
         );

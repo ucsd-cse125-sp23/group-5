@@ -286,7 +286,7 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
                 .color
                 .insert(BODY_MESH.to_owned(), actual_color);
             display
-            .customization_choices
+                .customization_choices
                 .final_choices
                 .materials
                 .insert(BODY_MESH.to_owned(), actual_mtl);

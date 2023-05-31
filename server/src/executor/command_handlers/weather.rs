@@ -167,7 +167,7 @@ impl WeatherEffectCommandHandler {
                     player_state.transform.translation,
                     "rain".to_string(),
                     (0, false),
-                    (true, true)
+                    (true, true),
                 )),
                 Recipients::One(player_id as u8),
             )
@@ -212,12 +212,13 @@ impl WeatherEffectCommandHandler {
             super::reset_weather(physics_state, player_id);
 
             // TODO: change to actual sound event
-            game_events.add( // to stop rain sound
+            game_events.add(
+                // to stop rain sound
                 GameEvent::SoundEvent(SoundSpec::new(
                     glm::Vec3::new(0.0, 0.0, 0.0),
                     "rain".to_string(),
                     (0, false),
-                    (true, false)
+                    (true, false),
                 )),
                 Recipients::One(player_id as u8),
             )

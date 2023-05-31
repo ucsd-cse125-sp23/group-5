@@ -1,11 +1,11 @@
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 
+use audio::CURR_DISP;
 use glm::vec3;
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
-use audio::CURR_DISP;
 use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
@@ -351,11 +351,13 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
         // load korok material library
-        KOROK_MTL_LIB.set(
-            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
-                .await
-                .unwrap(),
-        ).expect("failed to set KOROK_MTL_LIB");
+        KOROK_MTL_LIB
+            .set(
+                resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
+                    .await
+                    .unwrap(),
+            )
+            .expect("failed to set KOROK_MTL_LIB");
 
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
@@ -963,8 +965,7 @@ impl State {
                     }
                 }
 
-                // update player number of charges
-                // TODO: change location and add a large wind symbol, and change pic and mechanisms
+                // update the wind charge
                 {
                     let screen_id = self
                         .display
@@ -976,9 +977,21 @@ impl State {
                         .unwrap();
 
                     let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                    let ind = *screen.icon_id_map.get("icon:charge").unwrap();
-                    screen.icons[ind].inst_range = 0..self.player.wind_charge;
+
+                    // update player ammo barhead
+                    let ind_barhead = *screen.icon_id_map.get("icon:barhead").unwrap();
+                    screen.icons[ind_barhead].inst_range = 0..1;
+
+                    // update player number of charges
+                    let ind_charge = *screen.icon_id_map.get("icon:charge").unwrap();
+                    screen.icons[ind_charge].inst_range = 0..self.player.wind_charge;
+
+                    // Update empty ammo
+                    let ind_empty_ammo = *screen.icon_id_map.get("icon:empty_empty").unwrap();
+                    screen.icons[ind_empty_ammo].inst_range = self.player.wind_charge..10;  // Adjust the range as per your total ammos
                 }
+
+
 
                 // update weather icon
                 {
@@ -1059,9 +1072,7 @@ impl State {
                 }
 
                 // TODO: update powerup cooldown
-                {
-
-                }
+                {}
 
                 let player_loc = self
                     .display

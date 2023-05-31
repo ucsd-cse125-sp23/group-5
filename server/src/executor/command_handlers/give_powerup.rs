@@ -23,11 +23,11 @@ impl CommandHandler for GivePowerUpCommandHandler {
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let player_state = game_state
-        .player_mut(self.player_id)
-        .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
-        
+            .player_mut(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+
         let player_pos = player_state.transform.translation;
-        // TODO: maybe add sound for picking up powerup? 
+        // TODO: maybe add sound for picking up powerup?
 
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
@@ -45,4 +45,3 @@ impl CommandHandler for GivePowerUpCommandHandler {
         Ok(())
     }
 }
-

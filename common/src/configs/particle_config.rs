@@ -39,4 +39,3 @@ pub struct PowerUpParticleConfig {
     pub size_growth: f32,
     pub gen_speed: f32,
 }
-
