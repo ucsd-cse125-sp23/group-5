@@ -326,7 +326,7 @@ impl Executor {
             let game_config = self.config_instance.game.clone();
 
             // check if players are on a power up
-            let players_to_powerup = game_state.check_powerup_players(game_config);
+            let players_to_powerup = game_state.check_powerup_pickup(game_config);
             if !players_to_powerup.is_empty() {
                 for client_id in players_to_powerup.iter() {
                     commands.push(ClientCommand::new(*client_id, Command::GivePowerUp));

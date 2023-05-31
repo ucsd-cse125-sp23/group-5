@@ -25,5 +25,26 @@
     "size_variance": 5.0,
     "size_growth": 7.0,
     "gen_speed": 1500.0
+  },
+  "powerup_aura_particle_config": {
+    "time": 0.5,
+    "r": 0.5,
+    "half_height": 1.0,
+    "aura_colors": {
+      "default": [0.882, 0.749, 0.165, 1.0],
+      "wind_enhancement": [0.463, 0.733, 0.863, 1.0],
+      "dash": [0.58, 0.706, 0.545, 1.0],
+      "flash": [0.58, 0.706, 0.545, 1.0],
+      "invisibility": [0.678, 0.627, 0.796, 1.0],
+      "invincibility": [0.941, 0.404, 0.341, 1.0],
+      "triple_jump": [0.58, 0.706, 0.545, 1.0]
+    },
+    "linear_speed": 1.0,
+    "linear_variance": 0.3,
+    "angular_variance": 0.0,
+    "size": 75.0,
+    "size_variance": 5.0,
+    "size_growth": 7.0,
+    "gen_speed": 10.0
   }
 }

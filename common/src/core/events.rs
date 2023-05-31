@@ -23,6 +23,7 @@ pub enum ParticleType {
     ATTACK,
     AREA_ATTACK,
     POWERUP,
+    POWERUP_AURA,
     RAIN,
 }
 /// Particle specification
