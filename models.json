@@ -32,6 +32,11 @@
       "animated": true
     },
     {
+      "name": "korok_4",
+      "path": "assets/korok_4",
+      "animated": true
+    },
+    {
       "name": "refill",
       "path": "assets/refill.obj"
     }
