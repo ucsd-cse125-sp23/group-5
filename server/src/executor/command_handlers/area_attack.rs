@@ -36,6 +36,11 @@ impl CommandHandler for AreaAttackCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
+        // if player is dead, don't do anything
+        if player_state.is_dead {
+            return Ok(());
+        }
+
         // if player is stunned
         if player_state.holds_status_effect_mut(StatusEffect::Other(OtherEffects::Stun)) {
             return Ok(());

@@ -18,6 +18,8 @@ use crate::Recipients;
 mod area_attack;
 mod attack;
 mod cast_powerup;
+mod give_powerup;
+mod cheat_code;
 mod die;
 mod jump;
 mod movement;
@@ -27,7 +29,9 @@ mod startup;
 mod update_camera_facing;
 mod weather;
 
+mod cheat_code_control;
 pub mod prelude;
+mod weather_cheat_key;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {

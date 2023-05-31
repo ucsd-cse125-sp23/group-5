@@ -58,7 +58,7 @@ fn main() {
     let (client_id, session_id) = restore_ids(&session_data_path);
 
     // send local ids to see if I am a "broken pipe"
-   write_protocol
+    write_protocol
         .send_message(&Message::new(
             HostRole::Client(client_id),
             Payload::Init((client_id, session_id)),
@@ -206,7 +206,7 @@ fn recv_server_updates(
                     }
                     _ => {}
                 }
-            },
+            }
             Err(e) => {
                 error!("Error reading message: {:?}", e);
                 exit(1);

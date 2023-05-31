@@ -387,6 +387,7 @@ impl State {
         }
 
         let scene_config = config_instance.scene.clone();
+        let game_config = config_instance.game.clone();
 
         let mut scene = scene::Scene::from_config(&scene_config);
         scene.objects = models;
@@ -397,7 +398,11 @@ impl State {
             DEFAULT_PLAYER_POS.1,
             DEFAULT_PLAYER_POS.2,
         ));
-        let player_controller = player::PlayerController::new(4. * 0.8, 0.7 * 0.8, 0.1);
+        let player_controller = player::PlayerController::new(
+            game_config.camera_config.x_sensitivity,
+            game_config.camera_config.y_sensitivity,
+            game_config.camera_config.scroll_sensitivity,
+        );
 
         let mut camera_state = camera::CameraState::new(
             &device,
@@ -420,7 +425,7 @@ impl State {
         );
 
         // to demonstrate changing global illumination
-        camera_state.camera.ambient_multiplier = glm::vec3(0.5, 0.5, 0.5).into();
+        camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
 
         scene.draw_scene_dfs();
 
@@ -636,6 +641,8 @@ impl State {
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
+
+        // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
@@ -1238,8 +1245,9 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // switching it out just to test ribbon particle
+                    // test ribbon particle (maybe loop these for winning area?)
                     // ribbon sample
+                    /*
                     let gen = particles::ribbon::LineRibbonGenerator::new(
                         glm::vec3(-10., -10., -10.),
                         glm::vec3(10., -8., 10.),
@@ -1283,8 +1291,9 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                    */
 
-                    // ORIGINAL 
+                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
@@ -1335,11 +1344,38 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (1, 4),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::POWERUP => {
+                    // in this case, only position matters
+                    let time = particle_config.powerup_particle_config.time / time_divider;
+                    let powerup_gen = particles::gen::SphereGenerator::new(
+                        p.position,
+                        particle_config.powerup_particle_config.max_dist / time,
+                        particle_config.powerup_particle_config.linear_variance,
+                        PI,
+                        particle_config.powerup_particle_config.angular_variance,
+                        particle_config.powerup_particle_config.size,
+                        particle_config.powerup_particle_config.size_variance,
+                        particle_config.powerup_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let powerup = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.powerup_particle_config.gen_speed,
+                        p.color,
+                        powerup_gen,
+                        (14, 18),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(powerup);
                 }
                 events::ParticleType::RAIN => {
                     let time = 2.;

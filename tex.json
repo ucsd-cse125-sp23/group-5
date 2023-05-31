@@ -12,7 +12,11 @@
         "particles/p10.png",
         "particles/rain_particle.png",
         "particles/streak.png",
-        "particles/solid_color.png"
+        "particles/solid_color.png",
+        "particles/powerup1.png",
+        "particles/powerup2.png",
+        "particles/powerup3.png",
+        "particles/powerup4.png"
     ],
     "skybox": [
         "skybox/px.png",
@@ -44,8 +48,20 @@
             "path": "score_back.png"
         },
         {
+            "name": "icon:ammos",
+            "path": "ammo.png"
+        },
+        {
             "name": "icon:atk_back",
             "path": "atk_back.png"
+        },
+        {
+            "name": "icon:attack_normal",
+            "path": "attack_normal.png"
+        },
+        {
+            "name": "icon:attack_wave",
+            "path": "attack_wave.png"
         },
         {
             "name": "icon:place_circle",

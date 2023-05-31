@@ -15,5 +15,15 @@
     "size_variance": 10.0,
     "size_growth": 7.0,
     "gen_speed": 4000.0
+  },
+  "powerup_particle_config": {
+    "time": 1.0,
+    "max_dist": 2.5,
+    "linear_variance": 0.3,
+    "angular_variance": 0.5,
+    "size": 150.0,
+    "size_variance": 5.0,
+    "size_growth": 7.0,
+    "gen_speed": 2000.0
   }
 }

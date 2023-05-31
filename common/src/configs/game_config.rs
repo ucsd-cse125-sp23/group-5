@@ -5,6 +5,7 @@ pub struct ConfigGame {
     pub spawn_points: Vec<rapier3d::prelude::Vector<f32>>,
     pub refill_points: Vec<rapier3d::prelude::Vector<f32>>,
     pub spawn_cooldown: f32,
+    pub respawn_coef: f32,
     pub score_lower_x: f32,
     pub score_upper_x: f32,
     pub max_wind_charge: u32,
@@ -14,9 +15,18 @@ pub struct ConfigGame {
     pub flag_z_bound: (Option<f32>, Option<f32>),
     pub winning_threshold: f32,
     pub decay_rate: f32,
+    pub decay_coef: f32,
     pub refill_radius: f32,
     pub refill_rate_limit: f32,
+    pub camera_config: ConfigCamera,
     pub powerup_config: ConfigPowerUp,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConfigCamera {
+    pub x_sensitivity: f32,
+    pub y_sensitivity: f32,
+    pub scroll_sensitivity: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

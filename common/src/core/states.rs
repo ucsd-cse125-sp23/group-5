@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use nalgebra_glm::Vec3;
 use rapier3d::prelude::Vector;
@@ -12,7 +12,9 @@ use crate::core::command::Command;
 use crate::core::components::{Physics, Transform};
 use crate::core::events::ParticleSpec;
 use crate::core::powerup_system::StatusEffect::Power;
-use crate::core::powerup_system::{PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect};
+use crate::core::powerup_system::{
+    PowerUp, PowerUpLocations, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use crate::core::weather::Weather;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -30,6 +32,7 @@ pub struct GameState {
         HashMap<PowerUpLocations, (f32 /* time till next spawn powerup */, Option<PowerUp>)>,
     pub life_cycle_state: GameLifeCycleState,
     pub game_winner: Option<u32>,
+    pub game_start_time: Duration,
 }
 
 impl GameState {
@@ -63,6 +66,7 @@ pub struct PlayerState {
     pub power_up: Option<(PowerUp, PowerUpStatus)>,
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
+    pub cheat_keys_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
@@ -254,10 +258,25 @@ impl GameState {
         delta_time: f32,
         game_config: ConfigGame,
     ) -> Option<u32> {
+        // calculate elapsed time since game start in seconds
+        let elapsed_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - self.game_start_time;
+        let elapsed_seconds = elapsed_time.as_secs();
+        // increase spawn_cooldown based on elapsed time
+        let decay_rate_decrease = elapsed_seconds as f32 * game_config.decay_coef;
+        let new_decay_rate = game_config.decay_rate - decay_rate_decrease;
+        let mut still_decay = true;
+        if new_decay_rate < 0.0 {
+            still_decay = false;
+        }
+
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            let provisional_on_flag_time =
-                player_state.on_flag_time - delta_time * game_config.decay_rate;
+            let mut provisional_on_flag_time =
+                player_state.on_flag_time;
+            if still_decay {
+                provisional_on_flag_time -= delta_time * new_decay_rate;
+            }
+
             player_state.on_flag_time = if provisional_on_flag_time > 0.0 {
                 provisional_on_flag_time
             } else {
@@ -268,8 +287,12 @@ impl GameState {
         match self.previous_tick_winner {
             None => None,
             Some(id) => {
-                self.player_mut(id).unwrap().on_flag_time +=
-                    delta_time * (1.0 + game_config.decay_rate);
+                if still_decay {
+                    self.player_mut(id).unwrap().on_flag_time +=
+                        delta_time * (1.0 + new_decay_rate);
+                } else {
+                    self.player_mut(id).unwrap().on_flag_time += delta_time;
+                }
                 if self.player_mut(id).unwrap().on_flag_time > game_config.winning_threshold {
                     Some(id)
                 } else {
@@ -291,16 +314,23 @@ impl GameState {
             player_state.status_effects = new_status_effects;
             for (effect, _) in to_process {
                 if let Power(_) = effect {
-                    player_state.power_up = None;
+                    if let Some((current_powerup, powerup_status)) = player_state.power_up.clone() {
+                        if (*POWER_UP_TO_EFFECT_MAP
+                            .get(&current_powerup.value())
+                            .unwrap_or(&StatusEffect::None)
+                            == effect)
+                            && powerup_status == PowerUpStatus::Active
+                        {
+                            player_state.power_up = None;
+                        }
+                    }
                 }
             }
         }
     }
 
-    pub fn update_powerup_locations(&mut self, delta_time: f32, game_config: ConfigGame) {
-        let powerup_radius = game_config.powerup_config.power_up_radius;
-        let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;
-        for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
+    pub fn update_powerup_respawn(&mut self, delta_time: f32) {
+        for (_, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
             if powerup.clone().is_none() {
                 // case where the powerup is empty, we need to refill the powerup for the map
                 *vacancy_time -= delta_time;
@@ -309,9 +339,19 @@ impl GameState {
                     *vacancy_time = 0.0;
                     *powerup = Some(rand::random());
                 }
-            } else {
+            } 
+        }
+    }
+
+    // check if any players should get a powerup and record powerup
+    pub fn check_powerup_players(&mut self, game_config: ConfigGame) -> HashSet<u32> {
+        let mut res = HashSet::new();
+        let powerup_radius = game_config.powerup_config.power_up_radius;
+        let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;
+        for (loc_id, (vacancy_time, powerup)) in self.active_power_ups.iter_mut() {
+            if !powerup.clone().is_none() {
                 // check if a player should get the powerup now
-                for (_, player_state) in self.players.iter_mut() {
+                for (player_id, player_state) in self.players.iter_mut() {
                     let power_up_location = *game_config
                         .powerup_config
                         .power_up_locations
@@ -329,13 +369,15 @@ impl GameState {
                     {
                         // player should get it, powerup is gone
                         player_state.power_up =
-                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));
+                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));                
+                        res.insert(*player_id);
                         *vacancy_time = powerup_respawn_cd;
                         *powerup = None;
                     }
                 }
             }
         }
+        return res;
     }
 
     pub fn find_closest_player(&self, id_to_find: u32) -> Option<u32> {
@@ -416,6 +458,7 @@ mod tests {
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
             game_winner: None,
+            game_start_time: Default::default(),
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -431,6 +474,7 @@ mod tests {
             active_power_ups: HashMap::default(),
             life_cycle_state: Default::default(),
             game_winner: None,
+            game_start_time: Default::default(),
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();

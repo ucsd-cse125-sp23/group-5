@@ -1,13 +1,12 @@
+use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
+extern crate nalgebra_glm as glm;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::command::Command;
 use common::core::states::GameState;
 use derive_more::Constructor;
 use nalgebra::zero;
 use rapier3d::math::Isometry;
-
-use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
-
-extern crate nalgebra_glm as glm;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use common::configs::game_config::ConfigGame;
 use rapier3d::prelude as rapier;
 
@@ -24,6 +23,13 @@ impl CommandHandler for DieCommandHandler {
         physics_state: &mut PhysicsState,
         _: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        // calculate elapsed time since game start in seconds
+        let elapsed_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - game_state.game_start_time;
+        let elapsed_seconds = elapsed_time.as_secs();
+        // increase spawn_cooldown based on elapsed time
+        let spawn_cooldown_increase = elapsed_seconds as f32 * self.game_config.respawn_coef;
+        let new_spawn_cooldown = self.game_config.spawn_cooldown + spawn_cooldown_increase;
+
         let player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
@@ -42,7 +48,7 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
-        player_state.insert_cooldown(Command::Spawn, self.game_config.spawn_cooldown);
+        player_state.insert_cooldown(Command::Spawn, new_spawn_cooldown);
 
         Ok(())
     }

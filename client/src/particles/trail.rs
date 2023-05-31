@@ -2,12 +2,12 @@ use nalgebra_glm as glm;
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Poisson, Uniform};
 
-use crate::particles::Particle;
-use crate::particles::gen::ParticleGenerator;
 use crate::particles::constants;
+use crate::particles::gen::ParticleGenerator;
+use crate::particles::Particle;
 
 #[derive(Copy, Clone, Debug)]
-pub struct TrailSection{
+pub struct TrailSection {
     pub pos_1: glm::Vec3,
     pub pos_2: glm::Vec3,
     pub pos_3: glm::Vec3,
@@ -20,9 +20,9 @@ pub struct TrailSection{
     pub visible_time: f32,
 }
 
-impl TrailSection{
-    pub fn to_particle(self) -> Particle{
-        Particle{
+impl TrailSection {
+    pub fn to_particle(self) -> Particle {
+        Particle {
             start_pos: [self.pos_1[0], self.pos_1[1], self.pos_1[2], 1.0],
             velocity: [self.pos_2[0], self.pos_2[1], self.pos_2[2], 1.0],
             color: self.color.into(),
@@ -41,7 +41,7 @@ impl TrailSection{
 }
 
 // the entire trail is traversed in a lifetime
-pub struct PathTrailGenerator{
+pub struct PathTrailGenerator {
     path: Vec<glm::Vec3>,
     times: Vec<f32>, // between 0 and 1
     width: Vec<f32>,
@@ -51,7 +51,7 @@ pub struct PathTrailGenerator{
 }
 
 // only for generating one thing
-impl PathTrailGenerator{
+impl PathTrailGenerator {
     pub fn new(
         path: Vec<glm::Vec3>,
         times: Vec<f32>, // between 0 and 1
@@ -59,8 +59,15 @@ impl PathTrailGenerator{
         normal: glm::Vec3,
         subdivisions: u32,
         visible_time: f32,
-    ) -> Self{
-        Self { path, times, width, normal:glm::normalize(&normal), subdivisions, visible_time}
+    ) -> Self {
+        Self {
+            path,
+            times,
+            width,
+            normal: glm::normalize(&normal),
+            subdivisions,
+            visible_time,
+        }
     }
 }
 
@@ -77,14 +84,19 @@ impl ParticleGenerator for PathTrailGenerator {
     ) -> f32 {
         let total_time = halflife * 2.0;
         for i in 0..(self.path.len() - 1) {
-            let tangent = self.path[i+1] - self.path[i];
-            let section_time = total_time * (self.times[i+1] - self.times[i]) / (self.subdivisions as f32);
+            let tangent = self.path[i + 1] - self.path[i];
+            let section_time =
+                total_time * (self.times[i + 1] - self.times[i]) / (self.subdivisions as f32);
             for div in 0..self.subdivisions {
                 let p0 = self.path[i] + (div as f32) / (self.subdivisions as f32) * tangent;
                 let p1 = self.path[i] + ((div + 1) as f32) / (self.subdivisions as f32) * tangent;
-                let w0 = self.width[i] + (div as f32) / (self.subdivisions as f32) * (self.width[i+1] - self.width[i]);
-                let w1 = self.width[i] + ((div + 1) as f32) / (self.subdivisions as f32) * (self.width[i+1] - self.width[i]);
-                let trail = TrailSection{
+                let w0 = self.width[i]
+                    + (div as f32) / (self.subdivisions as f32)
+                        * (self.width[i + 1] - self.width[i]);
+                let w1 = self.width[i]
+                    + ((div + 1) as f32) / (self.subdivisions as f32)
+                        * (self.width[i + 1] - self.width[i]);
+                let trail = TrailSection {
                     pos_1: (p0 - 0.01 * w0 * self.normal),
                     pos_2: (p0 + 0.01 * w0 * self.normal),
                     pos_3: (p1 - 0.01 * w1 * self.normal),
@@ -100,6 +112,6 @@ impl ParticleGenerator for PathTrailGenerator {
                 list.push(trail.to_particle());
             }
         }
-        list[list.len()-1].spawn_time + self.visible_time
+        list[list.len() - 1].spawn_time + self.visible_time
     }
 }
