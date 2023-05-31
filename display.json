@@ -1523,7 +1523,7 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.880
                 ],
                 "horz_disp": [
                   0.0,
@@ -1565,15 +1565,15 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.860
                 ],
                 "horz_disp": [
                   0.0,
                   0.237
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 1.15,
+              "height": 0.195,
               "tint": [
                 1.0,
                 1.0,
@@ -1607,7 +1607,7 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.880
                 ],
                 "horz_disp": [
                   0.0,
@@ -1649,15 +1649,15 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.860
                 ],
                 "horz_disp": [
                   0.0,
                   0.504
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 1.15,
+              "height": 0.195,
               "tint": [
                 1.0,
                 1.0,
@@ -1691,15 +1691,15 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.885
                 ],
                 "horz_disp": [
                   0.0,
                   0.770
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 1.05,
+              "height": 0.240,
               "tint": [
                 1.0,
                 1.0,
@@ -1733,15 +1733,15 @@
               "location": {
                   "vert_disp": [
                       0.0,
-                      -0.852
+                      -0.860
                   ],
                   "horz_disp": [
                       0.0,
-                      0.504
+                      0.770
                   ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 1.15,
+              "height": 0.195,
               "tint": [
                   1.0,
                   1.0,
