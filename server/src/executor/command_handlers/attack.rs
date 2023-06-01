@@ -58,7 +58,7 @@ impl CommandHandler for AttackCommandHandler {
         }
 
         // when attacking, remove invisibility
-        super::update_invisibility(player_state);
+        super::remove_invisibility(player_state);
 
         let player_pos = player_state.transform.translation;
 

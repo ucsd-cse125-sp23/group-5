@@ -203,15 +203,13 @@ pub fn apply_stun(player_state: &mut PlayerState, duration: f32) {
     );
 }
 
-pub fn update_invisibility(player_state: &mut PlayerState) {
+pub fn remove_invisibility(player_state: &mut PlayerState) {
     if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
         player_state
             .status_effects
             .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-        if let Some((powerup, powerup_status)) = player_state.power_up.clone() {
-            if (powerup == PowerUp::Invisible) && (powerup_status == PowerUpStatus::Active) {
-                player_state.power_up = None;
-            }
+        if let Some((PowerUp::Invisible, PowerUpStatus::Active)) = player_state.power_up.clone() {
+            player_state.power_up = None;
         }
     }
 }

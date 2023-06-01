@@ -55,7 +55,7 @@ impl CommandHandler for AreaAttackCommandHandler {
         }
 
         // when attacking, remove invisibility
-        super::update_invisibility(player_state);
+        super::remove_invisibility(player_state);
 
         let wind_enhanced = player_state
             .status_effects

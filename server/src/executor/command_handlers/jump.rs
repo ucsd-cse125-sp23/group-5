@@ -72,7 +72,7 @@ impl CommandHandler for JumpCommandHandler {
 
         if player_state.jump_count > 1 {
             // when multi-jumping, remove invisibility
-            super::update_invisibility(player_state);
+            super::remove_invisibility(player_state);
         }
 
         let player_rigid_body = physics_state

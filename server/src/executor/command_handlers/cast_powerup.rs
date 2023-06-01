@@ -56,6 +56,8 @@ impl CommandHandler for CastPowerUpCommandHandler {
         }
 
         if let Some((x, PowerUpStatus::Active)) = player_state.power_up.clone() {
+            // when dashing or flashing, remove invisibility
+            super::remove_invisibility(player_state);
             return match x {
                 PowerUp::Flash => flash(
                     game_state,
@@ -77,7 +79,9 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         let mut other_player_status_changes: Vec<(u32, StatusEffect, f32)> = vec![];
 
-        if let Some((x, _)) = player_state.power_up.clone() {
+        if let Some((x, PowerUpStatus::Held)) = player_state.power_up.clone() {
+            // when using a powerup, remove invisibility
+            super::remove_invisibility(player_state);
             player_state
                 .active_action_states
                 .insert((ActionState::CastingPowerUp, Duration::from_secs_f32(1.666)));
@@ -168,9 +172,6 @@ fn flash(
         return Ok(());
     }
 
-    // when flashing, remove invisibility
-    super::update_invisibility(player_state);
-
     let _player_pos = player_state.transform.translation;
 
     // TODO: replace this example with actual implementation
@@ -250,18 +251,6 @@ fn dash(
         || !player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::EnabledDash))
     {
         return Ok(());
-    }
-
-    // when dashing, remove invisibility
-    if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
-        player_state
-            .status_effects
-            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-        if let Some((powerup, powerup_status)) = player_state.power_up.clone() {
-            if (powerup == PowerUp::Invisible) && (powerup_status == PowerUpStatus::Active) {
-                player_state.power_up = None;
-            }
-        }
     }
 
     player_state.status_effects.insert(
