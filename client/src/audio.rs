@@ -58,6 +58,7 @@ pub struct Audio {
     audio_assets: Vec<(Buffered<Decoder<BufReader<File>>>, Duration, f32)>,
     sound_controllers_fx: HashMap<AudioAsset, Vec<SoundInstance>>,
     sound_controllers_ambient: HashMap<AudioAsset, SoundInstance>, // for sound events that should oonly ever be played once at a time e.g. weather
+    fading_out: HashMap<AudioAsset, SoundInstance>,
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime,
     sfx_queue: Arc<Mutex<SoundQueue>>,
@@ -72,6 +73,7 @@ impl Audio {
             audio_assets: Vec::new(),
             sound_controllers_fx: HashMap::new(),
             sound_controllers_ambient: HashMap::new(),
+            fading_out: HashMap::new(),
             sound_controller_background: (None, true),
             time: SystemTime::now(),
             sfx_queue: q,
@@ -79,11 +81,25 @@ impl Audio {
         }
     }
 
+    pub fn reset_audio(&mut self){
+        for (_,v) in self.sound_controllers_fx.iter_mut(){
+            for i in v.iter_mut() {
+                i.controller.stop();
+            }
+        }
+
+        for (_,v) in self.sound_controllers_ambient.iter_mut(){
+            v.controller.stop();
+        }
+        self.sound_controllers_fx.clear();
+        self.sound_controllers_ambient.clear();
+    }
+
     pub fn play_background_track(&mut self, bkgd: AudioAsset, pos: [f32; 3]) {
         let source = self.audio_assets[bkgd as usize]
             .0
             .clone()
-            .fade_in(Duration::new(3, 0)) // TODO: test that fade_in() works with repeat_infinite()
+            .fade_in(Duration::new(1, 0))
             .repeat_infinite();
         let sound = self.audio_scene.play_at(source.convert_samples(), pos);
         self.sound_controller_background = (Some(sound), false);
@@ -108,6 +124,7 @@ impl Audio {
 
                 // winner, loser background track
                 GameLifeCycleState::Ended => {
+                    self.reset_audio();
                     if curr_player == winner {
                         self.switch_background_track(AudioAsset::BKGND_WINNER, AUDIO_POS_AT_CLIENT);
                     }
@@ -142,11 +159,41 @@ impl Audio {
         }
     }
 
+    pub fn handle_fade_out(&mut self){
+        let percent = 0.15;
+        let mut to_remove = Vec::new();
+
+        for (k,v) in self.fading_out.iter_mut() {
+            if v.position > glm::Vec3::new(0.0, 50.0, 0.0){
+                v.controller.stop();
+                to_remove.push(k.clone());
+                continue;
+            }
+            let mut offset = v.initial_dir;
+            if offset != glm::Vec3::new(0.0, 0.0, 0.0) {
+                offset = glm::normalize(&offset);
+            }
+            offset = glm::Vec3::new(
+                offset.x * percent,
+                offset.y * percent,
+                offset.z * percent,
+            );
+            v.position += offset;
+            thread::sleep(Duration::from_millis(1));
+
+            v.controller.adjust_position([v.position.x, v.position.z, 0.0]);
+        }
+
+        for r in to_remove.iter(){
+            self.fading_out.remove(r);
+        }
+    }
+
     pub fn loop_sound(&mut self, sound: AudioAsset, pos: [f32; 3]) -> ambisonic::SoundController {
         let source = self.audio_assets[sound as usize]
             .0
             .clone()
-            // .fade_in(Duration::new(1, 0))
+            .fade_in(Duration::new(1, 0))
             .repeat_infinite();            
         let sc = self.audio_scene.play_at(source.convert_samples(), pos);
         sc
@@ -161,12 +208,13 @@ impl Audio {
             match instance {
                 None => {
                     let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
-                    let default_vec3 = glm::Vec3::new(0.0, 0.0, 0.0);
+                    let pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
+                    let dir = glm::Vec3::new(0.0, 0.0, 1.0);
                     let si = SoundInstance{
                         controller: sound,
-                        position: default_vec3,
+                        position: pos,
                         start: SystemTime::now(),
-                        initial_dir: default_vec3,
+                        initial_dir: dir,
                         at_client: false,
                         ambient: true,
                     };
@@ -176,10 +224,10 @@ impl Audio {
             }
         }
         else {
-            if let Some(s) = instance {
-                s.controller.stop();
+            let si = self.sound_controllers_ambient.remove(&index);
+            if let Some(s) = si {
+                self.fading_out.insert(index.clone(), s);
             }
-            self.sound_controllers_ambient.remove(&index);
         }
     }
 
@@ -288,6 +336,7 @@ impl Audio {
             let mut pos = glm::Vec3::new(0.0, 0.0, 0.0);
 
             self.update_bkgd_track(gs.life_cycle_state.clone(), client_id as u32, gs.game_winner.unwrap_or(0));
+            self.handle_fade_out();
 
             match player_curr {
                 Ok(player) => {
