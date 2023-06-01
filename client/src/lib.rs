@@ -1154,10 +1154,6 @@ impl State {
                                 PowerUp::TripleJump => "icon:power_triple_jump_overlay",
                                 PowerUp::Invincible => "icon:power_invincible_overlay",
                             };
-                            screen.icons[ind_atk_powerup_overlay].location.vert_disp =
-                                (0.0, -0.860);
-                            screen.icons[ind_atk_powerup_overlay].aspect = 1.15;
-                            screen.icons[ind_atk_powerup_overlay].height = 0.195;
                             screen.icons[ind_atk_powerup_overlay].texture =
                                 String::from(power_up_overlay_texture);
 
