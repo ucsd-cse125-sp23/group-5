@@ -73,7 +73,7 @@
     "id": "screen:lobby",
         "buttons": [
             {
-                "id": "korok",
+                "id": "korok_1",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -1.333]
@@ -88,7 +88,7 @@
                 "on_click": "change_leaf_type"
             },
             {
-                "id": "ferris",
+                "id": "korok_2",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -0.963]
@@ -103,7 +103,7 @@
                 "on_click": "change_leaf_type"
             },
             {
-                "id": "player",
+                "id": "korok_3",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -0.593]
@@ -118,7 +118,7 @@
                 "on_click": "change_leaf_type"
             },
             {
-                "id": "cube",
+                "id": "korok_4",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -0.223]

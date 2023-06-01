@@ -1,11 +1,13 @@
 extern crate nalgebra_glm as glm;
 
+use std::time::Duration;
 use common::configs::game_config::ConfigGame;
 use derive_more::Constructor;
 use rapier3d::prelude as rapier;
 use rapier3d::{geometry, pipeline};
 
 use common::configs::physics_config::ConfigPhysics;
+use common::core::action_states::ActionState;
 use common::core::command::Command;
 use common::core::events::{GameEvent, ParticleSpec, ParticleType};
 use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
@@ -111,6 +113,12 @@ impl CommandHandler for AreaAttackCommandHandler {
             )),
             Recipients::All,
         );
+
+        player_state.active_action_states.insert((
+            ActionState::SpecialAttacking,
+            Duration::from_secs_f32(self.physics_config.attack_config.area_attack_cooldown),
+        ));
+
         // loop over all other players
         for (other_player_id, other_player_state) in game_state.players.iter_mut() {
             if &self.player_id == other_player_id {
