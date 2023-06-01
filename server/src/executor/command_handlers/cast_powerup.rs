@@ -1,8 +1,8 @@
-use std::time::Duration;
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 use common::configs::game_config::ConfigGame;
+use common::core::action_states::ActionState;
 use common::core::command::Command;
 use common::core::events::{GameEvent, SoundSpec};
 use common::core::powerup_system::OtherEffects::Stun;
@@ -16,7 +16,7 @@ use nalgebra::{zero, UnitQuaternion};
 use nalgebra_glm::Vec3;
 use rapier3d::math::Isometry;
 use rapier3d::prelude as rapier;
-use common::core::action_states::ActionState;
+use std::time::Duration;
 
 #[derive(Constructor)]
 pub struct CastPowerUpCommandHandler {
@@ -72,17 +72,15 @@ impl CommandHandler for CastPowerUpCommandHandler {
                     game_events,
                 ),
                 _ => Ok(()),
-            }
+            };
         }
 
         let mut other_player_status_changes: Vec<(u32, StatusEffect, f32)> = vec![];
 
         if let Some((x, _)) = player_state.power_up.clone() {
-
-            player_state.active_action_states.insert((
-                ActionState::CastingPowerUp,
-                Duration::from_secs_f32(1.666),
-            ));
+            player_state
+                .active_action_states
+                .insert((ActionState::CastingPowerUp, Duration::from_secs_f32(1.666)));
 
             match x {
                 PowerUp::Lightning => match game_state_clone.find_closest_player(self.player_id) {
@@ -127,7 +125,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 player_pos,
                 "wind".to_string(),
                 (self.player_id, false),
-                (false, false)
+                (false, false),
             )),
             Recipients::All,
         );
@@ -171,12 +169,7 @@ fn flash(
     }
 
     // when flashing, remove invisibility
-    if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
-        player_state
-            .status_effects
-            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-        player_state.power_up = None;
-    }
+    super::update_invisibility(player_state);
 
     let _player_pos = player_state.transform.translation;
 
@@ -264,7 +257,11 @@ fn dash(
         player_state
             .status_effects
             .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-        player_state.power_up = None;
+        if let Some((powerup, powerup_status)) = player_state.power_up.clone() {
+            if (powerup == PowerUp::Invisible) && (powerup_status == PowerUpStatus::Active) {
+                player_state.power_up = None;
+            }
+        }
     }
 
     player_state.status_effects.insert(

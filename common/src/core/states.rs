@@ -259,7 +259,8 @@ impl GameState {
         game_config: ConfigGame,
     ) -> Option<u32> {
         // calculate elapsed time since game start in seconds
-        let elapsed_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - self.game_start_time;
+        let elapsed_time =
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - self.game_start_time;
         let elapsed_seconds = elapsed_time.as_secs();
         // increase spawn_cooldown based on elapsed time
         let decay_rate_decrease = elapsed_seconds as f32 * game_config.decay_coef;
@@ -271,8 +272,7 @@ impl GameState {
 
         // decay
         for (_, player_state) in self.players.iter_mut() {
-            let mut provisional_on_flag_time =
-                player_state.on_flag_time;
+            let mut provisional_on_flag_time = player_state.on_flag_time;
             if still_decay {
                 provisional_on_flag_time -= delta_time * new_decay_rate;
             }
@@ -339,7 +339,7 @@ impl GameState {
                     *vacancy_time = 0.0;
                     *powerup = Some(rand::random());
                 }
-            } 
+            }
         }
     }
 
@@ -369,7 +369,7 @@ impl GameState {
                     {
                         // player should get it, powerup is gone
                         player_state.power_up =
-                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));                
+                            Some((powerup.clone().unwrap(), PowerUpStatus::Held));
                         res.insert(*player_id);
                         *vacancy_time = powerup_respawn_cd;
                         *powerup = None;

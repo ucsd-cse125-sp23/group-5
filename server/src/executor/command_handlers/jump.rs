@@ -1,7 +1,9 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
 use common::core::action_states::ActionState;
-use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
+use common::core::powerup_system::{
+    OtherEffects, PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect,
+};
 use common::core::states::GameState;
 use derive_more::Constructor;
 use itertools::Itertools;
@@ -70,13 +72,7 @@ impl CommandHandler for JumpCommandHandler {
 
         if player_state.jump_count > 1 {
             // when multi-jumping, remove invisibility
-            if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible))
-            {
-                player_state
-                    .status_effects
-                    .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-                player_state.power_up = None;
-            }
+            super::update_invisibility(player_state);
         }
 
         let player_rigid_body = physics_state
@@ -92,7 +88,7 @@ impl CommandHandler for JumpCommandHandler {
             Duration::from_secs_f32(if player_state.jump_count == 2 {
                 1.9
             } else {
-               1.2
+                1.2
             }),
         ));
 
