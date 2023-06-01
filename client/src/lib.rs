@@ -1278,7 +1278,7 @@ impl State {
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
-                .play_animation("power_up".to_string(), "object:player_model".to_string());
+                .play_animation("idle".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
@@ -1291,9 +1291,9 @@ impl State {
             });
         }
         // temporary fix
-        else if self.display.current == "display:game" {
+        else {
             self.animation_controller
-                .stop_animation("object:player_model".to_string());
+                .play_animation("idel".to_string(), "object:player_model".to_string());
         }
 
         if self.display.current == self.display.game_display.clone() {

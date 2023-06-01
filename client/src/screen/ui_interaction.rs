@@ -124,6 +124,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
     {
         if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
             let default_color = MeshColor::new([0.5, 0.5, 0.5]);
+            let default_color_l = MeshColor::new([0.6, 0.6, 0.6]);
             display.customization_choices.final_choices.color.clear();
             display
                 .customization_choices
@@ -134,7 +135,12 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
                 .customization_choices
                 .final_choices
                 .color
-                .insert(DEFAULT_MODEL.to_string(), default_color);
+                .insert(BODY_MESH.to_string(), default_color);
+            display
+                .customization_choices
+                .final_choices
+                .color
+                .insert(LEAF_MESH.to_string(), default_color_l);
             node.model = Some(DEFAULT_MODEL.to_string());
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             if let Some(mtls) = &mut node.materials {
@@ -222,16 +228,11 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
                 .final_choices
                 .color
                 .insert(LEAF_MESH.to_owned(), actual_color);
-            // display
-            //     .customization_choices
-            //     .final_choices
-            //     .color
-            //     .insert(CURR_MESH.to_owned(), actual_color);
-            // display
-            //     .customization_choices
-            //     .final_choices
-            //     .materials
-            //     .insert(CURR_MESH.to_owned(), actual_mtl);
+            display
+                .customization_choices
+                .final_choices
+                .materials
+                .insert(LEAF_MESH.to_owned(), actual_mtl);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             node.materials = Some(
                 display
@@ -331,8 +332,8 @@ fn selected_2colors(
     if len >= 2 {
         if change_color {
             let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.9, 0.0, 0.0, 1.0);
-            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.65, 0.0, 0.0, 1.0);
+            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.8, 0.0, 0.0, 1.0);
+            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
         }
         return true;
     }
