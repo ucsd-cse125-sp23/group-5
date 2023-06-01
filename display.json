@@ -81,9 +81,9 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_1",
+                "hover_tex": "btn:leaf_option_1",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
@@ -96,9 +96,9 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_2",
+                "hover_tex": "btn:leaf_option_2",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
@@ -111,9 +111,9 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_3",
+                "hover_tex": "btn:leaf_option_3",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
@@ -126,9 +126,9 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_4",
+                "hover_tex": "btn:leaf_option_4",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
@@ -412,12 +412,12 @@
                 "id": "start_game",
                 "location": {
                     "vert_disp": [0.0, -0.806],
-                    "horz_disp": [0.0, 1.426]
+                    "horz_disp": [0.0, 1.326]
                 },
                 "aspect": 1.692,
                 "height": 0.241,
-                "default_tint": [0.0, 0.0, 0.0, 1.0],
-                "hover_tint": [0.0, 0.0, 0.0, 1.0],
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
                 "default_tex": "btn:go",
                 "hover_tex": "btn:go",
                 "mask_tex": "mask:none",
@@ -557,7 +557,29 @@
                         "scale": [1.0, 1.0]
                     }
                 ]                
-            }
+            },
+            {
+              "id": "hover_icon",
+              "location": {
+                  "vert_disp": [0.0, 1000],
+                  "horz_disp": [0.0, 1000]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [1.0, 1.0, 1.0, 1.0],
+              "tex": "icon:option_selected",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [0.0, 0.0],
+                          "horz_disp": [0.0, 0.0]
+                      },
+                      "rotation": 0.0,
+                      "scale": [1.0, 1.0]
+                  }
+              ]                
+          }
         ]
     },
     {

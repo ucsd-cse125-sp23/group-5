@@ -13,7 +13,7 @@ use bus::Bus;
 use env_logger::Builder;
 use log::{debug, error, info};
 
-use client::audio::{Audio, SoundQueue};
+use client::audio::{Audio, SoundQueue, AudioAsset, AUDIO_POS_AT_CLIENT};
 use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
@@ -96,7 +96,7 @@ fn main() {
             thread::park();
         }
 
-        audio.play_background_track([0.0, 25.0, 0.0]); // add position of background track to config
+        audio.play_background_track(AudioAsset::BKGND_WAIT, AUDIO_POS_AT_CLIENT); // add position of background track to config
         audio.handle_audio_updates(game_state_clone, client_id);
     });
 

@@ -1,13 +1,13 @@
 use ambisonic::{
     rodio::{
-        source::{Buffered, Source},
+        source::{Buffered, Source, self, Empty},
         Decoder,
     },
     AmbisonicBuilder,
 };
 use instant::{Duration, SystemTime};
 use nalgebra_glm as glm;
-
+use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::{
     fs::File,
@@ -16,14 +16,21 @@ use std::{
     thread,
 };
 
-use common::configs::audio_config::ConfigAudioAssets;
+use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 use common::core::{events::SoundSpec, states::GameState};
+
+pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
+pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum AudioAsset {
-    BACKGROUND = 0,
-    WIND = 1,
-    STEP = 2,
+    BKGND_WAIT = 0,
+    BKGND_GAME = 1,
+    BKGND_WINNER = 2,
+    BKGND_LOSER = 3,
+    WIND = 4,
+    STEP = 5,
+    RAIN = 6,
 }
 
 pub struct SoundInstance {
@@ -32,6 +39,7 @@ pub struct SoundInstance {
     start: SystemTime,
     initial_dir: glm::Vec3,
     at_client: bool,
+    ambient: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -49,30 +57,74 @@ pub struct Audio {
     audio_scene: ambisonic::Ambisonic,
     audio_assets: Vec<(Buffered<Decoder<BufReader<File>>>, Duration, f32)>,
     sound_controllers_fx: HashMap<AudioAsset, Vec<SoundInstance>>,
+    sound_controllers_ambient: HashMap<AudioAsset, SoundInstance>, // for sound events that should oonly ever be played once at a time e.g. weather
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime,
     sfx_queue: Arc<Mutex<SoundQueue>>,
+    curr_state: GameLifeCycleState,
 }
 
 impl Audio {
     pub fn new(q: Arc<Mutex<SoundQueue>>) -> Self {
-        Audio {
+        CURR_DISP.set(Mutex::new("display:title".to_string())).expect("failed to initialze CURR_DISP");
+        Self {
             audio_scene: AmbisonicBuilder::default().build(),
             audio_assets: Vec::new(),
             sound_controllers_fx: HashMap::new(),
+            sound_controllers_ambient: HashMap::new(),
             sound_controller_background: (None, true),
             time: SystemTime::now(),
             sfx_queue: q,
+            curr_state: GameLifeCycleState::Waiting,
         }
     }
 
-    pub fn play_background_track(&mut self, pos: [f32; 3]) {
-        let source = self.audio_assets[AudioAsset::BACKGROUND as usize]
+    pub fn play_background_track(&mut self, bkgd: AudioAsset, pos: [f32; 3]) {
+        let source = self.audio_assets[bkgd as usize]
             .0
             .clone()
+            .fade_in(Duration::new(3, 0)) // TODO: test that fade_in() works with repeat_infinite()
             .repeat_infinite();
         let sound = self.audio_scene.play_at(source.convert_samples(), pos);
         self.sound_controller_background = (Some(sound), false);
+    }
+
+    pub fn update_bkgd_track(&mut self, state: GameLifeCycleState, curr_player: u32, winner: u32){
+        if std::mem::discriminant(&self.curr_state) != std::mem::discriminant(&state) {
+            match state {
+                // title, lobby background track
+                GameLifeCycleState::Waiting => {
+                    if CURR_DISP.get().unwrap().lock().unwrap().clone() == "display:title".to_string() {
+                        self.switch_background_track(AudioAsset::BKGND_WAIT, AUDIO_POS_AT_CLIENT);
+                        self.curr_state = state;
+                    }
+                },
+                // in game background track
+                // TODO: add case if running should have a different bkgd track than waiting
+                // GameLifeCycleState::Running(_) => {
+                //     self.switch_background_track(AudioAsset::BKGND_GAME, AUDIO_POS_AT_CLIENT);
+                //     self.curr_state = state;
+                // },
+
+                // winner, loser background track
+                GameLifeCycleState::Ended => {
+                    if curr_player == winner {
+                        self.switch_background_track(AudioAsset::BKGND_WINNER, AUDIO_POS_AT_CLIENT);
+                    }
+                    else {
+                        self.switch_background_track(AudioAsset::BKGND_LOSER, AUDIO_POS_AT_CLIENT);
+                    }
+                    self.curr_state = state;
+                },
+                _ => {}
+            }
+
+        }
+    }
+
+    pub fn switch_background_track(&mut self, bkgd: AudioAsset, pos: [f32; 3]) {
+        self.sound_controller_background.0.as_ref().unwrap().stop();
+        self.play_background_track(bkgd, pos);
     }
 
     // function in case a button to mute music will be added in the future:
@@ -87,6 +139,47 @@ impl Audio {
                 *paused = true;
             }
             self.time = SystemTime::now();
+        }
+    }
+
+    pub fn loop_sound(&mut self, sound: AudioAsset, pos: [f32; 3]) -> ambisonic::SoundController {
+        let source = self.audio_assets[sound as usize]
+            .0
+            .clone()
+            // .fade_in(Duration::new(1, 0))
+            .repeat_infinite();            
+        let sc = self.audio_scene.play_at(source.convert_samples(), pos);
+        sc
+    }
+
+    pub fn handle_ambient_event(&mut self, sfxevent: SoundSpec) {
+        let index = to_audio_asset(sfxevent.sound_id.clone()).unwrap();
+        let (_, play_sound) = sfxevent.ambient;
+        let instance = self.sound_controllers_ambient.get_mut(&index);
+
+        if play_sound {
+            match instance {
+                None => {
+                    let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
+                    let default_vec3 = glm::Vec3::new(0.0, 0.0, 0.0);
+                    let si = SoundInstance{
+                        controller: sound,
+                        position: default_vec3,
+                        start: SystemTime::now(),
+                        initial_dir: default_vec3,
+                        at_client: false,
+                        ambient: true,
+                    };
+                    self.sound_controllers_ambient.insert(index.clone(), si);
+                }
+                Some(_) => {}
+            }
+        }
+        else {
+            if let Some(s) = instance {
+                s.controller.stop();
+            }
+            self.sound_controllers_ambient.remove(&index);
         }
     }
 
@@ -168,6 +261,7 @@ impl Audio {
                     start: SystemTime::now(),
                     initial_dir: dir,
                     at_client,
+                    ambient: false,
                 });
             }
             None => {
@@ -179,6 +273,7 @@ impl Audio {
                         start: SystemTime::now(),
                         initial_dir: dir,
                         at_client,
+                        ambient: false,
                     }],
                 );
             }
@@ -191,6 +286,8 @@ impl Audio {
             let player_curr = gs.player(client_id as u32).ok_or_else(|| print!("")); //Player {} not found", client_id));
             let mut cf = glm::Vec3::new(0.0, 0.0, 0.0);
             let mut pos = glm::Vec3::new(0.0, 0.0, 0.0);
+
+            self.update_bkgd_track(gs.life_cycle_state.clone(), client_id as u32, gs.game_winner.unwrap_or(0));
 
             match player_curr {
                 Ok(player) => {
@@ -205,7 +302,13 @@ impl Audio {
                 for i in 0..sfx_queue.sound_queue.len() {
                     let se = sfx_queue.sound_queue[i].clone();
                     let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
-                    self.handle_sfx_event(se, cf, at_client);
+                    let ambient = se.ambient.0;
+                    if !ambient {
+                        self.handle_sfx_event(se, cf, at_client);
+                    }
+                    else {
+                        self.handle_ambient_event(se);
+                    }
                 }
                 sfx_queue.sound_queue.clear();
                 *self.sfx_queue.lock().unwrap() = sfx_queue;
@@ -220,6 +323,7 @@ pub fn to_audio_asset(sound_id: String) -> Option<AudioAsset> {
     match sound_id.as_str() {
         "wind" => Some(AudioAsset::WIND),
         "foot_step" => Some(AudioAsset::STEP),
+        "rain" => Some(AudioAsset::RAIN),
         _ => None,
     }
 }

@@ -5,12 +5,13 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
 
-use common::configs::display_config::ConfigDisplay;
+use common::configs::display_config::{ConfigDisplay, ScreenLocation};
 use common::configs::model_config::ModelIndex;
 use common::core::choices::CurrentSelections;
 use common::core::mesh_color::MeshColor;
 use common::core::states::GameState;
 
+use crate::audio::CURR_DISP;
 use crate::inputs::Input;
 use crate::model::DrawModel;
 use crate::other_players::OtherPlayer;
@@ -103,6 +104,7 @@ impl Display {
     pub fn change_to(&mut self, new: String) {
         self.particles.systems.clear();
         self.current = new;
+        *CURR_DISP.get().unwrap().lock().unwrap() = self.current.clone();
     }
 
     pub fn render(
@@ -121,6 +123,7 @@ impl Display {
         color_bind_group_layout: &wgpu::BindGroupLayout,
         _output: &wgpu::SurfaceTexture,
         _client_id: u32,
+        config: &wgpu::SurfaceConfiguration,
     ) {
         let config_instance = ConfigurationManager::get_configuration();
         let game_config = config_instance.game.clone();
@@ -310,6 +313,7 @@ impl Display {
                         "leaf_type_selector",
                         "leaf_color_selector",
                         "wood_color_selector",
+                        "hover_icon",
                     ];
                     let mut icons_top = Vec::new();
 
@@ -331,10 +335,20 @@ impl Display {
                         );
                     }
 
+
+                    let mut curr_btn_loc = ScreenLocation {
+                        vert_disp: (1000.0, 1000.0),
+                        horz_disp: (1000.0, 1000.0),
+                    };
+                    let mut button_id = None;
                     for button in &mut screen.buttons {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
                             true => {
+                                if button.id != Some("start_game".to_string()) && !self.customization_choices.ready{
+                                    curr_btn_loc = button.location.clone();
+                                }
+                                button_id = button.id.clone();
                                 for v in &mut button.vertices {
                                     v.color = [
                                         button.hover_tint[0],
@@ -348,11 +362,12 @@ impl Display {
                                     0,
                                     bytemuck::cast_slice(&button.vertices),
                                 );
-                                if button.selected {
-                                    texture
-                                } else {
-                                    &button.hover_texture
-                                }
+                                // if button.selected {
+                                //     texture
+                                // } else {
+                                //     &button.hover_texture
+                                // }
+                                &button.hover_texture
                             }
                             false => {
                                 for v in &mut button.vertices {
@@ -392,6 +407,16 @@ impl Display {
                     // TEMPORARY FIX
                     if screen.id == "screen:lobby" {
                         for icon in icons_top {
+                            if icon.id == "hover_icon" {
+                                if let Some(b) = &button_id {
+                                    icon.height = 0.37;
+                                    if b.contains("color"){
+                                        icon.height = 0.222;
+                                    }
+                                }
+                                icon.relocate(curr_btn_loc, config.width, config.height, queue);
+                            }
+
                             render_pass.draw_ui_instanced(
                                 self.texture_map.get(&icon.texture).unwrap(),
                                 self.texture_map.get(&icon.mask_texture).unwrap(),

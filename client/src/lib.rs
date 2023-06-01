@@ -5,6 +5,7 @@ use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
+use audio::CURR_DISP;
 use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
@@ -354,7 +355,7 @@ impl State {
             resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
                 .await
                 .unwrap(),
-        );
+        ).expect("failed to set KOROK_MTL_LIB");
 
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
@@ -836,6 +837,7 @@ impl State {
         // check whether all players are ready, if so launch the game
         if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
             self.display.current = self.display.game_display.clone();
+            *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
         }
 
         // check if the game has ended and set corresponding end screen
@@ -846,6 +848,7 @@ impl State {
             } else {
                 self.display.current = "display:defeat".to_owned();
             }
+            *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
 
             // Reset camera and player for lobby
             self.camera_state.camera.position = glm::vec3(
@@ -1137,6 +1140,7 @@ impl State {
             &self.color_bind_group_layout,
             &output,
             self.client_id as u32,
+            &self.config,
         );
 
         let size = &self.window.inner_size();

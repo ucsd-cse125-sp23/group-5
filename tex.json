@@ -199,6 +199,22 @@
         {
             "name": "btn:leaf_tex_12",
             "path": "leaf_color_12_texture.png"
+        },
+        {
+            "name": "btn:leaf_option_1",
+            "path": "leaf_option_1.png"
+        },
+        {
+            "name": "btn:leaf_option_2",
+            "path": "leaf_option_2.png"
+        },
+        {
+            "name": "btn:leaf_option_3",
+            "path": "leaf_option_3.png"
+        },
+        {
+            "name": "btn:leaf_option_4",
+            "path": "leaf_option_4.png"
         }
     ]
 }
