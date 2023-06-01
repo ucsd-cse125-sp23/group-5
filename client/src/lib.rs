@@ -1076,13 +1076,10 @@ impl State {
                         .unwrap();
 
                     let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                    let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult").unwrap();
+                    let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult_specific").unwrap();
 
                     if let Some(power_up) = self.player.power_up.as_ref() {
                         // Adjust the properties for both icons
-                        screen.icons[ind_atk_ult].location.vert_disp = (0.0, -0.860);
-                        screen.icons[ind_atk_ult].aspect = 1.15;
-                        screen.icons[ind_atk_ult].height = 0.195;
                         match power_up.0 {
                             PowerUp::Lightning => {
                                 screen.icons[ind_atk_ult].texture =
@@ -1111,12 +1108,10 @@ impl State {
                                     String::from("icon:power_invincible");
                             }
                         }
+                        screen.icons[ind_atk_ult].tint[3] = 1.0;
                     } else {
                         // Reset the properties for both icons to their default values
-                        screen.icons[ind_atk_ult].location.vert_disp = (0.0, -0.885);
-                        screen.icons[ind_atk_ult].aspect = 1.05;
-                        screen.icons[ind_atk_ult].height = 0.240;
-                        screen.icons[ind_atk_ult].texture = String::from("icon:attack_power_up");
+                        screen.icons[ind_atk_ult].tint[3] = 0.0;
                     }
                 }
 
