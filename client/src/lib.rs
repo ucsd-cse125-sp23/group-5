@@ -1036,15 +1036,6 @@ impl State {
                 // is it necessary? would need to pass around lots of references
                 // might be better to create dedicated function in screen/command_handlers
                 {
-                    let screen_id = self
-                        .display
-                        .groups
-                        .get(&self.display.game_display)
-                        .unwrap()
-                        .screen
-                        .as_ref()
-                        .unwrap();
-
                     let atk_load = String::from("icon:atk_forward_overlay");
                     let atk_area_load = String::from("icon:atk_wave_overlay");
 
@@ -1086,6 +1077,10 @@ impl State {
                     let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult").unwrap();
 
                     if let Some(power_up) = self.player.power_up.as_ref() {
+                        // Adjust the properties for both icons
+                        screen.icons[ind_atk_ult].location.vert_disp = (0.0, -0.860);
+                        screen.icons[ind_atk_ult].aspect = 1.15;
+                        screen.icons[ind_atk_ult].height = 0.195;
                         match power_up.0 {
                             PowerUp::Lightning => {
                                 screen.icons[ind_atk_ult].texture =
@@ -1118,6 +1113,10 @@ impl State {
                         }
                     }
                     else {
+                        // Reset the properties for both icons to their default values
+                        screen.icons[ind_atk_ult].location.vert_disp = (0.0, -0.885);
+                        screen.icons[ind_atk_ult].aspect = 1.05;
+                        screen.icons[ind_atk_ult].height = 0.240;
                         screen.icons[ind_atk_ult].texture =
                             String::from("icon:attack_power_up");
                     }
@@ -1151,6 +1150,9 @@ impl State {
                                 PowerUp::TripleJump => "icon:power_triple_jump_overlay",
                                 PowerUp::Invincible => "icon:power_invincible_overlay",
                             };
+                            screen.icons[ind_atk_powerup_overlay].location.vert_disp = (0.0, -0.860);
+                            screen.icons[ind_atk_powerup_overlay].aspect = 1.15;
+                            screen.icons[ind_atk_powerup_overlay].height = 0.195;
                             screen.icons[ind_atk_powerup_overlay].texture = String::from(power_up_overlay_texture);
 
                             let power_up_status = POWER_UP_TO_EFFECT_MAP.get(&power_up.value()).unwrap_or(&StatusEffect::None);

@@ -1,15 +1,13 @@
 use common::configs::ConfigurationManager;
 use nalgebra_glm as glm;
-use rand::rngs::adapter::ReadError;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
-
 use common::configs::display_config::{ConfigDisplay, ScreenLocation};
-use common::configs::model_config::ModelIndex;
 use common::core::choices::CurrentSelections;
-use common::core::mesh_color::MeshColor;
 use common::core::states::GameState;
+use self::objects::Screen;
+use crate::skybox;
 
 use crate::audio::CURR_DISP;
 use crate::inputs::Input;
@@ -21,9 +19,6 @@ use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::object_transitions::Transition;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
-
-use self::objects::Screen;
-use crate::skybox;
 
 pub mod display_helper;
 pub mod location_helper;
