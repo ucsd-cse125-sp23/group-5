@@ -6,6 +6,8 @@ pub enum ActionState {
     Jumping,
     Walking,
     Attacking,
+    SpecialAttacking,
+    CastingPowerUp,
 }
 
 impl Default for ActionState {
@@ -21,6 +23,8 @@ impl ActionState {
             ActionState::Jumping => 2,
             ActionState::Walking => 1,
             ActionState::Attacking => 3,
+            ActionState::SpecialAttacking => 4,
+            ActionState::CastingPowerUp => 5,
         }
     }
 
@@ -29,7 +33,9 @@ impl ActionState {
             ActionState::Idle => "idle",
             ActionState::Jumping => "jump",
             ActionState::Walking => "walk",
-            ActionState::Attacking => "attack",
+            ActionState::Attacking => "regular_attack",
+            ActionState::SpecialAttacking => "special_attack",
+            ActionState::CastingPowerUp => "powerup_attack",
         }
     }
 }

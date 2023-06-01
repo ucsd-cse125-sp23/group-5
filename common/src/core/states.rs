@@ -344,7 +344,7 @@ impl GameState {
     }
 
     // check if any players should get a powerup and record powerup
-    pub fn check_powerup_players(&mut self, game_config: ConfigGame) -> HashSet<u32> {
+    pub fn check_powerup_pickup(&mut self, game_config: ConfigGame) -> HashSet<u32> {
         let mut res = HashSet::new();
         let powerup_radius = game_config.powerup_config.power_up_radius;
         let powerup_respawn_cd = game_config.powerup_config.power_up_respawn_cooldown;

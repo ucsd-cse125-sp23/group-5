@@ -16,7 +16,7 @@ use wgpu::util::DeviceExt;
 
 use once_cell::sync::OnceCell;
 
-pub const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok/korok_texture_lib.mtl";
+pub const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok_texture_lib.mtl";
 pub type MtlLib = (Arc<Vec<Material>>, Option<Arc<AHashMap<String, usize>>>);
 pub static KOROK_MTL_LIB: OnceCell<MtlLib> = OnceCell::new();
 

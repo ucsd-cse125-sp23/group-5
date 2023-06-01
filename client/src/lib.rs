@@ -648,6 +648,8 @@ impl State {
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
+        // end debug code that needs to be replaced
+
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
             &device,
@@ -1213,10 +1215,19 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .draw_scene_dfs();
+
+            {
+                let particle_queue = particle_queue.lock().unwrap();
+                self.add_powerup_particles(game_state_clone, particle_queue, dt);
+            }
+            {
+                let particle_queue = particle_queue.lock().unwrap();
+                self.load_particles(particle_queue);
+            }
+
         }
 
-        let particle_queue = particle_queue.lock().unwrap();
-        self.load_particles(particle_queue);
+
 
         // animation update
         self.animation_controller.update(dt);
@@ -1358,6 +1369,56 @@ impl State {
         Ok(())
     }
 
+    fn add_powerup_particles(&mut self, game_state: GameState, mut particle_queue: MutexGuard<ParticleQueue>, dt: instant::Duration) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let particle_config = config_instance.particles.clone();
+
+        let powerup_players = game_state
+            .players
+            .iter()
+            .filter(|(_, player)| {
+                !player.power_up.is_none()
+            })
+            .map(|(&id, _)| id)
+            .collect::<Vec<_>>();
+        
+        for player_id in powerup_players {
+            if player_id != self.client_id as u32 && self.invisible_players.contains(&player_id) {
+                continue; 
+            }
+
+            let player_state = game_state.player(player_id).unwrap();
+            let player_pos = player_state.transform.translation;
+            let player_vel = player_state.physics.velocity;
+
+            let mut aura_color_string = "default";
+            let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap(); 
+
+            if player_power_up_status == PowerUpStatus::Active {
+                aura_color_string = match player_power_up {
+                    PowerUp::WindEnhancement => "wind_enhancement",
+                    PowerUp::Dash => "dash",
+                    PowerUp::Flash => "flash",
+                    PowerUp::Invisible => "invisibility",
+                    PowerUp::Invincible => "invincibility",
+                    PowerUp::TripleJump => "triple_jump",
+                    _ => "default",
+                }
+            }
+
+            let aura_color = *particle_config.powerup_aura_particle_config.aura_colors.get(aura_color_string).unwrap();
+            particle_queue.add_particle(events::ParticleSpec::new(
+                events::ParticleType::POWERUP_AURA,
+                player_pos + player_vel * (dt.as_secs_f32()),
+                glm::vec3(0.0, 1.0, 0.0),
+                //TODO: placeholder for player color
+                glm::vec3(0.0, 1.0, 0.0),
+                glm::vec4(aura_color.0, aura_color.1, aura_color.2, aura_color.3),
+                format!("Power Up Aura from player {}", player_id),
+            ));
+        }
+    }
+
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
         let physics_config = config_instance.physics.clone();
@@ -1475,7 +1536,7 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (1, 4),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1502,11 +1563,42 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (14, 18),
+                        (4, 5),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(powerup);
+                }
+                events::ParticleType::POWERUP_AURA => {
+                    // in this case, only position matters
+                    let time = particle_config.powerup_aura_particle_config.time / time_divider;
+                    let powerup_aura_gen = particles::gen::CylinderGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up, 
+                        particle_config.powerup_aura_particle_config.r,
+                        particle_config.powerup_aura_particle_config.half_height,
+                        particle_config.powerup_aura_particle_config.linear_speed,
+                        particle_config.powerup_aura_particle_config.linear_variance,
+                        PI, 
+                        particle_config.powerup_aura_particle_config.angular_variance, 
+                        particle_config.powerup_aura_particle_config.size,
+                        particle_config.powerup_aura_particle_config.size_variance,
+                        particle_config.powerup_aura_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let powerup_aura = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.05),
+                        time,
+                        particle_config.powerup_aura_particle_config.gen_speed,
+                        p.color,
+                        powerup_aura_gen,
+                        (4, 5),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(powerup_aura);
                 }
                 events::ParticleType::RAIN => {
                     let time = 2.;

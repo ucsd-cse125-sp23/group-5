@@ -4,7 +4,7 @@
   "nodes": [
     {
       "id": "object:player_model",
-      "model": "korok",
+      "model": "korok_1",
       "transform": {
         "position": [0.0, -0.25, 1.4],
         "rotation": [-0.2949345, -0.7971848, -0.13986267, 0.5079111]

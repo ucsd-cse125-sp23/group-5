@@ -15,7 +15,7 @@ use phf::phf_map;
 pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 pub const LEAF_MESH: &str = "leaf";
 pub const BODY_MESH: &str = "korok";
-pub const DEFAULT_MODEL: &str = "korok";
+pub const DEFAULT_MODEL: &str = "korok_1";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
     "game_start" => game_start,
@@ -222,11 +222,16 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
                 .final_choices
                 .color
                 .insert(LEAF_MESH.to_owned(), actual_color);
-            display
-                .customization_choices
-                .final_choices
-                .materials
-                .insert(LEAF_MESH.to_owned(), actual_mtl);
+            // display
+            //     .customization_choices
+            //     .final_choices
+            //     .color
+            //     .insert(CURR_MESH.to_owned(), actual_color);
+            // display
+            //     .customization_choices
+            //     .final_choices
+            //     .materials
+            //     .insert(CURR_MESH.to_owned(), actual_mtl);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             node.materials = Some(
                 display
