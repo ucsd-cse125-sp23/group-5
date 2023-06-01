@@ -97,13 +97,12 @@ impl InputEventProcessor {
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),
             VirtualKeyCode::RShift => Some((GameKeyKind::Pressable, Die)),
-            VirtualKeyCode::E => Some((GameKeyKind::Pressable, CastPowerUp)), // TODO: Change
+            VirtualKeyCode::F => Some((GameKeyKind::Pressable, CastPowerUp)),
+            VirtualKeyCode::E => Some((GameKeyKind::Pressable, AreaAttack)),
 
             // match PressRelease keys
-            // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
 
-            /* move to mouse for testing */
-            VirtualKeyCode::F => Some((GameKeyKind::PressRelease, AreaAttack)),
+            // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
 
             //  Lightning,
             //     WindEnhancement,
@@ -276,7 +275,6 @@ impl InputEventProcessor {
                         .expect("send message fails");
                 }
                 Input::Mouse(DeviceEvent::Button { button, state }) => {
-                    println!("{:?}", button);
                     if state == ElementState::Pressed {
                         match button {
                             MOUSE_LEFT => {
