@@ -1116,12 +1116,16 @@ impl State {
                         // Reset the properties for both icons to their default values
                         screen.icons[ind_atk_ult].tint[3] = 0.0;
                     }
-                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]){
+                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]) {
                         let tint = screen.icons[ind_atk_ult].tint;
                         for v in &mut screen.icons[ind_atk_ult].vertices {
                             v.color = tint.into();
                         }
-                        self.queue.write_buffer(&screen.icons[ind_atk_ult].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices));
+                        self.queue.write_buffer(
+                            &screen.icons[ind_atk_ult].vbuf,
+                            0,
+                            bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices),
+                        );
                     }
                 }
 
@@ -1177,7 +1181,8 @@ impl State {
                         } else {
                             // Remove the overlay icon if the power-up is not active
                             self.display.transition_map.remove(power_up_overlay_id);
-                            screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
+                            screen.icons[ind_atk_powerup_overlay].texture =
+                                String::from("icon:empty");
                         }
                     } else {
                         // in case you died holding a powerup
@@ -1317,26 +1322,26 @@ impl State {
                 });
             }
             // render status effect and powerup held
-            self.glyph_brush.queue(Section {
-                screen_position: (600.0, 20.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
-            self.glyph_brush.queue(Section {
-                screen_position: (600.0, 60.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
+            // self.glyph_brush.queue(Section {
+            //     screen_position: (600.0, 20.0),
+            //     bounds: (size.width as f32, size.height as f32),
+            //     text: vec![Text::new(
+            //         format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+            //     )
+            //     .with_color([0.0, 0.0, 0.0, 1.0])
+            //     .with_scale(40.0)],
+            //     ..Section::default()
+            // });
+            // self.glyph_brush.queue(Section {
+            //     screen_position: (600.0, 60.0),
+            //     bounds: (size.width as f32, size.height as f32),
+            //     text: vec![Text::new(
+            //         format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+            //     )
+            //     .with_color([0.0, 0.0, 0.0, 1.0])
+            //     .with_scale(40.0)],
+            //     ..Section::default()
+            // });
         }
         // Draw the text!
         self.glyph_brush
