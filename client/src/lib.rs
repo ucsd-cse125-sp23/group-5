@@ -431,7 +431,7 @@ impl State {
         );
 
         // to demonstrate changing global illumination
-        camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
+        camera_state.camera.ambient_multiplier = glm::vec3(1.0, 1.0, 1.0).into();
 
         scene.draw_scene_dfs();
 
@@ -1458,27 +1458,7 @@ impl State {
                         5.0,
                         p.color,
                         gen,
-                        (12, 13),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-
-                    let gen = particles::trail::PathTrailGenerator::new(
-                        vec![glm::vec3(-5.0, -10.0, -5.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(5.0, -10.0, 5.0)],
-                        vec![0.0, 0.5, 1.0],
-                        vec![40.0, 20.0, 40.0],
-                        glm::vec3(0.0, 1.0, 0.0),
-                        10,
-                        5.0,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        20.0,
-                        5.0,
-                        glm::vec4(1.0, 0.8, 0.4, 0.8),
-                        gen,
-                        (0, 1),
+                        (11, 12),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1509,7 +1489,7 @@ impl State {
                         particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (1, 4),
+                        (0, 4),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1536,7 +1516,7 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (1, 4),
+                        (0, 4),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1623,7 +1603,7 @@ impl State {
                         2500.0,
                         p.color,
                         atk_gen,
-                        (11, 12),
+                        (10, 11),
                         &self.device,
                         &mut self.rng,
                     );
