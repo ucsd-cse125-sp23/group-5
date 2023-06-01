@@ -8,6 +8,8 @@ use crate::simulation::physics_state::PhysicsState;
 
 extern crate nalgebra_glm as glm;
 
+const SLIPPERY_FRICTION_DECREASE: f32 = 1.2;
+
 #[derive(Constructor)]
 pub struct StatusEffectCommandHandler {}
 
@@ -24,7 +26,7 @@ impl CommandHandler for StatusEffectCommandHandler {
                 body.set_linear_damping(0.);
 
                 let collider = physics_state.get_entity_collider_mut(player_id).unwrap();
-                collider.set_friction(collider.friction() - 1.2);
+                collider.set_friction(collider.friction() - SLIPPERY_FRICTION_DECREASE);
             }
         }
         Ok(())
