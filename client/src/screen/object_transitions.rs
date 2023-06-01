@@ -28,13 +28,16 @@ impl Transition {
                     v.color[3] = 1.0;
                 }
                 // do the actual scaling here
-                let smoothstepped = (3.0 * (*p).powf(2.0) - 2.0 * (*p).powf(3.0));
-                let modified_height =
-                    smoothstepped * (icon.vertices[1].position[1] - icon.vertices[0].position[1]);
+                // let smoothstepped = (3.0 * (*p).powf(2.0) - 2.0 * (*p).powf(3.0));
+                // let modified_height =
+                //     smoothstepped * (icon.vertices[1].position[1] - icon.vertices[0].position[1]);
+                let modified_height = *p * (icon.vertices[1].position[1] - icon.vertices[0].position[1]);
                 tmp_vtxs[1].position[1] = icon.vertices[0].position[1] + modified_height;
                 tmp_vtxs[2].position[1] = icon.vertices[0].position[1] + modified_height;
-                tmp_vtxs[1].texture[1] = 1.0 - smoothstepped;
-                tmp_vtxs[2].texture[1] = 1.0 - smoothstepped;
+                // tmp_vtxs[1].texture[1] = 1.0 - smoothstepped;
+                // tmp_vtxs[2].texture[1] = 1.0 - smoothstepped;
+                tmp_vtxs[1].texture[1] = 1.0 - *p;
+                tmp_vtxs[2].texture[1] = 1.0 - *p;
                 queue.write_buffer(&icon.vbuf, 0, bytemuck::cast_slice(&tmp_vtxs));
             }
         }
