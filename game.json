@@ -96,6 +96,8 @@
     "power_up_buff_duration": 10.0,
     "power_up_debuff_duration": 3.0,
     "power_up_cooldown": 5.0,
+    "blizzard_max_attack_dist": 10.0,
+    "blizzard_max_attack_angle": 0.5235987755982988,
     "wind_enhancement_scalar": 1.5,
     "dash_impulse": 250.0,
     "flash_distance_scalar": 5.0,

@@ -12,7 +12,9 @@
         "particles/p10.png",
         "particles/rain_particle.png",
         "particles/streak.png",
-        "particles/solid_color.png"
+        "particles/solid_color.png",
+        "particles/snow1.png",
+        "particles/snow2.png"
     ],
     "skybox": [
         "skybox/px.png",
@@ -96,7 +98,7 @@
             "path": "pure_power_invisible.png"
         },
         {
-            "name": "icon:power_lightening",
+            "name": "icon:power_blizzard",
             "path": "pure_power_lightening.png"
         },
         {
@@ -124,7 +126,7 @@
             "path": "power_invisible.png"
         },
         {
-            "name": "icon:power_lightening_overlay",
+            "name": "icon:power_blizzard_overlay",
             "path": "pure_power_lightening.png"
         },
         {
