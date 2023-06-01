@@ -1528,35 +1528,6 @@ impl State {
                     self.display.particles.systems.push(atk);
                 }
                 events::ParticleType::BLIZZARD => {
-                    // test ribbon particle (maybe loop these for winning area?)
-                    // ribbon sample
-                    /*
-                    let gen = particles::ribbon::LineRibbonGenerator::new(
-                        glm::vec3(-10., -10., -10.),
-                        glm::vec3(10., -8., 10.),
-                        glm::vec3(0., 1., 0.),
-                        10.0,
-                        0.0,
-                        0.5,
-                        20.,
-                        0.0,
-                        50,
-                        false,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        2.0,
-                        5.0,
-                        p.color,
-                        gen,
-                        (11, 12),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-                    */
-
-                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
