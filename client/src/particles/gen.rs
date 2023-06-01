@@ -185,7 +185,7 @@ impl ParticleGenerator for ConeGenerator {
     ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
-        let dir_r_dist = Uniform::new(self.r / 2.0, self.r);
+        let dir_r_dist = Uniform::new(0.0, self.r);
         let dir_theta_dist = Uniform::new(0.0, PI * 2.0);
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
         let time_dist = Poisson::new(1.0 / spawn_rate).unwrap();
@@ -291,7 +291,7 @@ impl ParticleGenerator for CylinderGenerator {
     ) -> f32 {
         let lin_dist = Normal::new(self.linear_speed, self.linear_variance).unwrap();
         let ang_dist = Normal::new(self.angular_velocity, self.angular_variance).unwrap();
-        let dir_r_dist = Uniform::new(0.0, self.r);
+        let dir_r_dist = Uniform::new(self.r / 2.0, self.r);
         let dir_theta_dist = Uniform::new(0.0, PI * 2.0);
         let dir_y_dist = Uniform::new(-self.half_height, self.half_height);
         let size_dist = Normal::new(self.size, self.size_variance).unwrap();
