@@ -1248,6 +1248,10 @@ impl State {
             .collect::<Vec<_>>();
         
         for player_id in powerup_players {
+            if player_id != self.client_id as u32 && self.invisible_players.contains(&player_id) {
+                continue; 
+            }
+
             let player_state = game_state.player(player_id).unwrap();
             let player_pos = player_state.transform.translation;
             let player_vel = player_state.physics.velocity;
@@ -1424,7 +1428,7 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (14, 18),
+                        (4, 5),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1455,7 +1459,7 @@ impl State {
                         particle_config.powerup_aura_particle_config.gen_speed,
                         p.color,
                         powerup_aura_gen,
-                        (0, 4),
+                        (4, 5),
                         &self.device,
                         &mut self.rng,
                     );
