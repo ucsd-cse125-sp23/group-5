@@ -13,7 +13,9 @@ use std::{
 };
 
 use common::configs::*;
-use common::core::powerup_system::{POWER_UP_TO_EFFECT_MAP, PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect};
+use common::core::powerup_system::{
+    PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
@@ -46,13 +48,13 @@ use crate::model::{Model, StaticModel};
 use common::configs;
 use common::core::command::Command;
 use common::core::events;
+use common::core::powerup_system::StatusEffect::Power;
 use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
 use common::core::weather::Weather;
 use wgpu::util::DeviceExt;
 use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::window::Window;
-use common::core::powerup_system::StatusEffect::Power;
 
 struct State {
     surface: wgpu::Surface,
@@ -1087,12 +1089,10 @@ impl State {
                                     String::from("icon:power_lightening");
                             }
                             PowerUp::WindEnhancement => {
-                                screen.icons[ind_atk_ult].texture =
-                                    String::from("icon:power_wind");
+                                screen.icons[ind_atk_ult].texture = String::from("icon:power_wind");
                             }
                             PowerUp::Dash => {
-                                screen.icons[ind_atk_ult].texture =
-                                    String::from("icon:power_dash");
+                                screen.icons[ind_atk_ult].texture = String::from("icon:power_dash");
                             }
                             PowerUp::Flash => {
                                 screen.icons[ind_atk_ult].texture =
@@ -1111,14 +1111,12 @@ impl State {
                                     String::from("icon:power_invincible");
                             }
                         }
-                    }
-                    else {
+                    } else {
                         // Reset the properties for both icons to their default values
                         screen.icons[ind_atk_ult].location.vert_disp = (0.0, -0.885);
                         screen.icons[ind_atk_ult].aspect = 1.05;
                         screen.icons[ind_atk_ult].height = 0.240;
-                        screen.icons[ind_atk_ult].texture =
-                            String::from("icon:attack_power_up");
+                        screen.icons[ind_atk_ult].texture = String::from("icon:attack_power_up");
                     }
                 }
 
@@ -1136,7 +1134,8 @@ impl State {
                     let screen = self.display.screen_map.get_mut(screen_id).unwrap();
 
                     let power_up_overlay_id = "icon:atk_powerup_overlay";
-                    let ind_atk_powerup_overlay = *screen.icon_id_map.get(power_up_overlay_id).unwrap();
+                    let ind_atk_powerup_overlay =
+                        *screen.icon_id_map.get(power_up_overlay_id).unwrap();
 
                     if let Some((power_up, status)) = self.player.power_up.as_ref() {
                         if *status == PowerUpStatus::Active {
@@ -1150,21 +1149,28 @@ impl State {
                                 PowerUp::TripleJump => "icon:power_triple_jump_overlay",
                                 PowerUp::Invincible => "icon:power_invincible_overlay",
                             };
-                            screen.icons[ind_atk_powerup_overlay].location.vert_disp = (0.0, -0.860);
+                            screen.icons[ind_atk_powerup_overlay].location.vert_disp =
+                                (0.0, -0.860);
                             screen.icons[ind_atk_powerup_overlay].aspect = 1.15;
                             screen.icons[ind_atk_powerup_overlay].height = 0.195;
-                            screen.icons[ind_atk_powerup_overlay].texture = String::from(power_up_overlay_texture);
+                            screen.icons[ind_atk_powerup_overlay].texture =
+                                String::from(power_up_overlay_texture);
 
-                            let power_up_status = POWER_UP_TO_EFFECT_MAP.get(&power_up.value()).unwrap_or(&StatusEffect::None);
+                            let power_up_status = POWER_UP_TO_EFFECT_MAP
+                                .get(&power_up.value())
+                                .unwrap_or(&StatusEffect::None);
                             // Calculate the fraction of the power-up time left
-                            if let Some(time_left) = self.player.status_effects.get(power_up_status) {
+                            if let Some(time_left) = self.player.status_effects.get(power_up_status)
+                            {
                                 //TODO: store that const into config
                                 let fraction_left = *time_left / 10.0;
 
                                 // Apply the SqueezeDown transition
                                 self.display.transition_map.insert(
                                     String::from(power_up_overlay_id),
-                                    screen::object_transitions::Transition::SqueezeDown(fraction_left),
+                                    screen::object_transitions::Transition::SqueezeDown(
+                                        fraction_left,
+                                    ),
                                 );
                             }
                         } else {

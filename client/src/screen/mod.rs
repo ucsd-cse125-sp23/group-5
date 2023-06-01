@@ -1,13 +1,13 @@
+use self::objects::Screen;
+use crate::skybox;
+use common::configs::display_config::{ConfigDisplay, ScreenLocation};
 use common::configs::ConfigurationManager;
+use common::core::choices::CurrentSelections;
+use common::core::states::GameState;
 use nalgebra_glm as glm;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
-use common::configs::display_config::{ConfigDisplay, ScreenLocation};
-use common::core::choices::CurrentSelections;
-use common::core::states::GameState;
-use self::objects::Screen;
-use crate::skybox;
 
 use crate::audio::CURR_DISP;
 use crate::inputs::Input;
