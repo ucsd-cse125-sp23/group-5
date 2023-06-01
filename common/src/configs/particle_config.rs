@@ -55,4 +55,3 @@ pub struct PowerUpAuraParticleConfig {
     pub size_growth: f32,
     pub gen_speed: f32,
 }
-
