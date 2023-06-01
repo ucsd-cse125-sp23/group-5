@@ -60,6 +60,7 @@ pub const POLLER_INTERVAL: Duration = Duration::from_millis(60);
 
 // Const for button ids
 const MOUSE_LEFT: u32 = 0;
+const MOUSE_LEFT_WINDOWS: u32 = 1;
 
 pub struct InputEventProcessor {
     protocol: Protocol,
@@ -276,8 +277,9 @@ impl InputEventProcessor {
                 }
                 Input::Mouse(DeviceEvent::Button { button, state }) => {
                     if state == ElementState::Pressed {
+                        //println!("{:?}", button);
                         match button {
-                            MOUSE_LEFT => {
+                            MOUSE_LEFT | MOUSE_LEFT_WINDOWS => {
                                 let message: Message = Message::new(
                                     HostRole::Client(self.client_id),
                                     Payload::Command(Command::Attack),
