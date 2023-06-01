@@ -15,7 +15,7 @@ use phf::phf_map;
 pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 pub const LEAF_MESH: &str = "leaf";
 pub const BODY_MESH: &str = "korok";
-pub const CURR_MESH: &str = "korok";
+pub const DEFAULT_MODEL: &str = "korok";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
     "game_start" => game_start,
@@ -42,7 +42,9 @@ fn game_start(display: &mut screen::Display, _: Option<String>) {
 
     if sel_2 && !display.customization_choices.ready {
         let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 1.0, 0.0, 1.0);
+        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
+        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
+
         display.customization_choices.ready = true;
 
         let final_choices = display.customization_choices.final_choices.clone();
@@ -102,7 +104,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
 
     // reset go button
     let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-    let def_col = nalgebra_glm::Vec4::new(0.0, 0.0, 0.0, 1.0);
+    let def_col = nalgebra_glm::Vec4::new(1.0, 1.0, 1.0, 1.0);
     curr_screen.buttons[ind].default_tint = def_col;
     curr_screen.buttons[ind].hover_tint = def_col;
 
@@ -111,7 +113,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
     unselect_button(&display.customization_choices.curr_leaf_color, curr_screen);
     unselect_button(&display.customization_choices.curr_wood_color, curr_screen);
 
-    let ind = *curr_screen.btn_id_map.get("korok_1").unwrap();
+    let ind = *curr_screen.btn_id_map.get(DEFAULT_MODEL).unwrap();
     curr_screen.buttons[ind].selected = true;
     display.customization_choices = CurrentSelections::default();
 
@@ -132,12 +134,9 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
                 .customization_choices
                 .final_choices
                 .color
-                .insert("korok".to_string(), default_color);
-            node.model = Some("korok_1".to_string());
-            node.colors = Some(std::collections::HashMap::from([(
-                "korok".to_string(),
-                default_color,
-            )]));
+                .insert(DEFAULT_MODEL.to_string(), default_color);
+            node.model = Some(DEFAULT_MODEL.to_string());
+            node.colors = Some(display.customization_choices.final_choices.color.clone());
             if let Some(mtls) = &mut node.materials {
                 mtls.clear();
             }
@@ -292,10 +291,10 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
                 .color
                 .insert(BODY_MESH.to_owned(), actual_color);
             display
-                .customization_choices
+            .customization_choices
                 .final_choices
                 .materials
-                .insert(CURR_MESH.to_owned(), actual_mtl);
+                .insert(BODY_MESH.to_owned(), actual_mtl);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             node.materials = Some(
                 display
@@ -332,8 +331,8 @@ fn selected_2colors(
     if len >= 2 {
         if change_color {
             let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(1.0, 1.0, 1.0, 1.0);
-            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 1.0, 0.0, 1.0);
+            curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.9, 0.0, 0.0, 1.0);
+            curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.65, 0.0, 0.0, 1.0);
         }
         return true;
     }

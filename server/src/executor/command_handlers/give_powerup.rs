@@ -36,7 +36,7 @@ impl CommandHandler for GivePowerUpCommandHandler {
                 glm::vec3(0.0, 0.0, 0.0),
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
-                glm::vec4(1.0, 1.0, 0.0, 1.0),
+                glm::vec4(0.882, 0.749, 0.165, 1.0),
                 format!("Give Power Up from player {}", self.player_id),
             )),
             Recipients::All,

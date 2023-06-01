@@ -112,6 +112,7 @@ impl CommandHandler for MoveCommandHandler {
                 player_state.transform.translation,
                 "foot_step".to_string(),
                 (self.player_id, true),
+                (false, false)
             )),
             Recipients::One(self.player_id as u8),
         );

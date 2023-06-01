@@ -127,6 +127,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                 player_pos,
                 "wind".to_string(),
                 (self.player_id, false),
+                (false, false)
             )),
             Recipients::All,
         );
