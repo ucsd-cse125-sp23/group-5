@@ -11,8 +11,10 @@ use std::io::BufReader;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::time::Duration;
+
 extern crate nalgebra_glm as glm;
-use crate::scene::{NodeId, NodeKind};
+
+use crate::scene::{NodeId, NodeKind, Scene};
 
 use common::core::states::GameState;
 use serde::{Deserialize, Serialize};
@@ -23,7 +25,9 @@ pub enum AnimationState {
         animation_id: AnimationId,
         time: f32,
     },
-    Stopped,
+    Stopped {
+        time: f32,
+    },
 }
 
 #[derive(Debug, Default)]
@@ -41,29 +45,31 @@ impl AnimationController {
         let animation_state = self.animation_states.get(node_id)?;
         let model = object;
         if let Some(animated_model) = model.as_any_mut().downcast_mut::<AnimatedModel>() {
-            let next_state = if let AnimationState::Playing { animation_id, time } = animation_state
-            {
-                let animation = animated_model.animations.get(animation_id)?;
-                let animation_duration = animation.duration();
-                let cyclic = animation.cyclic;
+            let next_state = match animation_state {
+                AnimationState::Playing { animation_id, time } => {
+                    let animation = animated_model.animations.get(animation_id)?;
+                    let animation_duration = animation.duration();
+                    let cyclic = animation.cyclic;
 
-                if *time > animation_duration {
-                    if cyclic {
-                        AnimationState::Playing {
-                            animation_id: animation_id.clone(),
-                            time: *time % animation_duration,
+                    if *time > animation_duration {
+                        if cyclic {
+                            AnimationState::Playing {
+                                animation_id: animation_id.clone(),
+                                time: *time % animation_duration,
+                            }
+                        } else {
+                            AnimationState::Stopped { time: 0.0 }
                         }
                     } else {
-                        AnimationState::Stopped
-                    }
-                } else {
-                    AnimationState::Playing {
-                        animation_id: animation_id.clone(),
-                        time: *time,
+                        AnimationState::Playing {
+                            animation_id: animation_id.clone(),
+                            time: *time,
+                        }
                     }
                 }
-            } else {
-                AnimationState::Stopped
+                AnimationState::Stopped { time } => AnimationState::Stopped {
+                    time: *time % animated_model.default_animation().duration(),
+                },
             };
 
             animated_model.set_active_animation_state(next_state);
@@ -72,8 +78,6 @@ impl AnimationController {
     }
 
     pub fn play_animation(&mut self, animation_id: AnimationId, node_id: NodeId) {
-        // println!("Playing animation {:?}", animation_id);
-
         // if already player, do nothing
         if let Some(AnimationState::Playing {
             animation_id: playing_animation_id,
@@ -85,7 +89,6 @@ impl AnimationController {
             }
         }
 
-        // println!("Playing animation {:?}", animation_id);
         self.animation_states.insert(
             node_id,
             AnimationState::Playing {
@@ -96,12 +99,17 @@ impl AnimationController {
     }
 
     pub fn stop_animation(&mut self, node_id: NodeId) {
+        // if already stopped, do nothing
+        if let Some(AnimationState::Stopped { .. }) = self.animation_states.get(&node_id) {
+            return;
+        }
+
         self.animation_states
-            .insert(node_id, AnimationState::Stopped);
+            .insert(node_id, AnimationState::Stopped { time: 0.0 });
     }
 
     pub fn update(&mut self, dt: Duration) {
-        for (_node_id, animation_state) in self.animation_states.iter_mut() {
+        for (_, animation_state) in self.animation_states.iter_mut() {
             match animation_state {
                 AnimationState::Playing {
                     animation_id: _,
@@ -109,7 +117,9 @@ impl AnimationController {
                 } => {
                     *time += dt.as_secs_f32();
                 }
-                AnimationState::Stopped => {}
+                AnimationState::Stopped { time } => {
+                    *time += dt.as_secs_f32();
+                }
             }
         }
     }
@@ -188,7 +198,7 @@ impl AnimatedModel {
             path: path.to_string(),
             animations: HashMap::new(),
             default_animation: None,
-            active_animation: AnimationState::Stopped,
+            active_animation: AnimationState::Stopped { time: 0.0 },
         }
     }
     pub fn default_animation(&self) -> &Animation {
@@ -213,7 +223,7 @@ impl AnimatedModel {
     pub fn active_animation(&self) -> Option<&Animation> {
         match &self.active_animation {
             AnimationState::Playing { animation_id, .. } => self.animations.get(animation_id),
-            AnimationState::Stopped => self.default_animation().into(),
+            AnimationState::Stopped { .. } => self.default_animation().into(),
         }
     }
 
@@ -221,7 +231,7 @@ impl AnimatedModel {
         if let Some(animation) = self.active_animation() {
             let time = match &self.active_animation {
                 AnimationState::Playing { time, .. } => *time,
-                AnimationState::Stopped => 0.0,
+                AnimationState::Stopped { time } => *time,
             };
 
             Some(animation.get_keyframe(time))
@@ -337,7 +347,7 @@ impl Animation {
             path: path.to_string(),
             name: name.to_string(),
             keyframes: Vec::new(),
-            state: AnimationState::Stopped,
+            state: AnimationState::Stopped { time: 0.0 },
             cyclic: true,
         }
     }

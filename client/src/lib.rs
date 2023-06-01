@@ -1,5 +1,6 @@
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 
+use audio::CURR_DISP;
 use glm::vec3;
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
@@ -12,7 +13,9 @@ use std::{
 };
 
 use common::configs::*;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
+use common::core::powerup_system::{
+    PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
@@ -45,6 +48,7 @@ use crate::model::{Model, StaticModel};
 use common::configs;
 use common::core::command::Command;
 use common::core::events;
+use common::core::powerup_system::StatusEffect::Power;
 use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
 use common::core::weather::Weather;
@@ -350,11 +354,13 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
         // load korok material library
-        KOROK_MTL_LIB.set(
-            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
-                .await
-                .unwrap(),
-        );
+        KOROK_MTL_LIB
+            .set(
+                resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
+                    .await
+                    .unwrap(),
+            )
+            .expect("failed to set KOROK_MTL_LIB");
 
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
@@ -642,6 +648,8 @@ impl State {
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
+        // end debug code that needs to be replaced
+
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
             &device,
@@ -836,6 +844,7 @@ impl State {
         // check whether all players are ready, if so launch the game
         if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
             self.display.current = self.display.game_display.clone();
+            *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
         }
 
         // check if the game has ended and set corresponding end screen
@@ -846,6 +855,7 @@ impl State {
             } else {
                 self.display.current = "display:defeat".to_owned();
             }
+            *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
 
             // Reset camera and player for lobby
             self.camera_state.camera.position = glm::vec3(
@@ -960,7 +970,7 @@ impl State {
                     }
                 }
 
-                // update player number of charges
+                // update the wind charge
                 {
                     let screen_id = self
                         .display
@@ -972,8 +982,19 @@ impl State {
                         .unwrap();
 
                     let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                    let ind = *screen.icon_id_map.get("icon:charge").unwrap();
-                    screen.icons[ind].inst_range = 0..self.player.wind_charge;
+
+                    // update player ammo barhead
+                    let ind_barhead = *screen.icon_id_map.get("icon:barhead").unwrap();
+                    screen.icons[ind_barhead].inst_range = 0..1;
+
+                    // update player number of charges
+                    let ind_charge = *screen.icon_id_map.get("icon:charge").unwrap();
+                    screen.icons[ind_charge].inst_range = 0..self.player.wind_charge;
+
+                    // Update empty ammo
+                    let ind_empty_ammo = *screen.icon_id_map.get("icon:empty_charge").unwrap();
+                    screen.icons[ind_empty_ammo].inst_range = self.player.wind_charge..10;
+                    // Adjust the range as per your total ammos
                 }
 
                 // update weather icon
@@ -1019,16 +1040,6 @@ impl State {
                 // is it necessary? would need to pass around lots of references
                 // might be better to create dedicated function in screen/command_handlers
                 {
-                    let screen_id = self
-                        .display
-                        .groups
-                        .get(&self.display.game_display)
-                        .unwrap()
-                        .screen
-                        .as_ref()
-                        .unwrap();
-
-                    // TODO: Magic constants here seem a little unavoidable?
                     let atk_load = String::from("icon:atk_forward_overlay");
                     let atk_area_load = String::from("icon:atk_wave_overlay");
 
@@ -1052,6 +1063,125 @@ impl State {
                         );
                     } else {
                         self.display.transition_map.remove(&atk_area_load);
+                    }
+                }
+
+                // update for powerup
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                    let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult_specific").unwrap();
+
+                    let prev_transp = screen.icons[ind_atk_ult].tint[3];
+                    if let Some(power_up) = self.player.power_up.as_ref() {
+                        // Adjust the properties for both icons
+                        match power_up.0 {
+                            PowerUp::Lightning => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_lightening");
+                            }
+                            PowerUp::WindEnhancement => {
+                                screen.icons[ind_atk_ult].texture = String::from("icon:power_wind");
+                            }
+                            PowerUp::Dash => {
+                                screen.icons[ind_atk_ult].texture = String::from("icon:power_dash");
+                            }
+                            PowerUp::Flash => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_flash");
+                            }
+                            PowerUp::Invisible => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_invisible");
+                            }
+                            PowerUp::TripleJump => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_triple_jump");
+                            }
+                            PowerUp::Invincible => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_invincible");
+                            }
+                        }
+                        screen.icons[ind_atk_ult].tint[3] = 1.0;
+                    } else {
+                        // Reset the properties for both icons to their default values
+                        screen.icons[ind_atk_ult].tint[3] = 0.0;
+                    }
+                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]){
+                        let tint = screen.icons[ind_atk_ult].tint;
+                        for v in &mut screen.icons[ind_atk_ult].vertices {
+                            v.color = tint.into();
+                        }
+                        self.queue.write_buffer(&screen.icons[ind_atk_ult].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices));
+                    }
+                }
+
+                // update cooldown for powerup
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+
+                    let power_up_overlay_id = "icon:atk_powerup_overlay";
+                    let ind_atk_powerup_overlay =
+                        *screen.icon_id_map.get(power_up_overlay_id).unwrap();
+
+                    if let Some((power_up, status)) = self.player.power_up.as_ref() {
+                        if *status == PowerUpStatus::Active {
+                            // Set the overlay icon texture to the corresponding "pure" power-up icon
+                            let power_up_overlay_texture = match power_up {
+                                PowerUp::Lightning => "icon:power_lightening_overlay",
+                                PowerUp::WindEnhancement => "icon:power_wind_overlay",
+                                PowerUp::Dash => "icon:power_dash_overlay",
+                                PowerUp::Flash => "icon:power_flash_overlay",
+                                PowerUp::Invisible => "icon:power_invisible_overlay",
+                                PowerUp::TripleJump => "icon:power_triple_jump_overlay",
+                                PowerUp::Invincible => "icon:power_invincible_overlay",
+                            };
+                            screen.icons[ind_atk_powerup_overlay].texture =
+                                String::from(power_up_overlay_texture);
+
+                            let power_up_status = POWER_UP_TO_EFFECT_MAP
+                                .get(&power_up.value())
+                                .unwrap_or(&StatusEffect::None);
+                            // Calculate the fraction of the power-up time left
+                            if let Some(time_left) = self.player.status_effects.get(power_up_status)
+                            {
+                                //TODO: store that const into config
+                                let fraction_left = *time_left / 10.0;
+
+                                // Apply the SqueezeDown transition
+                                self.display.transition_map.insert(
+                                    String::from(power_up_overlay_id),
+                                    screen::object_transitions::Transition::SqueezeDown(
+                                        fraction_left,
+                                    ),
+                                );
+                            }
+                        } else {
+                            // Remove the overlay icon if the power-up is not active
+                            self.display.transition_map.remove(power_up_overlay_id);
+                            screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
+                        }
+                    } else {
+                        // in case you died holding a powerup
+                        screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
                     }
                 }
 
@@ -1081,10 +1211,16 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .draw_scene_dfs();
-        }
 
-        let particle_queue = particle_queue.lock().unwrap();
-        self.load_particles(particle_queue);
+            {
+                let particle_queue = particle_queue.lock().unwrap();
+                self.add_powerup_particles(game_state_clone, particle_queue, dt);
+            }
+            {
+                let particle_queue = particle_queue.lock().unwrap();
+                self.load_particles(particle_queue);
+            }
+        }
 
         // animation update
         self.animation_controller.update(dt);
@@ -1128,6 +1264,7 @@ impl State {
             &self.color_bind_group_layout,
             &output,
             self.client_id as u32,
+            &self.config,
         );
 
         let size = &self.window.inner_size();
@@ -1223,6 +1360,63 @@ impl State {
         // Recall unused staging buffers
         self.staging_belt.recall();
         Ok(())
+    }
+
+    fn add_powerup_particles(
+        &mut self,
+        game_state: GameState,
+        mut particle_queue: MutexGuard<ParticleQueue>,
+        dt: instant::Duration,
+    ) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let particle_config = config_instance.particles.clone();
+
+        let powerup_players = game_state
+            .players
+            .iter()
+            .filter(|(_, player)| !player.power_up.is_none())
+            .map(|(&id, _)| id)
+            .collect::<Vec<_>>();
+
+        for player_id in powerup_players {
+            if player_id != self.client_id as u32 && self.invisible_players.contains(&player_id) {
+                continue;
+            }
+
+            let player_state = game_state.player(player_id).unwrap();
+            let player_pos = player_state.transform.translation;
+            let player_vel = player_state.physics.velocity;
+
+            let mut aura_color_string = "default";
+            let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
+
+            if player_power_up_status == PowerUpStatus::Active {
+                aura_color_string = match player_power_up {
+                    PowerUp::WindEnhancement => "wind_enhancement",
+                    PowerUp::Dash => "dash",
+                    PowerUp::Flash => "flash",
+                    PowerUp::Invisible => "invisibility",
+                    PowerUp::Invincible => "invincibility",
+                    PowerUp::TripleJump => "triple_jump",
+                    _ => "default",
+                }
+            }
+
+            let aura_color = *particle_config
+                .powerup_aura_particle_config
+                .aura_colors
+                .get(aura_color_string)
+                .unwrap();
+            particle_queue.add_particle(events::ParticleSpec::new(
+                events::ParticleType::POWERUP_AURA,
+                player_pos + player_vel * (dt.as_secs_f32()),
+                glm::vec3(0.0, 1.0, 0.0),
+                //TODO: placeholder for player color
+                glm::vec3(0.0, 1.0, 0.0),
+                glm::vec4(aura_color.0, aura_color.1, aura_color.2, aura_color.3),
+                format!("Power Up Aura from player {}", player_id),
+            ));
+        }
     }
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
@@ -1342,7 +1536,7 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (1, 4),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1369,11 +1563,44 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (14, 18),
+                        (4, 5),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(powerup);
+                }
+                events::ParticleType::POWERUP_AURA => {
+                    // in this case, only position matters
+                    let time = particle_config.powerup_aura_particle_config.time / time_divider;
+                    let powerup_aura_gen = particles::gen::CylinderGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        particle_config.powerup_aura_particle_config.r,
+                        particle_config.powerup_aura_particle_config.half_height,
+                        particle_config.powerup_aura_particle_config.linear_speed,
+                        particle_config.powerup_aura_particle_config.linear_variance,
+                        PI,
+                        particle_config
+                            .powerup_aura_particle_config
+                            .angular_variance,
+                        particle_config.powerup_aura_particle_config.size,
+                        particle_config.powerup_aura_particle_config.size_variance,
+                        particle_config.powerup_aura_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let powerup_aura = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.05),
+                        time,
+                        particle_config.powerup_aura_particle_config.gen_speed,
+                        p.color,
+                        powerup_aura_gen,
+                        (4, 5),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(powerup_aura);
                 }
                 events::ParticleType::RAIN => {
                     let time = 2.;

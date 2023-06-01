@@ -122,7 +122,10 @@ pub mod ConfigurationManager {
 pub fn from_file<P: AsRef<Path>, S: serde::de::DeserializeOwned>(
     path: P,
 ) -> Result<S, serde_json::Error> {
-    let mut file = File::open(path).expect("Unable to open the file");
+    // clone the path
+    let path_buf = path.as_ref().to_path_buf();
+    let mut file = File::open(path)
+        .unwrap_or_else(|_| panic!("Unable to open the file: {}", path_buf.to_str().unwrap()));
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Unable to read the file");

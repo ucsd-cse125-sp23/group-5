@@ -58,12 +58,7 @@ impl CommandHandler for AttackCommandHandler {
         }
 
         // when attacking, remove invisibility
-        if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
-            player_state
-                .status_effects
-                .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-            player_state.power_up = None;
-        }
+        super::remove_invisibility(player_state);
 
         let player_pos = player_state.transform.translation;
 
@@ -106,6 +101,7 @@ impl CommandHandler for AttackCommandHandler {
                 player_pos,
                 "wind".to_string(),
                 (self.player_id, false),
+                (false, false),
             )),
             Recipients::All,
         );

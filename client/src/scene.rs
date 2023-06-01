@@ -351,7 +351,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-        .add_model("korok".to_string());
+        .add_model("korok_1".to_string());
     }
 
     pub fn from_config(json_scene_graph: &ConfigSceneGraph) -> Self {
@@ -364,6 +364,7 @@ impl Scene {
     }
 
     fn add_node_from_config(scene: &mut Scene, json_node: &ConfigNode, parent_id: Option<NodeId>) {
+        println!("adding node config: {:?}", json_node);
         let node_transform = Transform::new_translation(&json_node.transform.position)
             * glm::quat_to_mat4(&json_node.transform.rotation);
 

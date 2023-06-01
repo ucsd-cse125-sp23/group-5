@@ -73,7 +73,7 @@
     "id": "screen:lobby",
         "buttons": [
             {
-                "id": "korok",
+                "id": "korok_1",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -1.333]
@@ -81,14 +81,14 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_1",
+                "hover_tex": "btn:leaf_option_1",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
             {
-                "id": "ferris",
+                "id": "korok_2",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -0.963]
@@ -96,14 +96,14 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_2",
+                "hover_tex": "btn:leaf_option_2",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
             {
-                "id": "player",
+                "id": "korok_3",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -0.593]
@@ -111,14 +111,14 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_3",
+                "hover_tex": "btn:leaf_option_3",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
             {
-                "id": "cube",
+                "id": "korok_4",
                 "location": {
                     "vert_disp": [0.0,0.555],
                     "horz_disp": [0.0, -0.223]
@@ -126,9 +126,9 @@
                 "aspect": 1.0,
                 "height": 0.3,
                 "default_tint": [1.0, 1.0, 1.0, 1.0],
-                "hover_tint": [1.0, 1.0, 1.0, 1.0],
-                "default_tex": "btn:option",
-                "hover_tex": "btn:option_hover",
+                "hover_tint": [0.75, 0.75, 0.75, 1.0],
+                "default_tex": "btn:leaf_option_4",
+                "hover_tex": "btn:leaf_option_4",
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_type"
             },
@@ -314,8 +314,6 @@
                 "mask_tex": "mask:none",
                 "on_click": "change_leaf_color"
             },
-
-
             {
                 "id": "wood_color_1",
                 "location": {
@@ -412,12 +410,12 @@
                 "id": "start_game",
                 "location": {
                     "vert_disp": [0.0, -0.806],
-                    "horz_disp": [0.0, 1.426]
+                    "horz_disp": [0.0, 1.326]
                 },
                 "aspect": 1.692,
                 "height": 0.241,
-                "default_tint": [0.0, 0.0, 0.0, 1.0],
-                "hover_tint": [0.0, 0.0, 0.0, 1.0],
+                "default_tint": [1.0, 1.0, 1.0, 1.0],
+                "hover_tint": [1.0, 1.0, 1.0, 1.0],
                 "default_tex": "btn:go",
                 "hover_tex": "btn:go",
                 "mask_tex": "mask:none",
@@ -557,7 +555,29 @@
                         "scale": [1.0, 1.0]
                     }
                 ]                
-            }
+            },
+            {
+              "id": "hover_icon",
+              "location": {
+                  "vert_disp": [0.0, 1000],
+                  "horz_disp": [0.0, 1000]
+              },
+              "aspect": 1.0,
+              "height": 0.222,
+              "tint": [1.0, 1.0, 1.0, 1.0],
+              "tex": "icon:option_selected",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [0.0, 0.0],
+                          "horz_disp": [0.0, 0.0]
+                      },
+                      "rotation": 0.0,
+                      "scale": [1.0, 1.0]
+                  }
+              ]                
+          }
         ]
     },
     {
@@ -962,8 +982,8 @@
               0.0
             ]
           },
-          "aspect": 12.5,
-          "height": 0.1482,
+          "aspect": 8.915,
+          "height": 0.1519,
           "tint": [
             1.0,
             1.0,
@@ -1075,26 +1095,68 @@
             }]
         },
             {
+              "id": "icon:barhead",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.924
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      -0.533
+                  ]
+              },
+              "aspect": 1.65,
+              "height": 0.136,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "icon:ammo_barhead",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+            {
               "id": "icon:charge",
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.919
+                  -0.924
                 ],
                 "horz_disp": [
                   0.0,
-                  -0.859
+                  -0.409
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.074,
+              "aspect": 0.612,
+              "height": 0.0704,
               "tint": [
                 1.0,
                 1.0,
                 1.0,
                 1.0
               ],
-              "tex": "icon:ammos",
+              "tex": "icon:filled_ammos",
               "mask_tex": "mask:none",
               "instances": [
                 {
@@ -1122,7 +1184,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.096
+                      0.037
                     ]
                   },
                   "rotation": 0.0,
@@ -1139,7 +1201,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.193
+                      0.074
                     ]
                   },
                   "rotation": 0.0,
@@ -1156,7 +1218,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.289
+                      0.111
                     ]
                   },
                   "rotation": 0.0,
@@ -1173,7 +1235,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.385
+                      0.148
                     ]
                   },
                   "rotation": 0.0,
@@ -1190,7 +1252,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.481
+                      0.185
                     ]
                   },
                   "rotation": 0.0,
@@ -1207,7 +1269,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.578
+                      0.222
                     ]
                   },
                   "rotation": 0.0,
@@ -1224,7 +1286,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.674
+                      0.259
                     ]
                   },
                   "rotation": 0.0,
@@ -1241,7 +1303,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.770
+                      0.296
                     ]
                   },
                   "rotation": 0.0,
@@ -1258,7 +1320,7 @@
                     ],
                     "horz_disp": [
                       0.0,
-                      0.867
+                      0.333
                     ]
                   },
                   "rotation": 0.0,
@@ -1270,24 +1332,209 @@
               ]
             },
             {
+              "id": "icon:empty_charge",
+              "location": {
+                  "vert_disp": [0.0, -0.924],
+                  "horz_disp": [0.0, -0.409]
+              },
+              "aspect": 0.612,
+              "height": 0.0704,
+              "tint": [1.0, 1.0, 1.0, 1.0],
+              "tex": "icon:empty_ammo",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.037
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.074
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.111
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.148
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.185
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.222
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.259
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.296
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  },
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.333
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+
+            {
               "id": "icon:atk_forward",
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.898
                 ],
                 "horz_disp": [
                   0.0,
-                  0.237
+                  0.204
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 0.833,
+              "height": 0.178,
               "tint": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
               ],
               "tex": "icon:attack_normal",
               "mask_tex": "mask:none",
@@ -1316,19 +1563,19 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.883
                 ],
                 "horz_disp": [
                   0.0,
-                  0.237
+                  0.204
                 ]
               },
               "aspect": 1.0,
-              "height": 0.222,
+              "height": 0.14,
               "tint": [
-                1.0,
-                1.0,
-                1.0,
+                0.69,
+                0.69,
+                0.69,
                 0.0
               ],
               "tex": "icon:loading",
@@ -1354,24 +1601,66 @@
               ]
             },
             {
+              "id": "icon:atk_forward_icon",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.883
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.204
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.148,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "icon:attack_forward_transp",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+            {
               "id": "icon:atk_wave",
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.898
                 ],
                 "horz_disp": [
                   0.0,
-                  0.504
+                  0.381
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 0.833,
+              "height": 0.178,
               "tint": [
-                0.0,
-                0.0,
-                0.0,
-                1.0
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
               ],
               "tex": "icon:attack_wave",
               "mask_tex": "mask:none",
@@ -1400,19 +1689,19 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.883
                 ],
                 "horz_disp": [
                   0.0,
-                  0.504
+                  0.381
                 ]
               },
               "aspect": 1.0,
-              "height": 0.222,
+              "height": 0.14,
               "tint": [
-                1.0,
-                1.0,
-                1.0,
+                0.69,
+                0.69,
+                0.69,
                 0.0
               ],
               "tex": "icon:loading",
@@ -1438,27 +1727,69 @@
               ]
             },
             {
+              "id": "icon:atk_wave_icon",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.883
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.381
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.148,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "icon:attack_wave_transp",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+            {
               "id": "icon:atk_ult",
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.852
+                  -0.898
                 ],
                 "horz_disp": [
                   0.0,
-                  0.770
+                  0.559
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.222,
+              "aspect": 0.833,
+              "height": 0.178,
               "tint": [
-                0.0,
+                1.0,
                 1.0,
                 1.0,
                 1.0
               ],
-              "tex": "icon:place_circle",
-              "mask_tex": "mask:circle",
+              "tex": "icon:attack_power_up",
+              "mask_tex": "mask:none",
               "instances": [
                 {
                   "translation": {
@@ -1477,6 +1808,90 @@
                     1.0
                   ]
                 }
+              ]
+            },
+            {
+              "id": "icon:atk_powerup_overlay",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.883
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.559
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.14,
+              "tint": [
+                  0.69,
+                  0.69,
+                  0.69,
+                  0.0
+              ],
+              "tex": "icon:loading",
+              "mask_tex": "mask:circle",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+            {
+              "id": "icon:atk_ult_specific",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.883
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.559
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.148,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "mask:circle",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
               ]
             }
           ]

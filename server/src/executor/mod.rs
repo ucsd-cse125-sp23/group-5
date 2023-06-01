@@ -1,7 +1,7 @@
-use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
 use itertools::Itertools;
 use log::{debug, error, info, warn};
+use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use command_handlers::prelude::*;
@@ -63,7 +63,8 @@ impl Executor {
     pub fn game_init(&self, commands: &mut Vec<ClientCommand>) {
         if matches!(self.game_state().life_cycle_state, Running(_)) {
             if !*self.spawn_command_pushed.borrow() {
-                self.game_state.lock().unwrap().game_start_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+                self.game_state.lock().unwrap().game_start_time =
+                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
                 for client_id in self.ready_players.borrow().iter() {
                     commands.push(ClientCommand::new(*client_id, Command::Spawn));
                 }
@@ -123,7 +124,7 @@ impl Executor {
         let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
-        let player_upper_bound = 2;
+        let player_upper_bound = 1;
 
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
@@ -320,24 +321,24 @@ impl Executor {
         commands.push(ClientCommand::server_issued(Command::UpdateWeather));
         commands.push(ClientCommand::server_issued(Command::WeatherEffects));
 
-        // keep this in a block to return game state after we're done 
+        // keep this in a block to return game state after we're done
         {
             let mut game_state = self.game_state.lock().unwrap();
             let game_config = self.config_instance.game.clone();
 
             // check if players are on a power up
-            let players_to_powerup = game_state.check_powerup_players(game_config);
+            let players_to_powerup = game_state.check_powerup_pickup(game_config);
             if !players_to_powerup.is_empty() {
                 for client_id in players_to_powerup.iter() {
                     commands.push(ClientCommand::new(*client_id, Command::GivePowerUp));
                 }
             }
-            
+
             // check if players are on a refill
             for player in game_state.players.values() {
                 commands.push(ClientCommand::new(player.id, Command::Refill));
             }
-        }   
+        }
 
         // automatically spawning the 4 players if gamestate is running now
         self.game_init(commands);
