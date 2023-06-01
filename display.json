@@ -1727,7 +1727,7 @@
               ]
             },
             {
-              "id": "icon:atk_ult_specific",
+              "id": "icon:atk_powerup_overlay",
               "location": {
                   "vert_disp": [
                       0.0,
@@ -1739,15 +1739,15 @@
                   ]
               },
               "aspect": 1.0,
-              "height": 0.148,
+              "height": 0.14,
               "tint": [
-                  1.0,
-                  1.0,
-                  1.0,
-                  1.0
+                  0.69,
+                  0.69,
+                  0.69,
+                  0.0
               ],
-              "tex": "mask:circle",
-              "mask_tex": "mask:none",
+              "tex": "icon:loading",
+              "mask_tex": "mask:circle",
               "instances": [
                   {
                       "translation": {
@@ -1769,7 +1769,7 @@
               ]
             },
             {
-              "id": "icon:atk_powerup_overlay",
+              "id": "icon:atk_ult_specific",
               "location": {
                   "vert_disp": [
                       0.0,
@@ -1783,13 +1783,13 @@
               "aspect": 1.0,
               "height": 0.148,
               "tint": [
-                  0.69,
-                  0.69,
-                  0.69,
-                  0.0
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
               ],
-              "tex": "icon:loading",
-              "mask_tex": "mask:circle",
+              "tex": "mask:circle",
+              "mask_tex": "mask:none",
               "instances": [
                   {
                       "translation": {

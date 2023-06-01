@@ -148,6 +148,10 @@
             "path": "loading.png"
         },
         {
+            "name": "icon:empty",
+            "path": "transparent.png"
+        },
+        {
             "name": "icon:victory",
             "path": "victory.jpg"
         }, 

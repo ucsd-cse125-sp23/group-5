@@ -1078,6 +1078,7 @@ impl State {
                     let screen = self.display.screen_map.get_mut(screen_id).unwrap();
                     let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult_specific").unwrap();
 
+                    let prev_transp = screen.icons[ind_atk_ult].tint[3];
                     if let Some(power_up) = self.player.power_up.as_ref() {
                         // Adjust the properties for both icons
                         match power_up.0 {
@@ -1112,6 +1113,13 @@ impl State {
                     } else {
                         // Reset the properties for both icons to their default values
                         screen.icons[ind_atk_ult].tint[3] = 0.0;
+                    }
+                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]){
+                        let tint = screen.icons[ind_atk_ult].tint;
+                        for v in &mut screen.icons[ind_atk_ult].vertices {
+                            v.color = tint.into();
+                        }
+                        self.queue.write_buffer(&screen.icons[ind_atk_ult].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices));
                     }
                 }
 
@@ -1171,7 +1179,11 @@ impl State {
                         } else {
                             // Remove the overlay icon if the power-up is not active
                             self.display.transition_map.remove(power_up_overlay_id);
+                            screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
                         }
+                    } else {
+                        // in case you died holding a powerup
+                        screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
                     }
                 }
 
