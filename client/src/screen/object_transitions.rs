@@ -31,7 +31,8 @@ impl Transition {
                 // let smoothstepped = (3.0 * (*p).powf(2.0) - 2.0 * (*p).powf(3.0));
                 // let modified_height =
                 //     smoothstepped * (icon.vertices[1].position[1] - icon.vertices[0].position[1]);
-                let modified_height = *p * (icon.vertices[1].position[1] - icon.vertices[0].position[1]);
+                let modified_height =
+                    *p * (icon.vertices[1].position[1] - icon.vertices[0].position[1]);
                 tmp_vtxs[1].position[1] = icon.vertices[0].position[1] + modified_height;
                 tmp_vtxs[2].position[1] = icon.vertices[0].position[1] + modified_height;
                 // tmp_vtxs[1].texture[1] = 1.0 - smoothstepped;
