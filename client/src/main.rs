@@ -22,6 +22,8 @@ use common::configs::*;
 use common::core::events::GameEvent;
 use common::core::states::{GameState, ParticleQueue};
 
+use async_std::task;
+
 fn main() {
     // env::set_var("RUST_BACKTRACE", "1");
     Builder::from_default_env().format_timestamp_micros().init();
@@ -128,7 +130,7 @@ fn main() {
         );
     });
 
-    pollster::block_on(player_loop.run());
+    task::block_on(player_loop.run());
 }
 
 fn restore_ids(session_data_path: &PathBuf) -> (u8, u64) {
