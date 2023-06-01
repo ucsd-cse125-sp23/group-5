@@ -44,8 +44,16 @@
             "path": "score_back.png"
         },
         {
-            "name": "icon:ammos",
-            "path": "ammo.png"
+            "name": "icon:ammo_barhead",
+            "path": "ammo_barhead.png"
+        },
+        {
+            "name": "icon:filled_ammos",
+            "path": "ammo_filled.png"
+        },
+        {
+            "name": "icon:empty_ammo",
+            "path": "ammo_empty.png"
         },
         {
             "name": "icon:atk_back",
@@ -58,6 +66,74 @@
         {
             "name": "icon:attack_wave",
             "path": "attack_wave.png"
+        },
+        {
+            "name": "icon:attack_power_up",
+            "path": "attack_power_up.png"
+        },
+        {
+            "name": "icon:attack_forward_transp",
+            "path": "attack_forward_icon.png"
+        },
+        {
+            "name": "icon:attack_wave_transp",
+            "path": "attack_wave_icon.png"
+        },
+        {
+            "name": "icon:power_dash",
+            "path": "pure_power_dash.png"
+        },
+        {
+            "name": "icon:power_flash",
+            "path": "pure_power_flash.png"
+        },
+        {
+            "name": "icon:power_invincible",
+            "path": "pure_power_invincible.png"
+        },
+        {
+            "name": "icon:power_invisible",
+            "path": "pure_power_invisible.png"
+        },
+        {
+            "name": "icon:power_lightening",
+            "path": "pure_power_lightening.png"
+        },
+        {
+            "name": "icon:power_triple_jump",
+            "path": "pure_power_triple_jump.png"
+        },
+        {
+            "name": "icon:power_wind",
+            "path": "pure_power_wind.png"
+        },
+        {
+            "name": "icon:power_dash_overlay",
+            "path": "power_dash.png"
+        },
+        {
+            "name": "icon:power_flash_overlay",
+            "path": "power_flash.png"
+        },
+        {
+            "name": "icon:power_invincible_overlay",
+            "path": "power_invincible.png"
+        },
+        {
+            "name": "icon:power_invisible_overlay",
+            "path": "power_invisible.png"
+        },
+        {
+            "name": "icon:power_lightening_overlay",
+            "path": "pure_power_lightening.png"
+        },
+        {
+            "name": "icon:power_triple_jump_overlay",
+            "path": "power_triple_jump.png"
+        },
+        {
+            "name": "icon:power_wind_overlay",
+            "path": "power_wind.png"
         },
         {
             "name": "icon:place_circle",
@@ -73,7 +149,11 @@
         },
         {
             "name": "icon:loading",
-            "path": "loading.jpg"
+            "path": "loading.png"
+        },
+        {
+            "name": "icon:empty",
+            "path": "transparent.png"
         },
         {
             "name": "icon:victory",
