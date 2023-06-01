@@ -1,11 +1,11 @@
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 
+use audio::CURR_DISP;
 use glm::vec3;
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
-use audio::CURR_DISP;
 use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
@@ -351,11 +351,13 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
         // load korok material library
-        KOROK_MTL_LIB.set(
-            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
-                .await
-                .unwrap(),
-        ).expect("failed to set KOROK_MTL_LIB");
+        KOROK_MTL_LIB
+            .set(
+                resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
+                    .await
+                    .unwrap(),
+            )
+            .expect("failed to set KOROK_MTL_LIB");
 
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
@@ -1095,10 +1097,7 @@ impl State {
                 let particle_queue = particle_queue.lock().unwrap();
                 self.load_particles(particle_queue);
             }
-
         }
-
-
 
         // animation update
         self.animation_controller.update(dt);
@@ -1240,22 +1239,25 @@ impl State {
         Ok(())
     }
 
-    fn add_powerup_particles(&mut self, game_state: GameState, mut particle_queue: MutexGuard<ParticleQueue>, dt: instant::Duration) {
+    fn add_powerup_particles(
+        &mut self,
+        game_state: GameState,
+        mut particle_queue: MutexGuard<ParticleQueue>,
+        dt: instant::Duration,
+    ) {
         let config_instance = ConfigurationManager::get_configuration();
         let particle_config = config_instance.particles.clone();
 
         let powerup_players = game_state
             .players
             .iter()
-            .filter(|(_, player)| {
-                !player.power_up.is_none()
-            })
+            .filter(|(_, player)| !player.power_up.is_none())
             .map(|(&id, _)| id)
             .collect::<Vec<_>>();
-        
+
         for player_id in powerup_players {
             if player_id != self.client_id as u32 && self.invisible_players.contains(&player_id) {
-                continue; 
+                continue;
             }
 
             let player_state = game_state.player(player_id).unwrap();
@@ -1263,7 +1265,7 @@ impl State {
             let player_vel = player_state.physics.velocity;
 
             let mut aura_color_string = "default";
-            let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap(); 
+            let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
 
             if player_power_up_status == PowerUpStatus::Active {
                 aura_color_string = match player_power_up {
@@ -1277,7 +1279,11 @@ impl State {
                 }
             }
 
-            let aura_color = *particle_config.powerup_aura_particle_config.aura_colors.get(aura_color_string).unwrap();
+            let aura_color = *particle_config
+                .powerup_aura_particle_config
+                .aura_colors
+                .get(aura_color_string)
+                .unwrap();
             particle_queue.add_particle(events::ParticleSpec::new(
                 events::ParticleType::POWERUP_AURA,
                 player_pos + player_vel * (dt.as_secs_f32()),
@@ -1446,13 +1452,15 @@ impl State {
                     let powerup_aura_gen = particles::gen::CylinderGenerator::new(
                         p.position,
                         p.direction,
-                        p.up, 
+                        p.up,
                         particle_config.powerup_aura_particle_config.r,
                         particle_config.powerup_aura_particle_config.half_height,
                         particle_config.powerup_aura_particle_config.linear_speed,
                         particle_config.powerup_aura_particle_config.linear_variance,
-                        PI, 
-                        particle_config.powerup_aura_particle_config.angular_variance, 
+                        PI,
+                        particle_config
+                            .powerup_aura_particle_config
+                            .angular_variance,
                         particle_config.powerup_aura_particle_config.size,
                         particle_config.powerup_aura_particle_config.size_variance,
                         particle_config.powerup_aura_particle_config.size_growth,

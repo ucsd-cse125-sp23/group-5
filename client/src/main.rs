@@ -13,7 +13,7 @@ use bus::Bus;
 use env_logger::Builder;
 use log::{debug, error, info};
 
-use client::audio::{Audio, SoundQueue, AudioAsset, AUDIO_POS_AT_CLIENT};
+use client::audio::{Audio, AudioAsset, SoundQueue, AUDIO_POS_AT_CLIENT};
 use client::event_loop::PlayerLoop;
 use client::inputs::{Input, InputEventProcessor};
 use common::communication::commons::*;
