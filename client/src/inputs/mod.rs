@@ -60,7 +60,6 @@ pub const POLLER_INTERVAL: Duration = Duration::from_millis(60);
 
 // Const for button ids
 const MOUSE_LEFT: u32 = 0;
-const MOUSE_RIGHT: u32 = 1;
 
 pub struct InputEventProcessor {
     protocol: Protocol,
@@ -104,8 +103,7 @@ impl InputEventProcessor {
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
 
             /* move to mouse for testing */
-            // VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
-            // VirtualKeyCode::G => Some((GameKeyKind::PressRelease, AreaAttack)),
+            VirtualKeyCode::F => Some((GameKeyKind::PressRelease, AreaAttack)),
 
             //  Lightning,
             //     WindEnhancement,
@@ -285,15 +283,6 @@ impl InputEventProcessor {
                                 let message: Message = Message::new(
                                     HostRole::Client(self.client_id),
                                     Payload::Command(Command::Attack),
-                                );
-                                self.protocol
-                                    .send_message(&message)
-                                    .expect("send message fails");
-                            }
-                            MOUSE_RIGHT => {
-                                let message: Message = Message::new(
-                                    HostRole::Client(self.client_id),
-                                    Payload::Command(Command::AreaAttack),
                                 );
                                 self.protocol
                                     .send_message(&message)
