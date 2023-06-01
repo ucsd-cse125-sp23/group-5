@@ -1426,12 +1426,16 @@ impl State {
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
+        
         // attack consts
         let attack_cd = physics_config.attack_config.attack_cooldown;
         let max_attack_angle = physics_config.attack_config.max_attack_angle;
         let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let blizzard_max_attack_angle = game_config.powerup_config.blizzard_max_attack_angle;
+        let blizzard_max_attack_dist = game_config.powerup_config.blizzard_max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
         let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
         // particle consts
@@ -1528,34 +1532,33 @@ impl State {
                     self.display.particles.systems.push(atk);
                 }
                 events::ParticleType::BLIZZARD => {
-                    let time = attack_cd / time_divider;
-                    println!("adding particle: {:?}", p);
-                    let atk_gen = particles::gen::ConeGenerator::new(
+                    let time = particle_config.blizzard_particle_config.time / time_divider;
+                    let blizz_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
                         p.up,
-                        max_attack_angle,
-                        max_attack_dist / time,
-                        particle_config.attack_particle_config.linear_variance,
+                        blizzard_max_attack_angle,
+                        blizzard_max_attack_dist / time,
+                        particle_config.blizzard_particle_config.linear_variance,
                         PI,
-                        particle_config.attack_particle_config.angular_variance,
-                        particle_config.attack_particle_config.size,
-                        particle_config.attack_particle_config.size_variance,
-                        particle_config.attack_particle_config.size_growth,
+                        particle_config.blizzard_particle_config.angular_variance,
+                        particle_config.blizzard_particle_config.size,
+                        particle_config.blizzard_particle_config.size_variance,
+                        particle_config.blizzard_particle_config.size_growth,
                         false,
                     );
                     // System
-                    let atk = particles::ParticleSystem::new(
+                    let blizzard = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
-                        particle_config.attack_particle_config.gen_speed,
+                        particle_config.blizzard_particle_config.gen_speed,
                         p.color,
-                        atk_gen,
+                        blizz_gen,
                         (13, 15),
                         &self.device,
                         &mut self.rng,
                     );
-                    self.display.particles.systems.push(atk);
+                    self.display.particles.systems.push(blizzard);
                 }
                 events::ParticleType::POWERUP => {
                     // in this case, only position matters
