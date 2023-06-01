@@ -76,6 +76,14 @@
             "path": "attack_power_up.png"
         },
         {
+            "name": "icon:attack_forward_transp",
+            "path": "attack_forward_icon.png"
+        },
+        {
+            "name": "icon:attack_wave_transp",
+            "path": "attack_wave_icon.png"
+        },
+        {
             "name": "icon:power_dash",
             "path": "pure_power_dash.png"
         },

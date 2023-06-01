@@ -1601,6 +1601,48 @@
               ]
             },
             {
+              "id": "icon:atk_forward_icon",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.883
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.204
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.148,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "icon:attack_forward_transp",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
+              ]
+            },
+            {
               "id": "icon:atk_wave",
               "location": {
                 "vert_disp": [
@@ -1682,6 +1724,48 @@
                     1.0
                   ]
                 }
+              ]
+            },
+            {
+              "id": "icon:atk_wave_icon",
+              "location": {
+                  "vert_disp": [
+                      0.0,
+                      -0.883
+                  ],
+                  "horz_disp": [
+                      0.0,
+                      0.381
+                  ]
+              },
+              "aspect": 1.0,
+              "height": 0.148,
+              "tint": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+              ],
+              "tex": "icon:attack_wave_transp",
+              "mask_tex": "mask:none",
+              "instances": [
+                  {
+                      "translation": {
+                          "vert_disp": [
+                              0.0,
+                              0.0
+                          ],
+                          "horz_disp": [
+                              0.0,
+                              0.0
+                          ]
+                      },
+                      "rotation": 0.0,
+                      "scale": [
+                          1.0,
+                          1.0
+                      ]
+                  }
               ]
             },
             {
