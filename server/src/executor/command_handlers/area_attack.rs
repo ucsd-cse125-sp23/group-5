@@ -1,10 +1,10 @@
 extern crate nalgebra_glm as glm;
 
-use std::time::Duration;
 use common::configs::game_config::ConfigGame;
 use derive_more::Constructor;
 use rapier3d::prelude as rapier;
 use rapier3d::{geometry, pipeline};
+use std::time::Duration;
 
 use common::configs::physics_config::ConfigPhysics;
 use common::core::action_states::ActionState;
@@ -55,12 +55,7 @@ impl CommandHandler for AreaAttackCommandHandler {
         }
 
         // when attacking, remove invisibility
-        if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
-            player_state
-                .status_effects
-                .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-            player_state.power_up = None;
-        }
+        super::remove_invisibility(player_state);
 
         let wind_enhanced = player_state
             .status_effects

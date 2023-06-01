@@ -58,9 +58,7 @@ impl AnimationController {
                                 time: *time % animation_duration,
                             }
                         } else {
-                            AnimationState::Stopped {
-                                time: 0.0,
-                            }
+                            AnimationState::Stopped { time: 0.0 }
                         }
                     } else {
                         AnimationState::Playing {
@@ -69,11 +67,9 @@ impl AnimationController {
                         }
                     }
                 }
-                AnimationState::Stopped { time } => {
-                    AnimationState::Stopped {
-                        time: *time % animated_model.default_animation().duration(),
-                    }
-                }
+                AnimationState::Stopped { time } => AnimationState::Stopped {
+                    time: *time % animated_model.default_animation().duration(),
+                },
             };
 
             animated_model.set_active_animation_state(next_state);
@@ -82,12 +78,11 @@ impl AnimationController {
     }
 
     pub fn play_animation(&mut self, animation_id: AnimationId, node_id: NodeId) {
-
         // if already player, do nothing
         if let Some(AnimationState::Playing {
-                        animation_id: playing_animation_id,
-                        ..
-                    }) = self.animation_states.get(&node_id)
+            animation_id: playing_animation_id,
+            ..
+        }) = self.animation_states.get(&node_id)
         {
             if playing_animation_id == &animation_id {
                 return;
@@ -104,7 +99,6 @@ impl AnimationController {
     }
 
     pub fn stop_animation(&mut self, node_id: NodeId) {
-
         // if already stopped, do nothing
         if let Some(AnimationState::Stopped { .. }) = self.animation_states.get(&node_id) {
             return;
@@ -130,7 +124,7 @@ impl AnimationController {
         }
     }
 
-    pub fn load_game_state(&mut self, game_state: impl Deref<Target=GameState>) {
+    pub fn load_game_state(&mut self, game_state: impl Deref<Target = GameState>) {
         for player_state in game_state.players.values() {
             let node_id = NodeKind::Player.node_id(player_state.id.to_string());
 
@@ -270,7 +264,7 @@ impl AnimatedModel {
             res,
             desc,
         )
-            .await?;
+        .await?;
 
         self.add_animation(animation);
 
