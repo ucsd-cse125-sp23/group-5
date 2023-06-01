@@ -1,9 +1,4 @@
-use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
-
-use audio::CURR_DISP;
-use glm::vec3;
-use other_players::OtherPlayer;
-use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
+use futures::future::join_all;
 use std::collections::{HashMap, HashSet};
 use std::default;
 use std::sync::{mpsc, MutexGuard};
@@ -12,13 +7,36 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use futures::{join, TryFutureExt};
+use glm::vec3;
+use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
+use wgpu::util::DeviceExt;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use winit::event::*;
+use winit::window::Window;
+
+use audio::CURR_DISP;
+use common::configs;
+use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 use common::configs::*;
+use common::core::command::Command;
+use common::core::events;
+use common::core::powerup_system::StatusEffect::Power;
 use common::core::powerup_system::{
     PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
 };
 use common::core::states::GameLifeCycleState::Ended;
+use common::core::states::GameLifeCycleState::Running;
+use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
+use common::core::weather::Weather;
 use model::Vertex;
-use winit::event::*;
+use other_players::OtherPlayer;
+use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
+
+use crate::animation::AnimatedModel;
+use crate::inputs::Input;
+use crate::model::{Model, StaticModel};
 
 mod camera;
 mod instance;
@@ -33,28 +51,10 @@ mod screen;
 mod skybox;
 mod texture;
 
-use nalgebra_glm as glm;
-use nalgebra_glm::Vec3;
-
 mod animation;
 pub mod audio;
 pub mod event_loop;
 pub mod inputs;
-
-use crate::animation::AnimatedModel;
-use crate::inputs::Input;
-use crate::model::{Model, StaticModel};
-
-use common::configs;
-use common::core::command::Command;
-use common::core::events;
-use common::core::powerup_system::StatusEffect::Power;
-use common::core::states::GameLifeCycleState::Running;
-use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
-use common::core::weather::Weather;
-use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
-use winit::window::Window;
 
 struct State {
     surface: wgpu::Surface,
@@ -319,40 +319,14 @@ impl State {
                 label: Some("2d_mask_texture_bind_group_layout"),
             });
 
-        let mask_texture_bind_group_layout_2d =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-                label: Some("2d_mask_texture_bind_group_layout"),
-            });
-
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
         let config_instance = ConfigurationManager::get_configuration();
-        // Scene
-        let model_configs = config_instance.models.clone();
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
-        let mut static_loaded_models = HashMap::new();
-        let mut anim_loaded_models = HashMap::new();
+
         // load korok material library
         KOROK_MTL_LIB
             .set(
@@ -362,41 +336,47 @@ impl State {
             )
             .expect("failed to set KOROK_MTL_LIB");
 
-        // load all models once and clone for scenes
-        for model_config in model_configs.models.clone() {
-            if model_config.animated() {
-                let model = AnimatedModel::load(&model_config.path, model_loading_resources)
-                    .await
-                    .unwrap();
-                anim_loaded_models.insert(model_config.name, model);
-            } else {
-                let model = StaticModel::load(&model_config.path, model_loading_resources)
-                    .await
-                    .unwrap();
-                static_loaded_models.insert(model_config.name, model);
-            }
+        // Scene
+        // creates a series of long lived for life time issues
+        let long_lived_models = config_instance.models.clone().models.clone();
+        let mut long_lived_model_configs = vec![];
+        for model_config in long_lived_models.into_iter() {
+            long_lived_model_configs.push(model_config);
         }
 
-        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+        // vector of futures and names
+        let mut animated_model_futures = vec![];
+        let mut static_model_futures = vec![];
+        let mut animated_futures_names = vec![];
+        let mut static_futures_names = vec![];
 
-        for model_config in model_configs.models.clone() {
-            let model: Box<dyn Model> = if model_config.animated() {
-                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
-                Box::new(anim_model.clone())
+        let model_configs = config_instance.models.clone();
+
+        let mut models_scene: HashMap<String, Box<dyn Model>> = HashMap::new();
+        let mut models_lobby_scene: HashMap<String, Box<dyn Model>> = HashMap::new();
+
+        // load all models once and clone for scenes
+        // why so many loops and redundant hashmaps here?
+        for (index, model_config) in model_configs.models.clone().into_iter().enumerate() {
+            if model_config.animated() {
+                let model = AnimatedModel::load(
+                    &(long_lived_model_configs.get(index).unwrap().path),
+                    model_loading_resources,
+                );
+                animated_model_futures.push(model);
+                animated_futures_names.push(model_config.name);
             } else {
-                let static_model = static_loaded_models
-                    .get(model_config.name.as_str())
-                    .unwrap();
-                Box::new(static_model.clone())
-            };
-            models.insert(model_config.name, model);
+                let model = StaticModel::load(
+                    &(long_lived_model_configs.get(index).unwrap().path),
+                    model_loading_resources,
+                );
+                static_model_futures.push(model);
+                static_futures_names.push(model_config.name);
+            }
         }
 
         let scene_config = config_instance.scene.clone();
         let game_config = config_instance.game.clone();
-
-        let mut scene = scene::Scene::from_config(&scene_config);
-        scene.objects = models;
 
         // placeholder position, will get overriden by server
         let player = player::Player::new(vec3(
@@ -433,15 +413,13 @@ impl State {
         // to demonstrate changing global illumination
         camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
 
-        scene.draw_scene_dfs();
-
         let animation_controller = animation::AnimationController::default();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         #[rustfmt::skip]
-        let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
+            let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
             // point light example
             // lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
             // sun
@@ -613,40 +591,7 @@ impl State {
             &camera_state.camera_bind_group_layout,
         );
 
-        let skybox_tex = texture::Texture::cube(&config_instance.texture.skybox, &device, &queue)
-            .await
-            .unwrap();
-        let skybox = skybox::SkyBoxDrawer::from_texture(
-            skybox_tex,
-            parameters::SKYBOX_SCALE,
-            &device,
-            &config,
-            &camera_state.camera_bind_group_layout,
-        );
-
-        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
-        for model_config in model_configs.models.clone() {
-            let model: Box<dyn Model> = if model_config.animated() {
-                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
-                Box::new(anim_model.clone())
-            } else {
-                let static_model = static_loaded_models
-                    .get(model_config.name.as_str())
-                    .unwrap();
-                Box::new(static_model.clone())
-            };
-            models.insert(model_config.name, model);
-        }
-
         let lobby_scene_config = config_instance.lobby_scene.clone();
-
-        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
-        lobby_scene.objects = models;
-        lobby_scene.draw_scene_dfs();
-
-        let mut scene_map = HashMap::new();
-        scene_map.insert(String::from("scene:game"), scene);
-        scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
         // end debug code that needs to be replaced
 
@@ -674,6 +619,39 @@ impl State {
 
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
+        // join_all
+
+        let (animated_future_done, static_future_done) = join!(
+            join_all(animated_model_futures),
+            join_all(static_model_futures)
+        );
+
+        for (index, model) in animated_future_done.into_iter().enumerate() {
+            let name = animated_futures_names.get(index).unwrap();
+            let _model = model.unwrap();
+            models_scene.insert(String::from(name.clone()), Box::new(_model.clone()));
+            models_lobby_scene.insert(String::from(name), Box::new(_model));
+        }
+
+        for (index, model) in static_future_done.into_iter().enumerate() {
+            let name = static_futures_names.get(index).unwrap();
+            let _model = model.unwrap();
+            models_scene.insert(String::from(name.clone()), Box::new(_model.clone()));
+            models_lobby_scene.insert(String::from(name), Box::new(_model));
+        }
+
+        // moved to here to give time for async
+        let mut scene = scene::Scene::from_config(&scene_config);
+        scene.objects = models_scene;
+        scene.draw_scene_dfs();
+
+        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
+        lobby_scene.objects = models_lobby_scene;
+        lobby_scene.draw_scene_dfs();
+
+        let mut scene_map = HashMap::new();
+        scene_map.insert(String::from("scene:game"), scene);
+        scene_map.insert(String::from("scene:lobby"), lobby_scene);
 
         let display = screen::Display::from_config(
             &display_config,
@@ -1116,12 +1094,16 @@ impl State {
                         // Reset the properties for both icons to their default values
                         screen.icons[ind_atk_ult].tint[3] = 0.0;
                     }
-                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]){
+                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]) {
                         let tint = screen.icons[ind_atk_ult].tint;
                         for v in &mut screen.icons[ind_atk_ult].vertices {
                             v.color = tint.into();
                         }
-                        self.queue.write_buffer(&screen.icons[ind_atk_ult].vbuf, 0, bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices));
+                        self.queue.write_buffer(
+                            &screen.icons[ind_atk_ult].vbuf,
+                            0,
+                            bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices),
+                        );
                     }
                 }
 
@@ -1177,7 +1159,8 @@ impl State {
                         } else {
                             // Remove the overlay icon if the power-up is not active
                             self.display.transition_map.remove(power_up_overlay_id);
-                            screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
+                            screen.icons[ind_atk_powerup_overlay].texture =
+                                String::from("icon:empty");
                         }
                     } else {
                         // in case you died holding a powerup
