@@ -230,7 +230,7 @@ pub struct CylinderGenerator {
     source: glm::Vec3,
     dir: glm::Vec3,
     up: glm::Vec3,
-    r: f32, // max radius of base of cylinder
+    r: f32,           // max radius of base of cylinder
     half_height: f32, // half height of cylinder
     linear_speed: f32,
     linear_variance: f32,
@@ -247,7 +247,7 @@ impl CylinderGenerator {
         source: glm::Vec3,
         dir: glm::Vec3,
         up: glm::Vec3,
-        r: f32, 
+        r: f32,
         half_height: f32,
         linear_speed: f32,
         linear_variance: f32,
@@ -308,12 +308,7 @@ impl ParticleGenerator for CylinderGenerator {
             list.push(Particle {
                 start_pos: [source[0], source[1], source[2], 0.0],
                 color: color.into(),
-                velocity: [
-                    v[0] * lin_scale,
-                    v[1] * lin_scale,
-                    v[2] * lin_scale,
-                    0.0,
-                ],
+                velocity: [v[0] * lin_scale, v[1] * lin_scale, v[2] * lin_scale, 0.0],
                 normal_1: [0., 0., 0., 0.],
                 normal_2: [0., 0., 0., 0.],
                 spawn_time,
