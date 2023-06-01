@@ -276,6 +276,7 @@ impl InputEventProcessor {
                 }
                 Input::Mouse(DeviceEvent::Button { button, state }) => {
                     if state == ElementState::Pressed {
+                        println!("{:?}", button);
                         match button {
                             MOUSE_LEFT => {
                                 let message: Message = Message::new(
