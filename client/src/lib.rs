@@ -1392,8 +1392,11 @@ impl State {
             let player_pos = player_state.transform.translation;
             let player_vel = player_state.physics.velocity;
 
-            let mut aura_color_string = "default";
             let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
+            let mut aura_color_string = match player_power_up {
+                PowerUp::Blizzard => "blizzard",
+                _ => "default",
+            };
 
             if player_power_up_status == PowerUpStatus::Active {
                 aura_color_string = match player_power_up {
