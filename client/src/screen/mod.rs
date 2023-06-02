@@ -424,6 +424,20 @@ impl Display {
                     }
                 }
             };
+
+            // temporary solution because we want background in end screen but don't have a way to specify depth yet
+            if self.current == "display:victory" || self.current == "display:defeat" {
+                render_pass.set_pipeline(&self.scene_pipeline);
+                render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
+
+                for obj in instanced_objs.iter() {
+                    render_pass.draw_model_instanced(
+                        obj,
+                        0..obj.num_instances as u32,
+                        &camera_state.camera_bind_group,
+                    );
+                }
+            }
         }
     }
 
