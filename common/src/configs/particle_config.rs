@@ -7,6 +7,7 @@ pub struct ConfigParticle {
     pub area_attack_particle_config: AreaAttackParticleConfig,
     pub powerup_particle_config: PowerUpParticleConfig,
     pub powerup_aura_particle_config: PowerUpAuraParticleConfig,
+    pub winning_area_ribbon_particle_config: WinningAreaRibbonParticleConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,5 +54,21 @@ pub struct PowerUpAuraParticleConfig {
     pub size: f32,
     pub size_variance: f32,
     pub size_growth: f32,
+    pub gen_speed: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WinningAreaRibbonParticleConfig {
+    pub bounds_min: (f32, f32, f32), 
+    pub bounds_max: (f32, f32, f32), 
+    pub v_dir: (f32, f32, f32),
+    pub visible_time: f32, 
+    pub time: f32,
+    pub gen_time: f32,
+    pub linear_speed: f32,
+    pub linear_variance: f32,
+    pub size: f32,
+    pub size_variance: f32,
+    pub subdivisions: u32,
     pub gen_speed: f32,
 }

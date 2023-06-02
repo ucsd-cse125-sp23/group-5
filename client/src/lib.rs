@@ -78,6 +78,7 @@ struct State {
     glyph_brush: GlyphBrush<()>,
     color_bind_group_layout: wgpu::BindGroupLayout,
     animation_controller: animation::AnimationController,
+    previous_game_life_cycle_state: GameLifeCycleState,
 }
 
 impl State {
@@ -722,6 +723,8 @@ impl State {
                 score: 0.0,
             })
             .collect();
+        
+        let previous_game_life_cycle_state = GameLifeCycleState::Waiting;
 
         Self {
             window,
@@ -745,6 +748,7 @@ impl State {
             glyph_brush,
             color_bind_group_layout,
             animation_controller,
+            previous_game_life_cycle_state,
         }
     }
 
@@ -842,34 +846,50 @@ impl State {
         let game_state_clone = game_state.lock().unwrap().clone();
 
         // check whether all players are ready, if so launch the game
-        if let GameLifeCycleState::Running(timestamp) = game_state_clone.life_cycle_state {
-            self.display.current = self.display.game_display.clone();
-            *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
-        }
-
-        // check if the game has ended and set corresponding end screen
-        if game_state_clone.life_cycle_state == Ended {
-            println!("{:?}", game_state_clone.life_cycle_state);
-            if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
-                self.display.current = "display:victory".to_owned();
-            } else {
-                self.display.current = "display:defeat".to_owned();
+        match game_state_clone.life_cycle_state {
+            GameLifeCycleState::Running(..) => {
+                if self.previous_game_life_cycle_state == GameLifeCycleState::Waiting {
+                    // should only run once 
+                    //println!("once");
+                    self.display.change_to(self.display.game_display.clone());
+                    self.add_game_particles();
+                                /*
+                    self.display.current = self.display.game_display.clone();
+                    *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
+                    */ 
+                    
+                }
             }
-            *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
+            // check if the game has ended and set corresponding end screen
+            GameLifeCycleState::Ended => {
+                //println!("{:?}", game_state_clone.life_cycle_state);
+                if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
+                    self.display.change_to("display:victory".to_owned());
+                } else {
+                    self.display.change_to("display:defeat".to_owned());
+                }
+                //*CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
 
-            // Reset camera and player for lobby
-            self.camera_state.camera.position = glm::vec3(
-                DEFAULT_CAMERA_POS.0,
-                DEFAULT_CAMERA_POS.1,
-                DEFAULT_CAMERA_POS.2,
-            );
-            self.camera_state.camera.target = glm::vec3(
-                DEFAULT_CAMERA_TARGET.0,
-                DEFAULT_CAMERA_TARGET.1,
-                DEFAULT_CAMERA_TARGET.2,
-            );
-            return;
-        }
+                // Reset camera and player for lobby
+                self.camera_state.camera.position = glm::vec3(
+                    DEFAULT_CAMERA_POS.0,
+                    DEFAULT_CAMERA_POS.1,
+                    DEFAULT_CAMERA_POS.2,
+                );
+                self.camera_state.camera.target = glm::vec3(
+                    DEFAULT_CAMERA_TARGET.0,
+                    DEFAULT_CAMERA_TARGET.1,
+                    DEFAULT_CAMERA_TARGET.2,
+                );
+                return;
+            }
+            _ => {
+
+            }
+        } 
+
+        self.previous_game_life_cycle_state = game_state_clone.life_cycle_state.clone();
+
         // game state to scene graph conversion and update
         {
             // new block because we need to drop scene_id before continuing
@@ -1221,6 +1241,7 @@ impl State {
                 let particle_queue = particle_queue.lock().unwrap();
                 self.add_powerup_particles(game_state_clone, particle_queue, dt);
             }
+
             {
                 let particle_queue = particle_queue.lock().unwrap();
                 self.load_particles(particle_queue);
@@ -1367,6 +1388,40 @@ impl State {
         Ok(())
     }
 
+    fn add_game_particles(
+        &mut self,
+    ) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let particle_config = config_instance.particles.clone();
+
+        let bounds_min = particle_config.winning_area_ribbon_particle_config.bounds_min;
+        let bounds_max = particle_config.winning_area_ribbon_particle_config.bounds_max;
+        let v_dir = particle_config.winning_area_ribbon_particle_config.v_dir;
+        let gen = particles::ribbon::LineRibbonGenerator::new(
+            glm::vec3(bounds_min.0, bounds_min.1, bounds_min.2),
+            glm::vec3(bounds_max.0, bounds_max.1, bounds_max.2),
+            glm::vec3(v_dir.0, v_dir.1, v_dir.2),
+            particle_config.winning_area_ribbon_particle_config.linear_speed,
+            particle_config.winning_area_ribbon_particle_config.linear_variance,
+            particle_config.winning_area_ribbon_particle_config.visible_time,
+            particle_config.winning_area_ribbon_particle_config.size,
+            particle_config.winning_area_ribbon_particle_config.size_variance,
+            particle_config.winning_area_ribbon_particle_config.subdivisions,
+            false,
+        );
+        let ribbon = particles::ParticleSystem::new(
+            std::time::Duration::from_secs_f32(particle_config.winning_area_ribbon_particle_config.gen_time),
+            particle_config.winning_area_ribbon_particle_config.time,
+            particle_config.winning_area_ribbon_particle_config.gen_speed,
+            glm::vec4(0.4, 0.9, 0.7, 1.0),
+            gen,
+            (11, 12),
+            &self.device,
+            &mut self.rng,
+        );
+        self.display.particles.systems.push(ribbon);
+    }
+
     fn add_powerup_particles(
         &mut self,
         game_state: GameState,
@@ -1442,35 +1497,6 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // test ribbon particle (maybe loop these for winning area?)
-                    // ribbon sample
-                    /*
-                    let gen = particles::ribbon::LineRibbonGenerator::new(
-                        glm::vec3(-10., -10., -10.),
-                        glm::vec3(10., -8., 10.),
-                        glm::vec3(0., 1., 0.),
-                        10.0,
-                        0.0,
-                        0.5,
-                        20.,
-                        0.0,
-                        50,
-                        false,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        2.0,
-                        5.0,
-                        p.color,
-                        gen,
-                        (11, 12),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-                    */
-
-                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
