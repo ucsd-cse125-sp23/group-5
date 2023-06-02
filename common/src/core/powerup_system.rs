@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum PowerUp {
-    Lightning,
+    Blizzard,
     WindEnhancement,
     Dash,
     Flash,
@@ -20,7 +20,7 @@ pub enum PowerUp {
 impl PowerUp {
     pub fn value(&self) -> u32 {
         match *self {
-            PowerUp::Lightning => 1,
+            PowerUp::Blizzard => 1,
             PowerUp::WindEnhancement => 2,
             PowerUp::Dash => 3,
             PowerUp::Flash => 4,
@@ -36,7 +36,7 @@ impl Distribution<PowerUp> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PowerUp {
         let between = Uniform::from(1..13);
         match between.sample(rng) {
-            1 => PowerUp::Lightning,
+            1 => PowerUp::Blizzard,
             2 | 3 => PowerUp::WindEnhancement,
             4 | 5 => PowerUp::Dash,
             6 | 7 => PowerUp::Flash,

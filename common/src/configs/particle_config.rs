@@ -5,6 +5,7 @@ pub struct ConfigParticle {
     pub time_divider: f32,
     pub attack_particle_config: AttackParticleConfig,
     pub area_attack_particle_config: AreaAttackParticleConfig,
+    pub blizzard_particle_config: BlizzardParticleConfig,
     pub powerup_particle_config: PowerUpParticleConfig,
     pub powerup_aura_particle_config: PowerUpAuraParticleConfig,
 }
@@ -21,6 +22,17 @@ pub struct AttackParticleConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AreaAttackParticleConfig {
+    pub linear_variance: f32,
+    pub angular_variance: f32,
+    pub size: f32,
+    pub size_variance: f32,
+    pub size_growth: f32,
+    pub gen_speed: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BlizzardParticleConfig {
+    pub time: f32,
     pub linear_variance: f32,
     pub angular_variance: f32,
     pub size: f32,

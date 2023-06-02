@@ -50,6 +50,7 @@ pub enum Command {
     Refill,
     CastPowerUp,
     GivePowerUp,
+    StatusEffects,
     Dash,
     Flash,
     UpdateWeather,
