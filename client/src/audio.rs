@@ -93,6 +93,7 @@ impl Audio {
 
     pub fn update_bkgd_track(&mut self, state: GameLifeCycleState, curr_player: u32, winner: u32) {
         if std::mem::discriminant(&self.curr_state) != std::mem::discriminant(&state) {
+            // println!("audio registered state change: {:?}", self.curr_state);
             match state {
                 // title, lobby background track
                 GameLifeCycleState::Waiting => {
