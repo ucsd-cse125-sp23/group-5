@@ -33,6 +33,15 @@ impl CommandHandler for AttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        let leaf_color = game_state
+            .players_customization
+            .get(&self.player_id)
+            .unwrap()
+            .color
+            .get(common::core::choices::LEAF_MESH)
+            .unwrap()
+            .rgb_color;
+
         super::handle_invincible_players(game_state, physics_state, self.player_id);
 
         let player_state = game_state
@@ -105,6 +114,7 @@ impl CommandHandler for AttackCommandHandler {
             )),
             Recipients::All,
         );
+
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::ATTACK,
@@ -112,7 +122,7 @@ impl CommandHandler for AttackCommandHandler {
                 horizontal_camera_forward,
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
-                glm::vec4(0.4, 0.9, 0.7, 1.0),
+                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0),
                 format!("Attack from player {}", self.player_id),
             )),
             Recipients::All,

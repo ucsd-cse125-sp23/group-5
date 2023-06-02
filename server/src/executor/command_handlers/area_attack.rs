@@ -32,6 +32,15 @@ impl CommandHandler for AreaAttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        let leaf_color = game_state
+            .players_customization
+            .get(&self.player_id)
+            .unwrap()
+            .color
+            .get(common::core::choices::LEAF_MESH)
+            .unwrap()
+            .rgb_color;
+
         let player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
@@ -103,7 +112,7 @@ impl CommandHandler for AreaAttackCommandHandler {
                 glm::vec3(0.0, 0.0, 0.0),
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
-                glm::vec4(0.4, 0.9, 0.7, 1.0),
+                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0),
                 format!("Area Attack from player {}", self.player_id),
             )),
             Recipients::All,

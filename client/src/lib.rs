@@ -937,7 +937,7 @@ impl State {
                         {
                             let leaf_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::LEAF_MESH)
+                                .get(common::core::choices::LEAF_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_leaf_ind].tint =
@@ -945,7 +945,7 @@ impl State {
 
                             let body_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::BODY_MESH)
+                                .get(common::core::choices::BODY_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_body_ind].tint =
