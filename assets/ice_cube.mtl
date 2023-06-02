@@ -1,0 +1,12 @@
+# Blender 3.4.1 MTL File: 'korok_animation_exporter_2.blend'
+# www.blender.org
+
+newmtl Material
+Ns 234.344009
+Ka 0.418182 0.418182 0.418182
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd textures/mat_ice.png

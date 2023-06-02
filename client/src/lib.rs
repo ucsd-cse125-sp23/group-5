@@ -1084,9 +1084,9 @@ impl State {
                     if let Some(power_up) = self.player.power_up.as_ref() {
                         // Adjust the properties for both icons
                         match power_up.0 {
-                            PowerUp::Lightning => {
+                            PowerUp::Blizzard => {
                                 screen.icons[ind_atk_ult].texture =
-                                    String::from("icon:power_lightening");
+                                    String::from("icon:power_blizzard");
                             }
                             PowerUp::WindEnhancement => {
                                 screen.icons[ind_atk_ult].texture = String::from("icon:power_wind");
@@ -1150,7 +1150,7 @@ impl State {
                         if *status == PowerUpStatus::Active {
                             // Set the overlay icon texture to the corresponding "pure" power-up icon
                             let power_up_overlay_texture = match power_up {
-                                PowerUp::Lightning => "icon:power_lightening_overlay",
+                                PowerUp::Blizzard => "icon:power_blizzard_overlay",
                                 PowerUp::WindEnhancement => "icon:power_wind_overlay",
                                 PowerUp::Dash => "icon:power_dash_overlay",
                                 PowerUp::Flash => "icon:power_flash_overlay",
@@ -1392,8 +1392,11 @@ impl State {
             let player_pos = player_state.transform.translation;
             let player_vel = player_state.physics.velocity;
 
-            let mut aura_color_string = "default";
             let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
+            let mut aura_color_string = match player_power_up {
+                PowerUp::Blizzard => "blizzard",
+                _ => "default",
+            };
 
             if player_power_up_status == PowerUpStatus::Active {
                 aura_color_string = match player_power_up {
@@ -1426,12 +1429,16 @@ impl State {
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
+        
         // attack consts
         let attack_cd = physics_config.attack_config.attack_cooldown;
         let max_attack_angle = physics_config.attack_config.max_attack_angle;
         let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let blizzard_max_attack_angle = game_config.powerup_config.blizzard_max_attack_angle;
+        let blizzard_max_attack_dist = game_config.powerup_config.blizzard_max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
         let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
         // particle consts
@@ -1513,6 +1520,35 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::BLIZZARD => {
+                    let time = particle_config.blizzard_particle_config.time / time_divider;
+                    let blizz_gen = particles::gen::ConeGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        blizzard_max_attack_angle,
+                        blizzard_max_attack_dist / time,
+                        particle_config.blizzard_particle_config.linear_variance,
+                        PI,
+                        particle_config.blizzard_particle_config.angular_variance,
+                        particle_config.blizzard_particle_config.size,
+                        particle_config.blizzard_particle_config.size_variance,
+                        particle_config.blizzard_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let blizzard = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.blizzard_particle_config.gen_speed,
+                        p.color,
+                        blizz_gen,
+                        (13, 15),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(blizzard);
                 }
                 events::ParticleType::POWERUP => {
                     // in this case, only position matters

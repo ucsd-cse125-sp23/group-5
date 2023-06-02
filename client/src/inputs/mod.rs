@@ -105,7 +105,7 @@ impl InputEventProcessor {
 
             // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
 
-            //  Lightning,
+            //  Blizzard,
             //     WindEnhancement,
             //     Dash,
             //     Flash,
@@ -116,7 +116,7 @@ impl InputEventProcessor {
             // cheatkeys
             VirtualKeyCode::F1 => Some((
                 GameKeyKind::Pressable,
-                Command::CheatCode(PowerUp::Lightning),
+                Command::CheatCode(PowerUp::Blizzard),
             )),
             VirtualKeyCode::F2 => Some((
                 GameKeyKind::Pressable,
