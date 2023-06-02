@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+pub const MODEL_1: &str = "attack shape 1";
+pub const MODEL_2: &str = "attack shape 2";
+pub const MODEL_3: &str = "attack shape 3";
+pub const MODEL_4: &str = "attack shape 4";
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConfigParticle {
     pub time_divider: f32,

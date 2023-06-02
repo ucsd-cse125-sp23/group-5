@@ -1442,33 +1442,13 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // test ribbon particle (maybe loop these for winning area?)
-                    // ribbon sample
-                    /*
-                    let gen = particles::ribbon::LineRibbonGenerator::new(
-                        glm::vec3(-10., -10., -10.),
-                        glm::vec3(10., -8., 10.),
-                        glm::vec3(0., 1., 0.),
-                        10.0,
-                        0.0,
-                        0.5,
-                        20.,
-                        0.0,
-                        50,
-                        false,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        2.0,
-                        5.0,
-                        p.color,
-                        gen,
-                        (11, 12),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-                    */
+                    let leaf_type = match &p.particle_id[..]{
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
 
                     // ORIGINAL
                     let time = attack_cd / time_divider;
@@ -1494,7 +1474,7 @@ impl State {
                         particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (leaf_type * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND, (leaf_type+1) * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1502,6 +1482,13 @@ impl State {
                 }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
+                    let leaf_type = match &p.particle_id[..]{
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
                     let time = area_attack_cd / time_divider;
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
@@ -1521,7 +1508,7 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (leaf_type * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND, (leaf_type+1) * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1548,7 +1535,7 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (4, 5),
+                        (particles::constants::SOFT_CIRCLE_IND, particles::constants::SOFT_CIRCLE_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1581,7 +1568,7 @@ impl State {
                         particle_config.powerup_aura_particle_config.gen_speed,
                         p.color,
                         powerup_aura_gen,
-                        (4, 5),
+                        (particles::constants::SOFT_CIRCLE_IND, particles::constants::SOFT_CIRCLE_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1608,7 +1595,7 @@ impl State {
                         2500.0,
                         p.color,
                         atk_gen,
-                        (10, 11),
+                        (particles::constants::RAIN_IND, particles::constants::RAIN_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1634,7 +1621,7 @@ impl State {
                         5.0,
                         p.color,
                         gen,
-                        (11, 12),
+                        (particles::constants::STREAK_IND, particles::constants::STREAK_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
