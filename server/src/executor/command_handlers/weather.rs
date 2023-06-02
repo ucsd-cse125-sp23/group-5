@@ -19,9 +19,13 @@ pub trait MarkovState<T> {
 }
 
 // Constants for fraction of visits in long term (derived from limiting distribution)
-const RAIN_FRACTION: f64 = 0.3;
-const WIND_FRACTION: f64 = 0.2;
-const NONE_FRACTION: f64 = 0.5;
+// const RAIN_FRACTION: f64 = 0.3;
+// const WIND_FRACTION: f64 = 0.2;
+// const NONE_FRACTION: f64 = 0.5;
+
+const RAIN_FRACTION: f64 = 0.0;
+const WIND_FRACTION: f64 = 1.0;
+const NONE_FRACTION: f64 = 0.0;
 
 #[allow(clippy::assertions_on_constants)]
 const _: () = assert!(RAIN_FRACTION + WIND_FRACTION + NONE_FRACTION == 1.0);
@@ -76,7 +80,7 @@ impl MarkovState<Option<Weather>> for Option<Weather> {
     }
 }
 
-const WEATHER_START_DELAY: u64 = 60 * TICK_RATE;
+const WEATHER_START_DELAY: u64 = 0; //60 * TICK_RATE;
 
 #[derive(Constructor)]
 /// Handles the command to start the weather
@@ -193,6 +197,21 @@ impl WeatherEffectCommandHandler {
 
             body.reset_forces(false);
             body.add_force(wind_dir * WIND_FORCE_MANGNITUDE, true);
+
+            // add wind particles every one second
+            if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
+                game_events.add(
+                    GameEvent::ParticleEvent(ParticleSpec::new(
+                        ParticleType::WIND,
+                        glm::vec3(0.0, 0.0, 0.0),
+                        wind_dir,
+                        Vector::y(),
+                        glm::vec4(0.2, 0.25, 0.25, 0.8),
+                        "wind".to_string(),
+                    )),
+                    Recipients::One(player_id as u8),
+                )
+            }
         }
         Ok(())
     }

@@ -1613,6 +1613,32 @@ impl State {
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                },
+                events::ParticleType::WIND => {
+                    let time = 1.2;
+                    let gen = particles::ribbon::LineRibbonGenerator::new(
+                        glm::vec3(-25., -6., -25.),
+                        glm::vec3(25., 0., 25.),
+                        p.direction,
+                        40.0,
+                        0.0,
+                        0.1,
+                        15.,
+                        0.0,
+                        1,
+                        false,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(time),
+                        0.25,
+                        5.0,
+                        p.color,
+                        gen,
+                        (11, 12),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
                 }
             }
         }
