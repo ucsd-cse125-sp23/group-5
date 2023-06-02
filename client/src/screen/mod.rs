@@ -425,7 +425,7 @@ impl Display {
                 }
             };
 
-            // temporary solution because we want background in end screen but don't have a way to specify depth yet
+            // temporary solution because we want background in end screen but scene is loaded before background
             if self.current == "display:victory" || self.current == "display:defeat" {
                 render_pass.set_pipeline(&self.scene_pipeline);
                 render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
