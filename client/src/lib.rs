@@ -1544,7 +1544,7 @@ impl State {
                         particle_config.blizzard_particle_config.gen_speed,
                         p.color,
                         blizz_gen,
-                        (13, 15),
+                        (particles::constants::SNOW_BASE_IND, particles::constants::SNOW_BASE_IND + particles::constants::SNOW_NUM_TEX_TYPES),
                         &self.device,
                         &mut self.rng,
                     );

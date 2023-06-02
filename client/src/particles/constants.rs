@@ -22,6 +22,8 @@ pub const POWER_UP_IND: u32 = 41;
 pub const RAIN_IND: u32 = 42;
 pub const STREAK_IND: u32 = 43;
 pub const SOLID_IND: u32 = 44;
+pub const SNOW_BASE_IND: u32 = 45;
+pub const SNOW_NUM_TEX_TYPES: u32 = 2;
 
 // pub const MODEL_1: &str = "attack shape 1";
 // pub const MODEL_2: &str = "attack shape 2";
