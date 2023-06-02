@@ -11,11 +11,12 @@ use common::core::mesh_color::MeshColor;
 use log::warn;
 use nalgebra_glm as glm;
 use phf::phf_map;
+use common::core::choices::{OBJECT_PLAYER_MODEL, LEAF_MESH, BODY_MESH, DEFAULT_MODEL};
 
-pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-pub const LEAF_MESH: &str = "leaf";
-pub const BODY_MESH: &str = "korok";
-pub const DEFAULT_MODEL: &str = "korok_1";
+// pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
+// pub const LEAF_MESH: &str = "leaf";
+// pub const BODY_MESH: &str = "korok";
+// pub const DEFAULT_MODEL: &str = "korok_1";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
     "game_start" => game_start,
