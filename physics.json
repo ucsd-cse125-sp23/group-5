@@ -15,7 +15,7 @@
   },
   "movement_config": {
     "walking_cooldown": 0.5,
-    "step_size": 0.225,
+    "step_size": 0.18,
     "gain": 0.1,
     "damping": 10.0,
     "max_jump_count": 2,
