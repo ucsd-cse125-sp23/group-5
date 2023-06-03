@@ -37,6 +37,8 @@ pub struct ConfigPowerUp {
     pub power_up_buff_duration: f32,
     pub power_up_debuff_duration: f32,
     pub power_up_cooldown: f32,
+    pub blizzard_max_attack_dist: f32,
+    pub blizzard_max_attack_angle: f32,
     pub wind_enhancement_scalar: f32,
     pub dash_impulse: f32,
     pub flash_distance_scalar: f32,

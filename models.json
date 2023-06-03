@@ -39,6 +39,10 @@
     {
       "name": "refill",
       "path": "assets/refill.obj"
+    },
+    {
+      "name": "ice",
+        "path": "assets/ice_cube.obj"
     }
   ]
 }

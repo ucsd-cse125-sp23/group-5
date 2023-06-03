@@ -26,6 +26,7 @@ mod movement;
 mod refill;
 mod spawn;
 mod startup;
+mod status;
 mod update_camera_facing;
 mod weather;
 
