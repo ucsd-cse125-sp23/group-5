@@ -912,6 +912,10 @@ impl State {
                 scene.draw_scene_dfs();
             }
 
+            let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
+            let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+            loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
+
             return;
         }
         // game state to scene graph conversion and update

@@ -327,6 +327,22 @@
         {
             "name": "icon:winner_name",
             "path": "winner_name_placeholder.png"
+        },
+        {
+            "name": "icon:player_1",
+            "path": "player_1.png"
+        },
+        {
+            "name": "icon:player_2",
+            "path": "player_2.png"
+        },
+        {
+            "name": "icon:player_3",
+            "path": "player_3.png"
+        },
+        {
+            "name": "icon:player_4",
+            "path": "player_4.png"
         }
     ]
 }

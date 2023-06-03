@@ -2045,15 +2045,15 @@
                 ]
             },
             {
-              "id": "icon:winner_name",
+              "id": "icon:winner_number",
               "location": {
                   "vert_disp": [0.0, 0.548],
                   "horz_disp": [0.0, 0.0]
               },
-              "aspect": 7.868,
-              "height": 0.294,
+              "aspect": 3.055,
+              "height": 0.370,
               "tint": [1.0, 1.0, 1.0, 1.0],
-              "tex": "icon:winner_name",
+              "tex": "icon:player_1",
               "mask_tex": "mask:none",
               "instances": [
                   {
