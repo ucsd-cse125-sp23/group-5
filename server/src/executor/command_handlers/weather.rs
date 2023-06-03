@@ -193,6 +193,21 @@ impl WeatherEffectCommandHandler {
 
             body.reset_forces(false);
             body.add_force(wind_dir * WIND_FORCE_MANGNITUDE, true);
+
+            // add wind particles every one second
+            if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
+                game_events.add(
+                    GameEvent::ParticleEvent(ParticleSpec::new(
+                        ParticleType::WIND,
+                        glm::vec3(0.0, 0.0, 0.0),
+                        wind_dir,
+                        Vector::y(),
+                        glm::vec4(0.2, 0.25, 0.25, 0.8),
+                        "wind".to_string(),
+                    )),
+                    Recipients::One(player_id as u8),
+                )
+            }
         }
         Ok(())
     }

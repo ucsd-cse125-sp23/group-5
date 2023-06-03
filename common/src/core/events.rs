@@ -27,6 +27,7 @@ pub enum ParticleType {
     POWERUP,
     POWERUP_AURA,
     RAIN,
+    WIND,
 }
 /// Particle specification
 #[derive(Constructor, Debug, Clone, Serialize, Deserialize, PartialEq)]
