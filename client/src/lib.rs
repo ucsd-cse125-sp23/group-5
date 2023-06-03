@@ -1,4 +1,4 @@
-use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
+use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS, DEFAULT_CAMERA_FOV};
 
 use audio::CURR_DISP;
 use glm::vec3;
@@ -425,7 +425,7 @@ impl State {
             vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
-            45.0,
+            DEFAULT_CAMERA_FOV,
             0.1,
             100.0,
         );
@@ -868,6 +868,7 @@ impl State {
                 DEFAULT_CAMERA_TARGET.1,
                 DEFAULT_CAMERA_TARGET.2,
             );
+            self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
             return;
         }
         // game state to scene graph conversion and update
