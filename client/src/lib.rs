@@ -44,8 +44,7 @@ pub mod inputs;
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
-use crate::screen::ui_interaction::OBJECT_PLAYER_MODEL;
-
+use common::core::choices::OBJECT_PLAYER_MODEL;
 use common::configs;
 use common::core::command::Command;
 use common::core::events;
