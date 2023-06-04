@@ -25,7 +25,6 @@ pub trait Deserialize {
 /// Abstracted Protocol that wraps a TcpStream and manages
 /// sending & receiving of messages
 pub struct Protocol {
-    reader: Option<BufReader<TcpStream>>,
     stream: TcpStream,
 }
 
@@ -33,7 +32,6 @@ impl Protocol {
     /// Wrap a TcpStream with Protocol
     pub fn with_stream(stream: TcpStream) -> io::Result<Self> {
         Ok(Self {
-            reader: Some(BufReader::new(stream.try_clone()?)),
             stream,
         })
     }
@@ -41,7 +39,6 @@ impl Protocol {
     /// Establish a connection, wrap stream in BufReader/Writer
     pub fn connect(dest: SocketAddr) -> io::Result<Self> {
         let stream = TcpStream::connect(dest)?;
-        let reader = Some(BufReader::new(stream.try_clone()?));
         debug!("Connecting to {}", dest);
         Self::with_stream(stream)
     }
@@ -59,22 +56,18 @@ impl Protocol {
     ///       so only use when a message is expected to arrive
     pub fn read_message<T: Deserialize>(&mut self) -> io::Result<T::Output> {
         T::deserialize(
-            self.reader
-                .as_mut()
-                .expect("Protocol is cloned as write only initialized"),
+            &mut self.stream
         )
     }
 
     pub fn try_clone_into(self) -> io::Result<Self> {
         Ok(Self {
-            reader: self.reader,
             stream: self.stream.try_clone()?,
         })
     }
 
     pub fn try_clone(&self) -> io::Result<Self> {
         Ok(Self {
-            reader: None,
             stream: self.stream.try_clone()?,
         })
     }
