@@ -1,3 +1,4 @@
+use instant::Instant;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -70,6 +71,7 @@ impl PlayerLoop {
             .build(&event_loop)
             .unwrap();
 
+        // let start = Instant::now();
         let mut state = State::new(
             window,
             self.client_id,
@@ -77,6 +79,9 @@ impl PlayerLoop {
             self.game_state.clone(),
         )
         .await;
+
+        // let duration = start.elapsed();
+        // println!("state construction took: {:?}", duration);
 
         // notify audio thread to play bg track
         self.audio_flag.store(true, Ordering::Release);

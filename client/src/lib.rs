@@ -1,7 +1,26 @@
-use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
-
+use crate::animation::AnimatedModel;
+use crate::inputs::Input;
+use crate::model::{Model, StaticModel};
 use audio::CURR_DISP;
+use common::configs;
+use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS, DEFAULT_CAMERA_FOV};
+use common::configs::*;
+use common::core::command::Command;
+use common::core::events;
+use common::core::powerup_system::StatusEffect::Power;
+use common::core::powerup_system::{
+    PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
+use common::core::states::GameLifeCycleState::Ended;
+use common::core::states::GameLifeCycleState::Running;
+use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
+use common::core::weather::Weather;
+use futures::future::join_all;
+use futures::{join, TryFutureExt};
 use glm::vec3;
+use model::Vertex;
+use nalgebra_glm as glm;
+use nalgebra_glm::Vec3;
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
@@ -11,16 +30,15 @@ use std::{
     f32::consts::PI,
     sync::{Arc, Mutex},
 };
-
-use common::configs::*;
-use common::core::powerup_system::{
-    PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
-};
-use common::core::states::GameLifeCycleState::Ended;
-use model::Vertex;
+use wgpu::util::DeviceExt;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::event::*;
-
+use winit::window::Window;
+mod animation;
+pub mod audio;
 mod camera;
+pub mod event_loop;
+pub mod inputs;
 mod instance;
 mod lights;
 mod model;
@@ -32,29 +50,7 @@ mod scene;
 mod screen;
 mod skybox;
 mod texture;
-
-use nalgebra_glm as glm;
-use nalgebra_glm::Vec3;
-
-mod animation;
-pub mod audio;
-pub mod event_loop;
-pub mod inputs;
-
-use crate::animation::AnimatedModel;
-use crate::inputs::Input;
-use crate::model::{Model, StaticModel};
-
-use common::configs;
-use common::core::command::Command;
-use common::core::events;
-use common::core::powerup_system::StatusEffect::Power;
-use common::core::states::GameLifeCycleState::Running;
-use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
-use common::core::weather::Weather;
-use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
-use winit::window::Window;
+use common::core::choices::OBJECT_PLAYER_MODEL;
 
 struct State {
     surface: wgpu::Surface,
@@ -320,40 +316,14 @@ impl State {
                 label: Some("2d_mask_texture_bind_group_layout"),
             });
 
-        let mask_texture_bind_group_layout_2d =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-                label: Some("2d_mask_texture_bind_group_layout"),
-            });
-
         //Render pipeline
         let shader = device.create_shader_module(wgpu::include_wgsl!("3d_shader.wgsl"));
         let shader_2d = device.create_shader_module(wgpu::include_wgsl!("2d_shader.wgsl"));
 
         let config_instance = ConfigurationManager::get_configuration();
-        // Scene
-        let model_configs = config_instance.models.clone();
 
         let model_loading_resources = (&device, &queue, &texture_bind_group_layout);
-        let mut static_loaded_models = HashMap::new();
-        let mut anim_loaded_models = HashMap::new();
+
         // load korok material library
         KOROK_MTL_LIB
             .set(
@@ -363,41 +333,47 @@ impl State {
             )
             .expect("failed to set KOROK_MTL_LIB");
 
+        // Scene
+        // creates a series of long lived for life time issues
+        let long_lived_models = config_instance.models.clone().models.clone();
+        let mut long_lived_model_configs = vec![];
+        for model_config in long_lived_models.into_iter() {
+            long_lived_model_configs.push(model_config);
+        }
+
+        // vector of futures and names
+        let mut animated_model_futures = vec![];
+        let mut static_model_futures = vec![];
+        let mut animated_futures_names = vec![];
+        let mut static_futures_names = vec![];
+
+        let model_configs = config_instance.models.clone();
+
+        let mut models_scene: HashMap<String, Box<dyn Model>> = HashMap::new();
+        let mut models_lobby_scene: HashMap<String, Box<dyn Model>> = HashMap::new();
+        let mut models_end_scene: HashMap<String, Box<dyn Model>> = HashMap::new();
+
         // load all models once and clone for scenes
-        for model_config in model_configs.models.clone() {
+        // why so many loops and redundant hashmaps here?
+        for (index, model_config) in model_configs.models.clone().into_iter().enumerate() {
             if model_config.animated() {
-                let model = AnimatedModel::load(&model_config.path, model_loading_resources)
-                    .await
-                    .unwrap();
-                anim_loaded_models.insert(model_config.name, model);
+                let model = AnimatedModel::load(
+                    &(long_lived_model_configs.get(index).unwrap().path),
+                    model_loading_resources,
+                );
+                animated_model_futures.push(model);
+                animated_futures_names.push(model_config.name);
             } else {
-                let model = StaticModel::load(&model_config.path, model_loading_resources)
-                    .await
-                    .unwrap();
-                static_loaded_models.insert(model_config.name, model);
+                let model = StaticModel::load(
+                    &(long_lived_model_configs.get(index).unwrap().path),
+                    model_loading_resources,
+                );
+                static_model_futures.push(model);
+                static_futures_names.push(model_config.name);
             }
         }
 
-        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
-
-        for model_config in model_configs.models.clone() {
-            let model: Box<dyn Model> = if model_config.animated() {
-                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
-                Box::new(anim_model.clone())
-            } else {
-                let static_model = static_loaded_models
-                    .get(model_config.name.as_str())
-                    .unwrap();
-                Box::new(static_model.clone())
-            };
-            models.insert(model_config.name, model);
-        }
-
-        let scene_config = config_instance.scene.clone();
         let game_config = config_instance.game.clone();
-
-        let mut scene = scene::Scene::from_config(&scene_config);
-        scene.objects = models;
 
         // placeholder position, will get overriden by server
         let player = player::Player::new(vec3(
@@ -426,7 +402,7 @@ impl State {
             vec3(0.0, 1.0, 0.0),
             config.width,
             config.height,
-            45.0,
+            DEFAULT_CAMERA_FOV,
             0.1,
             100.0,
         );
@@ -434,15 +410,13 @@ impl State {
         // to demonstrate changing global illumination
         camera_state.camera.ambient_multiplier = glm::vec3(1.0, 1.0, 1.0).into();
 
-        scene.draw_scene_dfs();
-
         let animation_controller = animation::AnimationController::default();
 
         let depth_texture =
             texture::Texture::create_depth_texture(&device, &config, "depth_texture");
 
         #[rustfmt::skip]
-        let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
+            let TEST_LIGHTING: Vec<lights::Light> = Vec::from([
             // point light example
             // lights::Light { position: glm::vec4(10.0, -9.0, 0.0, 1.0), position_2: glm::vec4(0.0, 0.0, 0.0, 0.0), color: glm::vec3(10.0, 10.0, 10.0) },
             // sun
@@ -569,7 +543,7 @@ impl State {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
+                depth_write_enabled: false, // TODO: change back to true if anything breaks
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
@@ -614,41 +588,39 @@ impl State {
             &camera_state.camera_bind_group_layout,
         );
 
-        let skybox_tex = texture::Texture::cube(&config_instance.texture.skybox, &device, &queue)
-            .await
-            .unwrap();
-        let skybox = skybox::SkyBoxDrawer::from_texture(
-            skybox_tex,
-            parameters::SKYBOX_SCALE,
-            &device,
-            &config,
-            &camera_state.camera_bind_group_layout,
-        );
-
-        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
-        for model_config in model_configs.models.clone() {
-            let model: Box<dyn Model> = if model_config.animated() {
-                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
-                Box::new(anim_model.clone())
-            } else {
-                let static_model = static_loaded_models
-                    .get(model_config.name.as_str())
-                    .unwrap();
-                Box::new(static_model.clone())
-            };
-            models.insert(model_config.name, model);
-        }
-
-        let lobby_scene_config = config_instance.lobby_scene.clone();
-
-        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
-        lobby_scene.objects = models;
-        lobby_scene.draw_scene_dfs();
-
-        let mut scene_map = HashMap::new();
-        scene_map.insert(String::from("scene:game"), scene);
-        scene_map.insert(String::from("scene:lobby"), lobby_scene);
-
+        //
+        // <<<<<<< HEAD
+        // =======
+        //         let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
+        //         lobby_scene.objects = models;
+        //         lobby_scene.draw_scene_dfs();
+        //
+        //         let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+        //         for model_config in model_configs.models.clone() {
+        //             let model: Box<dyn Model> = if model_config.animated() {
+        //                 let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
+        //                 Box::new(anim_model.clone())
+        //             } else {
+        //                 let static_model = static_loaded_models
+        //                     .get(model_config.name.as_str())
+        //                     .unwrap();
+        //                 Box::new(static_model.clone())
+        //             };
+        //             models.insert(model_config.name, model);
+        //         }
+        //
+        //         let end_scene_config = config_instance.end_screen_scene.clone();
+        //
+        //         let mut end_scene = scene::Scene::from_config(&end_scene_config);
+        //         end_scene.objects = models;
+        //         end_scene.draw_scene_dfs();
+        //
+        //         let mut scene_map = HashMap::new();
+        //         scene_map.insert(String::from("scene:game"), scene);
+        //         scene_map.insert(String::from("scene:lobby"), lobby_scene);
+        //         scene_map.insert(String::from("scene:end_screen_scene"), end_scene);
+        //
+        // >>>>>>> main
         // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
@@ -675,6 +647,49 @@ impl State {
 
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
+        // join_all
+
+        let (animated_future_done, static_future_done) = join!(
+            join_all(animated_model_futures),
+            join_all(static_model_futures)
+        );
+
+        for (index, model) in animated_future_done.into_iter().enumerate() {
+            let name = animated_futures_names.get(index).unwrap();
+            let _model = model.unwrap();
+            models_scene.insert(String::from(name.clone()), Box::new(_model.clone()));
+            models_lobby_scene.insert(String::from(name), Box::new(_model.clone()));
+            models_end_scene.insert(String::from(name), Box::new(_model));
+        }
+
+        for (index, model) in static_future_done.into_iter().enumerate() {
+            let name = static_futures_names.get(index).unwrap();
+            let _model = model.unwrap();
+            models_scene.insert(String::from(name.clone()), Box::new(_model.clone()));
+            models_lobby_scene.insert(String::from(name), Box::new(_model.clone()));
+            models_end_scene.insert(String::from(name), Box::new(_model));
+        }
+
+        // moved to here to give time for async
+        let scene_config = config_instance.scene.clone();
+        let mut scene = scene::Scene::from_config(&scene_config);
+        scene.objects = models_scene;
+        scene.draw_scene_dfs();
+
+        let lobby_scene_config = config_instance.lobby_scene.clone();
+        let mut lobby_scene = scene::Scene::from_config(&lobby_scene_config);
+        lobby_scene.objects = models_lobby_scene;
+        lobby_scene.draw_scene_dfs();
+
+        let end_scene_config = config_instance.end_screen_scene.clone();
+        let mut end_scene = scene::Scene::from_config(&end_scene_config);
+        end_scene.objects = models_end_scene;
+        end_scene.draw_scene_dfs();
+
+        let mut scene_map = HashMap::new();
+        scene_map.insert(String::from("scene:game"), scene);
+        scene_map.insert(String::from("scene:lobby"), lobby_scene);
+        scene_map.insert(String::from("scene:end_screen_scene"), end_scene);
 
         let display = screen::Display::from_config(
             &display_config,
@@ -836,6 +851,7 @@ impl State {
         if self.display.current != self.display.game_display.clone()
             && self.display.current != "display:lobby"
         {
+            self.animation_controller.update(dt);
             return;
         }
         // config setup
@@ -881,7 +897,33 @@ impl State {
                     DEFAULT_CAMERA_TARGET.1,
                     DEFAULT_CAMERA_TARGET.2,
                 );
-                return;
+                self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
+
+            self.camera_state
+                .camera_uniform
+                .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+            self.queue.write_buffer(
+                &self.camera_state.camera_buffer,
+                0,
+                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
+            );
+
+            let winner = game_state_clone.game_winner.unwrap();
+            let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
+            if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
+                if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
+                    node.model = Some(winner_custom.model.clone());
+                    node.colors = Some(winner_custom.color.clone());
+                    node.materials = Some(winner_custom.materials.clone());
+                }
+                scene.draw_scene_dfs();
+            }
+
+            let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
+            let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+            loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
+
+            return;
             }
             _ => {
 
@@ -955,9 +997,13 @@ impl State {
                         if let Some(player_customization) =
                             game_state_clone.players_customization.get(&i)
                         {
+                            let leaf_type =
+                                format!("icon:profile_leaf_{}", player_customization.model);
+                            screen.icons[profile_leaf_ind].texture = leaf_type;
+
                             let leaf_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::LEAF_MESH)
+                                .get(common::core::choices::LEAF_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_leaf_ind].tint =
@@ -965,7 +1011,7 @@ impl State {
 
                             let body_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::BODY_MESH)
+                                .get(common::core::choices::BODY_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_body_ind].tint =
@@ -1104,9 +1150,9 @@ impl State {
                     if let Some(power_up) = self.player.power_up.as_ref() {
                         // Adjust the properties for both icons
                         match power_up.0 {
-                            PowerUp::Lightning => {
+                            PowerUp::Blizzard => {
                                 screen.icons[ind_atk_ult].texture =
-                                    String::from("icon:power_lightening");
+                                    String::from("icon:power_blizzard");
                             }
                             PowerUp::WindEnhancement => {
                                 screen.icons[ind_atk_ult].texture = String::from("icon:power_wind");
@@ -1170,7 +1216,7 @@ impl State {
                         if *status == PowerUpStatus::Active {
                             // Set the overlay icon texture to the corresponding "pure" power-up icon
                             let power_up_overlay_texture = match power_up {
-                                PowerUp::Lightning => "icon:power_lightening_overlay",
+                                PowerUp::Blizzard => "icon:power_blizzard_overlay",
                                 PowerUp::WindEnhancement => "icon:power_wind_overlay",
                                 PowerUp::Dash => "icon:power_dash_overlay",
                                 PowerUp::Flash => "icon:power_flash_overlay",
@@ -1310,6 +1356,11 @@ impl State {
                 ],
                 ..Section::default()
             });
+        } else if self.display.current == "display:victory"
+            || self.display.current == "display:defeat"
+        {
+            self.animation_controller
+                .play_animation("idle".to_string(), "object:winner_model".to_string());
         }
         // temporary fix
         else {
@@ -1447,8 +1498,11 @@ impl State {
             let player_pos = player_state.transform.translation;
             let player_vel = player_state.physics.velocity;
 
-            let mut aura_color_string = "default";
             let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
+            let mut aura_color_string = match player_power_up {
+                PowerUp::Blizzard => "blizzard",
+                _ => "default",
+            };
 
             if player_power_up_status == PowerUpStatus::Active {
                 aura_color_string = match player_power_up {
@@ -1481,12 +1535,16 @@ impl State {
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
+
         // attack consts
         let attack_cd = physics_config.attack_config.attack_cooldown;
         let max_attack_angle = physics_config.attack_config.max_attack_angle;
         let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let blizzard_max_attack_angle = game_config.powerup_config.blizzard_max_attack_angle;
+        let blizzard_max_attack_dist = game_config.powerup_config.blizzard_max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
         let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
         // particle consts
@@ -1497,6 +1555,15 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
+                    let leaf_type = match &p.particle_id[..] {
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
+
+                    // ORIGINAL
                     let time = attack_cd / time_divider;
                     println!("adding particle: {:?}", p);
                     let atk_gen = particles::gen::ConeGenerator::new(
@@ -1520,7 +1587,12 @@ impl State {
                         particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (
+                            leaf_type * particles::constants::ATK_NUM_TEX_TYPES
+                                + particles::constants::ATK_BASE_IND,
+                            (leaf_type + 1) * particles::constants::ATK_NUM_TEX_TYPES
+                                + particles::constants::ATK_BASE_IND,
+                        ),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1528,6 +1600,13 @@ impl State {
                 }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
+                    let leaf_type = match &p.particle_id[..] {
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
                     let time = area_attack_cd / time_divider;
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
@@ -1547,11 +1626,49 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (
+                            leaf_type * particles::constants::ATK_NUM_TEX_TYPES
+                                + particles::constants::ATK_BASE_IND,
+                            (leaf_type + 1) * particles::constants::ATK_NUM_TEX_TYPES
+                                + particles::constants::ATK_BASE_IND,
+                        ),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::BLIZZARD => {
+                    let time = particle_config.blizzard_particle_config.time / time_divider;
+                    let blizz_gen = particles::gen::ConeGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        blizzard_max_attack_angle,
+                        blizzard_max_attack_dist / time,
+                        particle_config.blizzard_particle_config.linear_variance,
+                        PI,
+                        particle_config.blizzard_particle_config.angular_variance,
+                        particle_config.blizzard_particle_config.size,
+                        particle_config.blizzard_particle_config.size_variance,
+                        particle_config.blizzard_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let blizzard = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.blizzard_particle_config.gen_speed,
+                        p.color,
+                        blizz_gen,
+                        (
+                            particles::constants::SNOW_BASE_IND,
+                            particles::constants::SNOW_BASE_IND
+                                + particles::constants::SNOW_NUM_TEX_TYPES,
+                        ),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(blizzard);
                 }
                 events::ParticleType::POWERUP => {
                     // in this case, only position matters
@@ -1574,7 +1691,10 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (4, 5),
+                        (
+                            particles::constants::SOFT_CIRCLE_IND,
+                            particles::constants::SOFT_CIRCLE_IND + 1,
+                        ),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1607,7 +1727,10 @@ impl State {
                         particle_config.powerup_aura_particle_config.gen_speed,
                         p.color,
                         powerup_aura_gen,
-                        (4, 5),
+                        (
+                            particles::constants::SOFT_CIRCLE_IND,
+                            particles::constants::SOFT_CIRCLE_IND + 1,
+                        ),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1634,7 +1757,39 @@ impl State {
                         2500.0,
                         p.color,
                         atk_gen,
-                        (10, 11),
+                        (
+                            particles::constants::RAIN_IND,
+                            particles::constants::RAIN_IND + 1,
+                        ),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::WIND => {
+                    let time = 1.2;
+                    let gen = particles::ribbon::LineRibbonGenerator::new(
+                        glm::vec3(-25., -6., -25.),
+                        glm::vec3(25., 0., 25.),
+                        p.direction,
+                        40.0,
+                        0.0,
+                        0.1,
+                        15.,
+                        0.0,
+                        1,
+                        false,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(time),
+                        0.25,
+                        5.0,
+                        p.color,
+                        gen,
+                        (
+                            particles::constants::STREAK_IND,
+                            particles::constants::STREAK_IND + 1,
+                        ),
                         &self.device,
                         &mut self.rng,
                     );

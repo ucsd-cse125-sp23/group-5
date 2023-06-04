@@ -7,15 +7,16 @@ use common::configs::display_config::ScreenLocation;
 
 use crate::screen::Screen;
 use common::core::choices::CurrentSelections;
+use common::core::choices::{BODY_MESH, DEFAULT_MODEL, LEAF_MESH, OBJECT_PLAYER_MODEL};
 use common::core::mesh_color::MeshColor;
 use log::warn;
 use nalgebra_glm as glm;
 use phf::phf_map;
 
-pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-pub const LEAF_MESH: &str = "leaf";
-pub const BODY_MESH: &str = "korok";
-pub const DEFAULT_MODEL: &str = "korok_1";
+// pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
+// pub const LEAF_MESH: &str = "leaf";
+// pub const BODY_MESH: &str = "korok";
+// pub const DEFAULT_MODEL: &str = "korok_1";
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
     "game_start" => game_start,
