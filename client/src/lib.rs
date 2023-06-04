@@ -44,7 +44,7 @@ pub mod inputs;
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
-
+use common::core::choices::OBJECT_PLAYER_MODEL;
 use common::configs;
 use common::core::command::Command;
 use common::core::events;
@@ -568,7 +568,7 @@ impl State {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
+                depth_write_enabled: false, // TODO: change back to true if anything breaks
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
@@ -644,9 +644,30 @@ impl State {
         lobby_scene.objects = models;
         lobby_scene.draw_scene_dfs();
 
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+        for model_config in model_configs.models.clone() {
+            let model: Box<dyn Model> = if model_config.animated() {
+                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
+                Box::new(anim_model.clone())
+            } else {
+                let static_model = static_loaded_models
+                    .get(model_config.name.as_str())
+                    .unwrap();
+                Box::new(static_model.clone())
+            };
+            models.insert(model_config.name, model);
+        }
+
+        let end_scene_config = config_instance.end_screen_scene.clone();
+
+        let mut end_scene = scene::Scene::from_config(&end_scene_config);
+        end_scene.objects = models;
+        end_scene.draw_scene_dfs();
+
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
+        scene_map.insert(String::from("scene:end_screen_scene"), end_scene);
 
         // end debug code that needs to be replaced
 
@@ -832,6 +853,7 @@ impl State {
         if self.display.current != self.display.game_display.clone()
             && self.display.current != "display:lobby"
         {
+            self.animation_controller.update(dt);
             return;
         }
         // config setup
@@ -868,6 +890,31 @@ impl State {
                 DEFAULT_CAMERA_TARGET.1,
                 DEFAULT_CAMERA_TARGET.2,
             );
+
+            self.camera_state
+                .camera_uniform
+                .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+            self.queue.write_buffer(
+                &self.camera_state.camera_buffer,
+                0,
+                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
+            );
+
+            let winner = game_state_clone.game_winner.unwrap();
+            let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
+            if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
+                if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
+                    node.model = Some(winner_custom.model.clone());
+                    node.colors = Some(winner_custom.color.clone());
+                    node.materials = Some(winner_custom.materials.clone());
+                }
+                scene.draw_scene_dfs();
+            }
+
+            let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
+            let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+            loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
+
             return;
         }
         // game state to scene graph conversion and update
@@ -1292,6 +1339,10 @@ impl State {
                 ],
                 ..Section::default()
             });
+        }
+        else if self.display.current == "display:victory" || self.display.current == "display:defeat" {
+            self.animation_controller
+                .play_animation("idle".to_string(), "object:winner_model".to_string());
         }
         // temporary fix
         else {

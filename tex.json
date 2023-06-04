@@ -341,6 +341,54 @@
         {
             "name": "btn:leaf_option_4",
             "path": "leaf_option_4.png"
+        },
+        {
+            "name": "bkgd:end_screen_winner",
+            "path": "end_screen_win.png"
+        },
+        {
+            "name": "bkgd:end_screen_loser",
+            "path": "end_screen_lose.png"
+        },
+        {
+            "name": "btn:restart_default",
+            "path": "restart_default.png"
+        },
+        {
+            "name": "btn:restart_hover",
+            "path": "restart_hover.png"
+        },
+        {
+            "name": "icon:its_your_victory",
+            "path": "victory.png"
+        },
+        {
+            "name": "icon:congrats",
+            "path": "congrats.png"
+        },
+        {
+            "name": "icon:the_winner_is",
+            "path": "winner_is.png"
+        },
+        {
+            "name": "icon:winner_name",
+            "path": "winner_name_placeholder.png"
+        },
+        {
+            "name": "icon:player_1",
+            "path": "player_1.png"
+        },
+        {
+            "name": "icon:player_2",
+            "path": "player_2.png"
+        },
+        {
+            "name": "icon:player_3",
+            "path": "player_3.png"
+        },
+        {
+            "name": "icon:player_4",
+            "path": "player_4.png"
         }
     ]
 }
