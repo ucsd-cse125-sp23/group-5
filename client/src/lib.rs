@@ -1342,12 +1342,12 @@ impl State {
         }
         else if self.display.current == "display:victory" || self.display.current == "display:defeat" {
             self.animation_controller
-                .play_animation("idle".to_string(), "object:winner_model".to_string());
+                .play_animation("dance".to_string(), "object:winner_model".to_string());
         }
         // temporary fix
         else {
             self.animation_controller
-                .play_animation("idel".to_string(), "object:player_model".to_string());
+                .play_animation("idle".to_string(), "object:player_model".to_string());
         }
 
         if self.display.current == self.display.game_display.clone() {
