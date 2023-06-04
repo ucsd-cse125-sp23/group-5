@@ -61,7 +61,7 @@ impl CommandHandler for AttackCommandHandler {
                 "korok_2" => String::from(common::configs::particle_config::MODEL_2),
                 "korok_3" => String::from(common::configs::particle_config::MODEL_3),
                 "korok_4" => String::from(common::configs::particle_config::MODEL_4),
-                _ => String::from(common::configs::particle_config::MODEL_1)
+                _ => String::from(common::configs::particle_config::MODEL_1),
             }
         }
 
