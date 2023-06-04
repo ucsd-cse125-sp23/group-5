@@ -178,8 +178,20 @@
             "path": "profile_wood.png"
         },
         {
-            "name": "icon:profile_leaf_1",
+            "name": "icon:profile_leaf_korok_1",
             "path": "profile_leaf_1.png"
+        },
+        {
+            "name": "icon:profile_leaf_korok_2",
+            "path": "profile_leaf_2.png"
+        },
+        {
+            "name": "icon:profile_leaf_korok_3",
+            "path": "profile_leaf_3.png"
+        },
+        {
+            "name": "icon:profile_leaf_korok_4",
+            "path": "profile_leaf_4.png"
         },
         {
             "name": "icon:loading",

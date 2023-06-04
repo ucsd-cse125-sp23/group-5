@@ -699,7 +699,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [0.0, 0.0, 1.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -785,7 +785,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [1.0, 0.0, 0.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -871,7 +871,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [0.0, 1.0, 0.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -957,7 +957,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [1.0, 1.0, 0.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {

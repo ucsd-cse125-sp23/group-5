@@ -935,6 +935,9 @@ impl State {
                         if let Some(player_customization) =
                             game_state_clone.players_customization.get(&i)
                         {
+                            let leaf_type = format!("icon:profile_leaf_{}", player_customization.model);
+                            screen.icons[profile_leaf_ind].texture = leaf_type; 
+
                             let leaf_color = player_customization
                                 .color
                                 .get(common::core::choices::LEAF_MESH)
