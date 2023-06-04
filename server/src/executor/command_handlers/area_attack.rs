@@ -32,33 +32,35 @@ impl CommandHandler for AreaAttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        let leaf_color = game_state
-            .players_customization
-            .get(&self.player_id)
-            .unwrap()
-            .color
-            .get(common::core::choices::LEAF_MESH)
-            .unwrap()
-            .rgb_color;
+        let leaf_color = 
+            match game_state.players_customization.get(&self.player_id) {
+                Some(c) => {c.color.get(common::core::choices::LEAF_MESH)
+                                            .unwrap()
+                                            .rgb_color},
+                None => [0.0, 1.0, 1.0],
+            };
 
-        let atk_particle: String;
-        {
-            //TODO: There are magic values here...
-
-            let model_id = &game_state
-                .players_customization
-                .get(&self.player_id)
-                .unwrap()
-                .model[..];
-
-            atk_particle = match model_id {
-                "korok_1" => String::from(common::configs::particle_config::MODEL_1),
-                "korok_2" => String::from(common::configs::particle_config::MODEL_2),
-                "korok_3" => String::from(common::configs::particle_config::MODEL_3),
-                "korok_4" => String::from(common::configs::particle_config::MODEL_4),
-                _ => String::from(common::configs::particle_config::MODEL_1),
+            let atk_particle: String;
+            {
+                //TODO: There are magic values here...
+    
+                let def = String::from("korok_1");
+                let model_id = 
+                    match game_state
+                    .players_customization
+                    .get(&self.player_id){
+                        Some(c) => &c.model[..],
+                        None => &def[..]
+                    };
+    
+                atk_particle = match model_id {
+                    "korok_1" => String::from(common::configs::particle_config::MODEL_1),
+                    "korok_2" => String::from(common::configs::particle_config::MODEL_2),
+                    "korok_3" => String::from(common::configs::particle_config::MODEL_3),
+                    "korok_4" => String::from(common::configs::particle_config::MODEL_4),
+                    _ => String::from(common::configs::particle_config::MODEL_1)
+                }
             }
-        }
 
         let player_state = game_state
             .player_mut(self.player_id)

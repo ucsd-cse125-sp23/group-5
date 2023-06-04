@@ -1,6 +1,7 @@
 use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 use common::core::action_states::ActionState;
+use common::core::choices::FinalChoices;
 use common::core::command::Command;
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
@@ -33,24 +34,27 @@ impl CommandHandler for AttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        let leaf_color = game_state
-            .players_customization
-            .get(&self.player_id)
-            .unwrap()
-            .color
-            .get(common::core::choices::LEAF_MESH)
-            .unwrap()
-            .rgb_color;
-
+        let leaf_color = 
+            match game_state.players_customization.get(&self.player_id) {
+                Some(c) => {c.color.get(common::core::choices::LEAF_MESH)
+                                            .unwrap()
+                                            .rgb_color},
+                None => [0.0, 1.0, 1.0],
+            };
+            
+        
         let atk_particle: String;
         {
             //TODO: There are magic values here...
-
-            let model_id = &game_state
+            let def = String::from("korok_1");
+            let model_id = 
+                match game_state
                 .players_customization
-                .get(&self.player_id)
-                .unwrap()
-                .model[..];
+                .get(&self.player_id){
+                    Some(c) => &c.model[..],
+                    None => &def[..]
+                };
+                
 
             atk_particle = match model_id {
                 "korok_1" => String::from(common::configs::particle_config::MODEL_1),
