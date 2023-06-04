@@ -7,11 +7,11 @@ use common::configs::display_config::ScreenLocation;
 
 use crate::screen::Screen;
 use common::core::choices::CurrentSelections;
+use common::core::choices::{BODY_MESH, DEFAULT_MODEL, LEAF_MESH, OBJECT_PLAYER_MODEL};
 use common::core::mesh_color::MeshColor;
 use log::warn;
 use nalgebra_glm as glm;
 use phf::phf_map;
-use common::core::choices::{OBJECT_PLAYER_MODEL, LEAF_MESH, BODY_MESH, DEFAULT_MODEL};
 
 // pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 // pub const LEAF_MESH: &str = "leaf";

@@ -13,8 +13,8 @@ use nalgebra_glm as glm;
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
 use common::core::mesh_color::MeshColor;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::powerup_system::OtherEffects::{Slippery, Stun};
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 
 use crate::player::{Player, PlayerController};
@@ -116,7 +116,7 @@ impl NodeKind {
             NodeKind::Object => "object",
             NodeKind::World => "world",
         }
-            .to_string()
+        .to_string()
     }
 
     // anything that can be displayed
@@ -174,11 +174,7 @@ impl Scene {
         child_node
     }
 
-    pub fn add_child(
-        &mut self,
-        parent_node_id: NodeId,
-        child_node: Node,
-    )  {
+    pub fn add_child(&mut self, parent_node_id: NodeId, child_node: Node) {
         let parent_node = self.scene_graph.get_mut(&parent_node_id).unwrap();
 
         // don't want to add duplicates, as we may have removed it for invisibility
@@ -189,7 +185,6 @@ impl Scene {
         // add the child node to the scene graph
         self.scene_graph.insert(child_node.id.clone(), child_node);
     }
-
 
     pub fn add_world_child_node(
         &mut self,
@@ -215,7 +210,7 @@ impl Scene {
 
     pub fn load_game_state(
         &mut self,
-        game_state: impl Deref<Target=GameState>,
+        game_state: impl Deref<Target = GameState>,
         player_controller: &mut PlayerController,
         player: &mut Player,
         camera_state: &mut CameraState,
@@ -236,22 +231,17 @@ impl Scene {
                 }
 
                 let ice_node_id = NodeKind::Object.node_id(format!("ice_{}", id));
-                match player_state.status_effects.contains_key(&StatusEffect::Other(Slippery)) {
+                match player_state
+                    .status_effects
+                    .contains_key(&StatusEffect::Other(Slippery))
+                {
                     true if !self.scene_graph.contains_key(&ice_node_id) => {
+                        let mut ice_node =
+                            Node::with_transform(ice_node_id.clone(), Transform::identity());
 
-                        let mut ice_node = Node::with_transform(
-                            ice_node_id.clone(),
-                            Transform::identity(),
-                        );
+                        ice_node.add_model("ice".to_string());
 
-                        ice_node.add_model(
-                            "ice".to_string(),
-                        );
-
-                        self.add_child(
-                            node_id,
-                            ice_node,
-                        );
+                        self.add_child(node_id, ice_node);
 
                         self.draw_scene_dfs();
                     }
@@ -395,7 +385,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-            .add_model("korok_1".to_string());
+        .add_model("korok_1".to_string());
     }
 
     pub fn from_config(json_scene_graph: &ConfigSceneGraph) -> Self {
