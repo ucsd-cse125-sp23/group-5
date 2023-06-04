@@ -1,5 +1,6 @@
 use anyhow::Context;
-use std::fs::{read, read_to_string};
+use async_std::fs::read_to_string;
+use std::fs::read;
 use std::io::{BufReader, Cursor};
 use std::sync::Arc;
 
@@ -55,7 +56,9 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
     let path = find_in_search_path(file_name)
         .ok_or_else(|| anyhow::Error::msg(format!("error finding {file_name}")))?;
 
-    read_to_string(path).map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
+    read_to_string(path)
+        .await
+        .map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
 }
 
 pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {

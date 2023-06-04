@@ -2,6 +2,7 @@ use crate::model::{Material, Mesh, Model, StaticModel};
 use crate::resources::{find_in_search_path, ModelLoadingResources};
 use anyhow::Context;
 use derive_more::Constructor;
+use futures::future::join_all;
 use log::{error, info};
 use std::any::Any;
 use std::collections::HashMap;
@@ -294,39 +295,53 @@ impl AnimatedModel {
                 serde_json::from_reader(reader).context("Could not parse animation desc file")?;
             animation_descs = desc;
         }
+        let mut longer_lived_entries = vec![];
+        let mut default_animations = vec![];
 
         for entry in dir {
             let entry = entry.context("Could not read animation directory entry")?;
-
             // if entry is a file, skip it
             if entry.file_type().unwrap().is_file() {
                 continue;
             }
+            longer_lived_entries.push(entry.path().clone());
+            default_animations.push(AnimationDesc::default());
+        }
 
-            let path = entry.path();
-            let path = path
-                .to_str()
-                .context("Could not convert animation path to string")?;
+        let mut futures = vec![];
 
-            let path_buf = PathBuf::from(path);
-            let name = path_buf
-                .file_stem()
-                .context("Could not get animation name")?
-                .to_str()
-                .context("Could not convert animation name to string")?;
+        for (index, _) in longer_lived_entries.iter().enumerate() {
+            futures.push(load_animation(
+                longer_lived_entries
+                    .get(index)
+                    .clone()
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+                res,
+                animation_descs
+                    .get(
+                        PathBuf::from(
+                            longer_lived_entries
+                                .get(index)
+                                .clone()
+                                .unwrap()
+                                .to_str()
+                                .unwrap(),
+                        )
+                        .file_stem()
+                        .context("Could not get animation name")?
+                        .to_str()
+                        .context("Could not convert animation name to string")?,
+                    )
+                    .unwrap_or(&(default_animations.get(index).unwrap())),
+            ))
+        }
 
-            if let Err(e) = self
-                .load_animation(
-                    path,
-                    res,
-                    animation_descs
-                        .get(name)
-                        .unwrap_or(&AnimationDesc::default()),
-                )
-                .await
-            {
-                error!("Skipping animation {}: {}", path, e);
-            }
+        let futures_finished = join_all(futures).await;
+
+        for future_finished in futures_finished.into_iter() {
+            self.add_animation(future_finished?);
         }
 
         Ok(())
@@ -476,4 +491,32 @@ impl Model for AnimatedModel {
     fn clone_box(&self) -> Box<dyn Model> {
         Box::new(self.clone())
     }
+}
+
+pub async fn load_animation(
+    path: &str,
+    res: ModelLoadingResources<'_>,
+    desc: &AnimationDesc,
+) -> anyhow::Result<Animation> {
+    let path_buf = find_in_search_path(path).context("Could not find animation file")?;
+    // name is the filename without the extension
+    let name = path_buf
+        .file_stem()
+        .context("Could not get animation name")?
+        .to_str()
+        .context("Could not convert animation name to string")?;
+
+    info!("Loading animation {} from {}", name, path);
+
+    let animation = Animation::load_from_dir(
+        path_buf
+            .to_str()
+            .context("Could not convert animation path to string")?,
+        name,
+        res,
+        desc,
+    )
+    .await?;
+
+    Ok(animation)
 }
