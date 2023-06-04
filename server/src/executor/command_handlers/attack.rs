@@ -41,7 +41,7 @@ impl CommandHandler for AttackCommandHandler {
             .get(common::core::choices::LEAF_MESH)
             .unwrap()
             .rgb_color;
-        
+
         let atk_particle: String;
         {
             //TODO: There are magic values here...
@@ -57,7 +57,7 @@ impl CommandHandler for AttackCommandHandler {
                 "korok_2" => String::from(common::configs::particle_config::MODEL_2),
                 "korok_3" => String::from(common::configs::particle_config::MODEL_3),
                 "korok_4" => String::from(common::configs::particle_config::MODEL_4),
-                _ => String::from(common::configs::particle_config::MODEL_1)
+                _ => String::from(common::configs::particle_config::MODEL_1),
             }
         }
 
