@@ -27,6 +27,7 @@ use crate::configs::texture_config::ConfigTexture;
 pub const MODELS_CONFIG_PATH: &str = "models.json";
 pub const SCENE_CONFIG_PATH: &str = "scene.json";
 pub const LOBBY_SCENE_CONFIG_PATH: &str = "lobby_scene.json";
+pub const END_SCREEN_SCENE_CONFIG_PATH: &str = "end_screen_scene.json";
 pub const AUDIO_CONFIG_PATH: &str = "audio.json";
 pub const GAME_CONFIG_PATH: &str = "game.json";
 pub const DISPLAY_CONFIG_PATH: &str = "display.json";
@@ -43,6 +44,8 @@ pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCell
         from_file(SCENE_CONFIG_PATH).expect("Failed to load scene config");
     let lobby_scene: ConfigSceneGraph =
         from_file(LOBBY_SCENE_CONFIG_PATH).expect("Failed to load scene config");
+    let end_screen_scene: ConfigSceneGraph =
+        from_file(END_SCREEN_SCENE_CONFIG_PATH).expect("Failed to load scene config");
     let audio: ConfigAudioAssets =
         from_file(AUDIO_CONFIG_PATH).expect("Failed to load audio config");
     let player: ConfigGame = from_file(GAME_CONFIG_PATH).expect("Failed to load player config");
@@ -58,6 +61,7 @@ pub static CONFIG_INSTANCE: OnceCellLazy<RwLock<Option<Arc<Config>>>> = OnceCell
         models,
         scene,
         lobby_scene,
+        end_screen_scene,
         audio,
         player,
         display,
@@ -72,6 +76,7 @@ pub struct Config {
     pub models: ConfigModels,
     pub scene: ConfigSceneGraph,
     pub lobby_scene: ConfigSceneGraph,
+    pub end_screen_scene: ConfigSceneGraph,
     pub audio: ConfigAudioAssets,
     pub game: ConfigGame,
     pub display: ConfigDisplay,
@@ -85,6 +90,7 @@ impl Config {
         models: ConfigModels,
         scene: ConfigSceneGraph,
         lobby_scene: ConfigSceneGraph,
+        end_screen_scene: ConfigSceneGraph,
         audio: ConfigAudioAssets,
         game: ConfigGame,
         display: ConfigDisplay,
@@ -96,6 +102,7 @@ impl Config {
             models,
             scene,
             lobby_scene,
+            end_screen_scene,
             audio,
             game,
             display,

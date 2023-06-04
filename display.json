@@ -18,13 +18,13 @@
     },
     {
       "id": "display:victory",
-      "screen": "screen:victory",
-      "scene": "scene:game"
+      "screen": "screen:winner",
+      "scene": "scene:end_screen_scene"
     },
     {
       "id": "display:defeat",
-      "screen": "screen:defeat",
-      "scene": "scene:game"
+      "screen": "screen:loser",
+      "scene": "scene:end_screen_scene"
     }
   ],
   "screens": [
@@ -699,7 +699,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [0.0, 0.0, 1.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -785,7 +785,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [1.0, 0.0, 0.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -871,7 +871,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [0.0, 1.0, 0.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -957,7 +957,7 @@
           "aspect": 1.0,
           "height": 0.078,
           "tint": [1.0, 1.0, 0.0, 1.0],
-          "tex": "icon:profile_leaf_1",
+          "tex": "icon:profile_leaf_korok_1",
           "mask_tex": "mask:none",
           "instances": [
               {
@@ -1897,9 +1897,9 @@
           ]
         },
         {
-          "id": "screen:victory",
+          "id": "screen:winner",
           "background": {
-            "tex": "bkgd:end_screen",
+            "tex": "bkgd:end_screen_winner",
             "mask_tex": "mask:none",
             "aspect": 1.77777778
           },
@@ -1908,15 +1908,15 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.5
+                  -0.672
                 ],
                 "horz_disp": [
                   0.0,
-                  0.0
+                  1.074
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.926,
+              "aspect": 2.155,
+              "height": 0.419,
               "default_tint": [
                 1.0,
                 1.0,
@@ -1929,61 +1929,63 @@
                 1.0,
                 1.0
               ],
-              "default_tex": "btn:title",
-              "hover_tex": "btn:title_hover",
+              "default_tex": "btn:restart_default",
+              "hover_tex": "btn:restart_hover",
               "mask_tex": "mask:none",
               "on_click": "go_to_title"
             }
           ],
           "icons": [
-            {
-              "id": "icon:victory",
-              "location": {
-                "vert_disp": [
-                  0.0,
-                  0.0
-                ],
-                "horz_disp": [
-                  0.0,
-                  0.0
+              {
+                "id": "icon:its_your_victory",
+                "location": {
+                    "vert_disp": [0.0, 0.777],
+                    "horz_disp": [0.0, 0.0]
+                },
+                "aspect": 9.712,
+                "height": 0.122,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:its_your_victory",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
                 ]
+            },
+            {
+              "id": "icon:congrats",
+              "location": {
+                  "vert_disp": [0.0, 0.548],
+                  "horz_disp": [0.0, 0.0]
               },
-              "aspect": 1.77777778,
-              "height": 1.8,
-              "tint": [
-                1.0,
-                1.0,
-                1.0,
-                1.0
-              ],
-              "tex": "icon:victory",
+              "aspect": 7.791,
+              "height": 0.302,
+              "tint": [1.0, 1.0, 1.0, 1.0],
+              "tex": "icon:congrats",
               "mask_tex": "mask:none",
               "instances": [
-                {
-                  "translation": {
-                    "vert_disp": [
-                      0.0,
-                      0.0
-                    ],
-                    "horz_disp": [
-                      0.0,
-                      0.0
-                    ]
-                  },
-                  "rotation": 0.0,
-                  "scale": [
-                    1.0,
-                    1.0
-                  ]
-                }
+                  {
+                      "translation": {
+                          "vert_disp": [0.0, 0.0],
+                          "horz_disp": [0.0, 0.0]
+                      },
+                      "rotation": 0.0,
+                      "scale": [1.0, 1.0]
+                  }
               ]
-            }
-          ]
+          }
+        ]
         },
         {
-          "id": "screen:defeat",
+          "id": "screen:loser",
           "background": {
-            "tex": "bkgd:end_screen",
+            "tex": "bkgd:end_screen_loser",
             "mask_tex": "mask:none",
             "aspect": 1.77777778
           },
@@ -1992,15 +1994,15 @@
               "location": {
                 "vert_disp": [
                   0.0,
-                  -0.5
+                  -0.672
                 ],
                 "horz_disp": [
                   0.0,
-                  0.0
+                  1.074
                 ]
               },
-              "aspect": 1.0,
-              "height": 0.926,
+              "aspect": 2.155,
+              "height": 0.419,
               "default_tint": [
                 1.0,
                 1.0,
@@ -2013,56 +2015,58 @@
                 1.0,
                 1.0
               ],
-              "default_tex": "btn:title",
-              "hover_tex": "btn:title_hover",
+              "default_tex": "btn:restart_default",
+              "hover_tex": "btn:restart_hover",
               "mask_tex": "mask:none",
               "on_click": "go_to_title"
             }
           ],
           "icons": [
-            {
-              "id": "icon:defeat",
-              "location": {
-                "vert_disp": [
-                  0.0,
-                  0.0
-                ],
-                "horz_disp": [
-                  0.0,
-                  0.0
+              {
+                "id": "icon:the_winner_is",
+                "location": {
+                    "vert_disp": [0.0, 0.777],
+                    "horz_disp": [0.0, 0.0]
+                },
+                "aspect": 8.773,
+                "height": 0.098,
+                "tint": [1.0, 1.0, 1.0, 1.0],
+                "tex": "icon:the_winner_is",
+                "mask_tex": "mask:none",
+                "instances": [
+                    {
+                        "translation": {
+                            "vert_disp": [0.0, 0.0],
+                            "horz_disp": [0.0, 0.0]
+                        },
+                        "rotation": 0.0,
+                        "scale": [1.0, 1.0]
+                    }
                 ]
+            },
+            {
+              "id": "icon:winner_number",
+              "location": {
+                  "vert_disp": [0.0, 0.548],
+                  "horz_disp": [0.0, 0.0]
               },
-              "aspect": 1.77777778,
-              "height": 1.8,
-              "tint": [
-                1.0,
-                1.0,
-                1.0,
-                1.0
-              ],
-              "tex": "icon:defeat",
+              "aspect": 3.055,
+              "height": 0.370,
+              "tint": [1.0, 1.0, 1.0, 1.0],
+              "tex": "icon:player_1",
               "mask_tex": "mask:none",
               "instances": [
-                {
-                  "translation": {
-                    "vert_disp": [
-                      0.0,
-                      0.0
-                    ],
-                    "horz_disp": [
-                      0.0,
-                      0.0
-                    ]
-                  },
-                  "rotation": 0.0,
-                  "scale": [
-                    1.0,
-                    1.0
-                  ]
-                }
+                  {
+                      "translation": {
+                          "vert_disp": [0.0, 0.0],
+                          "horz_disp": [0.0, 0.0]
+                      },
+                      "rotation": 0.0,
+                      "scale": [1.0, 1.0]
+                  }
               ]
-            }
-          ]
+          }
+        ]
         }
       ]
     }
