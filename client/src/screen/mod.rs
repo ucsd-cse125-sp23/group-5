@@ -1,15 +1,13 @@
+use self::objects::Screen;
+use crate::skybox;
+use common::configs::display_config::{ConfigDisplay, ScreenLocation};
 use common::configs::ConfigurationManager;
+use common::core::choices::CurrentSelections;
+use common::core::states::GameState;
 use nalgebra_glm as glm;
-use rand::rngs::adapter::ReadError;
 use std::collections::{HashMap, HashSet};
 use std::sync::{mpsc, Arc, Mutex};
 use wgpu::util::DeviceExt;
-
-use common::configs::display_config::{ConfigDisplay, ScreenLocation};
-use common::configs::model_config::ModelIndex;
-use common::core::choices::CurrentSelections;
-use common::core::mesh_color::MeshColor;
-use common::core::states::GameState;
 
 use crate::audio::CURR_DISP;
 use crate::inputs::Input;
@@ -21,9 +19,6 @@ use crate::screen::display_helper::{create_display_group, create_screen_map};
 use crate::screen::object_transitions::Transition;
 use crate::screen::ui_interaction::BUTTON_MAP;
 use crate::{camera, lights, model, texture};
-
-use self::objects::Screen;
-use crate::skybox;
 
 pub mod display_helper;
 pub mod location_helper;
@@ -184,7 +179,7 @@ impl Display {
                     normal_2: [0., 0., 0., 0.],
                     spawn_time: 0.0,
                     size: 75.0,
-                    tex_id: id as i32 + 4,
+                    tex_id: id as i32 - 1 + (particles::constants::LABEL_BASE_IND as i32),
                     z_pos,
                     time_elapsed: 0.0,
                     size_growth: 0.0,
@@ -211,9 +206,7 @@ impl Display {
                     normal_2: [0., 0., 0., 0.],
                     spawn_time: 0.0,
                     size: 100.0,
-                    tex_id: 9, // TODO: Find more icons for powerup
-                    // prob need a system to link each powerup to each icon
-                    // (Or perhaps we can just use one Icon and show players what they get after they have obtained it, adds a little bit of randomness on top)
+                    tex_id: particles::constants::POWER_UP_IND as i32,
                     z_pos,
                     time_elapsed: 0.0,
                     size_growth: 0.0,
@@ -335,7 +328,6 @@ impl Display {
                         );
                     }
 
-
                     let mut curr_btn_loc = ScreenLocation {
                         vert_disp: (1000.0, 1000.0),
                         horz_disp: (1000.0, 1000.0),
@@ -345,7 +337,9 @@ impl Display {
                         let mut texture = &button.default_texture;
                         texture = match button.is_hover(mouse) {
                             true => {
-                                if button.id != Some("start_game".to_string()) && !self.customization_choices.ready{
+                                if button.id != Some("start_game".to_string())
+                                    && !self.customization_choices.ready
+                                {
                                     curr_btn_loc = button.location.clone();
                                 }
                                 button_id = button.id.clone();
@@ -410,7 +404,7 @@ impl Display {
                             if icon.id == "hover_icon" {
                                 if let Some(b) = &button_id {
                                     icon.height = 0.37;
-                                    if b.contains("color"){
+                                    if b.contains("color") {
                                         icon.height = 0.222;
                                     }
                                 }
@@ -428,6 +422,20 @@ impl Display {
                     }
                 }
             };
+
+            // temporary solution because we want background in end screen but scene is loaded before background
+            if self.current == "display:victory" || self.current == "display:defeat" {
+                render_pass.set_pipeline(&self.scene_pipeline);
+                render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
+
+                for obj in instanced_objs.iter() {
+                    render_pass.draw_model_instanced(
+                        obj,
+                        0..obj.num_instances as u32,
+                        &camera_state.camera_bind_group,
+                    );
+                }
+            }
         }
     }
 

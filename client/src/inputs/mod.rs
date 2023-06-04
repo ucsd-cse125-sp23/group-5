@@ -58,6 +58,10 @@ pub enum CheatCodeState {
 /// Input polling interval
 pub const POLLER_INTERVAL: Duration = Duration::from_millis(60);
 
+// Const for button ids
+const MOUSE_LEFT: u32 = 0;
+const MOUSE_LEFT_WINDOWS: u32 = 1;
+
 pub struct InputEventProcessor {
     protocol: Protocol,
     client_id: u8,
@@ -94,14 +98,14 @@ impl InputEventProcessor {
             VirtualKeyCode::Space => Some((GameKeyKind::Pressable, Jump)),
             VirtualKeyCode::LShift => Some((GameKeyKind::Pressable, Spawn)),
             VirtualKeyCode::RShift => Some((GameKeyKind::Pressable, Die)),
-            VirtualKeyCode::E => Some((GameKeyKind::Pressable, CastPowerUp)), // TODO: Change
+            VirtualKeyCode::F => Some((GameKeyKind::Pressable, CastPowerUp)),
+            VirtualKeyCode::E => Some((GameKeyKind::Pressable, AreaAttack)),
 
             // match PressRelease keys
-            // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
-            VirtualKeyCode::F => Some((GameKeyKind::PressRelease, Attack)),
-            VirtualKeyCode::G => Some((GameKeyKind::PressRelease, AreaAttack)),
 
-            //  Lightning,
+            // VirtualKeyCode::LShift => Some((GameKeyKind::PressRelease, Spawn)),
+
+            //  Blizzard,
             //     WindEnhancement,
             //     Dash,
             //     Flash,
@@ -112,7 +116,7 @@ impl InputEventProcessor {
             // cheatkeys
             VirtualKeyCode::F1 => Some((
                 GameKeyKind::Pressable,
-                Command::CheatCode(PowerUp::Lightning),
+                Command::CheatCode(PowerUp::Blizzard),
             )),
             VirtualKeyCode::F2 => Some((
                 GameKeyKind::Pressable,
@@ -270,6 +274,23 @@ impl InputEventProcessor {
                     self.protocol
                         .send_message(&message)
                         .expect("send message fails");
+                }
+                Input::Mouse(DeviceEvent::Button { button, state }) => {
+                    if state == ElementState::Pressed {
+                        //println!("{:?}", button);
+                        match button {
+                            MOUSE_LEFT | MOUSE_LEFT_WINDOWS => {
+                                let message: Message = Message::new(
+                                    HostRole::Client(self.client_id),
+                                    Payload::Command(Command::Attack),
+                                );
+                                self.protocol
+                                    .send_message(&message)
+                                    .expect("send message fails");
+                            }
+                            _ => {}
+                        }
+                    }
                 }
                 _ => {}
             }

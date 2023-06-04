@@ -33,6 +33,34 @@ impl CommandHandler for AttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
+        let leaf_color = game_state
+            .players_customization
+            .get(&self.player_id)
+            .unwrap()
+            .color
+            .get(common::core::choices::LEAF_MESH)
+            .unwrap()
+            .rgb_color;
+        
+        let atk_particle: String;
+        {
+            //TODO: There are magic values here...
+
+            let model_id = &game_state
+                .players_customization
+                .get(&self.player_id)
+                .unwrap()
+                .model[..];
+
+            atk_particle = match model_id {
+                "korok_1" => String::from(common::configs::particle_config::MODEL_1),
+                "korok_2" => String::from(common::configs::particle_config::MODEL_2),
+                "korok_3" => String::from(common::configs::particle_config::MODEL_3),
+                "korok_4" => String::from(common::configs::particle_config::MODEL_4),
+                _ => String::from(common::configs::particle_config::MODEL_1)
+            }
+        }
+
         super::handle_invincible_players(game_state, physics_state, self.player_id);
 
         let player_state = game_state
@@ -58,12 +86,7 @@ impl CommandHandler for AttackCommandHandler {
         }
 
         // when attacking, remove invisibility
-        if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
-            player_state
-                .status_effects
-                .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
-            player_state.power_up = None;
-        }
+        super::remove_invisibility(player_state);
 
         let player_pos = player_state.transform.translation;
 
@@ -106,10 +129,11 @@ impl CommandHandler for AttackCommandHandler {
                 player_pos,
                 "wind".to_string(),
                 (self.player_id, false),
-                (false, false)
+                (false, false),
             )),
             Recipients::All,
         );
+
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::ATTACK,
@@ -117,8 +141,8 @@ impl CommandHandler for AttackCommandHandler {
                 horizontal_camera_forward,
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
-                glm::vec4(0.4, 0.9, 0.7, 1.0),
-                format!("Attack from player {}", self.player_id),
+                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0),
+                atk_particle,
             )),
             Recipients::All,
         );

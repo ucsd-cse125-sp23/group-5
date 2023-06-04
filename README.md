@@ -54,13 +54,13 @@ To get started on contributing to the project, follow the steps below.
 3. Run the server and client(s)
     1) In debug mode(running locally)
     ```sh
-    cargo run --features debug --bin server # start the server
-    cargo run --features debug --bin client # start a client
+    cargo run --features debug --release --bin server # start the server
+    cargo run --features debug --release --bin client # start a client
     ```
     2) In production mode
    ```sh
-    cargo run --features prod --bin server # start the server
-    cargo run --features prod --bin client # start a client
+    cargo run --features prod --release --bin server # start the server
+    cargo run --features prod --release --bin client # start a client
     ```
 
 <!-- Testing -->

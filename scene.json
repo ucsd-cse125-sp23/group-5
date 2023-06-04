@@ -9,14 +9,54 @@
       },
       "children": [
         {
-          "id": "object:ferris",
+          "id": "object:refill_1",
           "transform": {
-            "position": [0, 2, 0],
+            "position":     [
+              24.0,
+              1.5,
+              24.0
+            ],
+            "rotation": [0, 0.7071, 0, 0.7071]
+          },
+          "model": "refill"
+        },
+        {
+          "id": "object:refill_2",
+          "transform": {
+            "position":     [
+              24.0,
+              1.5,
+              -24.0
+            ],
             "rotation": [0, 0.2, 0, 1]
           },
-          "decompose": true,
-          "model": "ferris"
+          "model": "refill"
+        },
+        {
+          "id": "object:refill_3",
+          "transform": {
+            "position":     [
+              -24.0,
+              1.5,
+              24.0
+            ],
+            "rotation": [0, 0.2, 0, 1]
+          },
+          "model": "refill"
+        },
+        {
+          "id": "object:refill_4",
+          "transform": {
+            "position":     [
+              -24.0,
+              1.5,
+              -24.0
+            ],
+            "rotation": [0, 0.2, 0, 1]
+          },
+          "model": "refill"
         }
+
       ]
     }
   ]

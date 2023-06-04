@@ -1,9 +1,41 @@
 {
     "particles": [
-        "particles/p1.png",
-        "particles/p2.png",
-        "particles/p3.png",
-        "particles/p4.png",
+        "particles/particle_leaf_1_large_g.png",
+        "particles/particle_leaf_1_large_w.png",
+        "particles/particle_leaf_1_mid_g.png",
+        "particles/particle_leaf_1_mid_w.png",
+        "particles/particle_leaf_1_small_g.png",
+        "particles/particle_leaf_1_small_w.png",
+        "particles/particle_leaf_1_tiny_b.png",
+        "particles/particle_leaf_1_tiny_g.png",
+        "particles/particle_leaf_1_tiny_w.png",
+        "particles/particle_leaf_2_large_g.png",
+        "particles/particle_leaf_2_large_w.png",
+        "particles/particle_leaf_2_mid_g.png",
+        "particles/particle_leaf_2_mid_w.png",
+        "particles/particle_leaf_2_small_g.png",
+        "particles/particle_leaf_2_small_w.png",
+        "particles/particle_leaf_2_tiny_b.png",
+        "particles/particle_leaf_2_tiny_g.png",
+        "particles/particle_leaf_2_tiny_w.png",
+        "particles/particle_leaf_3_large_g.png",
+        "particles/particle_leaf_3_large_w.png",
+        "particles/particle_leaf_3_mid_g.png",
+        "particles/particle_leaf_3_mid_w.png",
+        "particles/particle_leaf_3_small_g.png",
+        "particles/particle_leaf_3_small_w.png",
+        "particles/particle_leaf_3_tiny_b.png",
+        "particles/particle_leaf_3_tiny_g.png",
+        "particles/particle_leaf_3_tiny_w.png",
+        "particles/particle_leaf_4_large_g.png",
+        "particles/particle_leaf_4_large_w.png",
+        "particles/particle_leaf_4_mid_g.png",
+        "particles/particle_leaf_4_mid_w.png",
+        "particles/particle_leaf_4_small_g.png",
+        "particles/particle_leaf_4_small_w.png",
+        "particles/particle_leaf_4_tiny_b.png",
+        "particles/particle_leaf_4_tiny_g.png",
+        "particles/particle_leaf_4_tiny_w.png",
         "particles/p5.png",
         "particles/p6.png",
         "particles/p7.png",
@@ -13,10 +45,8 @@
         "particles/rain_particle.png",
         "particles/streak.png",
         "particles/solid_color.png",
-        "particles/powerup1.png",
-        "particles/powerup2.png",
-        "particles/powerup3.png",
-        "particles/powerup4.png"
+        "particles/snow1.png",
+        "particles/snow2.png"
     ],
     "skybox": [
         "skybox/px.png",
@@ -48,8 +78,16 @@
             "path": "score_back.png"
         },
         {
-            "name": "icon:ammos",
-            "path": "ammo.png"
+            "name": "icon:ammo_barhead",
+            "path": "ammo_barhead.png"
+        },
+        {
+            "name": "icon:filled_ammos",
+            "path": "ammo_filled.png"
+        },
+        {
+            "name": "icon:empty_ammo",
+            "path": "ammo_empty.png"
         },
         {
             "name": "icon:atk_back",
@@ -64,6 +102,74 @@
             "path": "attack_wave.png"
         },
         {
+            "name": "icon:attack_power_up",
+            "path": "attack_power_up.png"
+        },
+        {
+            "name": "icon:attack_forward_transp",
+            "path": "attack_forward_icon.png"
+        },
+        {
+            "name": "icon:attack_wave_transp",
+            "path": "attack_wave_icon.png"
+        },
+        {
+            "name": "icon:power_dash",
+            "path": "pure_power_dash.png"
+        },
+        {
+            "name": "icon:power_flash",
+            "path": "pure_power_flash.png"
+        },
+        {
+            "name": "icon:power_invincible",
+            "path": "pure_power_invincible.png"
+        },
+        {
+            "name": "icon:power_invisible",
+            "path": "pure_power_invisible.png"
+        },
+        {
+            "name": "icon:power_blizzard",
+            "path": "pure_power_lightening.png"
+        },
+        {
+            "name": "icon:power_triple_jump",
+            "path": "pure_power_triple_jump.png"
+        },
+        {
+            "name": "icon:power_wind",
+            "path": "pure_power_wind.png"
+        },
+        {
+            "name": "icon:power_dash_overlay",
+            "path": "power_dash.png"
+        },
+        {
+            "name": "icon:power_flash_overlay",
+            "path": "power_flash.png"
+        },
+        {
+            "name": "icon:power_invincible_overlay",
+            "path": "power_invincible.png"
+        },
+        {
+            "name": "icon:power_invisible_overlay",
+            "path": "power_invisible.png"
+        },
+        {
+            "name": "icon:power_blizzard_overlay",
+            "path": "pure_power_lightening.png"
+        },
+        {
+            "name": "icon:power_triple_jump_overlay",
+            "path": "power_triple_jump.png"
+        },
+        {
+            "name": "icon:power_wind_overlay",
+            "path": "power_wind.png"
+        },
+        {
             "name": "icon:place_circle",
             "path": "circle_mask.png"
         },
@@ -72,12 +178,28 @@
             "path": "profile_wood.png"
         },
         {
-            "name": "icon:profile_leaf_1",
+            "name": "icon:profile_leaf_korok_1",
             "path": "profile_leaf_1.png"
         },
         {
+            "name": "icon:profile_leaf_korok_2",
+            "path": "profile_leaf_2.png"
+        },
+        {
+            "name": "icon:profile_leaf_korok_3",
+            "path": "profile_leaf_3.png"
+        },
+        {
+            "name": "icon:profile_leaf_korok_4",
+            "path": "profile_leaf_4.png"
+        },
+        {
             "name": "icon:loading",
-            "path": "loading.jpg"
+            "path": "loading.png"
+        },
+        {
+            "name": "icon:empty",
+            "path": "transparent.png"
         },
         {
             "name": "icon:victory",
@@ -219,6 +341,54 @@
         {
             "name": "btn:leaf_option_4",
             "path": "leaf_option_4.png"
+        },
+        {
+            "name": "bkgd:end_screen_winner",
+            "path": "end_screen_win.png"
+        },
+        {
+            "name": "bkgd:end_screen_loser",
+            "path": "end_screen_lose.png"
+        },
+        {
+            "name": "btn:restart_default",
+            "path": "restart_default.png"
+        },
+        {
+            "name": "btn:restart_hover",
+            "path": "restart_hover.png"
+        },
+        {
+            "name": "icon:its_your_victory",
+            "path": "victory.png"
+        },
+        {
+            "name": "icon:congrats",
+            "path": "congrats.png"
+        },
+        {
+            "name": "icon:the_winner_is",
+            "path": "winner_is.png"
+        },
+        {
+            "name": "icon:winner_name",
+            "path": "winner_name_placeholder.png"
+        },
+        {
+            "name": "icon:player_1",
+            "path": "player_1.png"
+        },
+        {
+            "name": "icon:player_2",
+            "path": "player_2.png"
+        },
+        {
+            "name": "icon:player_3",
+            "path": "player_3.png"
+        },
+        {
+            "name": "icon:player_4",
+            "path": "player_4.png"
         }
     ]
 }

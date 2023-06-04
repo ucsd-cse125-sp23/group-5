@@ -19,13 +19,9 @@ pub trait MarkovState<T> {
 }
 
 // Constants for fraction of visits in long term (derived from limiting distribution)
-// const RAIN_FRACTION: f64 = 0.3;
-// const WIND_FRACTION: f64 = 0.2;
-// const NONE_FRACTION: f64 = 0.5;
-
-const RAIN_FRACTION: f64 = 0.0;
-const WIND_FRACTION: f64 = 0.0;
-const NONE_FRACTION: f64 = 1.0;
+const RAIN_FRACTION: f64 = 0.3;
+const WIND_FRACTION: f64 = 0.2;
+const NONE_FRACTION: f64 = 0.5;
 
 #[allow(clippy::assertions_on_constants)]
 const _: () = assert!(RAIN_FRACTION + WIND_FRACTION + NONE_FRACTION == 1.0);
@@ -167,7 +163,7 @@ impl WeatherEffectCommandHandler {
                     player_state.transform.translation,
                     "rain".to_string(),
                     (0, false),
-                    (true, true)
+                    (true, true),
                 )),
                 Recipients::One(player_id as u8),
             )
@@ -197,6 +193,21 @@ impl WeatherEffectCommandHandler {
 
             body.reset_forces(false);
             body.add_force(wind_dir * WIND_FORCE_MANGNITUDE, true);
+
+            // add wind particles every one second
+            if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
+                game_events.add(
+                    GameEvent::ParticleEvent(ParticleSpec::new(
+                        ParticleType::WIND,
+                        glm::vec3(0.0, 0.0, 0.0),
+                        wind_dir,
+                        Vector::y(),
+                        glm::vec4(0.2, 0.25, 0.25, 0.8),
+                        "wind".to_string(),
+                    )),
+                    Recipients::One(player_id as u8),
+                )
+            }
         }
         Ok(())
     }
@@ -212,12 +223,13 @@ impl WeatherEffectCommandHandler {
             super::reset_weather(physics_state, player_id);
 
             // TODO: change to actual sound event
-            game_events.add( // to stop rain sound
+            game_events.add(
+                // to stop rain sound
                 GameEvent::SoundEvent(SoundSpec::new(
                     glm::Vec3::new(0.0, 0.0, 0.0),
                     "rain".to_string(),
                     (0, false),
-                    (true, false)
+                    (true, false),
                 )),
                 Recipients::One(player_id as u8),
             )

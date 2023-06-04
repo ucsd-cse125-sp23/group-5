@@ -9,7 +9,7 @@ use rapier3d::prelude as rapier;
 use common::configs::ConfigurationManager;
 use common::core::events::GameEvent;
 use common::core::powerup_system::OtherEffects::Stun;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
+use common::core::powerup_system::{PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect};
 use common::core::states::{calculate_distance, GameState, PlayerState};
 
 use crate::simulation::physics_state::PhysicsState;
@@ -18,14 +18,15 @@ use crate::Recipients;
 mod area_attack;
 mod attack;
 mod cast_powerup;
-mod give_powerup;
 mod cheat_code;
 mod die;
+mod give_powerup;
 mod jump;
 mod movement;
 mod refill;
 mod spawn;
 mod startup;
+mod status;
 mod update_camera_facing;
 mod weather;
 
@@ -201,4 +202,15 @@ pub fn apply_stun(player_state: &mut PlayerState, duration: f32) {
                 .unwrap_or(&0.0),
         ),
     );
+}
+
+pub fn remove_invisibility(player_state: &mut PlayerState) {
+    if player_state.holds_status_effect_mut(StatusEffect::Power(PowerUpEffects::Invisible)) {
+        player_state
+            .status_effects
+            .remove(&StatusEffect::Power(PowerUpEffects::Invisible));
+        if let Some((PowerUp::Invisible, PowerUpStatus::Active)) = player_state.power_up.clone() {
+            player_state.power_up = None;
+        }
+    }
 }

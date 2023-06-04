@@ -1,11 +1,11 @@
 use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS};
 
+use audio::CURR_DISP;
 use glm::vec3;
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
 use std::collections::{HashMap, HashSet};
 use std::default;
-use audio::CURR_DISP;
 use std::sync::{mpsc, MutexGuard};
 use std::{
     f32::consts::PI,
@@ -13,7 +13,9 @@ use std::{
 };
 
 use common::configs::*;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
+use common::core::powerup_system::{
+    PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect, POWER_UP_TO_EFFECT_MAP,
+};
 use common::core::states::GameLifeCycleState::Ended;
 use model::Vertex;
 use winit::event::*;
@@ -42,10 +44,11 @@ pub mod inputs;
 use crate::animation::AnimatedModel;
 use crate::inputs::Input;
 use crate::model::{Model, StaticModel};
-
+use common::core::choices::OBJECT_PLAYER_MODEL;
 use common::configs;
 use common::core::command::Command;
 use common::core::events;
+use common::core::powerup_system::StatusEffect::Power;
 use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
 use common::core::weather::Weather;
@@ -351,11 +354,13 @@ impl State {
         let mut static_loaded_models = HashMap::new();
         let mut anim_loaded_models = HashMap::new();
         // load korok material library
-        KOROK_MTL_LIB.set(
-            resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
-                .await
-                .unwrap(),
-        ).expect("failed to set KOROK_MTL_LIB");
+        KOROK_MTL_LIB
+            .set(
+                resources::load_material_library(KOROK_MTL_LIBRARY_PATH, model_loading_resources)
+                    .await
+                    .unwrap(),
+            )
+            .expect("failed to set KOROK_MTL_LIB");
 
         // load all models once and clone for scenes
         for model_config in model_configs.models.clone() {
@@ -426,7 +431,7 @@ impl State {
         );
 
         // to demonstrate changing global illumination
-        camera_state.camera.ambient_multiplier = glm::vec3(1., 1., 1.).into();
+        camera_state.camera.ambient_multiplier = glm::vec3(1.0, 1.0, 1.0).into();
 
         scene.draw_scene_dfs();
 
@@ -563,7 +568,7 @@ impl State {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: texture::Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
+                depth_write_enabled: false, // TODO: change back to true if anything breaks
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
@@ -639,9 +644,32 @@ impl State {
         lobby_scene.objects = models;
         lobby_scene.draw_scene_dfs();
 
+        let mut models: HashMap<String, Box<dyn Model>> = HashMap::new();
+        for model_config in model_configs.models.clone() {
+            let model: Box<dyn Model> = if model_config.animated() {
+                let anim_model = anim_loaded_models.get(model_config.name.as_str()).unwrap();
+                Box::new(anim_model.clone())
+            } else {
+                let static_model = static_loaded_models
+                    .get(model_config.name.as_str())
+                    .unwrap();
+                Box::new(static_model.clone())
+            };
+            models.insert(model_config.name, model);
+        }
+
+        let end_scene_config = config_instance.end_screen_scene.clone();
+
+        let mut end_scene = scene::Scene::from_config(&end_scene_config);
+        end_scene.objects = models;
+        end_scene.draw_scene_dfs();
+
         let mut scene_map = HashMap::new();
         scene_map.insert(String::from("scene:game"), scene);
         scene_map.insert(String::from("scene:lobby"), lobby_scene);
+        scene_map.insert(String::from("scene:end_screen_scene"), end_scene);
+
+        // end debug code that needs to be replaced
 
         let mut texture_map: HashMap<String, wgpu::BindGroup> = HashMap::new();
         screen::texture_helper::load_screen_tex_config(
@@ -825,6 +853,7 @@ impl State {
         if self.display.current != self.display.game_display.clone()
             && self.display.current != "display:lobby"
         {
+            self.animation_controller.update(dt);
             return;
         }
         // config setup
@@ -861,6 +890,31 @@ impl State {
                 DEFAULT_CAMERA_TARGET.1,
                 DEFAULT_CAMERA_TARGET.2,
             );
+
+            self.camera_state
+                .camera_uniform
+                .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+            self.queue.write_buffer(
+                &self.camera_state.camera_buffer,
+                0,
+                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
+            );
+
+            let winner = game_state_clone.game_winner.unwrap();
+            let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
+            if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
+                if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
+                    node.model = Some(winner_custom.model.clone());
+                    node.colors = Some(winner_custom.color.clone());
+                    node.materials = Some(winner_custom.materials.clone());
+                }
+                scene.draw_scene_dfs();
+            }
+
+            let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
+            let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+            loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
+
             return;
         }
         // game state to scene graph conversion and update
@@ -928,9 +982,12 @@ impl State {
                         if let Some(player_customization) =
                             game_state_clone.players_customization.get(&i)
                         {
+                            let leaf_type = format!("icon:profile_leaf_{}", player_customization.model);
+                            screen.icons[profile_leaf_ind].texture = leaf_type; 
+
                             let leaf_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::LEAF_MESH)
+                                .get(common::core::choices::LEAF_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_leaf_ind].tint =
@@ -938,7 +995,7 @@ impl State {
 
                             let body_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::BODY_MESH)
+                                .get(common::core::choices::BODY_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_body_ind].tint =
@@ -963,7 +1020,7 @@ impl State {
                     }
                 }
 
-                // update player number of charges
+                // update the wind charge
                 {
                     let screen_id = self
                         .display
@@ -975,8 +1032,19 @@ impl State {
                         .unwrap();
 
                     let screen = self.display.screen_map.get_mut(screen_id).unwrap();
-                    let ind = *screen.icon_id_map.get("icon:charge").unwrap();
-                    screen.icons[ind].inst_range = 0..self.player.wind_charge;
+
+                    // update player ammo barhead
+                    let ind_barhead = *screen.icon_id_map.get("icon:barhead").unwrap();
+                    screen.icons[ind_barhead].inst_range = 0..1;
+
+                    // update player number of charges
+                    let ind_charge = *screen.icon_id_map.get("icon:charge").unwrap();
+                    screen.icons[ind_charge].inst_range = 0..self.player.wind_charge;
+
+                    // Update empty ammo
+                    let ind_empty_ammo = *screen.icon_id_map.get("icon:empty_charge").unwrap();
+                    screen.icons[ind_empty_ammo].inst_range = self.player.wind_charge..10;
+                    // Adjust the range as per your total ammos
                 }
 
                 // update weather icon
@@ -1022,16 +1090,6 @@ impl State {
                 // is it necessary? would need to pass around lots of references
                 // might be better to create dedicated function in screen/command_handlers
                 {
-                    let screen_id = self
-                        .display
-                        .groups
-                        .get(&self.display.game_display)
-                        .unwrap()
-                        .screen
-                        .as_ref()
-                        .unwrap();
-
-                    // TODO: Magic constants here seem a little unavoidable?
                     let atk_load = String::from("icon:atk_forward_overlay");
                     let atk_area_load = String::from("icon:atk_wave_overlay");
 
@@ -1055,6 +1113,130 @@ impl State {
                         );
                     } else {
                         self.display.transition_map.remove(&atk_area_load);
+                    }
+                }
+
+                // update for powerup
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+                    let ind_atk_ult = *screen.icon_id_map.get("icon:atk_ult_specific").unwrap();
+
+                    let prev_transp = screen.icons[ind_atk_ult].tint[3];
+                    if let Some(power_up) = self.player.power_up.as_ref() {
+                        // Adjust the properties for both icons
+                        match power_up.0 {
+                            PowerUp::Blizzard => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_blizzard");
+                            }
+                            PowerUp::WindEnhancement => {
+                                screen.icons[ind_atk_ult].texture = String::from("icon:power_wind");
+                            }
+                            PowerUp::Dash => {
+                                screen.icons[ind_atk_ult].texture = String::from("icon:power_dash");
+                            }
+                            PowerUp::Flash => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_flash");
+                            }
+                            PowerUp::Invisible => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_invisible");
+                            }
+                            PowerUp::TripleJump => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_triple_jump");
+                            }
+                            PowerUp::Invincible => {
+                                screen.icons[ind_atk_ult].texture =
+                                    String::from("icon:power_invincible");
+                            }
+                        }
+                        screen.icons[ind_atk_ult].tint[3] = 1.0;
+                    } else {
+                        // Reset the properties for both icons to their default values
+                        screen.icons[ind_atk_ult].tint[3] = 0.0;
+                    }
+                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]) {
+                        let tint = screen.icons[ind_atk_ult].tint;
+                        for v in &mut screen.icons[ind_atk_ult].vertices {
+                            v.color = tint.into();
+                        }
+                        self.queue.write_buffer(
+                            &screen.icons[ind_atk_ult].vbuf,
+                            0,
+                            bytemuck::cast_slice(&screen.icons[ind_atk_ult].vertices),
+                        );
+                    }
+                }
+
+                // update cooldown for powerup
+                {
+                    let screen_id = self
+                        .display
+                        .groups
+                        .get(&self.display.game_display)
+                        .unwrap()
+                        .screen
+                        .as_ref()
+                        .unwrap();
+
+                    let screen = self.display.screen_map.get_mut(screen_id).unwrap();
+
+                    let power_up_overlay_id = "icon:atk_powerup_overlay";
+                    let ind_atk_powerup_overlay =
+                        *screen.icon_id_map.get(power_up_overlay_id).unwrap();
+
+                    if let Some((power_up, status)) = self.player.power_up.as_ref() {
+                        if *status == PowerUpStatus::Active {
+                            // Set the overlay icon texture to the corresponding "pure" power-up icon
+                            let power_up_overlay_texture = match power_up {
+                                PowerUp::Blizzard => "icon:power_blizzard_overlay",
+                                PowerUp::WindEnhancement => "icon:power_wind_overlay",
+                                PowerUp::Dash => "icon:power_dash_overlay",
+                                PowerUp::Flash => "icon:power_flash_overlay",
+                                PowerUp::Invisible => "icon:power_invisible_overlay",
+                                PowerUp::TripleJump => "icon:power_triple_jump_overlay",
+                                PowerUp::Invincible => "icon:power_invincible_overlay",
+                            };
+                            screen.icons[ind_atk_powerup_overlay].texture =
+                                String::from(power_up_overlay_texture);
+
+                            let power_up_status = POWER_UP_TO_EFFECT_MAP
+                                .get(&power_up.value())
+                                .unwrap_or(&StatusEffect::None);
+                            // Calculate the fraction of the power-up time left
+                            if let Some(time_left) = self.player.status_effects.get(power_up_status)
+                            {
+                                //TODO: store that const into config
+                                let fraction_left = *time_left / 10.0;
+
+                                // Apply the SqueezeDown transition
+                                self.display.transition_map.insert(
+                                    String::from(power_up_overlay_id),
+                                    screen::object_transitions::Transition::SqueezeDown(
+                                        fraction_left,
+                                    ),
+                                );
+                            }
+                        } else {
+                            // Remove the overlay icon if the power-up is not active
+                            self.display.transition_map.remove(power_up_overlay_id);
+                            screen.icons[ind_atk_powerup_overlay].texture =
+                                String::from("icon:empty");
+                        }
+                    } else {
+                        // in case you died holding a powerup
+                        screen.icons[ind_atk_powerup_overlay].texture = String::from("icon:empty");
                     }
                 }
 
@@ -1084,10 +1266,16 @@ impl State {
                 .get_mut(scene_id)
                 .unwrap()
                 .draw_scene_dfs();
-        }
 
-        let particle_queue = particle_queue.lock().unwrap();
-        self.load_particles(particle_queue);
+            {
+                let particle_queue = particle_queue.lock().unwrap();
+                self.add_powerup_particles(game_state_clone, particle_queue, dt);
+            }
+            {
+                let particle_queue = particle_queue.lock().unwrap();
+                self.load_particles(particle_queue);
+            }
+        }
 
         // animation update
         self.animation_controller.update(dt);
@@ -1140,7 +1328,7 @@ impl State {
         if self.display.current == "display:lobby" && self.display.customization_choices.ready {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
-                .play_animation("power_up".to_string(), "object:player_model".to_string());
+                .play_animation("idle".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
@@ -1152,10 +1340,14 @@ impl State {
                 ..Section::default()
             });
         }
-        // temporary fix
-        else if self.display.current == "display:game" {
+        else if self.display.current == "display:victory" || self.display.current == "display:defeat" {
             self.animation_controller
-                .stop_animation("object:player_model".to_string());
+                .play_animation("idle".to_string(), "object:winner_model".to_string());
+        }
+        // temporary fix
+        else {
+            self.animation_controller
+                .play_animation("idel".to_string(), "object:player_model".to_string());
         }
 
         if self.display.current == self.display.game_display.clone() {
@@ -1184,26 +1376,26 @@ impl State {
                 });
             }
             // render status effect and powerup held
-            self.glyph_brush.queue(Section {
-                screen_position: (600.0, 20.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
-            self.glyph_brush.queue(Section {
-                screen_position: (600.0, 60.0),
-                bounds: (size.width as f32, size.height as f32),
-                text: vec![Text::new(
-                    format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-                )
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(40.0)],
-                ..Section::default()
-            });
+            // self.glyph_brush.queue(Section {
+            //     screen_position: (600.0, 20.0),
+            //     bounds: (size.width as f32, size.height as f32),
+            //     text: vec![Text::new(
+            //         format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
+            //     )
+            //     .with_color([0.0, 0.0, 0.0, 1.0])
+            //     .with_scale(40.0)],
+            //     ..Section::default()
+            // });
+            // self.glyph_brush.queue(Section {
+            //     screen_position: (600.0, 60.0),
+            //     bounds: (size.width as f32, size.height as f32),
+            //     text: vec![Text::new(
+            //         format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
+            //     )
+            //     .with_color([0.0, 0.0, 0.0, 1.0])
+            //     .with_scale(40.0)],
+            //     ..Section::default()
+            // });
         }
         // Draw the text!
         self.glyph_brush
@@ -1229,14 +1421,78 @@ impl State {
         Ok(())
     }
 
+    fn add_powerup_particles(
+        &mut self,
+        game_state: GameState,
+        mut particle_queue: MutexGuard<ParticleQueue>,
+        dt: instant::Duration,
+    ) {
+        let config_instance = ConfigurationManager::get_configuration();
+        let particle_config = config_instance.particles.clone();
+
+        let powerup_players = game_state
+            .players
+            .iter()
+            .filter(|(_, player)| !player.power_up.is_none())
+            .map(|(&id, _)| id)
+            .collect::<Vec<_>>();
+
+        for player_id in powerup_players {
+            if player_id != self.client_id as u32 && self.invisible_players.contains(&player_id) {
+                continue;
+            }
+
+            let player_state = game_state.player(player_id).unwrap();
+            let player_pos = player_state.transform.translation;
+            let player_vel = player_state.physics.velocity;
+
+            let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
+            let mut aura_color_string = match player_power_up {
+                PowerUp::Blizzard => "blizzard",
+                _ => "default",
+            };
+
+            if player_power_up_status == PowerUpStatus::Active {
+                aura_color_string = match player_power_up {
+                    PowerUp::WindEnhancement => "wind_enhancement",
+                    PowerUp::Dash => "dash",
+                    PowerUp::Flash => "flash",
+                    PowerUp::Invisible => "invisibility",
+                    PowerUp::Invincible => "invincibility",
+                    PowerUp::TripleJump => "triple_jump",
+                    _ => "default",
+                }
+            }
+
+            let aura_color = *particle_config
+                .powerup_aura_particle_config
+                .aura_colors
+                .get(aura_color_string)
+                .unwrap();
+            particle_queue.add_particle(events::ParticleSpec::new(
+                events::ParticleType::POWERUP_AURA,
+                player_pos + player_vel * (dt.as_secs_f32()),
+                glm::vec3(0.0, 1.0, 0.0),
+                //TODO: placeholder for player color
+                glm::vec3(0.0, 1.0, 0.0),
+                glm::vec4(aura_color.0, aura_color.1, aura_color.2, aura_color.3),
+                format!("Power Up Aura from player {}", player_id),
+            ));
+        }
+    }
+
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
+        
         // attack consts
         let attack_cd = physics_config.attack_config.attack_cooldown;
         let max_attack_angle = physics_config.attack_config.max_attack_angle;
         let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let blizzard_max_attack_angle = game_config.powerup_config.blizzard_max_attack_angle;
+        let blizzard_max_attack_dist = game_config.powerup_config.blizzard_max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
         let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
         // particle consts
@@ -1247,53 +1503,13 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // test ribbon particle (maybe loop these for winning area?)
-                    // ribbon sample
-                    /*
-                    let gen = particles::ribbon::LineRibbonGenerator::new(
-                        glm::vec3(-10., -10., -10.),
-                        glm::vec3(10., -8., 10.),
-                        glm::vec3(0., 1., 0.),
-                        10.0,
-                        0.0,
-                        0.5,
-                        20.,
-                        0.0,
-                        50,
-                        false,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        2.0,
-                        5.0,
-                        p.color,
-                        gen,
-                        (12, 13),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-
-                    let gen = particles::trail::PathTrailGenerator::new(
-                        vec![glm::vec3(-5.0, -10.0, -5.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(5.0, -10.0, 5.0)],
-                        vec![0.0, 0.5, 1.0],
-                        vec![40.0, 20.0, 40.0],
-                        glm::vec3(0.0, 1.0, 0.0),
-                        10,
-                        5.0,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        20.0,
-                        5.0,
-                        glm::vec4(1.0, 0.8, 0.4, 0.8),
-                        gen,
-                        (0, 1),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-                    */
+                    let leaf_type = match &p.particle_id[..]{
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
 
                     // ORIGINAL
                     let time = attack_cd / time_divider;
@@ -1319,7 +1535,7 @@ impl State {
                         particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (1, 4),
+                        (leaf_type * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND, (leaf_type+1) * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1327,6 +1543,13 @@ impl State {
                 }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
+                    let leaf_type = match &p.particle_id[..]{
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
                     let time = area_attack_cd / time_divider;
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
@@ -1346,11 +1569,40 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (leaf_type * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND, (leaf_type+1) * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::BLIZZARD => {
+                    let time = particle_config.blizzard_particle_config.time / time_divider;
+                    let blizz_gen = particles::gen::ConeGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        blizzard_max_attack_angle,
+                        blizzard_max_attack_dist / time,
+                        particle_config.blizzard_particle_config.linear_variance,
+                        PI,
+                        particle_config.blizzard_particle_config.angular_variance,
+                        particle_config.blizzard_particle_config.size,
+                        particle_config.blizzard_particle_config.size_variance,
+                        particle_config.blizzard_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let blizzard = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.blizzard_particle_config.gen_speed,
+                        p.color,
+                        blizz_gen,
+                        (particles::constants::SNOW_BASE_IND, particles::constants::SNOW_BASE_IND + particles::constants::SNOW_NUM_TEX_TYPES),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(blizzard);
                 }
                 events::ParticleType::POWERUP => {
                     // in this case, only position matters
@@ -1373,11 +1625,44 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (14, 18),
+                        (particles::constants::SOFT_CIRCLE_IND, particles::constants::SOFT_CIRCLE_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(powerup);
+                }
+                events::ParticleType::POWERUP_AURA => {
+                    // in this case, only position matters
+                    let time = particle_config.powerup_aura_particle_config.time / time_divider;
+                    let powerup_aura_gen = particles::gen::CylinderGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        particle_config.powerup_aura_particle_config.r,
+                        particle_config.powerup_aura_particle_config.half_height,
+                        particle_config.powerup_aura_particle_config.linear_speed,
+                        particle_config.powerup_aura_particle_config.linear_variance,
+                        PI,
+                        particle_config
+                            .powerup_aura_particle_config
+                            .angular_variance,
+                        particle_config.powerup_aura_particle_config.size,
+                        particle_config.powerup_aura_particle_config.size_variance,
+                        particle_config.powerup_aura_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let powerup_aura = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.05),
+                        time,
+                        particle_config.powerup_aura_particle_config.gen_speed,
+                        p.color,
+                        powerup_aura_gen,
+                        (particles::constants::SOFT_CIRCLE_IND, particles::constants::SOFT_CIRCLE_IND + 1),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(powerup_aura);
                 }
                 events::ParticleType::RAIN => {
                     let time = 2.;
@@ -1400,7 +1685,33 @@ impl State {
                         2500.0,
                         p.color,
                         atk_gen,
-                        (11, 12),
+                        (particles::constants::RAIN_IND, particles::constants::RAIN_IND + 1),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                },
+                events::ParticleType::WIND => {
+                    let time = 1.2;
+                    let gen = particles::ribbon::LineRibbonGenerator::new(
+                        glm::vec3(-25., -6., -25.),
+                        glm::vec3(25., 0., 25.),
+                        p.direction,
+                        40.0,
+                        0.0,
+                        0.1,
+                        15.,
+                        0.0,
+                        1,
+                        false,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(time),
+                        0.25,
+                        5.0,
+                        p.color,
+                        gen,
+                        (particles::constants::STREAK_IND, particles::constants::STREAK_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );

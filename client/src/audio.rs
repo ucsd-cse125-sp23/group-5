@@ -1,6 +1,6 @@
 use ambisonic::{
     rodio::{
-        source::{Buffered, Source, self, Empty},
+        source::{self, Buffered, Empty, Source},
         Decoder,
     },
     AmbisonicBuilder,
@@ -16,8 +16,8 @@ use std::{
     thread,
 };
 
-use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 use common::core::{events::SoundSpec, states::GameState};
+use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 
 pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
 pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
@@ -67,7 +67,9 @@ pub struct Audio {
 
 impl Audio {
     pub fn new(q: Arc<Mutex<SoundQueue>>) -> Self {
-        CURR_DISP.set(Mutex::new("display:title".to_string())).expect("failed to initialze CURR_DISP");
+        CURR_DISP
+            .set(Mutex::new("display:title".to_string()))
+            .expect("failed to initialze CURR_DISP");
         Self {
             audio_scene: AmbisonicBuilder::default().build(),
             audio_assets: Vec::new(),
@@ -105,16 +107,18 @@ impl Audio {
         self.sound_controller_background = (Some(sound), false);
     }
 
-    pub fn update_bkgd_track(&mut self, state: GameLifeCycleState, curr_player: u32, winner: u32){
+    pub fn update_bkgd_track(&mut self, state: GameLifeCycleState, curr_player: u32, winner: u32) {
         if std::mem::discriminant(&self.curr_state) != std::mem::discriminant(&state) {
             match state {
                 // title, lobby background track
                 GameLifeCycleState::Waiting => {
-                    if CURR_DISP.get().unwrap().lock().unwrap().clone() == "display:title".to_string() {
+                    if CURR_DISP.get().unwrap().lock().unwrap().clone()
+                        == "display:title".to_string()
+                    {
                         self.switch_background_track(AudioAsset::BKGND_WAIT, AUDIO_POS_AT_CLIENT);
                         self.curr_state = state;
                     }
-                },
+                }
                 // in game background track
                 // TODO: add case if running should have a different bkgd track than waiting
                 // GameLifeCycleState::Running(_) => {
@@ -127,15 +131,13 @@ impl Audio {
                     self.reset_audio();
                     if curr_player == winner {
                         self.switch_background_track(AudioAsset::BKGND_WINNER, AUDIO_POS_AT_CLIENT);
-                    }
-                    else {
+                    } else {
                         self.switch_background_track(AudioAsset::BKGND_LOSER, AUDIO_POS_AT_CLIENT);
                     }
                     self.curr_state = state;
-                },
+                }
                 _ => {}
             }
-
         }
     }
 
@@ -354,8 +356,7 @@ impl Audio {
                     let ambient = se.ambient.0;
                     if !ambient {
                         self.handle_sfx_event(se, cf, at_client);
-                    }
-                    else {
+                    } else {
                         self.handle_ambient_event(se);
                     }
                 }
