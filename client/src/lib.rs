@@ -985,7 +985,7 @@ impl State {
                         {
                             let leaf_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::LEAF_MESH)
+                                .get(common::core::choices::LEAF_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_leaf_ind].tint =
@@ -993,7 +993,7 @@ impl State {
 
                             let body_color = player_customization
                                 .color
-                                .get(screen::ui_interaction::BODY_MESH)
+                                .get(common::core::choices::BODY_MESH)
                                 .unwrap()
                                 .rgb_color;
                             screen.icons[profile_body_ind].tint =
@@ -1132,9 +1132,9 @@ impl State {
                     if let Some(power_up) = self.player.power_up.as_ref() {
                         // Adjust the properties for both icons
                         match power_up.0 {
-                            PowerUp::Lightning => {
+                            PowerUp::Blizzard => {
                                 screen.icons[ind_atk_ult].texture =
-                                    String::from("icon:power_lightening");
+                                    String::from("icon:power_blizzard");
                             }
                             PowerUp::WindEnhancement => {
                                 screen.icons[ind_atk_ult].texture = String::from("icon:power_wind");
@@ -1198,7 +1198,7 @@ impl State {
                         if *status == PowerUpStatus::Active {
                             // Set the overlay icon texture to the corresponding "pure" power-up icon
                             let power_up_overlay_texture = match power_up {
-                                PowerUp::Lightning => "icon:power_lightening_overlay",
+                                PowerUp::Blizzard => "icon:power_blizzard_overlay",
                                 PowerUp::WindEnhancement => "icon:power_wind_overlay",
                                 PowerUp::Dash => "icon:power_dash_overlay",
                                 PowerUp::Flash => "icon:power_flash_overlay",
@@ -1444,8 +1444,11 @@ impl State {
             let player_pos = player_state.transform.translation;
             let player_vel = player_state.physics.velocity;
 
-            let mut aura_color_string = "default";
             let (player_power_up, player_power_up_status) = player_state.power_up.clone().unwrap();
+            let mut aura_color_string = match player_power_up {
+                PowerUp::Blizzard => "blizzard",
+                _ => "default",
+            };
 
             if player_power_up_status == PowerUpStatus::Active {
                 aura_color_string = match player_power_up {
@@ -1478,12 +1481,16 @@ impl State {
 
     fn load_particles(&mut self, mut particle_queue: MutexGuard<ParticleQueue>) {
         let config_instance = ConfigurationManager::get_configuration();
+        let game_config = config_instance.game.clone();
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
+        
         // attack consts
         let attack_cd = physics_config.attack_config.attack_cooldown;
         let max_attack_angle = physics_config.attack_config.max_attack_angle;
         let max_attack_dist = physics_config.attack_config.max_attack_dist;
+        let blizzard_max_attack_angle = game_config.powerup_config.blizzard_max_attack_angle;
+        let blizzard_max_attack_dist = game_config.powerup_config.blizzard_max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
         let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
         // particle consts
@@ -1494,33 +1501,13 @@ impl State {
             match p.p_type {
                 // generator
                 events::ParticleType::ATTACK => {
-                    // test ribbon particle (maybe loop these for winning area?)
-                    // ribbon sample
-                    /*
-                    let gen = particles::ribbon::LineRibbonGenerator::new(
-                        glm::vec3(-10., -10., -10.),
-                        glm::vec3(10., -8., 10.),
-                        glm::vec3(0., 1., 0.),
-                        10.0,
-                        0.0,
-                        0.5,
-                        20.,
-                        0.0,
-                        50,
-                        false,
-                    );
-                    let atk = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(60.),
-                        2.0,
-                        5.0,
-                        p.color,
-                        gen,
-                        (11, 12),
-                        &self.device,
-                        &mut self.rng,
-                    );
-                    self.display.particles.systems.push(atk);
-                    */
+                    let leaf_type = match &p.particle_id[..]{
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
 
                     // ORIGINAL
                     let time = attack_cd / time_divider;
@@ -1546,7 +1533,7 @@ impl State {
                         particle_config.attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (leaf_type * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND, (leaf_type+1) * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1554,6 +1541,13 @@ impl State {
                 }
                 events::ParticleType::AREA_ATTACK => {
                     // in this case, only position matters
+                    let leaf_type = match &p.particle_id[..]{
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
                     let time = area_attack_cd / time_divider;
                     let atk_gen = particles::gen::SphereGenerator::new(
                         p.position,
@@ -1573,11 +1567,40 @@ impl State {
                         particle_config.area_attack_particle_config.gen_speed,
                         p.color,
                         atk_gen,
-                        (0, 4),
+                        (leaf_type * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND, (leaf_type+1) * particles::constants::ATK_NUM_TEX_TYPES + particles::constants::ATK_BASE_IND),
                         &self.device,
                         &mut self.rng,
                     );
                     self.display.particles.systems.push(atk);
+                }
+                events::ParticleType::BLIZZARD => {
+                    let time = particle_config.blizzard_particle_config.time / time_divider;
+                    let blizz_gen = particles::gen::ConeGenerator::new(
+                        p.position,
+                        p.direction,
+                        p.up,
+                        blizzard_max_attack_angle,
+                        blizzard_max_attack_dist / time,
+                        particle_config.blizzard_particle_config.linear_variance,
+                        PI,
+                        particle_config.blizzard_particle_config.angular_variance,
+                        particle_config.blizzard_particle_config.size,
+                        particle_config.blizzard_particle_config.size_variance,
+                        particle_config.blizzard_particle_config.size_growth,
+                        false,
+                    );
+                    // System
+                    let blizzard = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        particle_config.blizzard_particle_config.gen_speed,
+                        p.color,
+                        blizz_gen,
+                        (particles::constants::SNOW_BASE_IND, particles::constants::SNOW_BASE_IND + particles::constants::SNOW_NUM_TEX_TYPES),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(blizzard);
                 }
                 events::ParticleType::POWERUP => {
                     // in this case, only position matters
@@ -1600,7 +1623,7 @@ impl State {
                         particle_config.powerup_particle_config.gen_speed,
                         p.color,
                         powerup_gen,
-                        (4, 5),
+                        (particles::constants::SOFT_CIRCLE_IND, particles::constants::SOFT_CIRCLE_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1633,7 +1656,7 @@ impl State {
                         particle_config.powerup_aura_particle_config.gen_speed,
                         p.color,
                         powerup_aura_gen,
-                        (4, 5),
+                        (particles::constants::SOFT_CIRCLE_IND, particles::constants::SOFT_CIRCLE_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );
@@ -1660,7 +1683,33 @@ impl State {
                         2500.0,
                         p.color,
                         atk_gen,
-                        (10, 11),
+                        (particles::constants::RAIN_IND, particles::constants::RAIN_IND + 1),
+                        &self.device,
+                        &mut self.rng,
+                    );
+                    self.display.particles.systems.push(atk);
+                },
+                events::ParticleType::WIND => {
+                    let time = 1.2;
+                    let gen = particles::ribbon::LineRibbonGenerator::new(
+                        glm::vec3(-25., -6., -25.),
+                        glm::vec3(25., 0., 25.),
+                        p.direction,
+                        40.0,
+                        0.0,
+                        0.1,
+                        15.,
+                        0.0,
+                        1,
+                        false,
+                    );
+                    let atk = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(time),
+                        0.25,
+                        5.0,
+                        p.color,
+                        gen,
+                        (particles::constants::STREAK_IND, particles::constants::STREAK_IND + 1),
                         &self.device,
                         &mut self.rng,
                     );

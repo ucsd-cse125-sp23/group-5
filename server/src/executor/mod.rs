@@ -198,6 +198,7 @@ impl Executor {
                     client_command.client_id,
                     game_config,
                 )),
+                Command::StatusEffects => Box::new(StatusEffectCommandHandler::new()),
                 // weather systems
                 Command::UpdateWeather => Box::new(UpdateWeatherCommandHandler::new()),
                 Command::WeatherEffects => Box::new(WeatherEffectCommandHandler::new()),
@@ -320,6 +321,7 @@ impl Executor {
     pub fn add_pretick_commands(&self, commands: &mut Vec<ClientCommand>) {
         commands.push(ClientCommand::server_issued(Command::UpdateWeather));
         commands.push(ClientCommand::server_issued(Command::WeatherEffects));
+        commands.push(ClientCommand::server_issued(Command::StatusEffects));
 
         // keep this in a block to return game state after we're done
         {
