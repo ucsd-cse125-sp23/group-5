@@ -899,31 +899,31 @@ impl State {
                 );
                 self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
 
-            self.camera_state
-                .camera_uniform
-                .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
-            self.queue.write_buffer(
-                &self.camera_state.camera_buffer,
-                0,
-                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
-            );
+                self.camera_state
+                    .camera_uniform
+                    .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+                self.queue.write_buffer(
+                    &self.camera_state.camera_buffer,
+                    0,
+                    bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
+                );
 
-            let winner = game_state_clone.game_winner.unwrap();
-            let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
-            if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
-                if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
-                    node.model = Some(winner_custom.model.clone());
-                    node.colors = Some(winner_custom.color.clone());
-                    node.materials = Some(winner_custom.materials.clone());
+                let winner = game_state_clone.game_winner.unwrap();
+                let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
+                if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
+                    if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
+                        node.model = Some(winner_custom.model.clone());
+                        node.colors = Some(winner_custom.color.clone());
+                        node.materials = Some(winner_custom.materials.clone());
+                    }
+                    scene.draw_scene_dfs();
                 }
-                scene.draw_scene_dfs();
-            }
 
-            let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
-            let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
-            loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
+                let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
+                let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+                loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
 
-            return;
+                return;
             }
             _ => {
 
@@ -1466,7 +1466,7 @@ impl State {
             particle_config.winning_area_ribbon_particle_config.gen_speed,
             glm::vec4(0.4, 0.9, 0.7, 1.0),
             gen,
-            (11, 12),
+            (43, 44),
             &self.device,
             &mut self.rng,
         );
