@@ -20,6 +20,7 @@ pub struct ConfigGame {
     pub refill_rate_limit: f32,
     pub camera_config: ConfigCamera,
     pub powerup_config: ConfigPowerUp,
+    pub weather_config: ConfigWeather,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,4 +49,14 @@ pub struct ConfigPowerUp {
     pub spawn_invincible_duration: f32,
     pub dash_blocking_duration: f32,
     pub dash_cooldown: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConfigWeather {
+    pub default_weather_ambient_multiplier: f32,
+    pub rainy_weather_ambient_multiplier: f32,
+    pub environment_lighting_rate_change_coefficient: f32,
+    pub rain_ratio: f32,
+    pub wind_ratio: f32,
+    pub no_weather_ratio: f32,
 }

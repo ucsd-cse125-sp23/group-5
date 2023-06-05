@@ -1,0 +1,17 @@
+{
+    "spawn_points": [
+    ],
+    "nodes": [
+      {
+        "id": "object:winner_model",
+        "model": "korok_1",
+        "transform": {
+          "position": [0.0, -0.8, 0.0],
+          "rotation": [-0.24762431, -0.629438, -0.23894404, 0.6967082]
+        },
+        "children": [
+        ]
+      }
+    ]
+  }
+  
