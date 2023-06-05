@@ -31,7 +31,7 @@ const RAIN_TICKS: f64 = 20. * TICK_RATE as f64;
 // on average, it will rain every 10 seconds
 const WIND_TICKS: f64 = 10. * TICK_RATE as f64;
 
-const WIND_FORCE_MANGNITUDE: f32 = 128.0;
+const WIND_FORCE_MAGNITUDE: f32 = 128.0;
 
 const RAINY_FRICTION: f32 = -0.2;
 
@@ -192,7 +192,7 @@ impl WeatherEffectCommandHandler {
             let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
 
             body.reset_forces(false);
-            body.add_force(wind_dir * WIND_FORCE_MANGNITUDE, true);
+            body.add_force(wind_dir * WIND_FORCE_MAGNITUDE, true);
 
             // add wind particles every one second
             if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
