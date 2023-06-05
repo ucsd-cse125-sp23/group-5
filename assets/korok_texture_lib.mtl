@@ -205,3 +205,13 @@ Ni 1.450000
 d 1.000000
 illum 2
 map_Kd leaf_color_12_texture.png
+
+newmtl stroke
+Ns 0.000000
+Ka 0.100000 0.100000 0.100000
+Ks 0.350000 0.350000 0.350000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd textures/color_stroke.png

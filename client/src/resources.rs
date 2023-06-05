@@ -21,6 +21,8 @@ pub const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok_texture_lib.mtl";
 pub type MtlLib = (Arc<Vec<Material>>, Option<Arc<AHashMap<String, usize>>>);
 pub static KOROK_MTL_LIB: OnceCell<MtlLib> = OnceCell::new();
 
+pub const STROKE_MTL: &str = "stroke";
+
 //assuming we run from root (group-5 folder)
 #[rustfmt::skip]
 const SEARCH_PATH : [&str; 4] = [
@@ -235,7 +237,7 @@ pub async fn load_model(
         }
     }
 
-    let meshes = models
+    let mut meshes = models
         .into_iter()
         .map(|m| {
             let mut vertices = (0..m.mesh.positions.len() / 3)
@@ -352,6 +354,13 @@ pub async fn load_model(
             mat_ind: None,
         })
     } else {
+        let mtls = KOROK_MTL_LIB.get().unwrap().0.clone();
+        for m in &mut meshes {
+            if mtls[m.material].name == STROKE_MTL.to_string() {
+                m.name = format!("{}_{}", m.name, STROKE_MTL);
+            }
+        }
+
         Ok(model::StaticModel {
             meshes: Arc::new(meshes),
             materials: KOROK_MTL_LIB.get().unwrap().0.clone(),
