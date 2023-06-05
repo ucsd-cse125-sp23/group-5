@@ -131,17 +131,6 @@ impl WeatherEffectCommandHandler {
     ) -> HandlerResult {
         // reduce friction for every player
         for (&player_id, player_state) in game_state.players.iter() {
-            if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
-                super::reset_weather(physics_state, player_id);
-                continue;
-            }
-
-            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
-            body.set_linear_damping(0.);
-
-            let collider = physics_state.get_entity_collider_mut(player_id).unwrap();
-            collider.set_friction(RAINY_FRICTION);
-
             // add rain particles every one second
             if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
                 game_events.add(
@@ -166,7 +155,18 @@ impl WeatherEffectCommandHandler {
                     (true, true),
                 )),
                 Recipients::One(player_id as u8),
-            )
+            );
+
+            if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
+                super::reset_weather(physics_state, player_id);
+                continue;
+            }
+
+            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
+            body.set_linear_damping(0.);
+
+            let collider = physics_state.get_entity_collider_mut(player_id).unwrap();
+            collider.set_friction(RAINY_FRICTION);
         }
         Ok(())
     }
@@ -182,18 +182,6 @@ impl WeatherEffectCommandHandler {
             _ => return Ok(()),
         };
         for (&player_id, player_state) in game_state.players.iter() {
-            // apply a force to the player
-
-            if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
-                super::reset_weather(physics_state, player_id);
-                continue;
-            }
-
-            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
-
-            body.reset_forces(false);
-            body.add_force(wind_dir * WIND_FORCE_MAGNITUDE, true);
-
             // add wind particles every one second
             if game_state.life_cycle_state.unwrap_running() % TICK_RATE == 0 {
                 game_events.add(
@@ -210,6 +198,7 @@ impl WeatherEffectCommandHandler {
             }
 
             // TODO: change to actual sound event
+            // reset rain sound
             game_events.add(
                 // to stop rain sound
                 GameEvent::SoundEvent(SoundSpec::new(
@@ -219,7 +208,17 @@ impl WeatherEffectCommandHandler {
                     (true, false),
                 )),
                 Recipients::One(player_id as u8),
-            )
+            );
+
+            if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
+                super::reset_weather(physics_state, player_id);
+                continue;
+            }
+
+            // apply a force to the player
+            let body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
+            body.reset_forces(false);
+            body.add_force(wind_dir * WIND_FORCE_MAGNITUDE, true);
         }
         Ok(())
     }
@@ -235,6 +234,7 @@ impl WeatherEffectCommandHandler {
             super::reset_weather(physics_state, player_id);
 
             // TODO: change to actual sound event
+            // reset rain sound
             game_events.add(
                 // to stop rain sound
                 GameEvent::SoundEvent(SoundSpec::new(
