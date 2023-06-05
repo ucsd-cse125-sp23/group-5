@@ -18,6 +18,7 @@ use winit::window::Window;
 
 use audio::CURR_DISP;
 use common::configs;
+use common::configs::game_config::ConfigWeather;
 use common::configs::parameters::{
     DEFAULT_CAMERA_FOV, DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS,
 };
@@ -658,8 +659,8 @@ impl State {
 
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
-        // join_all
 
+        // join_all
         let (animated_future_done, static_future_done) = join!(
             join_all(animated_model_futures),
             join_all(static_model_futures)
@@ -872,6 +873,7 @@ impl State {
         game_state: Arc<Mutex<GameState>>,
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
+        weather_config: ConfigWeather,
     ) {
         // Only update if we're in game/lobby
         if self.display.current != self.display.game_display.clone()
@@ -901,26 +903,31 @@ impl State {
                     */
                 }
 
+                let change_rate_coef = weather_config.environment_lighting_rate_change_coefficient;
                 // update lighting based on weather
                 match game_state_clone.world.weather {
                     Some(Weather::Rainy) => {
+                        let rainy_ambient_multiplier =
+                            weather_config.rainy_weather_ambient_multiplier;
                         self.gradual_convert_lighting(
                             (
-                                RAINY_AMBIENT_MULTIPLIER,
-                                RAINY_AMBIENT_MULTIPLIER,
-                                RAINY_AMBIENT_MULTIPLIER,
+                                rainy_ambient_multiplier,
+                                rainy_ambient_multiplier,
+                                rainy_ambient_multiplier,
                             ),
-                            0.005,
+                            change_rate_coef,
                         );
                     }
                     _ => {
+                        let default_ambient_multiplier =
+                            weather_config.default_weather_ambient_multiplier;
                         self.gradual_convert_lighting(
                             (
-                                DEFAULT_AMBIENT_MULTIPLIER,
-                                DEFAULT_AMBIENT_MULTIPLIER,
-                                DEFAULT_AMBIENT_MULTIPLIER,
+                                default_ambient_multiplier,
+                                default_ambient_multiplier,
+                                default_ambient_multiplier,
                             ),
-                            0.005,
+                            change_rate_coef,
                         );
                     }
                 }
