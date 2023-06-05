@@ -1,12 +1,28 @@
-use crate::animation::AnimatedModel;
-use crate::inputs::Input;
-use crate::model::{Model, StaticModel};
+use std::collections::{HashMap, HashSet};
+use std::default;
+use std::sync::{mpsc, MutexGuard};
+use std::{
+    f32::consts::PI,
+    sync::{Arc, Mutex},
+};
+
+use futures::future::join_all;
+use futures::{join, TryFutureExt};
+use glm::vec3;
+use nalgebra_glm as glm;
+use nalgebra_glm::{TVec3, Vec3};
+use wgpu::util::DeviceExt;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use winit::event::*;
+use winit::window::Window;
+
 use audio::CURR_DISP;
 use common::configs;
 use common::configs::parameters::{
     DEFAULT_CAMERA_FOV, DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS,
 };
 use common::configs::*;
+use common::core::choices::OBJECT_PLAYER_MODEL;
 use common::core::command::Command;
 use common::core::events;
 use common::core::powerup_system::StatusEffect::Power;
@@ -17,25 +33,14 @@ use common::core::states::GameLifeCycleState::Ended;
 use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
 use common::core::weather::Weather;
-use futures::future::join_all;
-use futures::{join, TryFutureExt};
-use glm::vec3;
 use model::Vertex;
-use nalgebra_glm as glm;
-use nalgebra_glm::{TVec3, Vec3};
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
-use std::collections::{HashMap, HashSet};
-use std::default;
-use std::sync::{mpsc, MutexGuard};
-use std::{
-    f32::consts::PI,
-    sync::{Arc, Mutex},
-};
-use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
-use winit::event::*;
-use winit::window::Window;
+
+use crate::animation::AnimatedModel;
+use crate::inputs::Input;
+use crate::model::{Model, StaticModel};
+
 mod animation;
 pub mod audio;
 mod camera;
@@ -52,7 +57,6 @@ mod scene;
 mod screen;
 mod skybox;
 mod texture;
-use common::core::choices::OBJECT_PLAYER_MODEL;
 
 const DEFAULT_AMBIENT_MULTIPLIER: f32 = 1.0;
 const RAINY_AMBIENT_MULTIPLIER: f32 = 0.5;
@@ -848,39 +852,18 @@ impl State {
         }
     }
 
-    fn gradual_convert_lighting_increment(&mut self, ambient_multiplier: f32) {
-        if self.camera_state.camera.ambient_multiplier.x < ambient_multiplier {
-            self.camera_state.camera.ambient_multiplier.x += 0.005;
-        } else {
-            self.camera_state.camera.ambient_multiplier.x = ambient_multiplier;
-        }
-        if self.camera_state.camera.ambient_multiplier.y < ambient_multiplier {
-            self.camera_state.camera.ambient_multiplier.y += 0.005;
-        } else {
-            self.camera_state.camera.ambient_multiplier.y = ambient_multiplier;
-        }
-        if self.camera_state.camera.ambient_multiplier.z < ambient_multiplier {
-            self.camera_state.camera.ambient_multiplier.z += 0.005;
-        } else {
-            self.camera_state.camera.ambient_multiplier.z = ambient_multiplier;
-        }
-    }
+    fn gradual_convert_lighting(&mut self, (r, g, b): (f32, f32, f32), change_rate_coef: f32) {
+        let ambient_multiplier = &mut self.camera_state.camera.ambient_multiplier;
 
-    fn gradual_convert_lighting_decrement(&mut self, ambient_multiplier: f32) {
-        if self.camera_state.camera.ambient_multiplier.x > ambient_multiplier {
-            self.camera_state.camera.ambient_multiplier.x -= 0.005;
-        } else {
-            self.camera_state.camera.ambient_multiplier.x = ambient_multiplier;
-        }
-        if self.camera_state.camera.ambient_multiplier.y > ambient_multiplier {
-            self.camera_state.camera.ambient_multiplier.y -= 0.005;
-        } else {
-            self.camera_state.camera.ambient_multiplier.y = ambient_multiplier;
-        }
-        if self.camera_state.camera.ambient_multiplier.z > ambient_multiplier {
-            self.camera_state.camera.ambient_multiplier.z -= 0.005;
-        } else {
-            self.camera_state.camera.ambient_multiplier.z = ambient_multiplier;
+        let targets = [r, g, b];
+        for (val, &target) in ambient_multiplier.iter_mut().zip(targets.iter()) {
+            if *val != target {
+                let sign = (target - *val).signum();
+                *val += sign * change_rate_coef;
+                if (target - *val).signum() != sign {
+                    *val = target;
+                }
+            }
         }
     }
 
@@ -921,10 +904,24 @@ impl State {
                 // update lighting based on weather
                 match game_state_clone.world.weather {
                     Some(Weather::Rainy) => {
-                        self.gradual_convert_lighting_decrement(0.5);
+                        self.gradual_convert_lighting(
+                            (
+                                RAINY_AMBIENT_MULTIPLIER,
+                                RAINY_AMBIENT_MULTIPLIER,
+                                RAINY_AMBIENT_MULTIPLIER,
+                            ),
+                            0.005,
+                        );
                     }
                     _ => {
-                        self.gradual_convert_lighting_increment(1.0);
+                        self.gradual_convert_lighting(
+                            (
+                                DEFAULT_AMBIENT_MULTIPLIER,
+                                DEFAULT_AMBIENT_MULTIPLIER,
+                                DEFAULT_AMBIENT_MULTIPLIER,
+                            ),
+                            0.005,
+                        );
                     }
                 }
             }
