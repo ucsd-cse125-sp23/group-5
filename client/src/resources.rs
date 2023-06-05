@@ -1,5 +1,6 @@
 use anyhow::Context;
-use std::fs::{read, read_to_string};
+use async_std::fs::read_to_string;
+use std::fs::read;
 use std::io::{BufReader, Cursor};
 use std::sync::Arc;
 
@@ -19,6 +20,8 @@ use once_cell::sync::OnceCell;
 pub const KOROK_MTL_LIBRARY_PATH: &str = "assets/korok_texture_lib.mtl";
 pub type MtlLib = (Arc<Vec<Material>>, Option<Arc<AHashMap<String, usize>>>);
 pub static KOROK_MTL_LIB: OnceCell<MtlLib> = OnceCell::new();
+
+pub const STROKE_MTL: &str = "stroke";
 
 //assuming we run from root (group-5 folder)
 #[rustfmt::skip]
@@ -55,7 +58,9 @@ pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
     let path = find_in_search_path(file_name)
         .ok_or_else(|| anyhow::Error::msg(format!("error finding {file_name}")))?;
 
-    read_to_string(path).map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
+    read_to_string(path)
+        .await
+        .map_err(|e| anyhow::Error::msg(format!("error reading {file_name}: {e}")))
 }
 
 pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
@@ -232,7 +237,7 @@ pub async fn load_model(
         }
     }
 
-    let meshes = models
+    let mut meshes = models
         .into_iter()
         .map(|m| {
             let mut vertices = (0..m.mesh.positions.len() / 3)
@@ -349,6 +354,13 @@ pub async fn load_model(
             mat_ind: None,
         })
     } else {
+        let mtls = KOROK_MTL_LIB.get().unwrap().0.clone();
+        for m in &mut meshes {
+            if mtls[m.material].name == STROKE_MTL.to_string() {
+                m.name = format!("{}_{}", m.name, STROKE_MTL);
+            }
+        }
+
         Ok(model::StaticModel {
             meshes: Arc::new(meshes),
             materials: KOROK_MTL_LIB.get().unwrap().0.clone(),

@@ -11,8 +11,8 @@ use common::core::mesh_color::MeshColor;
 use log::warn;
 use nalgebra_glm as glm;
 use phf::phf_map;
-use common::core::choices::{OBJECT_PLAYER_MODEL, LEAF_MESH, BODY_MESH, DEFAULT_MODEL, NOSE_MESH};
 
+use common::core::choices::{OBJECT_PLAYER_MODEL, LEAF_MESH, BODY_MESH, DEFAULT_MODEL, NOSE_MESH};
 
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {

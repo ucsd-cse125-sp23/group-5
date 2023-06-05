@@ -1,5 +1,5 @@
 use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
-use common::core::powerup_system::{PowerUpEffects, StatusEffect, OtherEffects};
+use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
 
