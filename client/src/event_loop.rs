@@ -4,6 +4,7 @@ use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
+use common::configs::ConfigurationManager;
 use log::{debug, warn};
 use nalgebra_glm as glm;
 use winit::platform::run_return::EventLoopExtRunReturn;
@@ -12,7 +13,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use common::configs::ConfigurationManager;
 
 use common::core::states::{GameState, ParticleQueue};
 
@@ -90,11 +90,10 @@ impl PlayerLoop {
 
         //To check
         let mut last_render_time = instant::Instant::now();
-        
+
         // get config
         let config_instance = ConfigurationManager::get_configuration();
         let weather_config = config_instance.game.weather_config.clone();
-        
 
         event_loop.run_return(move |event, _, control_flow| {
             control_flow.set_poll();
