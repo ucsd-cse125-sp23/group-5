@@ -43,6 +43,10 @@
     {
       "name": "ice",
         "path": "assets/ice_cube.obj"
+    },
+    {
+      "name": "flag_field",
+      "path": "assets/flag_field.obj"
     }
   ]
 }
