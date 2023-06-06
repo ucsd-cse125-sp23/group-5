@@ -168,7 +168,7 @@ impl Display {
                     continue;
                 }
                 // -1 to cancel out 1.0 in pos, 2.5 to place above the player
-                let pos = pos + glm::vec4(0.0, 2.5, 0.0, -1.0);
+                let pos = pos + glm::vec4(0.0, 2.0, 0.0, -1.0);
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
                 to_draw.push(particles::Particle {
@@ -178,7 +178,7 @@ impl Display {
                     normal_1: [0., 0., 0., 0.],
                     normal_2: [0., 0., 0., 0.],
                     spawn_time: 0.0,
-                    size: 75.0,
+                    size: 100.0,
                     tex_id: id as i32 - 1 + (particles::constants::LABEL_BASE_IND as i32),
                     z_pos,
                     time_elapsed: 0.0,

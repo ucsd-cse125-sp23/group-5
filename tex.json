@@ -37,10 +37,10 @@
         "particles/particle_leaf_4_tiny_g.png",
         "particles/particle_leaf_4_tiny_w.png",
         "particles/p5.png",
-        "particles/p6.png",
-        "particles/p7.png",
-        "particles/p8.png",
-        "particles/p9.png",
+        "particles/nametag1.png",
+        "particles/nametag2.png",
+        "particles/nametag3.png",
+        "particles/nametag4.png",
         "particles/p10.png",
         "particles/rain_particle.png",
         "particles/streak.png",
@@ -131,7 +131,7 @@
         },
         {
             "name": "icon:power_blizzard",
-            "path": "pure_power_lightening.png"
+            "path": "pure_power_blizzard.png"
         },
         {
             "name": "icon:power_triple_jump",
@@ -159,7 +159,7 @@
         },
         {
             "name": "icon:power_blizzard_overlay",
-            "path": "pure_power_lightening.png"
+            "path": "power_blizzard.png"
         },
         {
             "name": "icon:power_triple_jump_overlay",
@@ -248,11 +248,11 @@
         },
         {
             "name": "icon:rainy",
-            "path": "rainy.png"
+            "path": "weather_rain.png"
         },
         {
             "name": "icon:windy",
-            "path": "windy.png"
+            "path": "weather_wind.png"
         },
         {
             "name": "btn:wood_tex_1",
