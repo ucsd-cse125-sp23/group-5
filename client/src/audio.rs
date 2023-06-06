@@ -31,6 +31,17 @@ pub enum AudioAsset {
     WIND = 4,
     STEP = 5,
     RAIN = 6,
+    JUMP = 7,
+    LAND = 8,
+    SPAWN_BEEP = 9,
+    DIE = 10,
+    SPAWN = 11,
+    WIND_WEATHER = 12,
+    PICKUP = 13,
+    ICE = 14,
+    FLASH = 15,
+    DASH = 16,
+    POWERUP = 17,
 }
 
 pub struct SoundInstance {
@@ -40,6 +51,7 @@ pub struct SoundInstance {
     initial_dir: glm::Vec3,
     at_client: bool,
     ambient: bool,
+    client: u32,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -219,6 +231,7 @@ impl Audio {
                         initial_dir: dir,
                         at_client: false,
                         ambient: true,
+                        client: sfxevent.at_client.0,
                     };
                     self.sound_controllers_ambient.insert(index.clone(), si);
                 }
@@ -233,7 +246,7 @@ impl Audio {
         }
     }
 
-    pub fn update_sound_positions(&mut self, player_pos: glm::Vec3, dir: glm::Vec3) {
+    pub fn update_sound_positions(&mut self, player_pos: glm::Vec3, dir: glm::Vec3, client_id: u32) {
         let mut to_remove = Vec::new();
         // for each sound effect
         for (asset, sound_instances) in self.sound_controllers_fx.iter_mut() {
@@ -252,7 +265,7 @@ impl Audio {
                         .controller
                         .adjust_position([0.0, 10.0, 0.0]);
                 } else {
-                    if true {
+                    if true { // sound_instances[i].client == client_id {
                         // in case some sound effects shouldn't get quieter the farther they get
                         let mut offset = sound_instances[i].initial_dir;
                         if offset != glm::Vec3::new(0.0, 0.0, 0.0) {
@@ -271,7 +284,7 @@ impl Audio {
                     if !basically_zero(pos) {
                         sound_instances[i]
                             .controller
-                            .adjust_position([pos.x, pos.z, 0.0]);
+                            .adjust_position([pos.x*0.25, pos.z*0.25, 0.0]);
                     } else {
                         sound_instances[i]
                             .controller
@@ -298,7 +311,7 @@ impl Audio {
             [
                 sfxevent.position.x,
                 sfxevent.position.z,
-                sfxevent.position.y,
+                0.0, // sfxevent.position.y,
             ],
         ); // double check y,z should be switched
 
@@ -309,9 +322,10 @@ impl Audio {
                     controller: sound,
                     position: sfxevent.position,
                     start: SystemTime::now(),
-                    initial_dir: dir,
+                    initial_dir: glm::Vec3::new(sfxevent.direction.x, 0.0, sfxevent.direction.z),
                     at_client,
                     ambient: false,
+                    client:sfxevent.at_client.0,
                 });
             }
             None => {
@@ -321,9 +335,10 @@ impl Audio {
                         controller: sound,
                         position: sfxevent.position,
                         start: SystemTime::now(),
-                        initial_dir: dir,
+                        initial_dir: glm::Vec3::new(sfxevent.direction.x, 0.0, sfxevent.direction.z),
                         at_client,
                         ambient: false,
+                        client: sfxevent.at_client.0,
                     }],
                 );
             }
@@ -364,7 +379,7 @@ impl Audio {
                 *self.sfx_queue.lock().unwrap() = sfx_queue;
             }
 
-            self.update_sound_positions(pos, cf);
+            self.update_sound_positions(pos, cf, client_id as u32);
         }
     }
 }
@@ -374,6 +389,17 @@ pub fn to_audio_asset(sound_id: String) -> Option<AudioAsset> {
         "wind" => Some(AudioAsset::WIND),
         "foot_step" => Some(AudioAsset::STEP),
         "rain" => Some(AudioAsset::RAIN),
+        "jump" => Some(AudioAsset::JUMP),
+        "land" => Some(AudioAsset::LAND),
+        "spawn_beep" => Some(AudioAsset::SPAWN_BEEP),
+        "die" => Some(AudioAsset::DIE),
+        "spawn" => Some(AudioAsset::SPAWN),
+        "wind_weather" => Some(AudioAsset::WIND_WEATHER),
+        "pickup" => Some(AudioAsset::PICKUP),
+        "ice" => Some(AudioAsset::ICE),
+        "flash" => Some(AudioAsset::FLASH),
+        "dash" => Some(AudioAsset::DASH),
+        "powerup" => Some(AudioAsset::POWERUP),
         _ => None,
     }
 }

@@ -16,6 +16,7 @@ use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 
 pub mod command_handlers;
+use crate::executor::command_handlers::jump::JumpResetCommandHandler;
 
 pub const DEFAULT_RESPAWN_LIMIT: f32 = -20.0;
 
@@ -124,7 +125,7 @@ impl Executor {
         let player_upper_bound = 4;
 
         #[cfg(feature = "debug-ready-sync")]
-        let player_upper_bound = 2;
+        let player_upper_bound = 1;
 
         if game_state.life_cycle_state == Waiting {
             match client_command.command {
@@ -222,6 +223,12 @@ impl Executor {
             if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
                 error!("Failed to execute command: {:?}", e);
             }
+            // TOOD: test that this fixes the land sound
+            JumpResetCommandHandler::new(client_command.client_id).handle(
+                &mut game_state,
+                &mut physics_state,
+                &mut game_events,
+            ).unwrap_or(());
         }
 
         info!("GameState: {:?}", game_state);
@@ -285,7 +292,7 @@ impl Executor {
             .players
             .iter()
             .filter(|(_, player)| {
-                player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn)
+                player.is_dead // && !player.on_cooldown.contains_key(&Command::Spawn)
             })
             .map(|(&id, _)| id)
             .collect::<Vec<_>>()

@@ -164,9 +164,24 @@ impl WeatherEffectCommandHandler {
                     "rain".to_string(),
                     (0, false),
                     (true, true),
+                    player_state.camera_forward,
                 )),
                 Recipients::One(player_id as u8),
-            )
+            );
+
+            game_events.add(
+                // to stop rain sound
+                GameEvent::SoundEvent(SoundSpec::new(
+                    glm::Vec3::new(0.0, 0.0, 0.0),
+                    "wind_weather".to_string(),
+                    (0, false),
+                    (true, false),
+                    glm::Vec3::new(0.0,0.0,0.0),
+                )),
+                Recipients::One(player_id as u8),
+            );
+
+            
         }
         Ok(())
     }
@@ -208,6 +223,28 @@ impl WeatherEffectCommandHandler {
                     Recipients::One(player_id as u8),
                 )
             }
+
+            game_events.add(
+                // to stop rain sound
+                GameEvent::SoundEvent(SoundSpec::new(
+                    glm::Vec3::new(0.0, 0.0, 0.0),
+                    "rain".to_string(),
+                    (0, false),
+                    (true, false),
+                    glm::Vec3::new(0.0,0.0,0.0),
+                )),
+                Recipients::One(player_id as u8),
+            );
+            game_events.add(
+                GameEvent::SoundEvent(SoundSpec::new(
+                    player_state.transform.translation,
+                    "wind_weather".to_string(),
+                    (0, false),
+                    (true, true),
+                    player_state.camera_forward,
+                )),
+                Recipients::One(player_id as u8),
+            );
         }
         Ok(())
     }
@@ -230,9 +267,21 @@ impl WeatherEffectCommandHandler {
                     "rain".to_string(),
                     (0, false),
                     (true, false),
+                    glm::Vec3::new(0.0,0.0,0.0),
                 )),
                 Recipients::One(player_id as u8),
-            )
+            );
+            game_events.add(
+                // to stop rain sound
+                GameEvent::SoundEvent(SoundSpec::new(
+                    glm::Vec3::new(0.0, 0.0, 0.0),
+                    "wind_weather".to_string(),
+                    (0, false),
+                    (true, false),
+                    glm::Vec3::new(0.0,0.0,0.0),
+                )),
+                Recipients::One(player_id as u8),
+            );
         }
         Ok(())
     }

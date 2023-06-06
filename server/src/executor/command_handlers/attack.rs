@@ -134,6 +134,7 @@ impl CommandHandler for AttackCommandHandler {
                 "wind".to_string(),
                 (self.player_id, false),
                 (false, false),
+                player_state.camera_forward,
             )),
             Recipients::All,
         );

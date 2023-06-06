@@ -1,6 +1,8 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
+use crate::Recipients;
 use crate::simulation::physics_state::PhysicsState;
 use common::core::action_states::ActionState;
+use common::core::events::{GameEvent, SoundSpec};
 use common::core::powerup_system::{
     OtherEffects, PowerUp, PowerUpEffects, PowerUpStatus, StatusEffect,
 };
@@ -70,6 +72,17 @@ impl CommandHandler for JumpCommandHandler {
 
         player_state.jump_count += 1;
 
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                player_state.transform.translation,
+                "jump".to_string(),
+                (self.player_id, true),
+                (false, false),
+                player_state.camera_forward,
+            )),
+            Recipients::One(self.player_id as u8),
+        );
+
         if player_state.jump_count > 1 {
             // when multi-jumping, remove invisibility
             super::remove_invisibility(player_state);
@@ -113,7 +126,7 @@ impl CommandHandler for JumpResetCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        _: &mut dyn GameEventCollector,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         let mut player_state = game_state
             .player_mut(self.player_id)
@@ -146,6 +159,19 @@ impl CommandHandler for JumpResetCommandHandler {
                 // see if player is above another collider by testing the normal angle
                 if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI / 3. {
                     should_reset_jump = true;
+                    if player_state.jump_count > 0 {
+                        game_events.add(
+                            GameEvent::SoundEvent(SoundSpec::new(
+                                player_state.transform.translation,
+                                "land".to_string(),
+                                (self.player_id, true),
+                                (false, false),
+                                player_state.camera_forward,
+                            )),
+                            Recipients::One(self.player_id as u8),
+                        );
+                    }
+                    break;
                 }
             }
         }

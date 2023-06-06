@@ -9,7 +9,7 @@ use std::time::Duration;
 use common::configs::physics_config::ConfigPhysics;
 use common::core::action_states::ActionState;
 use common::core::command::Command;
-use common::core::events::{GameEvent, ParticleSpec, ParticleType};
+use common::core::events::{GameEvent, ParticleSpec, ParticleType, SoundSpec};
 use common::core::powerup_system::{OtherEffects, PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 
@@ -116,16 +116,27 @@ impl CommandHandler for AreaAttackCommandHandler {
         );
 
         // TODO: add sound/particles for area attack
-        /*
         game_events.add(
             GameEvent::SoundEvent(SoundSpec::new(
                 player_pos,
                 "wind".to_string(),
                 (self.player_id, false),
+                (false, false),
+                player_state.camera_forward,
             )),
             Recipients::All,
         );
-        */
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                player_pos,
+                "wind".to_string(),
+                (self.player_id, false),
+                (false, false),
+                -1.0 * player_state.camera_forward,
+            )),
+            Recipients::All,
+        );
+        
         game_events.add(
             GameEvent::ParticleEvent(ParticleSpec::new(
                 ParticleType::AREA_ATTACK,
