@@ -38,7 +38,8 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         let player_state = game_state
             .player(self.player_id)
-            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?.clone();
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?
+            .clone();
 
         // if player is dead, don't do anything
         if player_state.is_dead {
@@ -59,9 +60,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         if let Some((x, PowerUpStatus::Active)) = player_state.power_up.clone() {
             {
-                let player_state = game_state
-                    .player_mut(self.player_id)
-                    .unwrap();
+                let player_state = game_state.player_mut(self.player_id).unwrap();
                 // when dashing or flashing, remove invisibility
                 super::remove_invisibility(player_state);
             }
@@ -88,9 +87,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
 
         if let Some((x, PowerUpStatus::Held)) = player_state.power_up.clone() {
             {
-                let player_state = game_state
-                    .player_mut(self.player_id)
-                    .unwrap();
+                let player_state = game_state.player_mut(self.player_id).unwrap();
                 // when using a powerup, remove invisibility
                 super::remove_invisibility(player_state);
                 player_state
@@ -167,15 +164,16 @@ impl CommandHandler for CastPowerUpCommandHandler {
                                 self.game_config.powerup_config.power_up_debuff_duration,
                             ));
 
-                            other_player_state
-                                .active_action_states
-                                .insert((ActionState::Frozen, Duration::from_secs_f32(self.game_config.powerup_config.power_up_debuff_duration)));
+                            other_player_state.active_action_states.insert((
+                                ActionState::Frozen,
+                                Duration::from_secs_f32(
+                                    self.game_config.powerup_config.power_up_debuff_duration,
+                                ),
+                            ));
                         }
                     }
 
-                    let player_state = game_state
-                        .player_mut(self.player_id)
-                        .unwrap();
+                    let player_state = game_state.player_mut(self.player_id).unwrap();
                     // Clear blizzard power up after use
                     player_state.power_up = None;
                 }
@@ -183,9 +181,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                     if x == PowerUp::Invincible {
                         super::reset_weather(physics_state, self.player_id);
                     }
-                    let player_state = game_state
-                        .player_mut(self.player_id)
-                        .unwrap();
+                    let player_state = game_state.player_mut(self.player_id).unwrap();
                     player_state.status_effects.insert(
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
                         self.game_config.powerup_config.power_up_buff_duration,

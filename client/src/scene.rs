@@ -133,7 +133,7 @@ impl NodeKind {
             NodeKind::Object => "object",
             NodeKind::World => "world",
         }
-            .to_string()
+        .to_string()
     }
 
     // anything that can be displayed
@@ -191,11 +191,7 @@ impl Scene {
         child_node
     }
 
-    pub fn add_child(
-        &mut self,
-        parent_node_id: NodeId,
-        child_node: Node,
-    ) {
+    pub fn add_child(&mut self, parent_node_id: NodeId, child_node: Node) {
         let parent_node = self.scene_graph.get_mut(&parent_node_id).unwrap();
 
         // don't want to add duplicates, as we may have removed it for invisibility
@@ -231,7 +227,7 @@ impl Scene {
 
     pub fn load_game_state(
         &mut self,
-        game_state: impl Deref<Target=GameState>,
+        game_state: impl Deref<Target = GameState>,
         player_controller: &mut PlayerController,
         player: &mut Player,
         camera_state: &mut CameraState,
@@ -251,29 +247,28 @@ impl Scene {
                     self.add_player_node(node_id.clone());
                 }
 
-
                 // has override material
                 let override_key = format!("override_{}", BODY_MESH);
 
-                let has_override_material = self.scene_graph.get(&node_id)
+                let has_override_material = self
+                    .scene_graph
+                    .get(&node_id)
                     .and_then(|node| node.materials.as_ref())
                     .map(|material| material.contains_key(&override_key))
                     .unwrap_or(false);
 
                 // match true {
-                match player_state.status_effects.contains_key(&StatusEffect::Other(Slippery)) {
+                match player_state
+                    .status_effects
+                    .contains_key(&StatusEffect::Other(Slippery))
+                {
                     true if !has_override_material => {
                         let node = self.scene_graph.get_mut(&node_id).unwrap();
-                        node.add_material(
-                            override_key,
-                            "ice".to_string(),
-                        );
-
+                        node.add_material(override_key, "ice".to_string());
                     }
                     false if has_override_material => {
                         let node = self.scene_graph.get_mut(&node_id).unwrap();
                         node.remove_material(override_key);
-
                     }
                     _ => {}
                 }
@@ -421,7 +416,7 @@ impl Scene {
             node_id,
             glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0)),
         )
-            .add_model("korok_1".to_string());
+        .add_model("korok_1".to_string());
     }
 
     pub fn from_config(json_scene_graph: &ConfigSceneGraph) -> Self {
