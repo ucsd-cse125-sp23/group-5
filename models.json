@@ -42,11 +42,26 @@
     },
     {
       "name": "ice",
-        "path": "assets/ice_cube.obj"
+      "path": "assets/ice_cube.obj"
     },
     {
       "name": "flag_field",
       "path": "assets/flag_field.obj"
+    },
+    {
+      "name": "grass_1",
+      "path": "assets/grass_1.obj",
+      "phantom": true
+    },
+    {
+      "name": "grass_2",
+      "path": "assets/grass_2.obj",
+      "phantom": true
+    },
+    {
+      "name": "grass_3",
+      "path": "assets/grass_3.obj",
+      "phantom": true
     }
   ]
 }

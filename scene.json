@@ -84,7 +84,76 @@
             ]
           },
           "model": "refill"
+        },
+        {
+          "id": "object:grass_1_1",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "model": "grass_1"
+        },
+        {
+          "id": "object:grass_2_1",
+          "transform": {
+            "position": [
+              0.3,
+              0,
+              0.5
+            ],
+            "rotation": [
+              0,
+              0.8,
+              0,
+              1
+            ]
+          },
+          "model": "grass_2"
+        },
+        {
+          "id": "object:grass_3_1",
+          "transform": {
+            "position": [
+              -0.6,
+              0,
+              0.6
+            ],
+            "rotation": [
+              0,
+              0.4,
+              0,
+              1
+            ]
+          },
+          "model": "grass_3"
+        },
+        {
+          "id": "object:grass_3_2",
+          "transform": {
+            "position": [
+              0.3,
+              0,
+              -0.7
+            ],
+            "rotation": [
+              0,
+              0.4,
+              0,
+              1
+            ]
+          },
+          "model": "grass_3"
         }
+
       ]
     }
   ]
