@@ -172,7 +172,7 @@ impl CommandHandler for AreaAttackCommandHandler {
                 &physics_state.bodies,
                 &physics_state.colliders,
                 &ray,
-                self.physics_config.attack_config.max_area_attack_dist,
+                self.physics_config.attack_config.max_area_attack_dist * scalar,
                 solid,
                 filter,
             ) {
@@ -194,10 +194,11 @@ impl CommandHandler for AreaAttackCommandHandler {
                         .get_entity_rigid_body_mut(*other_player_id)
                         .unwrap();
 
-                    let attack_strength = self.physics_config.attack_config.area_attack_impulse
-                        - (self.physics_config.attack_config.area_attack_coeff * toi);
+                    let attack_strength = scalar
+                        * (self.physics_config.attack_config.area_attack_impulse
+                            - (self.physics_config.attack_config.area_attack_coeff * toi));
 
-                    let impulse_vec = scalar * vec_to_other * attack_strength;
+                    let impulse_vec = scalar * vec_to_other;
 
                     // clear velocity of target before applying impulse
                     other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);
