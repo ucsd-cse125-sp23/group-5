@@ -84,23 +84,6 @@
             ]
           },
           "model": "refill"
-        },
-        {
-          "id": "object:flag_field",
-          "transform": {
-            "position": [
-              0,
-              0.5,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0,
-              1
-            ]
-          },
-          "model": "flag_field"
         }
       ]
     }
