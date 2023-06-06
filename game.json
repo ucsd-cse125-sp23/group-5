@@ -58,7 +58,7 @@
     -10.0,
     0.0
   ],
-  "winning_threshold": 10.0,
+  "winning_threshold": 17.0,
   "decay_rate": 0.2,
   "decay_coef": 0.0002,
   "refill_radius": 2.0,
@@ -72,26 +72,26 @@
     "power_up_locations": {
       "1": [
         23.0,
-        -5.0,
+        -5.5,
         0.0
       ],
       "2": [
         -23.0,
-        -5.0,
+        -5.5,
         0.0
       ],
       "3": [
         0.0,
-        -5.0,
+        -5.5,
         23.0
       ],
       "4": [
         0.0,
-        -5.0,
+        -5.5,
         -23.0
       ]
     },
-    "power_up_radius": 1.0,
+    "power_up_radius": 2.0,
     "power_up_respawn_cooldown": 15.0,
     "power_up_buff_duration": 10.0,
     "power_up_debuff_duration": 3.0,

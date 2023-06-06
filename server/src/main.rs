@@ -21,6 +21,7 @@ use threadpool::ThreadPool;
 mod client_handler;
 
 use client_handler::ClientHandler;
+use common::communication::commons::DEMO_SERVER_ADDR;
 
 pub static CLIENT_ID_ASSIGNER: AtomicU8 = AtomicU8::new(1);
 pub static SESSION_ID: Lazy<u64> = Lazy::new(rand::random::<u64>);
@@ -43,11 +44,15 @@ fn main() {
     info!("World initialized");
 
     // start of server listening
-    #[cfg(not(feature = "debug-addr"))]
-    let listener = TcpListener::bind(CSE125_SERVER_ADDR).unwrap();
-
-    #[cfg(feature = "debug-addr")]
-    let listener = TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap();
+    let listener = if cfg!(feature = "prod") {
+        TcpListener::bind(DEMO_SERVER_ADDR).unwrap()
+    } else if cfg!(feature = "debug-remote") {
+        TcpListener::bind(CSE125_SERVER_ADDR).unwrap()
+    } else if cfg!(feature = "debug-addr") {
+        TcpListener::bind(DEFAULT_SERVER_ADDR).unwrap()
+    } else {
+        panic!("No appropriate feature flag set!");
+    };
 
     let pool = ThreadPool::new(4);
 

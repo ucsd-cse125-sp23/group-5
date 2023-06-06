@@ -37,13 +37,16 @@ fn main() {
     let game_events_bus = Bus::new(1);
     // let mut particle_rcvr = game_events_bus.add_rx();
 
-    #[cfg(not(feature = "debug-addr"))]
-    let dest: SocketAddr = CSE125_SERVER_ADDR.parse().expect("server addr parse fails");
+    let dest: SocketAddr = if cfg!(feature = "prod") {
+        DEMO_SERVER_ADDR.parse().expect("server addr parse fails")
+    } else if cfg!(feature = "debug-remote") {
+        CSE125_SERVER_ADDR.parse().expect("server addr parse fails")
+    } else if cfg!(feature = "debug-addr") {
+        DEFAULT_SERVER_ADDR.parse().expect("server addr parse fails")
+    } else {
+        panic!("No appropriate feature flag set!");
+    };
 
-    #[cfg(feature = "debug-addr")]
-    let dest: SocketAddr = DEFAULT_SERVER_ADDR
-        .parse()
-        .expect("server addr parse fails");
 
     let protocol = Protocol::connect(dest).unwrap();
 
