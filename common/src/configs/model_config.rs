@@ -7,6 +7,7 @@ pub struct ConfigModel {
     pub name: ModelIndex,
     pub path: String,
     pub animated: Option<bool>,
+    pub phantom: Option<bool>,
 }
 
 impl ConfigModel {

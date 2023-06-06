@@ -8,6 +8,7 @@ pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
 pub const LEAF_MESH: &str = "leaf";
 pub const BODY_MESH: &str = "korok";
 pub const DEFAULT_MODEL: &str = "korok_1";
+pub const NOSE_MESH: &str = "nose";
 
 #[derive(Debug, Clone)]
 pub struct CurrentSelections {
