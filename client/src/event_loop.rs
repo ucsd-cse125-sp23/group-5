@@ -4,6 +4,7 @@ use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
+use common::configs::ConfigurationManager;
 use log::{debug, warn};
 use nalgebra_glm as glm;
 use winit::platform::run_return::EventLoopExtRunReturn;
@@ -89,6 +90,10 @@ impl PlayerLoop {
 
         //To check
         let mut last_render_time = instant::Instant::now();
+
+        // get config
+        let config_instance = ConfigurationManager::get_configuration();
+        let weather_config = config_instance.game.weather_config.clone();
 
         event_loop.run_return(move |event, _, control_flow| {
             control_flow.set_poll();
@@ -191,7 +196,7 @@ impl PlayerLoop {
                     let dt = now - last_render_time;
                     last_render_time = now;
 
-                    state.update(self.game_state.clone(), self.particle_queue.clone(), dt);
+                    state.update(self.game_state.clone(), self.particle_queue.clone(), dt, weather_config.clone());
 
                     // send camera position to input processor
                     self.inputs.send(Input::Camera {

@@ -1,10 +1,29 @@
-use crate::animation::AnimatedModel;
-use crate::inputs::Input;
-use crate::model::{Model, StaticModel};
+use std::collections::{HashMap, HashSet};
+use std::default;
+use std::sync::{mpsc, MutexGuard};
+use std::{
+    f32::consts::PI,
+    sync::{Arc, Mutex},
+};
+
+use futures::future::join_all;
+use futures::{join, TryFutureExt};
+use glm::vec3;
+use nalgebra_glm as glm;
+use nalgebra_glm::{TVec3, Vec3};
+use wgpu::util::DeviceExt;
+use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use winit::event::*;
+use winit::window::Window;
+
 use audio::CURR_DISP;
 use common::configs;
-use common::configs::parameters::{DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS, DEFAULT_CAMERA_FOV};
+use common::configs::game_config::ConfigWeather;
+use common::configs::parameters::{
+    DEFAULT_CAMERA_FOV, DEFAULT_CAMERA_POS, DEFAULT_CAMERA_TARGET, DEFAULT_PLAYER_POS,
+};
 use common::configs::*;
+use common::core::choices::OBJECT_PLAYER_MODEL;
 use common::core::command::Command;
 use common::core::events;
 use common::core::powerup_system::StatusEffect::Power;
@@ -15,25 +34,14 @@ use common::core::states::GameLifeCycleState::Ended;
 use common::core::states::GameLifeCycleState::Running;
 use common::core::states::{GameLifeCycleState, GameState, ParticleQueue};
 use common::core::weather::Weather;
-use futures::future::join_all;
-use futures::{join, TryFutureExt};
-use glm::vec3;
 use model::Vertex;
-use nalgebra_glm as glm;
-use nalgebra_glm::Vec3;
 use other_players::OtherPlayer;
 use resources::{KOROK_MTL_LIB, KOROK_MTL_LIBRARY_PATH};
-use std::collections::{HashMap, HashSet};
-use std::default;
-use std::sync::{mpsc, MutexGuard};
-use std::{
-    f32::consts::PI,
-    sync::{Arc, Mutex},
-};
-use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
-use winit::event::*;
-use winit::window::Window;
+
+use crate::animation::AnimatedModel;
+use crate::inputs::Input;
+use crate::model::{Model, StaticModel};
+
 mod animation;
 pub mod audio;
 mod camera;
@@ -50,7 +58,11 @@ mod scene;
 mod screen;
 mod skybox;
 mod texture;
-use common::core::choices::OBJECT_PLAYER_MODEL;
+
+const DEFAULT_AMBIENT_MULTIPLIER: f32 = 1.0;
+const RAINY_AMBIENT_MULTIPLIER: f32 = 0.5;
+
+// TVec3<f32>
 
 struct State {
     surface: wgpu::Surface,
@@ -647,8 +659,8 @@ impl State {
 
         let config_instance = ConfigurationManager::get_configuration();
         let display_config = config_instance.display.clone();
-        // join_all
 
+        // join_all
         let (animated_future_done, static_future_done) = join!(
             join_all(animated_model_futures),
             join_all(static_model_futures)
@@ -738,7 +750,7 @@ impl State {
                 score: 0.0,
             })
             .collect();
-        
+
         let previous_game_life_cycle_state = GameLifeCycleState::Waiting;
 
         Self {
@@ -841,11 +853,27 @@ impl State {
         }
     }
 
+    fn gradual_convert_lighting(&mut self, (r, g, b): (f32, f32, f32), change_rate_coef: f32) {
+        let ambient_multiplier = &mut self.camera_state.camera.ambient_multiplier;
+
+        let targets = [r, g, b];
+        for (val, &target) in ambient_multiplier.iter_mut().zip(targets.iter()) {
+            if *val != target {
+                let sign = (target - *val).signum();
+                *val += sign * change_rate_coef;
+                if (target - *val).signum() != sign {
+                    *val = target;
+                }
+            }
+        }
+    }
+
     fn update(
         &mut self,
         game_state: Arc<Mutex<GameState>>,
         particle_queue: Arc<Mutex<ParticleQueue>>,
         dt: instant::Duration,
+        weather_config: ConfigWeather,
     ) {
         // Only update if we're in game/lobby
         if self.display.current != self.display.game_display.clone()
@@ -865,15 +893,43 @@ impl State {
         match game_state_clone.life_cycle_state {
             GameLifeCycleState::Running(..) => {
                 if self.previous_game_life_cycle_state == GameLifeCycleState::Waiting {
-                    // should only run once 
+                    // should only run once
                     //println!("once");
                     self.display.change_to(self.display.game_display.clone());
                     self.add_game_particles();
-                                /*
+                    /*
                     self.display.current = self.display.game_display.clone();
                     *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
-                    */ 
-                    
+                    */
+                }
+
+                let change_rate_coef = weather_config.environment_lighting_rate_change_coefficient;
+                // update lighting based on weather
+                match game_state_clone.world.weather {
+                    Some(Weather::Rainy) => {
+                        let rainy_ambient_multiplier =
+                            weather_config.rainy_weather_ambient_multiplier;
+                        self.gradual_convert_lighting(
+                            (
+                                rainy_ambient_multiplier,
+                                rainy_ambient_multiplier,
+                                rainy_ambient_multiplier,
+                            ),
+                            change_rate_coef,
+                        );
+                    }
+                    _ => {
+                        let default_ambient_multiplier =
+                            weather_config.default_weather_ambient_multiplier;
+                        self.gradual_convert_lighting(
+                            (
+                                default_ambient_multiplier,
+                                default_ambient_multiplier,
+                                default_ambient_multiplier,
+                            ),
+                            change_rate_coef,
+                        );
+                    }
                 }
             }
             // check if the game has ended and set corresponding end screen
@@ -920,15 +976,14 @@ impl State {
                 }
 
                 let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
-                let winner_icon_index = *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+                let winner_icon_index =
+                    *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
                 loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
 
                 return;
             }
-            _ => {
-
-            }
-        } 
+            _ => {}
+        }
 
         self.previous_game_life_cycle_state = game_state_clone.life_cycle_state.clone();
 
@@ -1439,31 +1494,47 @@ impl State {
         Ok(())
     }
 
-    fn add_game_particles(
-        &mut self,
-    ) {
+    fn add_game_particles(&mut self) {
         let config_instance = ConfigurationManager::get_configuration();
         let particle_config = config_instance.particles.clone();
 
-        let bounds_min = particle_config.winning_area_ribbon_particle_config.bounds_min;
-        let bounds_max = particle_config.winning_area_ribbon_particle_config.bounds_max;
+        let bounds_min = particle_config
+            .winning_area_ribbon_particle_config
+            .bounds_min;
+        let bounds_max = particle_config
+            .winning_area_ribbon_particle_config
+            .bounds_max;
         let v_dir = particle_config.winning_area_ribbon_particle_config.v_dir;
         let gen = particles::ribbon::LineRibbonGenerator::new(
             glm::vec3(bounds_min.0, bounds_min.1, bounds_min.2),
             glm::vec3(bounds_max.0, bounds_max.1, bounds_max.2),
             glm::vec3(v_dir.0, v_dir.1, v_dir.2),
-            particle_config.winning_area_ribbon_particle_config.linear_speed,
-            particle_config.winning_area_ribbon_particle_config.linear_variance,
-            particle_config.winning_area_ribbon_particle_config.visible_time,
+            particle_config
+                .winning_area_ribbon_particle_config
+                .linear_speed,
+            particle_config
+                .winning_area_ribbon_particle_config
+                .linear_variance,
+            particle_config
+                .winning_area_ribbon_particle_config
+                .visible_time,
             particle_config.winning_area_ribbon_particle_config.size,
-            particle_config.winning_area_ribbon_particle_config.size_variance,
-            particle_config.winning_area_ribbon_particle_config.subdivisions,
+            particle_config
+                .winning_area_ribbon_particle_config
+                .size_variance,
+            particle_config
+                .winning_area_ribbon_particle_config
+                .subdivisions,
             false,
         );
         let ribbon = particles::ParticleSystem::new(
-            std::time::Duration::from_secs_f32(particle_config.winning_area_ribbon_particle_config.gen_time),
+            std::time::Duration::from_secs_f32(
+                particle_config.winning_area_ribbon_particle_config.gen_time,
+            ),
             particle_config.winning_area_ribbon_particle_config.time,
-            particle_config.winning_area_ribbon_particle_config.gen_speed,
+            particle_config
+                .winning_area_ribbon_particle_config
+                .gen_speed,
             glm::vec4(0.4, 0.9, 0.7, 1.0),
             gen,
             (43, 44),
