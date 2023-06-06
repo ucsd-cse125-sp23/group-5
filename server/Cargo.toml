@@ -31,5 +31,6 @@ approx = "0.5.1"
 [features]
 prod = []
 debug = ["debug-addr", "debug-ready-sync"]
-debug-addr = []
+debug-addr = ["debug-ready-sync"]
+debug-remote = []
 debug-ready-sync = []

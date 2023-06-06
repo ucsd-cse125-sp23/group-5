@@ -76,10 +76,10 @@ pub struct PowerUpAuraParticleConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WinningAreaRibbonParticleConfig {
-    pub bounds_min: (f32, f32, f32), 
-    pub bounds_max: (f32, f32, f32), 
+    pub bounds_min: (f32, f32, f32),
+    pub bounds_max: (f32, f32, f32),
     pub v_dir: (f32, f32, f32),
-    pub visible_time: f32, 
+    pub visible_time: f32,
     pub time: f32,
     pub gen_time: f32,
     pub linear_speed: f32,

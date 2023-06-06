@@ -1,10 +1,12 @@
 use std::io::{self, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpStream};
+use std::sync::{Arc, Mutex};
 
 use log::debug;
 
 pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
 pub const CSE125_SERVER_ADDR: &str = "128.54.70.10:2333";
+pub const DEMO_SERVER_ADDR: &str = "137.110.115.157:2333";
 pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
 
 /// Trait for something that can be converted to bytes (&[u8])
@@ -26,7 +28,7 @@ pub trait Deserialize {
 /// sending & receiving of messages
 pub struct Protocol {
     reader: Option<BufReader<TcpStream>>,
-    stream: TcpStream,
+    stream: Arc<Mutex<TcpStream>>,
 }
 
 impl Protocol {
@@ -34,7 +36,7 @@ impl Protocol {
     pub fn with_stream(stream: TcpStream) -> io::Result<Self> {
         Ok(Self {
             reader: Some(BufReader::new(stream.try_clone()?)),
-            stream,
+            stream: Arc::new(Mutex::new(stream)),
         })
     }
 
@@ -47,10 +49,13 @@ impl Protocol {
     }
 
     /// Serialize a message to the server and write it to the TcpStream
-    pub fn send_message(&mut self, message: &impl Serialize) -> io::Result<()> {
-        message.serialize(&mut self.stream)?;
+    pub fn send_message(&self, message: &impl Serialize) -> io::Result<()> {
+        // Acquire the lock on the stream
+        let mut locked_stream = self.stream.lock().unwrap();
 
-        self.stream.flush()
+        message.serialize(&mut *locked_stream)?;
+
+        locked_stream.flush()
     }
 
     /// Read a message from the inner TcpStream
@@ -65,17 +70,19 @@ impl Protocol {
         )
     }
 
+    /// Try to clone the Protocol into a new one, sharing the same TcpStream
     pub fn try_clone_into(self) -> io::Result<Self> {
         Ok(Self {
-            reader: self.reader,
-            stream: self.stream.try_clone()?,
+            reader: self.reader, // this assumes that BufReader implements Clone
+            stream: Arc::clone(&self.stream),
         })
     }
 
+    /// Try to clone the Protocol into a new one, without the reader
     pub fn try_clone(&self) -> io::Result<Self> {
         Ok(Self {
             reader: None,
-            stream: self.stream.try_clone()?,
+            stream: Arc::clone(&self.stream),
         })
     }
 }

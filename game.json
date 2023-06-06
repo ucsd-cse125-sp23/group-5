@@ -23,24 +23,24 @@
   ],
   "refill_points": [
     [
-      24.0,
-      -4.0,
-      24.0
+      16.5,
+      0.7,
+      16.5
     ],
     [
-      24.0,
-      -4.0,
-      -24.0
+      16.5,
+      1.6,
+      -16.5
     ],
     [
-      -24.0,
-      -4.0,
-      24.0
+      -16.5,
+      1.6,
+      16.5
     ],
     [
-      -24.0,
-      -4.0,
-      -24.0
+      -16.5,
+      0.5,
+      -16.5
     ]
   ],
   "spawn_cooldown": 3.0,
@@ -58,40 +58,40 @@
     -10.0,
     0.0
   ],
-  "winning_threshold": 10.0,
+  "winning_threshold": 17.0,
   "decay_rate": 0.2,
   "decay_coef": 0.0002,
   "refill_radius": 2.0,
   "refill_rate_limit": 0.5,
   "camera_config": {
     "x_sensitivity": 3.2,
-    "y_sensitivity": 0.56, 
+    "y_sensitivity": 0.56,
     "scroll_sensitivity": 0.1
   },
   "powerup_config": {
     "power_up_locations": {
       "1": [
         23.0,
-        -5.0,
+        -5.5,
         0.0
       ],
       "2": [
         -23.0,
-        -5.0,
+        -5.5,
         0.0
       ],
       "3": [
         0.0,
-        -5.0,
+        -5.5,
         23.0
       ],
       "4": [
         0.0,
-        -5.0,
+        -5.5,
         -23.0
       ]
     },
-    "power_up_radius": 1.0,
+    "power_up_radius": 2.0,
     "power_up_respawn_cooldown": 15.0,
     "power_up_buff_duration": 10.0,
     "power_up_debuff_duration": 3.0,
@@ -107,5 +107,13 @@
     "spawn_invincible_duration": 2.5,
     "dash_blocking_duration": 0.2,
     "dash_cooldown": 0.3
+  },
+  "weather_config": {
+    "default_weather_ambient_multiplier": 1.0,
+    "rainy_weather_ambient_multiplier": 0.5,
+    "environment_lighting_rate_change_coefficient": 0.005,
+    "rain_ratio": 0.3,
+    "wind_ratio": 0.2,
+    "no_weather_ratio": 0.5
   }
 }

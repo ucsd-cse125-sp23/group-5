@@ -34,27 +34,24 @@ impl CommandHandler for AttackCommandHandler {
         physics_state: &mut PhysicsState,
         game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
-        let leaf_color = 
-            match game_state.players_customization.get(&self.player_id) {
-                Some(c) => {c.color.get(common::core::choices::LEAF_MESH)
-                                            .unwrap()
-                                            .rgb_color},
-                None => [0.0, 1.0, 1.0],
-            };
-            
-        
+        let leaf_color = match game_state.players_customization.get(&self.player_id) {
+            Some(c) => {
+                c.color
+                    .get(common::core::choices::LEAF_MESH)
+                    .unwrap()
+                    .rgb_color
+            }
+            None => [0.0, 1.0, 1.0],
+        };
+
         let atk_particle: String;
         {
             //TODO: There are magic values here...
             let def = String::from("korok_1");
-            let model_id = 
-                match game_state
-                .players_customization
-                .get(&self.player_id){
-                    Some(c) => &c.model[..],
-                    None => &def[..]
-                };
-                
+            let model_id = match game_state.players_customization.get(&self.player_id) {
+                Some(c) => &c.model[..],
+                None => &def[..],
+            };
 
             atk_particle = match model_id {
                 "korok_1" => String::from(common::configs::particle_config::MODEL_1),
@@ -146,7 +143,7 @@ impl CommandHandler for AttackCommandHandler {
                 horizontal_camera_forward,
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
-                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0),
+                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 0.85),
                 atk_particle,
             )),
             Recipients::All,
@@ -201,7 +198,7 @@ impl CommandHandler for AttackCommandHandler {
                     &physics_state.bodies,
                     &physics_state.colliders,
                     &ray,
-                    self.physics_config.attack_config.max_attack_dist,
+                    self.physics_config.attack_config.max_attack_dist * scalar,
                     solid,
                     filter,
                 ) {
@@ -223,9 +220,10 @@ impl CommandHandler for AttackCommandHandler {
                             .get_entity_rigid_body_mut(*other_player_id)
                             .unwrap();
 
-                        let attack_strength = self.physics_config.attack_config.attack_impulse
-                            - (self.physics_config.attack_config.attack_coeff * toi);
-                        let impulse_vec = scalar * vec_to_other * attack_strength;
+                        let attack_strength = scalar
+                            * (self.physics_config.attack_config.attack_impulse
+                                - (self.physics_config.attack_config.attack_coeff * toi));
+                        let impulse_vec = vec_to_other * attack_strength;
 
                         // clear velocity of target before applying attack
                         other_player_rigid_body.set_linvel(rapier::vector![0.0, 0.0, 0.0], true);

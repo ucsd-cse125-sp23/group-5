@@ -42,11 +42,9 @@ impl CommandHandler for StartupCommandHandler {
             let model_config = self
                 .config_models
                 .model(model)
-                .ok_or(HandlerError::new("Model not declared".to_string()))?
-                .path
-                .clone();
+                .ok_or(HandlerError::new("Model not declared".to_string()))?;
 
-            let (models, _) = tobj::load_obj(model_config, &tobj::GPU_LOAD_OPTIONS)
+            let (models, _) = tobj::load_obj(model_config.path.clone(), &tobj::GPU_LOAD_OPTIONS)
                 .map_err(|e| HandlerError::new(format!("Error loading model {:?}", e)))?;
 
             let local_transform = Isometry3::from_parts(
@@ -62,9 +60,13 @@ impl CommandHandler for StartupCommandHandler {
 
             let decompose = node.decompose.unwrap_or(false);
 
-            let collider = geometry::ColliderBuilder::from_object_models(models, decompose).build();
+            let collider = if !model_config.phantom.unwrap_or(false) {
+                Some(geometry::ColliderBuilder::from_object_models(models, decompose).build())
+            } else {
+                None
+            };
 
-            physics_state.insert_entity(scene_entity_id, Some(collider), Some(body)); // insert the collider into the physics world
+            physics_state.insert_entity(scene_entity_id, collider, Some(body)); // insert the collider into the physics world
             scene_entity_id += 1;
 
             // add children to nodes

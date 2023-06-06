@@ -54,10 +54,15 @@ To get started on contributing to the project, follow the steps below.
 3. Run the server and client(s)
     1) In debug mode(running locally)
     ```sh
-    cargo run --features debug --release --bin server # start the server
-    cargo run --features debug --release --bin client # start a client
+    cargo run --features debug-addr --release --bin server # start the server
+    cargo run --features debug-addr --release --bin client # start a client
     ```
-    2) In production mode
+    2) In debug mode(running on the local machines)
+    ```sh
+    cargo run --features debug-remote --release --bin server # start the server
+    cargo run --features debug-remote --release --bin client # start a client
+    ```
+    3) In production mode(running on the demo machines)
    ```sh
     cargo run --features prod --release --bin server # start the server
     cargo run --features prod --release --bin client # start a client

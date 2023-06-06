@@ -9,22 +9,22 @@
       },
       {
         "name": "background_game",
-        "path": "assets/audio/background/looping_bgd_quiet_start.mp3",
-        "seconds": 128,
+        "path": "assets/audio/background/juezhan_huashan_zhi_dian_loop.mp3",
+        "seconds": 190,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
       },
       {
         "name": "background_winner",
-        "path": "assets/audio/background/loop-winm.mp3",
-        "seconds": 128,
+        "path": "assets/audio/background/loop-win.mp3",
+        "seconds": 37,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
       },
       {
         "name": "background_loser",
-        "path": "assets/audio/background/er-quan-ying-yue-loopm.mp3",
-        "seconds": 128,
+        "path": "assets/audio/background/er_quan_ying_yue_loop01.mp3",
+        "seconds": 135,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
       },
