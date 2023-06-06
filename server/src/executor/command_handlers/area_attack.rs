@@ -132,7 +132,7 @@ impl CommandHandler for AreaAttackCommandHandler {
                 glm::vec3(0.0, 0.0, 0.0),
                 //TODO: placeholder for player color
                 glm::vec3(0.0, 1.0, 0.0),
-                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 1.0),
+                glm::vec4(leaf_color[0], leaf_color[1], leaf_color[2], 0.85),
                 atk_particle,
             )),
             Recipients::All,

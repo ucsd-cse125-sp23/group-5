@@ -1854,7 +1854,7 @@ impl State {
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(time),
                         0.25,
-                        5.0,
+                        10.0,
                         p.color,
                         gen,
                         (
