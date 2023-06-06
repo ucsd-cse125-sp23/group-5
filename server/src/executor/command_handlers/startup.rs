@@ -44,7 +44,6 @@ impl CommandHandler for StartupCommandHandler {
                 .model(model)
                 .ok_or(HandlerError::new("Model not declared".to_string()))?;
 
-
             let (models, _) = tobj::load_obj(model_config.path.clone(), &tobj::GPU_LOAD_OPTIONS)
                 .map_err(|e| HandlerError::new(format!("Error loading model {:?}", e)))?;
 

@@ -2,7 +2,7 @@ use crate::instance::Instance;
 use common::core::mesh_color::{MeshColor, MeshColorInstance};
 use std::any::Any;
 use std::collections::HashMap;
-use std::fmt::{Debug, format, Formatter};
+use std::fmt::{format, Debug, Formatter};
 use std::ops::Range;
 use std::sync::Arc;
 use wgpu::Device;
@@ -283,7 +283,6 @@ where
                 // assume each mesh has a material
                 let mut mat_id = instanced_model.model.meshes()[i].material;
                 if let Some(mtls) = &instanced_model.chosen_mats[j] {
-
                     let mut material = None;
 
                     // override material
