@@ -8,6 +8,7 @@ pub enum ActionState {
     Attacking,
     SpecialAttacking,
     CastingPowerUp,
+    Frozen,
 }
 
 impl Default for ActionState {
@@ -25,6 +26,7 @@ impl ActionState {
             ActionState::Attacking => 3,
             ActionState::SpecialAttacking => 4,
             ActionState::CastingPowerUp => 5,
+            ActionState::Frozen => 6,
         }
     }
 
@@ -36,6 +38,7 @@ impl ActionState {
             ActionState::Attacking => "regular_attack",
             ActionState::SpecialAttacking => "special_attack",
             ActionState::CastingPowerUp => "powerup_attack",
+            ActionState::Frozen => "frozen",
         }
     }
 }

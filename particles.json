@@ -56,5 +56,19 @@
     "size_variance": 5.0,
     "size_growth": 0.0,
     "gen_speed": 5.0
+  },
+  "winning_area_ribbon_particle_config": {
+    "bounds_min": [-2.0, -10.0, -2.0],
+    "bounds_max": [2.0, -8.0, 2.0],
+    "v_dir": [0.0, 1.0, 0.0],
+    "visible_time": 0.5,
+    "time": 2.0,
+    "gen_time": 5000.0,
+    "linear_speed": 10.0,
+    "linear_variance": 0.0,
+    "size": 10.0,
+    "size_variance": 0.0,
+    "subdivisions": 1,
+    "gen_speed": 5.0
   }
 }

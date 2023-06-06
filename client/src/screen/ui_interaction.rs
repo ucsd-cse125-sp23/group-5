@@ -12,10 +12,8 @@ use log::warn;
 use nalgebra_glm as glm;
 use phf::phf_map;
 
-pub const OBJECT_PLAYER_MODEL: &str = "object:player_model";
-pub const LEAF_MESH: &str = "leaf";
-pub const BODY_MESH: &str = "korok";
-pub const DEFAULT_MODEL: &str = "korok_1";
+use common::core::choices::{OBJECT_PLAYER_MODEL, LEAF_MESH, BODY_MESH, DEFAULT_MODEL, NOSE_MESH};
+
 
 pub static BUTTON_MAP: phf::Map<&'static str, fn(&mut screen::Display, Option<String>)> = phf_map! {
     "game_start" => game_start,
@@ -93,7 +91,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
         horz_disp: (0.0, -1.333),
     };
 
-    for i in vec!["leaf_color_selector", "wood_color_selector"] {
+    for &i in &["leaf_color_selector", "wood_color_selector"] {
         let ind = *curr_screen.icon_id_map.get(i).unwrap();
         let icon = &mut curr_screen.icons[ind];
         icon.location = ScreenLocation {
@@ -136,6 +134,11 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
                 .final_choices
                 .color
                 .insert(BODY_MESH.to_string(), default_color);
+            display
+                .customization_choices
+                .final_choices
+                .color
+                .insert(LEAF_MESH.to_string(), default_color);
             display
                 .customization_choices
                 .final_choices
@@ -183,8 +186,8 @@ fn change_leaf_type(display: &mut screen::Display, button_id: Option<String>) {
     {
         if let Some(node) = scene.scene_graph.get_mut(OBJECT_PLAYER_MODEL) {
             display.customization_choices.final_choices.model = button_id.clone().unwrap();
-            node.model = Some(button_id.clone().unwrap());
-            curr_leaf_type.location = curr_button.location.clone();
+            node.model = Some(button_id.unwrap());
+            curr_leaf_type.location = curr_button.location;
         }
         scene.draw_scene_dfs();
     }
@@ -294,9 +297,21 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
             display
                 .customization_choices
                 .final_choices
+                .color
+                .insert(NOSE_MESH.to_owned(), actual_color);
+            display
+                .customization_choices
+                .final_choices
                 .materials
-                .insert(BODY_MESH.to_owned(), actual_mtl);
+                .insert(BODY_MESH.to_owned(), actual_mtl.clone());
+            display
+                .customization_choices
+                .final_choices
+                .materials
+                .insert(NOSE_MESH.to_owned(), actual_mtl);
+
             node.colors = Some(display.customization_choices.final_choices.color.clone());
+
             node.materials = Some(
                 display
                     .customization_choices

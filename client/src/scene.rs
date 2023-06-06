@@ -12,9 +12,10 @@ use nalgebra_glm as glm;
 
 use common::configs::model_config::ModelIndex;
 use common::configs::scene_config::{ConfigNode, ConfigSceneGraph};
+use common::core::choices::BODY_MESH;
 use common::core::mesh_color::MeshColor;
-use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::powerup_system::OtherEffects::{Slippery, Stun};
+use common::core::powerup_system::{PowerUpEffects, StatusEffect};
 use common::core::states::GameState;
 
 use crate::player::{Player, PlayerController};
@@ -60,6 +61,22 @@ impl Node {
 
     pub fn add_color(&mut self, colors: HashMap<String, MeshColor>) {
         self.colors = Some(colors);
+    }
+
+    pub fn add_material(&mut self, mesh_name: String, material_name: String) {
+        if let Some(m) = self.materials.as_mut() {
+            m.insert(mesh_name, material_name);
+        } else {
+            let mut m = HashMap::new();
+            m.insert(mesh_name, material_name);
+            self.materials = Some(m);
+        }
+    }
+
+    pub fn remove_material(&mut self, mesh_name: String) {
+        if let Some(m) = self.materials.as_mut() {
+            m.remove(&mesh_name);
+        }
     }
 }
 
@@ -178,7 +195,7 @@ impl Scene {
         &mut self,
         parent_node_id: NodeId,
         child_node: Node,
-    )  {
+    ) {
         let parent_node = self.scene_graph.get_mut(&parent_node_id).unwrap();
 
         // don't want to add duplicates, as we may have removed it for invisibility
@@ -189,7 +206,6 @@ impl Scene {
         // add the child node to the scene graph
         self.scene_graph.insert(child_node.id.clone(), child_node);
     }
-
 
     pub fn add_world_child_node(
         &mut self,
@@ -235,28 +251,29 @@ impl Scene {
                     self.add_player_node(node_id.clone());
                 }
 
-                let ice_node_id = NodeKind::Object.node_id(format!("ice_{}", id));
+
+                // has override material
+                let override_key = format!("override_{}", BODY_MESH);
+
+                let has_override_material = self.scene_graph.get(&node_id)
+                    .and_then(|node| node.materials.as_ref())
+                    .map(|material| material.contains_key(&override_key))
+                    .unwrap_or(false);
+
+                // match true {
                 match player_state.status_effects.contains_key(&StatusEffect::Other(Slippery)) {
-                    true if !self.scene_graph.contains_key(&ice_node_id) => {
-
-                        let mut ice_node = Node::with_transform(
-                            ice_node_id.clone(),
-                            Transform::identity(),
-                        );
-
-                        ice_node.add_model(
+                    true if !has_override_material => {
+                        let node = self.scene_graph.get_mut(&node_id).unwrap();
+                        node.add_material(
+                            override_key,
                             "ice".to_string(),
                         );
 
-                        self.add_child(
-                            node_id,
-                            ice_node,
-                        );
-
-                        self.draw_scene_dfs();
                     }
-                    false if self.scene_graph.contains_key(&ice_node_id) => {
-                        self.scene_graph.remove(&ice_node_id);
+                    false if has_override_material => {
+                        let node = self.scene_graph.get_mut(&node_id).unwrap();
+                        node.remove_material(override_key);
+
                     }
                     _ => {}
                 }
@@ -289,8 +306,17 @@ impl Scene {
                     Some(final_choices.color.clone()); // change color
                 self.scene_graph.get_mut(&node_id).unwrap().model =
                     Some(final_choices.model.clone()); // change model
-                self.scene_graph.get_mut(&node_id).unwrap().materials =
-                    Some(final_choices.materials.clone()); // change material
+
+                // update the node's materials with the new materials
+                if let Some(node) = self.scene_graph.get_mut(&node_id) {
+                    if let Some(existing_materials) = &mut node.materials {
+                        for (mesh_name, material_name) in final_choices.materials.iter() {
+                            existing_materials.insert(mesh_name.clone(), material_name.clone());
+                        }
+                    } else {
+                        node.materials = Some(final_choices.materials.clone());
+                    }
+                }
             }
         }
     }

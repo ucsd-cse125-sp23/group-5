@@ -36,10 +36,9 @@ impl CommandHandler for CastPowerUpCommandHandler {
     ) -> HandlerResult {
         super::handle_invincible_players(game_state, physics_state, self.player_id);
 
-        let game_state_clone = game_state.clone();
         let player_state = game_state
-            .player_mut(self.player_id)
-            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+            .player(self.player_id)
+            .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?.clone();
 
         // if player is dead, don't do anything
         if player_state.is_dead {
@@ -59,8 +58,13 @@ impl CommandHandler for CastPowerUpCommandHandler {
         }
 
         if let Some((x, PowerUpStatus::Active)) = player_state.power_up.clone() {
-            // when dashing or flashing, remove invisibility
-            super::remove_invisibility(player_state);
+            {
+                let player_state = game_state
+                    .player_mut(self.player_id)
+                    .unwrap();
+                // when dashing or flashing, remove invisibility
+                super::remove_invisibility(player_state);
+            }
             return match x {
                 PowerUp::Flash => flash(
                     game_state,
@@ -83,32 +87,36 @@ impl CommandHandler for CastPowerUpCommandHandler {
         let mut other_player_status_changes: Vec<(u32, StatusEffect, f32)> = vec![];
 
         if let Some((x, PowerUpStatus::Held)) = player_state.power_up.clone() {
-            // when using a powerup, remove invisibility
-            super::remove_invisibility(player_state);
-            player_state
-                .active_action_states
-                .insert((ActionState::CastingPowerUp, Duration::from_secs_f32(1.666)));
-
+            {
+                let player_state = game_state
+                    .player_mut(self.player_id)
+                    .unwrap();
+                // when using a powerup, remove invisibility
+                super::remove_invisibility(player_state);
+                player_state
+                    .active_action_states
+                    .insert((ActionState::CastingPowerUp, Duration::from_secs_f32(1.666)));
+            }
             match x {
                 PowerUp::Blizzard => {
-
                     let player_pos = player_state.transform.translation;
-           
+
                     let player_rigid_body = physics_state
                         .get_entity_rigid_body_mut(self.player_id)
                         .unwrap();
-            
+
                     let camera_forward = player_state.camera_forward;
                     let horizontal_camera_forward = Vec3::new(
                         player_state.camera_forward.x,
                         0.0,
                         player_state.camera_forward.z,
                     );
-            
+
                     // turn player towards attack direction (camera_forward)
-                    let rotation = UnitQuaternion::face_towards(&horizontal_camera_forward, &Vec3::y());
+                    let rotation =
+                        UnitQuaternion::face_towards(&horizontal_camera_forward, &Vec3::y());
                     player_rigid_body.set_rotation(rotation, true);
-                        
+
                     // send game events for attack sound/particles
                     game_events.add(
                         GameEvent::ParticleEvent(ParticleSpec::new(
@@ -122,30 +130,32 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         )),
                         Recipients::All,
                     );
-            
+
                     // loop over all other players
-                    for (other_player_id, other_player_state) in game_state_clone.players.iter() {
+                    for (other_player_id, other_player_state) in game_state.players.iter_mut() {
                         if &self.player_id == other_player_id {
                             continue;
                         }
-            
+
                         // other player not affected if invincible
                         if other_player_state
                             .holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible))
                         {
                             continue;
                         }
-            
+
                         // get direction from this player to other player
                         let other_player_pos = other_player_state.transform.translation;
                         let vec_to_other = glm::normalize(&(other_player_pos - player_pos));
-                        
+
                         // check dot product between direction to other player and attack direction
                         let angle = glm::angle(&horizontal_camera_forward, &vec_to_other);
-                        
+
                         let dist = glm::length(&(other_player_pos - player_pos));
                         // if object in attack range
-                        if angle <= self.game_config.powerup_config.blizzard_max_attack_angle && dist <= self.game_config.powerup_config.blizzard_max_attack_dist {
+                        if angle <= self.game_config.powerup_config.blizzard_max_attack_angle
+                            && dist <= self.game_config.powerup_config.blizzard_max_attack_dist
+                        {
                             other_player_status_changes.push((
                                 *other_player_id,
                                 StatusEffect::Other(Stun),
@@ -156,17 +166,26 @@ impl CommandHandler for CastPowerUpCommandHandler {
                                 StatusEffect::Other(Slippery),
                                 self.game_config.powerup_config.power_up_debuff_duration,
                             ));
+
+                            other_player_state
+                                .active_action_states
+                                .insert((ActionState::Frozen, Duration::from_secs_f32(self.game_config.powerup_config.power_up_debuff_duration)));
                         }
                     }
-                    
+
+                    let player_state = game_state
+                        .player_mut(self.player_id)
+                        .unwrap();
                     // Clear blizzard power up after use
                     player_state.power_up = None;
-
-                },
+                }
                 x => {
                     if x == PowerUp::Invincible {
                         super::reset_weather(physics_state, self.player_id);
                     }
+                    let player_state = game_state
+                        .player_mut(self.player_id)
+                        .unwrap();
                     player_state.status_effects.insert(
                         *POWER_UP_TO_EFFECT_MAP.get(&(x.value())).unwrap(),
                         self.game_config.powerup_config.power_up_buff_duration,
