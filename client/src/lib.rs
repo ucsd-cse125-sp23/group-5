@@ -574,13 +574,8 @@ impl State {
             "../../assets/Inconsolata-Regular.ttf"
         ))
         .unwrap();
-        let rainly = ab_glyph::FontArc::try_from_slice(include_bytes!(
-            "../../assets/Rainly Regular.ttf"
-        ))
-        .unwrap();
-        let fonts_vec = vec![inconsolata, rainly]; 
 
-        let glyph_brush = GlyphBrushBuilder::using_fonts(fonts_vec).build(&device, surface_format);
+        let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
 
         let rng = rand::thread_rng();
         let particle_tex =
@@ -1407,13 +1402,12 @@ impl State {
             self.animation_controller
                 .play_animation("idle".to_string(), "object:player_model".to_string());
             self.glyph_brush.queue(Section {
-                screen_position: (size.width as f32 * 0.15, size.height as f32 * 0.875),
+                screen_position: (size.width as f32 * 0.15, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![
                     Text::new(format!("READY! WAITING FOR OTHER PLAYERS...").as_str())
                         .with_color([0.0, 0.0, 0.0, 1.0])
-                        .with_scale(90.0)
-                        .with_font_id(FontId(1)),
+                        .with_scale(75.0)
                 ],
                 ..Section::default()
             });
@@ -1434,13 +1428,12 @@ impl State {
             if self.player.on_cooldown.contains_key(&Command::Spawn) {
                 let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
                 self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.35),
+                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
                     bounds: (size.width as f32, size.height as f32),
                     text: vec![
-                        Text::new("YOU DIED!\n")
+                        Text::new("You Died!\n")
                             .with_color([0.867, 0.667, 0.0, 1.0])
-                            .with_scale(200.0)
-                            .with_font_id(FontId(1)),
+                            .with_scale(100.0),
                         Text::new("Respawning in ")
                             .with_color([0.867, 0.667, 0.0, 1.0])
                             .with_scale(60.0),
