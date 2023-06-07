@@ -39,8 +39,8 @@ fn game_start(display: &mut screen::Display, _: Option<String>) {
 
     if sel_2 && !display.customization_choices.ready {
         let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
-        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
+        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 0.0);
+        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 0.0);
 
         display.customization_choices.ready = true;
 
