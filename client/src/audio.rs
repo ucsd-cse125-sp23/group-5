@@ -44,6 +44,7 @@ pub enum AudioAsset {
     POWERUP = 17,
     REFILL = 18,
     POINTS_GAIN = 19,
+    WEATHER_ENV = 20,
 }
 
 pub struct SoundInstance {
@@ -143,7 +144,6 @@ impl Audio {
 
                 // winner, loser background track
                 GameLifeCycleState::Ended => {
-                    self.reset_audio();
                     if curr_player == winner {
                         self.switch_background_track(AudioAsset::BKGND_WINNER, AUDIO_POS_AT_CLIENT);
                     } else {
@@ -181,7 +181,7 @@ impl Audio {
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
-            if v.position > glm::Vec3::new(0.0, 35.0, 0.0){
+            if v.position > 35.0 * v.initial_dir{
                 v.controller.stop();
                 to_remove.push(k.clone());
                 continue;
@@ -216,7 +216,7 @@ impl Audio {
         sc
     }
 
-    pub fn handle_ambient_event(&mut self, sfxevent: SoundSpec) {
+    pub fn handle_ambient_event(&mut self, sfxevent: SoundSpec, player_pos: glm::Vec3, player_dir: glm::Vec3) {
         let index = to_audio_asset(sfxevent.sound_id.clone()).unwrap();
         let (_, play_sound, fade_out) = sfxevent.ambient;
         let instance = self.sound_controllers_ambient.get_mut(&index);
@@ -225,8 +225,12 @@ impl Audio {
             match instance {
                 None => {
                     let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
-                    let pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
-                    let dir = glm::Vec3::new(0.0, 0.0, 1.0);
+                    let mut pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
+                    let mut dir = glm::Vec3::new(0.0, 0.0, 1.0);
+                    if index == AudioAsset::WIND_WEATHER {
+                        dir = glm::normalize(&sfxevent.direction);
+                        pos = get_weather_start_position(dir.clone());
+                    }
                     let si = SoundInstance{
                         controller: sound,
                         position: pos,
@@ -237,8 +241,30 @@ impl Audio {
                         client: sfxevent.at_client.0,
                     };
                     self.sound_controllers_ambient.insert(index.clone(), si);
+
+                    if index == AudioAsset::WIND_WEATHER {
+                        let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
+                        let mut pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
+                        let mut dir = glm::Vec3::new(0.0, 0.0, 1.0);
+
+                        let si = SoundInstance{
+                            controller: sound,
+                            position: pos,
+                            start: SystemTime::now(),
+                            initial_dir: dir,
+                            at_client: false,
+                            ambient: true,
+                            client: sfxevent.at_client.0,
+                        };
+                        self.sound_controllers_ambient.insert(AudioAsset::WEATHER_ENV, si);
+                    }
                 }
-                Some(_) => {}
+                Some(s) => {
+                    if index == AudioAsset::WIND_WEATHER {
+                        let p = self.audio_assets[index as usize].2;
+                        update_weather_position(s, p, player_pos, player_dir);
+                    }
+                }
             }
         }
         else {
@@ -249,6 +275,10 @@ impl Audio {
                 }
                 else {
                     self.fading_out.insert(index.clone(), s);
+                    if index == AudioAsset::WIND_WEATHER {
+                        let si1 = self.sound_controllers_ambient.remove(&AudioAsset::WEATHER_ENV).unwrap();
+                        self.fading_out.insert(AudioAsset::WEATHER_ENV, si1);
+                    }
                 }
             }
         }
@@ -382,7 +412,7 @@ impl Audio {
                             if !ambient {
                                 self.handle_sfx_event(se, cf, at_client);
                             } else {
-                                self.handle_ambient_event(se);
+                                self.handle_ambient_event(se, pos, cf);
                             }
                         }
                         sfx_queue.sound_queue.clear();
@@ -393,6 +423,7 @@ impl Audio {
                 }
                 _ =>  {
                     sfx_queue.sound_queue.clear();
+                    self.reset_audio();
                 }
             }
         }
@@ -450,6 +481,32 @@ pub fn relative_position(
 pub fn basically_zero(position: glm::Vec3) -> bool {
     let abs_pos = glm::abs(&position);
     abs_pos.x < 0.1 && abs_pos.y < 0.1 && abs_pos.z < 0.1
+}
+
+pub fn get_weather_start_position(dir: glm::Vec3) -> glm::Vec3 {
+    let x = dir * -20.0;
+    glm::Vec3::new(x.x, 0.0, x.z)
+}
+
+pub fn update_weather_position(s: &mut SoundInstance, percent: f32, player_pos: glm::Vec3, player_dir: glm::Vec3) {
+    if glm::magnitude(&s.position) > 20.0 {
+        s.position = get_weather_start_position(s.initial_dir);
+    }
+    else {
+        let mut offset = s.initial_dir;
+        if offset != glm::Vec3::new(0.0, 0.0, 0.0) {
+            offset = glm::normalize(&offset);
+        }
+        offset = glm::Vec3::new(
+            offset.x * percent,
+            offset.y * percent,
+            offset.z * percent,
+        );
+        s.position += offset;
+    }
+    let pos = relative_position(s.position, glm::Vec3::new(0.0,0.0,0.0), player_dir);
+    s.controller.adjust_position([pos.x, pos.z+1.0, 0.0]);
+    thread::sleep(Duration::from_millis(10));
 }
 
 // audio assets from config file

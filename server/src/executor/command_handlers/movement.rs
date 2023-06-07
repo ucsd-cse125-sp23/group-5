@@ -124,7 +124,7 @@ impl CommandHandler for MoveCommandHandler {
                         (false, false, false),
                         player_state.camera_forward,
                     )),
-                    Recipients::One(self.player_id as u8), // TODO: SHOULD ALL PLAYERS HERE OTHER PLAYER FOOTSTEPS?
+                    Recipients::All, // One(self.player_id as u8),
                 );
                 player_state.last_step = curr_time;
             }

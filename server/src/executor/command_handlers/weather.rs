@@ -230,7 +230,7 @@ impl WeatherEffectCommandHandler {
                     "wind_weather".to_string(),
                     (0, false),
                     (true, true, true),
-                    player_state.camera_forward,
+                    wind_dir,
                 )),
                 Recipients::One(player_id as u8),
             );

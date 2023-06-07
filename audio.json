@@ -89,7 +89,7 @@
         "path": "assets/audio/ambient/wind_weather.mp3",
         "seconds": 89,
         "nanoseconds": 0,
-        "fall_off_speed": 0.0
+        "fall_off_speed": 0.3
       },
       {
         "name": "powerup_pickup",
@@ -138,6 +138,13 @@
         "path": "assets/audio/sound_effects/build-up.mp3",
         "seconds": 17,
         "nanoseconds": 2500,
+        "fall_off_speed": 0.0
+      },
+      {
+        "name": "wind_weather_env",
+        "path": "assets/audio/ambient/wind_weather.mp3",
+        "seconds": 89,
+        "nanoseconds": 0,
         "fall_off_speed": 0.0
       }
     ]
