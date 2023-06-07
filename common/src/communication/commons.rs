@@ -6,7 +6,7 @@ use log::debug;
 
 pub const DEFAULT_SERVER_ADDR: &str = "127.0.0.1:7878";
 pub const CSE125_SERVER_ADDR: &str = "128.54.70.10:2333";
-pub const DEMO_SERVER_ADDR: &str = "137.110.115.157:2333";
+pub const DEMO_SERVER_ADDR: &str = "137.110.115.154:2333";
 pub const DEFAULT_MOUSE_MOVEMENT_INTERVAL: u64 = 5; // 5ms
 
 /// Trait for something that can be converted to bytes (&[u8])
