@@ -955,6 +955,13 @@ impl State {
                 );
                 self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
 
+                let reset_ambient_multiplier = weather_config.default_weather_ambient_multiplier;
+                self.camera_state.camera.ambient_multiplier = glm::vec3(
+                    reset_ambient_multiplier,
+                    reset_ambient_multiplier,
+                    reset_ambient_multiplier,
+                );
+
                 self.camera_state
                     .camera_uniform
                     .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
