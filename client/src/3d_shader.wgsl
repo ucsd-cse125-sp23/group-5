@@ -184,7 +184,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // We're assuming everything comes from ambient lighting
     // extra lighting just changes the amount of light we get
-    var light = camera.ambient_multiplier;
+    var light = vec4<f32>(camera.ambient_multiplier.xyz, 1.0);
 
     for (var ind: u32 = 0u; ind < lights.num_lights; ind = ind + 1u) {
         var light_dir : vec3<f32>;
@@ -259,7 +259,18 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     color += vec4<f32>(clamp(shine_color, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0)), 0.0);
 
     // color = vec3<f32>(in.tex_coords, 0.0);
-    return clamp(color, vec4<f32>(0.0, 0.0, 0.0, 1.0), vec4<f32>(1.0, 1.0, 1.0, 1.0));
+    color = clamp(color, vec4<f32>(0.0, 0.0, 0.0, 1.0), vec4<f32>(1.0, 1.0, 1.0, 1.0));
+    // apply grayscale if needed
+    if camera.ambient_multiplier.w == 0.0 {
+        return grayscale(color);
+    }
+    return color;
+}
+
+fn grayscale(c: vec4<f32>) -> vec4<f32>{
+    var linearized = c;
+    var gray = 0.2126 * linearized.x + 0.7152 * linearized.y + 0.0722 * linearized.z;
+    return vec4<f32>(gray, gray, gray, c.w);
 }
 
 // All components are in the range [0…1], including hue.

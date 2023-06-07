@@ -291,6 +291,7 @@ impl Display {
                     render_pass.set_pipeline(&self.ui_pipeline);
                     render_pass
                         .set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
+                    render_pass.set_bind_group(2, &camera_state.camera_bind_group, &[]);
                     // first optionally draw background
                     if let Some(bkgd) = &screen.background {
                         render_pass.draw_ui_instanced(
