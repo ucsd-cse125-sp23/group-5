@@ -121,7 +121,7 @@ impl CommandHandler for MoveCommandHandler {
                         player_state.transform.translation,
                         "foot_step".to_string(),
                         (self.player_id, true),
-                        (false, false),
+                        (false, false, false),
                         player_state.camera_forward,
                     )),
                     Recipients::One(self.player_id as u8), // TODO: SHOULD ALL PLAYERS HERE OTHER PLAYER FOOTSTEPS?

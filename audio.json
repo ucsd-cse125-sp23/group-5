@@ -125,6 +125,20 @@
         "seconds": 2,
         "nanoseconds": 2500,
         "fall_off_speed": 0.0
+      },
+      {
+        "name": "refill",
+        "path": "assets/audio/sound_effects/poof.mp3",
+        "seconds": 1,
+        "nanoseconds": 2500,
+        "fall_off_speed": 0.0
+      },
+      {
+        "name": "points gain",
+        "path": "assets/audio/sound_effects/build-up.mp3",
+        "seconds": 17,
+        "nanoseconds": 2500,
+        "fall_off_speed": 0.0
       }
     ]
   }

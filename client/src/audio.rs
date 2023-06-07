@@ -42,6 +42,8 @@ pub enum AudioAsset {
     FLASH = 15,
     DASH = 16,
     POWERUP = 17,
+    REFILL = 18,
+    POINTS_GAIN = 19,
 }
 
 pub struct SoundInstance {
@@ -113,7 +115,7 @@ impl Audio {
         let source = self.audio_assets[bkgd as usize]
             .0
             .clone()
-            .fade_in(Duration::new(1, 0))
+            .fade_in(Duration::new(0, 500000000))
             .repeat_infinite();
         let sound = self.audio_scene.play_at(source.convert_samples(), pos);
         self.sound_controller_background = (Some(sound), false);
@@ -179,7 +181,7 @@ impl Audio {
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
-            if v.position > glm::Vec3::new(0.0, 50.0, 0.0){
+            if v.position > glm::Vec3::new(0.0, 35.0, 0.0){
                 v.controller.stop();
                 to_remove.push(k.clone());
                 continue;
@@ -216,7 +218,7 @@ impl Audio {
 
     pub fn handle_ambient_event(&mut self, sfxevent: SoundSpec) {
         let index = to_audio_asset(sfxevent.sound_id.clone()).unwrap();
-        let (_, play_sound) = sfxevent.ambient;
+        let (_, play_sound, fade_out) = sfxevent.ambient;
         let instance = self.sound_controllers_ambient.get_mut(&index);
 
         if play_sound {
@@ -242,7 +244,12 @@ impl Audio {
         else {
             let si = self.sound_controllers_ambient.remove(&index);
             if let Some(s) = si {
-                self.fading_out.insert(index.clone(), s);
+                if !fade_out {
+                    s.controller.stop();
+                }
+                else {
+                    self.fading_out.insert(index.clone(), s);
+                }
             }
         }
     }
@@ -365,22 +372,29 @@ impl Audio {
             }
 
             let mut sfx_queue = self.sfx_queue.lock().unwrap().clone();
-            if !sfx_queue.sound_queue.is_empty() {
-                for i in 0..sfx_queue.sound_queue.len() {
-                    let se = sfx_queue.sound_queue[i].clone();
-                    let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
-                    let ambient = se.ambient.0;
-                    if !ambient {
-                        self.handle_sfx_event(se, cf, at_client);
-                    } else {
-                        self.handle_ambient_event(se);
+            match &gs.life_cycle_state {
+                GameLifeCycleState::Running(_)  => {
+                    if !sfx_queue.sound_queue.is_empty() {
+                        for i in 0..sfx_queue.sound_queue.len() {
+                            let se = sfx_queue.sound_queue[i].clone();
+                            let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
+                            let ambient = se.ambient.0;
+                            if !ambient {
+                                self.handle_sfx_event(se, cf, at_client);
+                            } else {
+                                self.handle_ambient_event(se);
+                            }
+                        }
+                        sfx_queue.sound_queue.clear();
+                        *self.sfx_queue.lock().unwrap() = sfx_queue;
                     }
-                }
-                sfx_queue.sound_queue.clear();
-                *self.sfx_queue.lock().unwrap() = sfx_queue;
-            }
 
-            self.update_sound_positions(pos, cf, client_id as u32);
+                    self.update_sound_positions(pos, cf, client_id as u32);
+                }
+                _ =>  {
+                    sfx_queue.sound_queue.clear();
+                }
+            }
         }
     }
 }
@@ -401,6 +415,8 @@ pub fn to_audio_asset(sound_id: String) -> Option<AudioAsset> {
         "flash" => Some(AudioAsset::FLASH),
         "dash" => Some(AudioAsset::DASH),
         "powerup" => Some(AudioAsset::POWERUP),
+        "refill" => Some(AudioAsset::REFILL),
+        "points_gain" => Some(AudioAsset::POINTS_GAIN),
         _ => None,
     }
 }

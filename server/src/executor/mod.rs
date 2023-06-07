@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use command_handlers::prelude::*;
 use common::configs::*;
 use common::core::command::{Command, MoveDirection, ServerSync};
-use common::core::events::GameEvent;
+use common::core::events::{GameEvent, SoundSpec};
 use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use common::core::states::GameState;
 
@@ -17,7 +17,7 @@ use crate::Recipients;
 
 pub mod command_handlers;
 use crate::executor::command_handlers::jump::JumpResetCommandHandler;
-
+use nalgebra_glm as glm;
 pub const DEFAULT_RESPAWN_LIMIT: f32 = -20.0;
 
 // 5ms
@@ -269,7 +269,10 @@ impl Executor {
             game_state.game_winner = Some(id);
             game_state.life_cycle_state = Ended;
         }
+        let pptw = game_state.previous_tick_winner.clone();
         game_state.previous_tick_winner = game_state.has_single_winner(game_config);
+        let mut game_events = self.game_events.borrow_mut();
+        holding_flag_sound(pptw, game_state.previous_tick_winner.clone(), &mut game_events);
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
@@ -367,5 +370,46 @@ impl Executor {
                 commands.push(ClientCommand::new(client_id, Command::Spawn));
             }
         }
+    }
+}
+
+fn holding_flag_sound(ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn GameEventCollector) {
+    if let Some(id) = pw {
+        if let Some(pid) = ppw {
+            if id != pid {
+                game_events.add(
+                    GameEvent::SoundEvent(SoundSpec::new(
+                        glm::Vec3::new(0.0, 0.0, 0.0),
+                        "points_gain".to_string(),
+                        (0, false),
+                        (true, false, false),
+                        glm::Vec3::new(0.0,0.0,0.0),
+                    )),
+                    Recipients::One(pid as u8),
+                );
+            }
+        }
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                glm::Vec3::new(0.0, 0.0, 0.0),
+                "points_gain".to_string(),
+                (0, false),
+                (true, true, false),
+                glm::Vec3::new(0.0,0.0,0.0),
+            )),
+            Recipients::One(id as u8),
+        );
+    }
+    else {
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                glm::Vec3::new(0.0, 0.0, 0.0),
+                "points_gain".to_string(),
+                (0, false),
+                (true, false, false),
+                glm::Vec3::new(0.0,0.0,0.0),
+            )),
+            Recipients::All,
+        );
     }
 }

@@ -42,7 +42,7 @@ impl CommandHandler for DieCommandHandler {
                 player_state.transform.translation,
                 "die".to_string(),
                 (self.player_id, true),
-                (false, false),
+                (false, false, false),
                 player_state.camera_forward,
 
             )),

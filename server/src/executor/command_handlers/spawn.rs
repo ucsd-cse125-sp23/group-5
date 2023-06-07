@@ -44,7 +44,7 @@ impl CommandHandler for SpawnCommandHandler {
                         glm::Vec3::new(1.0,1.0,1.0),
                         "spawn".to_string(),
                         (self.player_id, true),
-                        (false, false),
+                        (false, false, false),
                         glm::Vec3::new(1.0, 1.0,1.0),
         
                     )),
@@ -73,7 +73,7 @@ impl CommandHandler for SpawnCommandHandler {
                             glm::Vec3::new(1.0,1.0,1.0),
                             "spawn_beep".to_string(),
                             (self.player_id, true),
-                            (false, false),
+                            (false, false, false),
                             glm::Vec3::new(1.0, 1.0,1.0),
             
                         )),

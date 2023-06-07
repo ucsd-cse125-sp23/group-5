@@ -47,7 +47,7 @@ impl CommandHandler for GivePowerUpCommandHandler {
                 glm::Vec3::new(1.0,1.0,1.0),
                 "pickup".to_string(),
                 (self.player_id, true),
-                (false, false),
+                (false, false, false),
                 glm::Vec3::new(1.0, 1.0,1.0),
 
             )),

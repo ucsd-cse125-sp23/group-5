@@ -133,7 +133,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                             player_pos,
                             "ice".to_string(),
                             (self.player_id, false),
-                            (false, false),
+                            (false, false, false),
                             player_state.camera_forward,
                         )),
                         Recipients::All,
@@ -207,22 +207,21 @@ impl CommandHandler for CastPowerUpCommandHandler {
         };
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
-        // if let Some((x, PowerUpStatus::Held)) = player_state.power_up.clone() {
-        //     if x != PowerUp::Blizzard {
-        //         let player_pos = player_state.transform.translation;
-        //         println!("HERE");
-        //         game_events.add(
-        //             GameEvent::SoundEvent(SoundSpec::new(
-        //                 player_pos,
-        //                 "powerup".to_string(),
-        //                 (self.player_id, true),
-        //                 (false, false),
-        //                 player_state.camera_forward,
-        //             )),
-        //             Recipients::One(self.player_id as u8),
-        //         );
-        //     }
-        // }
+        if let Some((x, PowerUpStatus::Held)) = player_state.power_up.clone() {
+            if x != PowerUp::Blizzard {
+                let player_pos = player_state.transform.translation;
+                game_events.add(
+                    GameEvent::SoundEvent(SoundSpec::new(
+                        player_pos,
+                        "powerup".to_string(),
+                        (self.player_id, true),
+                        (false, false, false),
+                        player_state.camera_forward,
+                    )),
+                    Recipients::One(self.player_id as u8),
+                );
+            }
+        }
         // End of TODO
 
         // apply effects to other players
@@ -269,7 +268,7 @@ fn flash(
             player_pos,
             "flash".to_string(),
             (player_id, true),
-            (false, false),
+            (false, false, false),
             player_state.camera_forward,
         )),
         Recipients::All,
@@ -355,7 +354,7 @@ fn dash(
             player_pos,
             "dash".to_string(),
             (player_id, true),
-            (false, false),
+            (false, false, false),
             player_state.camera_forward,
         )),
         Recipients::All,
