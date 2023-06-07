@@ -103,13 +103,13 @@ impl Audio {
                         self.switch_background_track(AudioAsset::BKGND_WAIT, AUDIO_POS_AT_CLIENT);
                         self.curr_state = state;
                     }
-                },
+                }
                 // in game background track
                 // TODO: add case if running should have a different bkgd track than waiting
                 GameLifeCycleState::Running(_) => {
                     self.switch_background_track(AudioAsset::BKGND_GAME, AUDIO_POS_AT_CLIENT);
                     self.curr_state = state;
-                },
+                }
 
                 // winner, loser background track
                 GameLifeCycleState::Ended => {
@@ -119,7 +119,7 @@ impl Audio {
                         self.switch_background_track(AudioAsset::BKGND_LOSER, AUDIO_POS_AT_CLIENT);
                     }
                     self.curr_state = state;
-                },
+                }
                 _ => {}
             }
         }

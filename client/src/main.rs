@@ -42,11 +42,12 @@ fn main() {
     } else if cfg!(feature = "debug-remote") {
         CSE125_SERVER_ADDR.parse().expect("server addr parse fails")
     } else if cfg!(feature = "debug-addr") {
-        DEFAULT_SERVER_ADDR.parse().expect("server addr parse fails")
+        DEFAULT_SERVER_ADDR
+            .parse()
+            .expect("server addr parse fails")
     } else {
         panic!("No appropriate feature flag set!");
     };
-
 
     let protocol = Protocol::connect(dest).unwrap();
 
