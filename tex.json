@@ -78,6 +78,10 @@
             "path": "score_back.png"
         },
         {
+            "name": "icon:respawn",
+            "path": "you_died.png"
+        },
+        {
             "name": "icon:ammo_barhead",
             "path": "ammo_barhead.png"
         },

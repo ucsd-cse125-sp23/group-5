@@ -48,24 +48,11 @@ var t_mask: texture_2d<f32>;
 @group(1) @binding(1)
 var s_mask: sampler;
 
-struct CameraUniform {
-    ambient_multiplier: vec4<f32>,
-    view: mat4x4<f32>,
-    proj: mat4x4<f32>,
-    inv_view_proj: mat4x4<f32>,
-    location: vec4<f32>,
-};
-@group(2) @binding(0)
-var<uniform> camera: CameraUniform;
-
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
     var mask = textureSample(t_mask, s_mask, in.tex_coords);
     var color = in.color * mask * t;
-    if camera.ambient_multiplier.w == 0.0 {
-        return grayscale(color);
-    }
     return color;
 }
 
