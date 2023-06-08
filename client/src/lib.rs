@@ -1707,7 +1707,7 @@ impl State {
                         _ => 0,
                     };
                     // Replace the following with your desired configuration
-                    let time = 2.0;  // Particle lifetime
+                    let time = 1.0;  // Particle lifetime
 
                     let gen = particles::gen::LineGenerator::new(
                         p.position,

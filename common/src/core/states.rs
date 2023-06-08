@@ -132,6 +132,13 @@ impl PlayerState {
         closest_point
     }
 
+    pub fn is_need_refill(&self, game_config: ConfigGame) -> bool {
+        if self.wind_charge == game_config.max_wind_charge {
+            return false;
+        }
+        true
+    }
+
     pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: f32) {
         let cd_secs = Duration::from_secs_f32(cooldown_in_sec).as_secs_f32();
         //let cd_until = SystemTime::now().checked_add(cd_secs).unwrap();

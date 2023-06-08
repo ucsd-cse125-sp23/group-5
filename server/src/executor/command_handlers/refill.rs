@@ -36,6 +36,10 @@ impl CommandHandler for RefillCommandHandler {
             return Ok(());
         }
 
+        if !player_state.is_need_refill(self.game_config.clone()) {
+            return Ok(());
+        }
+
         let refill_point_result = player_state.is_in_refill_area(self.game_config.clone());
 
         if refill_point_result == None || player_state.command_on_cooldown(Command::Refill) {
