@@ -108,6 +108,11 @@ impl Audio {
         for (_,v) in self.sound_controllers_ambient.iter_mut(){
             v.controller.stop();
         }
+
+        for (_,v) in self.fading_out.iter_mut(){
+            v.controller.stop();
+        }
+
         self.sound_controllers_fx.clear();
         self.sound_controllers_ambient.clear();
     }
