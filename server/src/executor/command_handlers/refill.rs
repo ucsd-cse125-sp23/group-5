@@ -1,14 +1,14 @@
 use super::{CommandHandler, GameEventCollector, HandlerResult};
 use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
+use common::core::events::{GameEvent, ParticleSpec, ParticleType};
 use common::core::powerup_system::{OtherEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
-use common::core::events::{GameEvent, ParticleSpec, ParticleType};
 use nalgebra_glm as glm;
 use nalgebra_glm::Vec3;
-use crate::Recipients;
 
 #[derive(Constructor)]
 pub struct RefillCommandHandler {

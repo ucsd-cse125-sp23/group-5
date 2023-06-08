@@ -12,7 +12,9 @@ use glm::vec3;
 use nalgebra_glm as glm;
 use nalgebra_glm::{TVec3, Vec3};
 use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use wgpu_glyph::{
+    ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text,
+};
 use winit::event::*;
 use winit::window::Window;
 
@@ -561,11 +563,10 @@ impl State {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
-        )).unwrap();
-        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!(
-            "../../assets/ZuiQingFeng.ttf"
         ))
         .unwrap();
+        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!("../../assets/ZuiQingFeng.ttf"))
+            .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(zqf).build(&device, surface_format);
 
@@ -1357,15 +1358,30 @@ impl State {
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
-        if  self.display.current == self.display.game_display.clone()  &&
-            self.player.on_cooldown.contains_key(&Command::Spawn) {
-                let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
-                let screen = self.display.screen_map.get_mut(&name).unwrap();
-                let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
-                screen.icons[ind].inst_range = 0..1;
-                self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
+        if self.display.current == self.display.game_display.clone()
+            && self.player.on_cooldown.contains_key(&Command::Spawn)
+        {
+            let name = self
+                .display
+                .groups
+                .get(&self.display.game_display.clone())
+                .unwrap()
+                .screen
+                .clone()
+                .unwrap();
+            let screen = self.display.screen_map.get_mut(&name).unwrap();
+            let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+            screen.icons[ind].inst_range = 0..1;
+            self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
         } else {
-            let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+            let name = self
+                .display
+                .groups
+                .get(&self.display.game_display.clone())
+                .unwrap()
+                .screen
+                .clone()
+                .unwrap();
             let screen = self.display.screen_map.get_mut(&name).unwrap();
             let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
             screen.icons[ind].inst_range = 0..0;
@@ -1414,7 +1430,7 @@ impl State {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
                 .play_animation("idle".to_string(), "object:player_model".to_string());
-            /* Remove text since we're using icon image instead 
+            /* Remove text since we're using icon image instead
             let text_size = 0.07 * size.height as f32;
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.9),
@@ -1447,13 +1463,14 @@ impl State {
                 let size_second = 0.06 * size.height as f32;
                 // main text
                 self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5 + size.height as f32 * 0.074, size.height as f32 * 0.485),
+                    screen_position: (
+                        size.width as f32 * 0.5 + size.height as f32 * 0.074,
+                        size.height as f32 * 0.485,
+                    ),
                     bounds: (size.height as f32 * 0.09, size.height as f32),
-                    text: vec![
-                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([0.0, 0.0, 0.0, 1.0])
-                            .with_scale(size_second),
-                    ],
+                    text: vec![Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(size_second)],
                     layout: Layout::default().h_align(HorizontalAlign::Center),
                     ..Section::default()
                 });
