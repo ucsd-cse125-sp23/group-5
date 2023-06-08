@@ -20,6 +20,9 @@ use common::core::{events::SoundSpec, states::GameState};
 use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 
 pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
+pub const FADE_DIST: f32 = 35.0;
+pub const 3D_RADIUS: i32 = 10.0;
+
 pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
@@ -72,7 +75,7 @@ pub struct Audio {
     audio_scene: ambisonic::Ambisonic,
     audio_assets: Vec<(Buffered<Decoder<BufReader<File>>>, Duration, f32)>,
     sound_controllers_fx: HashMap<AudioAsset, Vec<SoundInstance>>,
-    sound_controllers_ambient: HashMap<AudioAsset, SoundInstance>, // for sound events that should oonly ever be played once at a time e.g. weather
+    sound_controllers_ambient: HashMap<AudioAsset, SoundInstance>, // for sound events that should only ever be played once at a time e.g. weather
     fading_out: HashMap<AudioAsset, SoundInstance>,
     sound_controller_background: (Option<ambisonic::SoundController>, bool),
     time: SystemTime,
@@ -115,6 +118,7 @@ impl Audio {
 
         self.sound_controllers_fx.clear();
         self.sound_controllers_ambient.clear();
+        self.fading_out.clear();
     }
 
     pub fn play_background_track(&mut self, bkgd: AudioAsset, pos: [f32; 3]) {
@@ -141,7 +145,6 @@ impl Audio {
                     }
                 }
                 // in game background track
-                // TODO: add case if running should have a different bkgd track than waiting
                 GameLifeCycleState::Running(_) => {
                     self.switch_background_track(AudioAsset::BKGND_GAME, AUDIO_POS_AT_CLIENT);
                     self.curr_state = state;
@@ -186,7 +189,7 @@ impl Audio {
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
-            if v.position > 35.0 * v.initial_dir{
+            if v.position > FADE_DIST * v.initial_dir {
                 v.controller.stop();
                 to_remove.push(k.clone());
                 continue;
@@ -232,10 +235,10 @@ impl Audio {
                     let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
                     let mut pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
                     let mut dir = glm::Vec3::new(0.0, 0.0, 1.0);
-                    if index == AudioAsset::WIND_WEATHER {
-                        dir = glm::normalize(&sfxevent.direction);
-                        pos = get_weather_start_position(dir.clone());
-                    }
+                    // if index == AudioAsset::WIND_WEATHER {
+                    //     dir = glm::normalize(&sfxevent.direction);
+                    //     pos = get_weather_start_position(dir.clone());
+                    // }
                     let si = SoundInstance{
                         controller: sound,
                         position: pos,
@@ -247,28 +250,28 @@ impl Audio {
                     };
                     self.sound_controllers_ambient.insert(index.clone(), si);
 
-                    if index == AudioAsset::WIND_WEATHER {
-                        let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
-                        let mut pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
-                        let mut dir = glm::Vec3::new(0.0, 0.0, 1.0);
+                    // if index == AudioAsset::WIND_WEATHER {
+                    //     let sound = self.loop_sound(index, AUDIO_POS_AT_CLIENT); // [0.0,1.0,0.0]);
+                    //     let mut pos = glm::Vec3::new(AUDIO_POS_AT_CLIENT[0], AUDIO_POS_AT_CLIENT[2], AUDIO_POS_AT_CLIENT[1]);
+                    //     let mut dir = glm::Vec3::new(0.0, 0.0, 1.0);
 
-                        let si = SoundInstance{
-                            controller: sound,
-                            position: pos,
-                            start: SystemTime::now(),
-                            initial_dir: dir,
-                            at_client: false,
-                            ambient: true,
-                            client: sfxevent.at_client.0,
-                        };
-                        self.sound_controllers_ambient.insert(AudioAsset::WEATHER_ENV, si);
-                    }
+                    //     let si = SoundInstance{
+                    //         controller: sound,
+                    //         position: pos,
+                    //         start: SystemTime::now(),
+                    //         initial_dir: dir,
+                    //         at_client: false,
+                    //         ambient: true,
+                    //         client: sfxevent.at_client.0,
+                    //     };
+                    //     self.sound_controllers_ambient.insert(AudioAsset::WEATHER_ENV, si);
+                    // }
                 }
-                Some(s) => {
-                    if index == AudioAsset::WIND_WEATHER {
-                        let p = self.audio_assets[index as usize].2;
-                        update_weather_position(s, p, player_pos, player_dir);
-                    }
+                Some(_s) => {
+                    // if index == AudioAsset::WIND_WEATHER {
+                    //     let p = self.audio_assets[index as usize].2;
+                    //     update_weather_position(s, p, player_pos, player_dir);
+                    // }
                 }
             }
         }
@@ -280,10 +283,10 @@ impl Audio {
                 }
                 else {
                     self.fading_out.insert(index.clone(), s);
-                    if index == AudioAsset::WIND_WEATHER {
-                        let si1 = self.sound_controllers_ambient.remove(&AudioAsset::WEATHER_ENV).unwrap();
-                        self.fading_out.insert(AudioAsset::WEATHER_ENV, si1);
-                    }
+                    // if index == AudioAsset::WIND_WEATHER {
+                    //     let si1 = self.sound_controllers_ambient.remove(&AudioAsset::WEATHER_ENV).unwrap();
+                    //     self.fading_out.insert(AudioAsset::WEATHER_ENV, si1);
+                    // }
                 }
             }
         }
@@ -324,6 +327,7 @@ impl Audio {
                         //println!(""); // without this print_statement the sounds don't play; maybe need delay?
                     }
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
+                    println!("{:#?}", pos);
                     if !basically_zero(pos) {
                         sound_instances[i]
                             .controller
