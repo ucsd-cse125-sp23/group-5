@@ -32,8 +32,8 @@ pub struct Display {
     pub groups: HashMap<String, objects::DisplayGroup>,
     pub current: String,
     pub game_display: String,
-    pub leaf_colors: HashMap<String, [f32; 4]>, 
-    pub wood_colors: HashMap<String, [f32; 4]>, 
+    pub leaf_colors: HashMap<String, [f32; 4]>,
+    pub wood_colors: HashMap<String, [f32; 4]>,
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
@@ -418,12 +418,12 @@ impl Display {
                             } else if icon.id == "ready_text" {
                                 let mut new_loc = ScreenLocation {
                                     vert_disp: (1000.0, 1000.0),
-                                    horz_disp: (1000.0, 1000.0)
+                                    horz_disp: (1000.0, 1000.0),
                                 };
                                 if self.customization_choices.ready {
                                     new_loc = ScreenLocation {
                                         vert_disp: (0.0, -0.78055),
-                                        horz_disp: (0.49375, 0.0)
+                                        horz_disp: (0.49375, 0.0),
                                     };
                                 }
                                 icon.relocate(new_loc, config.width, config.height, queue);
@@ -442,7 +442,10 @@ impl Display {
             };
 
             // temporary solution because we want background in end screen but scene is loaded before background
-            if self.current == "display:victory" || self.current == "display:defeat" || self.current == "display:lobby" {
+            if self.current == "display:victory"
+                || self.current == "display:defeat"
+                || self.current == "display:lobby"
+            {
                 render_pass.set_pipeline(&self.scene_pipeline);
                 render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 

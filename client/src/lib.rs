@@ -12,7 +12,9 @@ use glm::vec3;
 use nalgebra_glm as glm;
 use nalgebra_glm::{TVec3, Vec3};
 use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use wgpu_glyph::{
+    ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text,
+};
 use winit::event::*;
 use winit::window::Window;
 
@@ -1451,7 +1453,7 @@ impl State {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
                 .play_animation("idle".to_string(), "object:player_model".to_string());
-            /* Remove text since we're using icon image instead 
+            /* Remove text since we're using icon image instead
             let text_size = 0.07 * size.height as f32;
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.9),
