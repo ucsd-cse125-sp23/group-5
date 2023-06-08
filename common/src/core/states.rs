@@ -20,6 +20,7 @@ use crate::core::weather::Weather;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {
     pub weather: Option<Weather>,
+    pub prev_weather: Option<Weather>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

@@ -414,7 +414,7 @@ fn holding_flag_sound(ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn G
             Recipients::One(id as u8),
         );
     }
-    else {
+    else if let Some(pid) = ppw {
         game_events.add(
             GameEvent::SoundEvent(SoundSpec::new(
                 glm::Vec3::new(0.0, 0.0, 0.0),
@@ -423,7 +423,7 @@ fn holding_flag_sound(ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn G
                 (true, false, false),
                 glm::Vec3::new(0.0,0.0,0.0),
             )),
-            Recipients::All,
+            Recipients::One(pid as u8),
         );
     }
 }
