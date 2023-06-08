@@ -128,7 +128,7 @@
       },
       {
         "name": "refill",
-        "path": "assets/audio/sound_effects/poof.mp3",
+        "path": "assets/audio/sound_effects/beep_sound.mp3",
         "seconds": 1,
         "nanoseconds": 2500,
         "fall_off_speed": 0.0
