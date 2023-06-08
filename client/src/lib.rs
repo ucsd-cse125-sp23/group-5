@@ -1599,21 +1599,35 @@ impl State {
         let physics_config = config_instance.physics.clone();
         let particle_config = config_instance.particles.clone();
 
-        // attack consts
+        // modify when wind enhanced
+        let wind_enhanced = self
+            .player
+            .status_effects
+            .contains_key(&StatusEffect::Power(PowerUpEffects::EnhancedWind));
+        let scalar = game_config.powerup_config.wind_enhancement_scalar;
+        let max_attack_angle = if wind_enhanced {
+            physics_config.attack_config.max_attack_angle * scalar
+        } else {
+            physics_config.attack_config.max_attack_angle
+        };
+        let max_attack_dist = if wind_enhanced {
+            physics_config.attack_config.max_attack_dist * scalar
+        } else {
+            physics_config.attack_config.max_attack_dist
+        };
+        let max_area_attack_dist = if wind_enhanced {
+            physics_config.attack_config.max_area_attack_dist * scalar
+        } else {
+            physics_config.attack_config.max_area_attack_dist
+        };
+
+        // attack const
         let attack_cd = physics_config.attack_config.attack_cooldown;
-        let max_attack_angle = physics_config.attack_config.max_attack_angle;
-        let max_attack_dist = physics_config.attack_config.max_attack_dist;
-        let blizzard_max_attack_angle = game_config.powerup_config.blizzard_max_attack_angle;
-        let blizzard_max_attack_dist = game_config.powerup_config.blizzard_max_attack_dist;
         let area_attack_cd = physics_config.attack_config.area_attack_cooldown;
-        let max_area_attack_dist = physics_config.attack_config.max_area_attack_dist;
-        // particle consts
         let time_divider = particle_config.time_divider;
 
         for p in &particle_queue.particles {
-            // println!("Handling particle of type: {:?}", p.p_type);
             match p.p_type {
-                // generator
                 events::ParticleType::ATTACK => {
                     let leaf_type = match &p.particle_id[..] {
                         common::configs::particle_config::MODEL_1 => 0,
@@ -1623,9 +1637,8 @@ impl State {
                         _ => 0,
                     };
 
-                    // ORIGINAL
                     let time = attack_cd / time_divider;
-                    println!("adding particle: {:?}", p);
+
                     let atk_gen = particles::gen::ConeGenerator::new(
                         p.position,
                         p.direction,
@@ -1640,7 +1653,6 @@ impl State {
                         particle_config.attack_particle_config.size_growth,
                         false,
                     );
-                    // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
@@ -1679,7 +1691,6 @@ impl State {
                         particle_config.area_attack_particle_config.size_growth,
                         false,
                     );
-                    // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
@@ -1750,8 +1761,8 @@ impl State {
                         p.position,
                         p.direction,
                         p.up,
-                        blizzard_max_attack_angle,
-                        blizzard_max_attack_dist / time,
+                        game_config.powerup_config.blizzard_max_attack_angle,
+                        game_config.powerup_config.blizzard_max_attack_dist / time,
                         particle_config.blizzard_particle_config.linear_variance,
                         PI,
                         particle_config.blizzard_particle_config.angular_variance,
@@ -1760,7 +1771,6 @@ impl State {
                         particle_config.blizzard_particle_config.size_growth,
                         false,
                     );
-                    // System
                     let blizzard = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
@@ -1778,7 +1788,6 @@ impl State {
                     self.display.particles.systems.push(blizzard);
                 }
                 events::ParticleType::POWERUP => {
-                    // in this case, only position matters
                     let time = particle_config.powerup_particle_config.time / time_divider;
                     let powerup_gen = particles::gen::SphereGenerator::new(
                         p.position,
@@ -1791,7 +1800,6 @@ impl State {
                         particle_config.powerup_particle_config.size_growth,
                         false,
                     );
-                    // System
                     let powerup = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
@@ -1808,7 +1816,6 @@ impl State {
                     self.display.particles.systems.push(powerup);
                 }
                 events::ParticleType::POWERUP_AURA => {
-                    // in this case, only position matters
                     let time = particle_config.powerup_aura_particle_config.time / time_divider;
                     let powerup_aura_gen = particles::gen::CylinderGenerator::new(
                         p.position,
@@ -1827,7 +1834,6 @@ impl State {
                         particle_config.powerup_aura_particle_config.size_growth,
                         false,
                     );
-                    // System
                     let powerup_aura = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.05),
                         time,
@@ -1857,7 +1863,6 @@ impl State {
                         0.0,
                         false,
                     );
-                    // System
                     let atk = particles::ParticleSystem::new(
                         std::time::Duration::from_secs_f32(0.2),
                         time,
