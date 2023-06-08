@@ -1,9 +1,9 @@
-use std::collections::{HashMap, HashSet};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
+use nalgebra_glm as glm;
 use nalgebra_glm::Vec3;
 use rapier3d::prelude::Vector;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::configs::game_config::ConfigGame;
 use crate::core::action_states::ActionState;
@@ -123,14 +123,24 @@ impl PlayerState {
         };
     }
 
-    pub fn is_in_refill_area(&self, game_config: ConfigGame) -> bool {
+    pub fn is_in_refill_area(&self, game_config: ConfigGame) -> Option<Vec3> {
         let radius = game_config.refill_radius;
-        for i in game_config.refill_points {
+        let mut closest_point = None;
+
+        for i in &game_config.refill_points {
             if self.is_in_circular_area((i.x, i.z), radius, (None, None)) {
-                return true;
+                closest_point = Some(*i);
             }
         }
-        return false;
+
+        closest_point
+    }
+
+    pub fn is_need_refill(&self, game_config: ConfigGame) -> bool {
+        if self.wind_charge == game_config.max_wind_charge {
+            return false;
+        }
+        true
     }
 
     pub fn insert_cooldown(&mut self, command: Command, cooldown_in_sec: f32) {

@@ -222,13 +222,6 @@ impl PlayerLoop {
                 }
                 _ => {}
             }
-            if state.display.current == "display:game" {
-                state.window.set_cursor_visible(false);
-            }
-            else {
-                state.window.set_cursor_visible(true);
-            }
-
         });
     }
 }
