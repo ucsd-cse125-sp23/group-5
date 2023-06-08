@@ -461,6 +461,7 @@ mod tests {
             life_cycle_state: Default::default(),
             game_winner: None,
             game_start_time: Default::default(),
+            prev_winner: None,
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -477,6 +478,7 @@ mod tests {
             life_cycle_state: Default::default(),
             game_winner: None,
             game_start_time: Default::default(),
+            prev_winner: None,
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();
