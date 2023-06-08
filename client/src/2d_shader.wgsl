@@ -52,5 +52,12 @@ var s_mask: sampler;
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
     var mask = textureSample(t_mask, s_mask, in.tex_coords);
-    return in.color * mask * t;
+    var color = in.color * mask * t;
+    return color;
+}
+
+fn grayscale(c: vec4<f32>) -> vec4<f32>{
+    var linearized = c;
+    var gray = 0.2126 * linearized.x + 0.7152 * linearized.y + 0.0722 * linearized.z;
+    return vec4<f32>(gray, gray, gray, c.w);
 }

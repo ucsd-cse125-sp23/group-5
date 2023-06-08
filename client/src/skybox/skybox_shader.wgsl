@@ -38,7 +38,17 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // we are assuming all lights are white, they only contribute to luminance
     color_hsv.z *= camera.ambient_multiplier.x;
     color_hsv = clamp(color_hsv, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
-    return vec4<f32>(hsv2rgb(color_hsv), 1.0);;
+    var color = vec4<f32>(hsv2rgb(color_hsv), 1.0);
+    if camera.ambient_multiplier.w == 0.0 {
+        return grayscale(color);
+    }
+    return color;
+}
+
+fn grayscale(c: vec4<f32>) -> vec4<f32>{
+    var linearized = c;
+    var gray = 0.2126 * linearized.x + 0.7152 * linearized.y + 0.0722 * linearized.z;
+    return vec4<f32>(gray, gray, gray, c.w);
 }
 
 // All components are in the range [0…1], including hue.
