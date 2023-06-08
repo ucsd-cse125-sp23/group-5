@@ -33,6 +33,7 @@ pub struct GameState {
     pub life_cycle_state: GameLifeCycleState,
     pub game_winner: Option<u32>,
     pub game_start_time: Duration,
+    pub prev_winner: Option<(u32, FinalChoices)>,
 }
 
 impl GameState {
@@ -69,12 +70,13 @@ pub struct PlayerState {
     pub cheat_keys_enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Copy)]
 pub enum GameLifeCycleState {
     #[default]
     Waiting,
     Running(u64),
     Ended,
+    _Ended,
 }
 
 impl GameLifeCycleState {

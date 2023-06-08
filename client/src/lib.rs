@@ -923,65 +923,86 @@ impl State {
                     }
                 }
             }
+            GameLifeCycleState::_Ended => {}
+
             // check if the game has ended and set corresponding end screen
-            GameLifeCycleState::Ended => {
-                self.window.set_cursor_visible(true);
-                //println!("{:?}", game_state_clone.life_cycle_state);
-                if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
-                    self.display.change_to("display:victory".to_owned());
-                } else {
-                    self.display.change_to("display:defeat".to_owned());
-                }
-                //*CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
+            current_life_cycle_state => {
+                if let GameLifeCycleState::Running(_) = self.previous_game_life_cycle_state {
+                    {
+                        if current_life_cycle_state != self.previous_game_life_cycle_state {
+                            self.window.set_cursor_visible(true);
+                            //println!("{:?}", game_state_clone.life_cycle_state);
 
-                // Reset camera and player for lobby
-                self.camera_state.camera.position = glm::vec3(
-                    DEFAULT_CAMERA_POS.0,
-                    DEFAULT_CAMERA_POS.1,
-                    DEFAULT_CAMERA_POS.2,
-                );
-                self.camera_state.camera.target = glm::vec3(
-                    DEFAULT_CAMERA_TARGET.0,
-                    DEFAULT_CAMERA_TARGET.1,
-                    DEFAULT_CAMERA_TARGET.2,
-                );
-                self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
+                            if !game_state_clone.prev_winner.is_some() {
+                                return;
+                            }
 
-                let reset_ambient_multiplier = weather_config.default_weather_ambient_multiplier;
-                self.camera_state.camera.ambient_multiplier = glm::vec3(
-                    reset_ambient_multiplier,
-                    reset_ambient_multiplier,
-                    reset_ambient_multiplier,
-                );
+                            let (winner, winner_custom) = game_state_clone.prev_winner.unwrap();
 
-                self.camera_state
-                    .camera_uniform
-                    .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
-                self.queue.write_buffer(
-                    &self.camera_state.camera_buffer,
-                    0,
-                    bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
-                );
+                            if winner == self.client_id as u32 {
+                                self.display.change_to("display:victory".to_owned());
+                            } else {
+                                self.display.change_to("display:defeat".to_owned());
+                            }
+                            //*CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
 
-                let winner = game_state_clone.game_winner.unwrap();
-                let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
-                if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
-                    if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
-                        node.model = Some(winner_custom.model.clone());
-                        node.colors = Some(winner_custom.color.clone());
-                        node.materials = Some(winner_custom.materials.clone());
+                            // Reset camera and player for lobby
+                            self.camera_state.camera.position = glm::vec3(
+                                DEFAULT_CAMERA_POS.0,
+                                DEFAULT_CAMERA_POS.1,
+                                DEFAULT_CAMERA_POS.2,
+                            );
+                            self.camera_state.camera.target = glm::vec3(
+                                DEFAULT_CAMERA_TARGET.0,
+                                DEFAULT_CAMERA_TARGET.1,
+                                DEFAULT_CAMERA_TARGET.2,
+                            );
+                            self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
+
+                            let reset_ambient_multiplier =
+                                weather_config.default_weather_ambient_multiplier;
+                            self.camera_state.camera.ambient_multiplier = glm::vec3(
+                                reset_ambient_multiplier,
+                                reset_ambient_multiplier,
+                                reset_ambient_multiplier,
+                            );
+
+                            self.camera_state.camera_uniform.update_view_proj(
+                                &self.camera_state.camera,
+                                &self.camera_state.projection,
+                            );
+                            self.queue.write_buffer(
+                                &self.camera_state.camera_buffer,
+                                0,
+                                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
+                            );
+
+                            if let Some(scene) =
+                                self.display.scene_map.get_mut("scene:end_screen_scene")
+                            {
+                                if let Some(node) = scene.scene_graph.get_mut("object:winner_model")
+                                {
+                                    node.model = Some(winner_custom.model.clone());
+                                    node.colors = Some(winner_custom.color.clone());
+                                    node.materials = Some(winner_custom.materials.clone());
+                                }
+                                scene.draw_scene_dfs();
+                            }
+
+                            let loser_screen =
+                                self.display.screen_map.get_mut("screen:loser").unwrap();
+                            let winner_icon_index =
+                                *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+                            loser_screen.icons[winner_icon_index].texture =
+                                format!("icon:player_{winner}");
+
+                            self.previous_game_life_cycle_state = GameLifeCycleState::_Ended;
+
+                            return;
+                        }
                     }
-                    scene.draw_scene_dfs();
                 }
-
-                let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
-                let winner_icon_index =
-                    *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
-                loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
-
-                return;
             }
-            _ => {}
         }
 
         self.previous_game_life_cycle_state = game_state_clone.life_cycle_state.clone();
