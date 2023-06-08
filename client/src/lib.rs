@@ -925,7 +925,12 @@ impl State {
             }
             // check if the game has ended and set corresponding end screen
             GameLifeCycleState::Ended => {
-                self.window.set_cursor_visible(true);
+                match self.previous_game_life_cycle_state {
+                    GameLifeCycleState::Running(..) => {
+                        self.window.set_cursor_visible(true);
+                    }
+                    _ => {}
+                }
                 //println!("{:?}", game_state_clone.life_cycle_state);
                 if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
                     self.display.change_to("display:victory".to_owned());
