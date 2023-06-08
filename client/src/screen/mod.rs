@@ -32,6 +32,8 @@ pub struct Display {
     pub groups: HashMap<String, objects::DisplayGroup>,
     pub current: String,
     pub game_display: String,
+    pub leaf_colors: HashMap<String, [f32; 4]>, 
+    pub wood_colors: HashMap<String, [f32; 4]>, 
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
@@ -77,6 +79,8 @@ impl Display {
             groups,
             current: config.default_display.clone(),
             game_display: config.game_display.clone(),
+            leaf_colors: config.leaf_colors.clone(),
+            wood_colors: config.wood_colors.clone(),
             texture_map,
             screen_map,
             scene_map,
@@ -412,13 +416,17 @@ impl Display {
                                 }
                                 icon.relocate(curr_btn_loc, config.width, config.height, queue);
                             } else if icon.id == "ready_text" {
+                                let mut new_loc = ScreenLocation {
+                                    vert_disp: (1000.0, 1000.0),
+                                    horz_disp: (1000.0, 1000.0)
+                                };
                                 if self.customization_choices.ready {
-                                    let new_loc = ScreenLocation {
+                                    new_loc = ScreenLocation {
                                         vert_disp: (0.0, -0.78055),
                                         horz_disp: (0.49375, 0.0)
                                     };
-                                    icon.relocate(new_loc, config.width, config.height, queue);
                                 }
+                                icon.relocate(new_loc, config.width, config.height, queue);
                             }
 
                             render_pass.draw_ui_instanced(
