@@ -146,29 +146,29 @@ impl WeatherEffectCommandHandler {
                 )
             }
 
-            // TODO: change to actual sound event
-            game_events.add(
-                GameEvent::SoundEvent(SoundSpec::new(
-                    player_state.transform.translation,
-                    "rain".to_string(),
-                    (0, false),
-                    (true, true, true),
-                    player_state.camera_forward,
-                )),
-                Recipients::One(player_id as u8),
-            );
+            // // TODO: change to actual sound event
+            // game_events.add(
+            //     GameEvent::SoundEvent(SoundSpec::new(
+            //         player_state.transform.translation,
+            //         "rain".to_string(),
+            //         (0, false),
+            //         (true, true, true),
+            //         player_state.camera_forward,
+            //     )),
+            //     Recipients::One(player_id as u8),
+            // );
 
-            game_events.add(
-                // to stop rain sound
-                GameEvent::SoundEvent(SoundSpec::new(
-                    glm::Vec3::new(0.0, 0.0, 0.0),
-                    "wind_weather".to_string(),
-                    (0, false),
-                    (true, false, true),
-                    glm::Vec3::new(0.0,0.0,0.0),
-                )),
-                Recipients::One(player_id as u8),
-            );
+            // game_events.add(
+            //     // to stop rain sound
+            //     GameEvent::SoundEvent(SoundSpec::new(
+            //         glm::Vec3::new(0.0, 0.0, 0.0),
+            //         "wind_weather".to_string(),
+            //         (0, false),
+            //         (true, false, true),
+            //         glm::Vec3::new(0.0,0.0,0.0),
+            //     )),
+            //     Recipients::One(player_id as u8),
+            // );
 
 
             if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
@@ -213,27 +213,27 @@ impl WeatherEffectCommandHandler {
 
             // TODO: change to actual sound event
             // reset rain sound
-            game_events.add(
-                // to stop rain sound
-                GameEvent::SoundEvent(SoundSpec::new(
-                    glm::Vec3::new(0.0, 0.0, 0.0),
-                    "rain".to_string(),
-                    (0, false),
-                    (true, false, true),
-                    glm::Vec3::new(0.0,0.0,0.0),
-                )),
-                Recipients::One(player_id as u8),
-            );
-            game_events.add(
-                GameEvent::SoundEvent(SoundSpec::new(
-                    player_state.transform.translation,
-                    "wind_weather".to_string(),
-                    (0, false),
-                    (true, true, true),
-                    wind_dir,
-                )),
-                Recipients::One(player_id as u8),
-            );
+            // game_events.add(
+            //     // to stop rain sound
+            //     GameEvent::SoundEvent(SoundSpec::new(
+            //         glm::Vec3::new(0.0, 0.0, 0.0),
+            //         "rain".to_string(),
+            //         (0, false),
+            //         (true, false, true),
+            //         glm::Vec3::new(0.0,0.0,0.0),
+            //     )),
+            //     Recipients::One(player_id as u8),
+            // );
+            // game_events.add(
+            //     GameEvent::SoundEvent(SoundSpec::new(
+            //         player_state.transform.translation,
+            //         "wind_weather".to_string(),
+            //         (0, false),
+            //         (true, true, true),
+            //         wind_dir,
+            //     )),
+            //     Recipients::One(player_id as u8),
+            // );
 
             if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
                 super::reset_weather(physics_state, player_id);
@@ -260,28 +260,28 @@ impl WeatherEffectCommandHandler {
 
             // TODO: change to actual sound event
             // reset rain sound
-            game_events.add(
-                // to stop rain sound
-                GameEvent::SoundEvent(SoundSpec::new(
-                    glm::Vec3::new(0.0, 0.0, 0.0),
-                    "rain".to_string(),
-                    (0, false),
-                    (true, false, true),
-                    glm::Vec3::new(0.0,0.0,0.0),
-                )),
-                Recipients::One(player_id as u8),
-            );
-            game_events.add(
-                // to stop rain sound
-                GameEvent::SoundEvent(SoundSpec::new(
-                    glm::Vec3::new(0.0, 0.0, 0.0),
-                    "wind_weather".to_string(),
-                    (0, false),
-                    (true, false, true),
-                    glm::Vec3::new(0.0,0.0,0.0),
-                )),
-                Recipients::One(player_id as u8),
-            );
+            // game_events.add(
+            //     // to stop rain sound
+            //     GameEvent::SoundEvent(SoundSpec::new(
+            //         glm::Vec3::new(0.0, 0.0, 0.0),
+            //         "rain".to_string(),
+            //         (0, false),
+            //         (true, false, true),
+            //         glm::Vec3::new(0.0,0.0,0.0),
+            //     )),
+            //     Recipients::One(player_id as u8),
+            // );
+            // game_events.add(
+            //     // to stop rain sound
+            //     GameEvent::SoundEvent(SoundSpec::new(
+            //         glm::Vec3::new(0.0, 0.0, 0.0),
+            //         "wind_weather".to_string(),
+            //         (0, false),
+            //         (true, false, true),
+            //         glm::Vec3::new(0.0,0.0,0.0),
+            //     )),
+            //     Recipients::One(player_id as u8),
+            // );
         }
         Ok(())
     }

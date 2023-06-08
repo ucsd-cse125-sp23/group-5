@@ -21,7 +21,7 @@ use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCyc
 
 pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
 pub const FADE_DIST: f32 = 35.0;
-pub const 3D_RADIUS: i32 = 10.0;
+pub const SOUND_RADIUS: f32 = 10.0;
 
 pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
@@ -327,7 +327,9 @@ impl Audio {
                         //println!(""); // without this print_statement the sounds don't play; maybe need delay?
                     }
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
-                    println!("{:#?}", pos);
+                    println!();
+                    //println!("HERE: {:#?}", pos);
+                    println!();
                     if !basically_zero(pos) {
                         sound_instances[i]
                             .controller
@@ -416,6 +418,7 @@ impl Audio {
                     if !sfx_queue.sound_queue.is_empty() {
                         for i in 0..sfx_queue.sound_queue.len() {
                             let se = sfx_queue.sound_queue[i].clone();
+                            println!("SOUND: {}", se.sound_id);
                             let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
                             let ambient = se.ambient.0;
                             if !ambient {
