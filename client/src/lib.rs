@@ -560,11 +560,10 @@ impl State {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
-        )).unwrap();
-        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!(
-            "../../assets/ZuiQingFeng.ttf"
         ))
         .unwrap();
+        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!("../../assets/ZuiQingFeng.ttf"))
+            .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(zqf).build(&device, surface_format);
 
@@ -888,6 +887,7 @@ impl State {
                     //println!("once");
                     self.display.change_to(self.display.game_display.clone());
                     self.add_game_particles();
+                    self.window.set_cursor_visible(false);
                     /*
                     self.display.current = self.display.game_display.clone();
                     *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
@@ -925,6 +925,7 @@ impl State {
             }
             // check if the game has ended and set corresponding end screen
             GameLifeCycleState::Ended => {
+                self.window.set_cursor_visible(true);
                 //println!("{:?}", game_state_clone.life_cycle_state);
                 if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
                     self.display.change_to("display:victory".to_owned());
@@ -1235,7 +1236,7 @@ impl State {
                         // Reset the properties for both icons to their default values
                         screen.icons[ind_atk_ult].tint[3] = 0.0;
                     }
-                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]) {
+                    if prev_transp != screen.icons[ind_atk_ult].tint[3] {
                         let tint = screen.icons[ind_atk_ult].tint;
                         for v in &mut screen.icons[ind_atk_ult].vertices {
                             v.color = tint.into();
@@ -1356,15 +1357,30 @@ impl State {
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
-        if  self.display.current == self.display.game_display.clone()  &&
-            self.player.on_cooldown.contains_key(&Command::Spawn) {
-                let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
-                let screen = self.display.screen_map.get_mut(&name).unwrap();
-                let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
-                screen.icons[ind].inst_range = 0..1;
-                self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
+        if self.display.current == self.display.game_display.clone()
+            && self.player.on_cooldown.contains_key(&Command::Spawn)
+        {
+            let name = self
+                .display
+                .groups
+                .get(&self.display.game_display.clone())
+                .unwrap()
+                .screen
+                .clone()
+                .unwrap();
+            let screen = self.display.screen_map.get_mut(&name).unwrap();
+            let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+            screen.icons[ind].inst_range = 0..1;
+            self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
         } else {
-            let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+            let name = self
+                .display
+                .groups
+                .get(&self.display.game_display.clone())
+                .unwrap()
+                .screen
+                .clone()
+                .unwrap();
             let screen = self.display.screen_map.get_mut(&name).unwrap();
             let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
             screen.icons[ind].inst_range = 0..0;
@@ -1444,13 +1460,14 @@ impl State {
                 let size_second = 0.06 * size.height as f32;
                 // main text
                 self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5 + size.height as f32 * 0.074, size.height as f32 * 0.485),
+                    screen_position: (
+                        size.width as f32 * 0.5 + size.height as f32 * 0.074,
+                        size.height as f32 * 0.485,
+                    ),
                     bounds: (size.height as f32 * 0.09, size.height as f32),
-                    text: vec![
-                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([0.0, 0.0, 0.0, 1.0])
-                            .with_scale(size_second),
-                    ],
+                    text: vec![Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(size_second)],
                     layout: Layout::default().h_align(HorizontalAlign::Center),
                     ..Section::default()
                 });
