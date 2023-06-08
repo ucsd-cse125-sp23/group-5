@@ -63,9 +63,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var t = textureSample(t_diffuse, s_diffuse, in.tex_coords);
     var mask = textureSample(t_mask, s_mask, in.tex_coords);
     var color = in.color * mask * t;
-    if camera.ambient_multiplier.w == 0.0 {
-        return grayscale(color);
-    }
     return color;
 }
 

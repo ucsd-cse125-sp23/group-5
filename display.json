@@ -634,6 +634,48 @@
       "buttons": [],
       "icons": [
         {
+          "id": "icon:respawn",
+          "location": {
+            "vert_disp": [
+              0.0,
+              0.0
+            ],
+            "horz_disp": [
+              0.0,
+              0.0
+            ]
+          },
+          "aspect": 1.7405,
+          "height": 0.681,
+          "tint": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "tex": "icon:respawn",
+          "mask_tex": "mask:none",
+          "instances": [
+            {
+              "translation": {
+                "vert_disp": [
+                  0.0,
+                  0.0
+                ],
+                "horz_disp": [
+                  0.0,
+                  0.0
+                ]
+              },
+              "rotation": 0.0,
+              "scale": [
+                1.0,
+                1.0
+              ]
+            }
+          ]
+        },
+        {
           "id": "icon:score_back",
           "location": {
             "vert_disp": [

@@ -1353,15 +1353,23 @@ impl State {
         self.animation_controller
             .load_game_state(game_state.lock().unwrap());
 
-        // camera update
+        // camera update + icon in game
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
         if  self.display.current == self.display.game_display.clone()  &&
             self.player.on_cooldown.contains_key(&Command::Spawn) {
+                let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+                let screen = self.display.screen_map.get_mut(&name).unwrap();
+                let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+                screen.icons[ind].inst_range = 0..1;
                 self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
         } else {
-                self.camera_state.camera_uniform.ambient_multiplier[3] = 1.0;
+            let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+            let screen = self.display.screen_map.get_mut(&name).unwrap();
+            let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+            screen.icons[ind].inst_range = 0..0;
+            self.camera_state.camera_uniform.ambient_multiplier[3] = 1.0;
         }
         self.queue.write_buffer(
             &self.camera_state.camera_buffer,
@@ -1436,44 +1444,13 @@ impl State {
             // render respawn cooldown
             if self.player.on_cooldown.contains_key(&Command::Spawn) {
                 let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
-                // stroke attempt
-                let size_top = 0.18 * size.height as f32;
-                let size_second = 0.1 * size.height as f32;
-                self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.3),
-                    bounds: (size.width as f32, size.height as f32),
-                    text: vec![
-                        Text::new("You died!\n")
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(size_top),
-                        Text::new("Respawning in ")
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(size_second),
-                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(size_second),
-                        Text::new(" seconds")
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(size_second),
-                    ],
-                    layout: Layout::default().h_align(HorizontalAlign::Center),
-                    ..Section::default()
-                });
+                let size_second = 0.06 * size.height as f32;
                 // main text
                 self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.3),
-                    bounds: (size.width as f32, size.height as f32),
+                    screen_position: (size.width as f32 * 0.5 + size.height as f32 * 0.074, size.height as f32 * 0.485),
+                    bounds: (size.height as f32 * 0.09, size.height as f32),
                     text: vec![
-                        Text::new("You died!\n")
-                            .with_color([0.722, 0.525, 0.043, 1.0])
-                            .with_scale(size_top),
-                        Text::new("Respawning in ")
-                            .with_color([0.0, 0.0, 0.0, 1.0])
-                            .with_scale(size_second),
                         Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([0.0, 0.0, 0.0, 1.0])
-                            .with_scale(size_second),
-                        Text::new(" seconds")
                             .with_color([0.0, 0.0, 0.0, 1.0])
                             .with_scale(size_second),
                     ],
@@ -1481,27 +1458,6 @@ impl State {
                     ..Section::default()
                 });
             }
-            // render status effect and powerup held
-            // self.glyph_brush.queue(Section {
-            //     screen_position: (600.0, 20.0),
-            //     bounds: (size.width as f32, size.height as f32),
-            //     text: vec![Text::new(
-            //         format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
-            //     )
-            //     .with_color([0.0, 0.0, 0.0, 1.0])
-            //     .with_scale(40.0)],
-            //     ..Section::default()
-            // });
-            // self.glyph_brush.queue(Section {
-            //     screen_position: (600.0, 60.0),
-            //     bounds: (size.width as f32, size.height as f32),
-            //     text: vec![Text::new(
-            //         format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-            //     )
-            //     .with_color([0.0, 0.0, 0.0, 1.0])
-            //     .with_scale(40.0)],
-            //     ..Section::default()
-            // });
         }
         // Draw the text!
         self.glyph_brush
