@@ -26,6 +26,7 @@ pub enum ParticleType {
     BLIZZARD,
     POWERUP,
     POWERUP_AURA,
+    REFILL_ATTACK,
     RAIN,
     WIND,
 }

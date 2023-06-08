@@ -1715,6 +1715,49 @@ impl State {
                     );
                     self.display.particles.systems.push(atk);
                 }
+                events::ParticleType::REFILL_ATTACK => {
+                    // in this case, only position matters
+                    let leaf_type = match &p.particle_id[..] {
+                        common::configs::particle_config::MODEL_1 => 0,
+                        common::configs::particle_config::MODEL_2 => 1,
+                        common::configs::particle_config::MODEL_3 => 2,
+                        common::configs::particle_config::MODEL_4 => 3,
+                        _ => 0,
+                    };
+                    // Replace the following with your desired configuration
+                    let time = 2.0;  // Particle lifetime
+
+                    let gen = particles::gen::LineGenerator::new(
+                        p.position,
+                        p.direction,
+                        game_config.refill_radius / time,
+                        particle_config.attack_particle_config.linear_variance,
+                        PI,
+                        0.0,
+                        75.0,
+                        particle_config.attack_particle_config.size_variance,
+                        particle_config.attack_particle_config.size_growth,
+                        false,  // No random orientation
+                    );
+
+                    let system = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.2),
+                        time,
+                        2000.0,  // Generation speed
+                        p.color,
+                        gen,
+                        (
+                            leaf_type * particles::constants::ATK_NUM_TEX_TYPES
+                                + particles::constants::ATK_BASE_IND,
+                            (leaf_type + 1) * particles::constants::ATK_NUM_TEX_TYPES
+                                + particles::constants::ATK_BASE_IND,
+                        ),
+                        &self.device,
+                        &mut self.rng,
+                    );
+
+                    self.display.particles.systems.push(system);
+                }
                 events::ParticleType::BLIZZARD => {
                     let time = particle_config.blizzard_particle_config.time / time_divider;
                     let blizz_gen = particles::gen::ConeGenerator::new(
