@@ -1709,50 +1709,38 @@ impl State {
                     self.display.particles.systems.push(atk);
                 }
                 events::ParticleType::REFILL_ATTACK => {
-                    let leaf_type = match &p.particle_id[..] {
-                        common::configs::particle_config::MODEL_1 => 0,
-                        common::configs::particle_config::MODEL_2 => 1,
-                        common::configs::particle_config::MODEL_3 => 2,
-                        common::configs::particle_config::MODEL_4 => 3,
-                        _ => 0,
-                    };
+                    // Calculate the speed of the particles
+                    let speed = game_config.refill_radius * 10.0;
+                    // Calculate the lifetime of each particle based on the distance and speed
+                    let time = game_config.refill_radius / speed;
+                    let gen = particles::gen::LineGenerator::new(
+                        p.position,
+                        p.direction,
+                        speed,
+                        0.0,
+                        0.0,
+                        0.0,
+                        100.0,
+                        10.0,
+                        10.0,
+                        false,
+                    );
 
-                    //for _ in 0..300 {
-                        // Calculate the speed of the particles
-                        let speed = game_config.refill_radius * 4.0;
-                        // Calculate the lifetime of each particle based on the distance and speed
-                        let time = game_config.refill_radius / speed;
-                        let gen = particles::gen::LineGenerator::new(
-                            p.position,
-                            p.direction,
-                            speed,
-                            0.0,
-                            0.0,
-                            0.0,
-                            100.0,
-                            1.0,
-                            5.0,
-                            false,
-                        );
+                    let system = particles::ParticleSystem::new(
+                        std::time::Duration::from_secs_f32(0.05),
+                        time,
+                        2000.0,
+                        p.color,
+                        gen,
+                        (
+                            particles::constants::SOFT_CIRCLE_IND,
+                            particles::constants::SOFT_CIRCLE_IND + 1,
+                        ),
+                        &self.device,
+                        &mut self.rng,
+                    );
 
-                        let system = particles::ParticleSystem::new(
-                            std::time::Duration::from_secs_f32(0.05),
-                            time,
-                            500.0,
-                            p.color,
-                            gen,
-                            (
-                                leaf_type * particles::constants::ATK_NUM_TEX_TYPES
-                                    + particles::constants::ATK_BASE_IND,
-                                (leaf_type + 1) * particles::constants::ATK_NUM_TEX_TYPES
-                                    + particles::constants::ATK_BASE_IND,
-                            ),
-                            &self.device,
-                            &mut self.rng,
-                        );
-
-                        self.display.particles.systems.push(system);
-                   // }
+                    self.display.particles.systems.push(system);
                 }
                 events::ParticleType::BLIZZARD => {
                     let time = particle_config.blizzard_particle_config.time / time_divider;
