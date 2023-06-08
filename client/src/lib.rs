@@ -12,7 +12,7 @@ use glm::vec3;
 use nalgebra_glm as glm;
 use nalgebra_glm::{TVec3, Vec3};
 use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use wgpu_glyph::{ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
 use winit::event::*;
 use winit::window::Window;
 
@@ -442,24 +442,13 @@ impl State {
         ]);
         let light_state = lights::LightState::new(TEST_LIGHTING, &device);
 
-        let _render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("3D Render Pipeline Layout"),
-                bind_group_layouts: &[
-                    &texture_bind_group_layout,
-                    &camera_state.camera_bind_group_layout,
-                    &light_state.light_bind_group_layout,
-                    &color_bind_group_layout,
-                ],
-                push_constant_ranges: &[],
-            });
-
         let render_pipeline_layout_2d =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("2D Render Pipeline Layout"),
                 bind_group_layouts: &[
                     &texture_bind_group_layout_2d,
                     &mask_texture_bind_group_layout_2d,
+                    &camera_state.camera_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -572,10 +561,13 @@ impl State {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
+        )).unwrap();
+        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!(
+            "../../assets/ZuiQingFeng.ttf"
         ))
         .unwrap();
 
-        let glyph_brush = GlyphBrushBuilder::using_font(inconsolata).build(&device, surface_format);
+        let glyph_brush = GlyphBrushBuilder::using_font(zqf).build(&device, surface_format);
 
         let rng = rand::thread_rng();
         let particle_tex =
@@ -1361,10 +1353,24 @@ impl State {
         self.animation_controller
             .load_game_state(game_state.lock().unwrap());
 
-        // camera update
+        // camera update + icon in game
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
+        if  self.display.current == self.display.game_display.clone()  &&
+            self.player.on_cooldown.contains_key(&Command::Spawn) {
+                let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+                let screen = self.display.screen_map.get_mut(&name).unwrap();
+                let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+                screen.icons[ind].inst_range = 0..1;
+                self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
+        } else {
+            let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+            let screen = self.display.screen_map.get_mut(&name).unwrap();
+            let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+            screen.icons[ind].inst_range = 0..0;
+            self.camera_state.camera_uniform.ambient_multiplier[3] = 1.0;
+        }
         self.queue.write_buffer(
             &self.camera_state.camera_buffer,
             0,
@@ -1408,16 +1414,20 @@ impl State {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
                 .play_animation("idle".to_string(), "object:player_model".to_string());
+            /* Remove text since we're using icon image instead 
+            let text_size = 0.07 * size.height as f32;
             self.glyph_brush.queue(Section {
-                screen_position: (size.width as f32 * 0.25, size.height as f32 * 0.9),
+                screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.9),
                 bounds: (size.width as f32, size.height as f32),
                 text: vec![
-                    Text::new(format!("READY! WAITING ON OTHER PLAYERS...").as_str())
+                    Text::new(format!("Ready! Waiting for other players...").as_str())
                         .with_color([0.0, 0.0, 0.0, 1.0])
-                        .with_scale(40.0),
+                        .with_scale(text_size),
                 ],
+                layout: Layout::default().h_align(HorizontalAlign::Center),
                 ..Section::default()
             });
+            */
         } else if self.display.current == "display:victory"
             || self.display.current == "display:defeat"
         {
@@ -1434,48 +1444,20 @@ impl State {
             // render respawn cooldown
             if self.player.on_cooldown.contains_key(&Command::Spawn) {
                 let spawn_cooldown = self.player.on_cooldown.get(&Command::Spawn).unwrap();
+                let size_second = 0.06 * size.height as f32;
+                // main text
                 self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.4),
-                    bounds: (size.width as f32, size.height as f32),
+                    screen_position: (size.width as f32 * 0.5 + size.height as f32 * 0.074, size.height as f32 * 0.485),
+                    bounds: (size.height as f32 * 0.09, size.height as f32),
                     text: vec![
-                        Text::new("You died!\n")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(100.0),
-                        Text::new("Respawning in ")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(60.0),
                         Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([1.0, 1.0, 1.0, 1.0])
-                            .with_scale(60.0),
-                        Text::new(" seconds")
-                            .with_color([1.0, 1.0, 0.0, 1.0])
-                            .with_scale(60.0),
+                            .with_color([0.0, 0.0, 0.0, 1.0])
+                            .with_scale(size_second),
                     ],
                     layout: Layout::default().h_align(HorizontalAlign::Center),
                     ..Section::default()
                 });
             }
-            // render status effect and powerup held
-            // self.glyph_brush.queue(Section {
-            //     screen_position: (600.0, 20.0),
-            //     bounds: (size.width as f32, size.height as f32),
-            //     text: vec![Text::new(
-            //         format!("Active Status Effects: {:?}\n", self.player.status_effects).as_str(),
-            //     )
-            //     .with_color([0.0, 0.0, 0.0, 1.0])
-            //     .with_scale(40.0)],
-            //     ..Section::default()
-            // });
-            // self.glyph_brush.queue(Section {
-            //     screen_position: (600.0, 60.0),
-            //     bounds: (size.width as f32, size.height as f32),
-            //     text: vec![Text::new(
-            //         format!("PowerUp Held: {:?}\n", self.player.power_up).as_str(),
-            //     )
-            //     .with_color([0.0, 0.0, 0.0, 1.0])
-            //     .with_scale(40.0)],
-            //     ..Section::default()
-            // });
         }
         // Draw the text!
         self.glyph_brush

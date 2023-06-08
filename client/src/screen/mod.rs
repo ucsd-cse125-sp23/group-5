@@ -32,6 +32,8 @@ pub struct Display {
     pub groups: HashMap<String, objects::DisplayGroup>,
     pub current: String,
     pub game_display: String,
+    pub leaf_colors: HashMap<String, [f32; 4]>, 
+    pub wood_colors: HashMap<String, [f32; 4]>, 
     pub texture_map: HashMap<String, wgpu::BindGroup>,
     pub screen_map: HashMap<String, Screen>,
     pub scene_map: HashMap<String, Scene>,
@@ -77,6 +79,8 @@ impl Display {
             groups,
             current: config.default_display.clone(),
             game_display: config.game_display.clone(),
+            leaf_colors: config.leaf_colors.clone(),
+            wood_colors: config.wood_colors.clone(),
             texture_map,
             screen_map,
             scene_map,
@@ -168,7 +172,7 @@ impl Display {
                     continue;
                 }
                 // -1 to cancel out 1.0 in pos, 2.5 to place above the player
-                let pos = pos + glm::vec4(0.0, 2.5, 0.0, -1.0);
+                let pos = pos + glm::vec4(0.0, 2.0, 0.0, -1.0);
                 let vec3pos = glm::vec3(pos[0], pos[1], pos[2]);
                 let z_pos = glm::dot(&(vec3pos - cpos), &cam_dir);
                 to_draw.push(particles::Particle {
@@ -178,7 +182,7 @@ impl Display {
                     normal_1: [0., 0., 0., 0.],
                     normal_2: [0., 0., 0., 0.],
                     spawn_time: 0.0,
-                    size: 75.0,
+                    size: 100.0,
                     tex_id: id as i32 - 1 + (particles::constants::LABEL_BASE_IND as i32),
                     z_pos,
                     time_elapsed: 0.0,
@@ -291,6 +295,7 @@ impl Display {
                     render_pass.set_pipeline(&self.ui_pipeline);
                     render_pass
                         .set_index_buffer(self.rect_ibuf.slice(..), wgpu::IndexFormat::Uint16);
+                    render_pass.set_bind_group(2, &camera_state.camera_bind_group, &[]);
                     // first optionally draw background
                     if let Some(bkgd) = &screen.background {
                         render_pass.draw_ui_instanced(
@@ -306,6 +311,7 @@ impl Display {
                         "leaf_type_selector",
                         "leaf_color_selector",
                         "wood_color_selector",
+                        "ready_text",
                         "hover_icon",
                     ];
                     let mut icons_top = Vec::new();
@@ -409,6 +415,18 @@ impl Display {
                                     }
                                 }
                                 icon.relocate(curr_btn_loc, config.width, config.height, queue);
+                            } else if icon.id == "ready_text" {
+                                let mut new_loc = ScreenLocation {
+                                    vert_disp: (1000.0, 1000.0),
+                                    horz_disp: (1000.0, 1000.0)
+                                };
+                                if self.customization_choices.ready {
+                                    new_loc = ScreenLocation {
+                                        vert_disp: (0.0, -0.78055),
+                                        horz_disp: (0.49375, 0.0)
+                                    };
+                                }
+                                icon.relocate(new_loc, config.width, config.height, queue);
                             }
 
                             render_pass.draw_ui_instanced(
@@ -424,7 +442,7 @@ impl Display {
             };
 
             // temporary solution because we want background in end screen but scene is loaded before background
-            if self.current == "display:victory" || self.current == "display:defeat" {
+            if self.current == "display:victory" || self.current == "display:defeat" || self.current == "display:lobby" {
                 render_pass.set_pipeline(&self.scene_pipeline);
                 render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
