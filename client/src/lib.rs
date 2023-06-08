@@ -1698,7 +1698,6 @@ impl State {
                     self.display.particles.systems.push(atk);
                 }
                 events::ParticleType::REFILL_ATTACK => {
-                    // in this case, only position matters
                     let leaf_type = match &p.particle_id[..] {
                         common::configs::particle_config::MODEL_1 => 0,
                         common::configs::particle_config::MODEL_2 => 1,
@@ -1706,26 +1705,31 @@ impl State {
                         common::configs::particle_config::MODEL_4 => 3,
                         _ => 0,
                     };
-                    // Replace the following with your desired configuration
-                    let time = 1.0;  // Particle lifetime
+
+                    // Calculate the distance between the source and the target
+                    let distance = glm::distance(&p.position, &self.player.position);
+                    // Calculate the speed of the particles
+                    let speed = game_config.refill_radius * 2.0;
+                    // Calculate the lifetime of each particle based on the distance and speed
+                    let time = distance / speed;
 
                     let gen = particles::gen::LineGenerator::new(
                         p.position,
                         p.direction,
-                        game_config.refill_radius / time,
-                        particle_config.attack_particle_config.linear_variance,
-                        PI,
+                        speed,
                         0.0,
-                        75.0,
-                        particle_config.attack_particle_config.size_variance,
-                        particle_config.attack_particle_config.size_growth,
-                        false,  // No random orientation
+                        0.0,
+                        0.0,
+                        40.0,
+                        1.0,
+                        5.0,
+                        false,
                     );
 
                     let system = particles::ParticleSystem::new(
-                        std::time::Duration::from_secs_f32(0.2),
+                        std::time::Duration::from_secs_f32(0.55),
                         time,
-                        2000.0,  // Generation speed
+                        200.0,
                         p.color,
                         gen,
                         (

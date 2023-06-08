@@ -53,7 +53,7 @@
     0.0,
     0.0
   ],
-  "flag_radius": 2.0,
+  "flag_radius": 3.0,
   "flag_z_bound": [
     -10.0,
     0.0
@@ -61,7 +61,7 @@
   "winning_threshold": 17.0,
   "decay_rate": 0.2,
   "decay_coef": 0.0002,
-  "refill_radius": 2.0,
+  "refill_radius": 3.0,
   "refill_rate_limit": 0.5,
   "camera_config": {
     "x_sensitivity": 3.2,
