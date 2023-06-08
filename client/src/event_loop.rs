@@ -7,6 +7,7 @@ use std::thread::JoinHandle;
 use common::configs::ConfigurationManager;
 use log::{debug, warn};
 use nalgebra_glm as glm;
+use winit::dpi::LogicalSize;
 use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::{
     event::*,
@@ -69,6 +70,7 @@ impl PlayerLoop {
                 )
                 .unwrap(),
             ))
+            .with_inner_size(LogicalSize::new(960.0, 540.0))
             .build(&event_loop)
             .unwrap();
 

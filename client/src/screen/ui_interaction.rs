@@ -39,8 +39,8 @@ fn game_start(display: &mut screen::Display, _: Option<String>) {
 
     if sel_2 && !display.customization_choices.ready {
         let ind = *curr_screen.btn_id_map.get("start_game").unwrap();
-        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
-        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 1.0);
+        curr_screen.buttons[ind].default_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 0.0);
+        curr_screen.buttons[ind].hover_tint = nalgebra_glm::Vec4::new(0.0, 0.55, 0.0, 0.0);
 
         display.customization_choices.ready = true;
 
@@ -87,7 +87,7 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
     curr_leaf_type.location = ScreenLocation {
         vert_disp: (0.0, 0.555),
-        horz_disp: (0.0, -1.333),
+        horz_disp: (-0.75, 0.0),
     };
 
     for &i in &["leaf_color_selector", "wood_color_selector"] {
@@ -202,23 +202,19 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
         .get_mut(&curr_group.screen.clone().unwrap())
         .unwrap();
 
+    let curr_leaf_color = button_id.clone().unwrap();
+
     unselect_button(&display.customization_choices.curr_leaf_color, curr_screen);
-    let curr_button = &mut curr_screen.buttons[*curr_screen
-        .btn_id_map
-        .get(&button_id.clone().unwrap())
-        .unwrap()];
-    display.customization_choices.curr_leaf_color = button_id.clone().unwrap();
+    let curr_button =
+        &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&curr_leaf_color).unwrap()];
+    display.customization_choices.curr_leaf_color = curr_leaf_color.clone();
     curr_button.selected = true;
 
-    let curr_leaf_color =
+    let leaf_color_selector =
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
 
-    let actual_color = MeshColor::new([
-        curr_button.default_tint[0],
-        curr_button.default_tint[1],
-        curr_button.default_tint[2],
-    ]);
-    let actual_mtl = button_id.clone().unwrap();
+    let leaf_color_rgb = display.leaf_colors.get(&curr_leaf_color).unwrap();
+    let actual_color = MeshColor::new([leaf_color_rgb[0], leaf_color_rgb[1], leaf_color_rgb[2]]);
 
     if let Some(scene) = display
         .scene_map
@@ -234,7 +230,7 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
                 .customization_choices
                 .final_choices
                 .materials
-                .insert(LEAF_MESH.to_owned(), actual_mtl);
+                .insert(LEAF_MESH.to_owned(), curr_leaf_color);
             node.colors = Some(display.customization_choices.final_choices.color.clone());
             node.materials = Some(
                 display
@@ -243,7 +239,7 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
                     .materials
                     .clone(),
             );
-            curr_leaf_color.location = curr_button.location;
+            leaf_color_selector.location = curr_button.location;
         }
         scene.draw_scene_dfs();
     }
@@ -265,23 +261,19 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
         .get_mut(&curr_group.screen.clone().unwrap())
         .unwrap();
 
+    let curr_wood_color = button_id.clone().unwrap();
+
     unselect_button(&display.customization_choices.curr_wood_color, curr_screen);
-    let curr_button = &mut curr_screen.buttons[*curr_screen
-        .btn_id_map
-        .get(&button_id.clone().unwrap())
-        .unwrap()];
-    display.customization_choices.curr_wood_color = button_id.clone().unwrap();
+    let curr_button =
+        &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&curr_wood_color).unwrap()];
+    display.customization_choices.curr_wood_color = curr_wood_color.clone();
     curr_button.selected = true;
 
-    let curr_wood_color =
+    let wood_color_selector =
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("wood_color_selector").unwrap()];
 
-    let actual_color = MeshColor::new([
-        curr_button.default_tint[0],
-        curr_button.default_tint[1],
-        curr_button.default_tint[2],
-    ]);
-    let actual_mtl = button_id.clone().unwrap();
+    let wood_color_rgb = display.wood_colors.get(&curr_wood_color).unwrap();
+    let actual_color = MeshColor::new([wood_color_rgb[0], wood_color_rgb[1], wood_color_rgb[2]]);
 
     if let Some(scene) = display
         .scene_map
@@ -302,12 +294,12 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
                 .customization_choices
                 .final_choices
                 .materials
-                .insert(BODY_MESH.to_owned(), actual_mtl.clone());
+                .insert(BODY_MESH.to_owned(), curr_wood_color.clone());
             display
                 .customization_choices
                 .final_choices
                 .materials
-                .insert(NOSE_MESH.to_owned(), actual_mtl);
+                .insert(NOSE_MESH.to_owned(), curr_wood_color);
 
             node.colors = Some(display.customization_choices.final_choices.color.clone());
 
@@ -318,7 +310,7 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
                     .materials
                     .clone(),
             );
-            curr_wood_color.location = curr_button.location;
+            wood_color_selector.location = curr_button.location;
         }
         scene.draw_scene_dfs();
     }

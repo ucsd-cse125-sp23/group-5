@@ -1,8 +1,9 @@
-use itertools::Itertools;
-use log::{debug, error, info, warn};
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use itertools::Itertools;
+use log::{debug, error, info, warn};
 
 use command_handlers::prelude::*;
 use common::configs::*;
@@ -268,6 +269,10 @@ impl Executor {
             println!("Winner is {}, game finished!", id);
             game_state.game_winner = Some(id);
             game_state.life_cycle_state = Ended;
+            game_state.prev_winner = Some((
+                id,
+                game_state.players_customization.get(&id).unwrap().clone(),
+            ));
         }
         let pptw = game_state.previous_tick_winner.clone();
         game_state.previous_tick_winner = game_state.has_single_winner(game_config);
@@ -304,6 +309,8 @@ impl Executor {
     pub fn reset_game(&self) {
         // If game ended, reset game back to waiting state
         let mut game_state = self.game_state.lock().unwrap();
+        let prev_winner = game_state.game_winner;
+        let prev_player_customization = game_state.players_customization.clone();
         if game_state.life_cycle_state == Ended {
             let mut physics_state = self.physics_state.borrow_mut();
             let mut game_events = self.game_events.borrow_mut();
@@ -317,6 +324,13 @@ impl Executor {
 
             // Reset other instance variables
             *game_state = GameState::new();
+            if let Some(winner_id) = prev_winner {
+                game_state.prev_winner = Some((
+                    winner_id,
+                    prev_player_customization.get(&winner_id).unwrap().clone(),
+                ));
+                game_state.players_customization = prev_player_customization;
+            }
             game_events.clear();
             ready_players.clear();
             *spawn_command_pushed = false;

@@ -33,6 +33,7 @@ pub struct GameState {
     pub life_cycle_state: GameLifeCycleState,
     pub game_winner: Option<u32>,
     pub game_start_time: Duration,
+    pub prev_winner: Option<(u32, FinalChoices)>,
 }
 
 impl GameState {
@@ -71,12 +72,13 @@ pub struct PlayerState {
     pub respawn_sec: u32, // b/c seconds are unreliable
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Copy)]
 pub enum GameLifeCycleState {
     #[default]
     Waiting,
     Running(u64),
     Ended,
+    _Ended,
 }
 
 impl GameLifeCycleState {
@@ -461,6 +463,7 @@ mod tests {
             life_cycle_state: Default::default(),
             game_winner: None,
             game_start_time: Default::default(),
+            prev_winner: None,
         };
         assert_eq!(state.players.len(), 0);
     }
@@ -477,6 +480,7 @@ mod tests {
             life_cycle_state: Default::default(),
             game_winner: None,
             game_start_time: Default::default(),
+            prev_winner: None,
         };
         let serialized = bincode::serialize(&state).unwrap();
         let deserialized: GameState = bincode::deserialize(&serialized[..]).unwrap();

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // NOTE: all units are relative to either screen height or screen width
 //    with the exception of aspect ratio, which is unitless
@@ -8,6 +9,8 @@ pub struct ConfigDisplay {
     pub default_display: String,
     pub game_display: String,
     pub screens: Vec<ConfigScreen>,
+    pub leaf_colors: HashMap<String, [f32; 4]>,
+    pub wood_colors: HashMap<String, [f32; 4]>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
