@@ -202,25 +202,19 @@ fn change_leaf_color(display: &mut screen::Display, button_id: Option<String>) {
         .get_mut(&curr_group.screen.clone().unwrap())
         .unwrap();
 
-    let curr_leaf_color = button_id.clone().unwrap(); 
+    let curr_leaf_color = button_id.clone().unwrap();
 
     unselect_button(&display.customization_choices.curr_leaf_color, curr_screen);
-    let curr_button = &mut curr_screen.buttons[*curr_screen
-        .btn_id_map
-        .get(&curr_leaf_color)
-        .unwrap()];
-    display.customization_choices.curr_leaf_color = curr_leaf_color.clone(); 
+    let curr_button =
+        &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&curr_leaf_color).unwrap()];
+    display.customization_choices.curr_leaf_color = curr_leaf_color.clone();
     curr_button.selected = true;
 
     let leaf_color_selector =
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_color_selector").unwrap()];
 
-    let leaf_color_rgb= display.leaf_colors.get(&curr_leaf_color).unwrap();
-    let actual_color = MeshColor::new([
-        leaf_color_rgb[0],
-        leaf_color_rgb[1],
-        leaf_color_rgb[2],
-    ]);
+    let leaf_color_rgb = display.leaf_colors.get(&curr_leaf_color).unwrap();
+    let actual_color = MeshColor::new([leaf_color_rgb[0], leaf_color_rgb[1], leaf_color_rgb[2]]);
 
     if let Some(scene) = display
         .scene_map
@@ -270,22 +264,16 @@ fn change_wood_color(display: &mut screen::Display, button_id: Option<String>) {
     let curr_wood_color = button_id.clone().unwrap();
 
     unselect_button(&display.customization_choices.curr_wood_color, curr_screen);
-    let curr_button = &mut curr_screen.buttons[*curr_screen
-        .btn_id_map
-        .get(&curr_wood_color)
-        .unwrap()];
+    let curr_button =
+        &mut curr_screen.buttons[*curr_screen.btn_id_map.get(&curr_wood_color).unwrap()];
     display.customization_choices.curr_wood_color = curr_wood_color.clone();
     curr_button.selected = true;
 
     let wood_color_selector =
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("wood_color_selector").unwrap()];
 
-    let wood_color_rgb= display.wood_colors.get(&curr_wood_color).unwrap();
-    let actual_color = MeshColor::new([
-        wood_color_rgb[0],
-        wood_color_rgb[1],
-        wood_color_rgb[2],
-    ]);
+    let wood_color_rgb = display.wood_colors.get(&curr_wood_color).unwrap();
+    let actual_color = MeshColor::new([wood_color_rgb[0], wood_color_rgb[1], wood_color_rgb[2]]);
 
     if let Some(scene) = display
         .scene_map

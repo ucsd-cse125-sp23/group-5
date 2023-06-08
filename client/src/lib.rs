@@ -12,7 +12,9 @@ use glm::vec3;
 use nalgebra_glm as glm;
 use nalgebra_glm::{TVec3, Vec3};
 use wgpu::util::DeviceExt;
-use wgpu_glyph::{ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text};
+use wgpu_glyph::{
+    ab_glyph, FontId, GlyphBrush, GlyphBrushBuilder, HorizontalAlign, Layout, Section, Text,
+};
 use winit::event::*;
 use winit::window::Window;
 
@@ -561,11 +563,10 @@ impl State {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let inconsolata = ab_glyph::FontArc::try_from_slice(include_bytes!(
             "../../assets/Inconsolata-Regular.ttf"
-        )).unwrap();
-        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!(
-            "../../assets/ZuiQingFeng.ttf"
         ))
         .unwrap();
+        let zqf = ab_glyph::FontArc::try_from_slice(include_bytes!("../../assets/ZuiQingFeng.ttf"))
+            .unwrap();
 
         let glyph_brush = GlyphBrushBuilder::using_font(zqf).build(&device, surface_format);
 
@@ -889,6 +890,7 @@ impl State {
                     //println!("once");
                     self.display.change_to(self.display.game_display.clone());
                     self.add_game_particles();
+                    self.window.set_cursor_visible(false);
                     /*
                     self.display.current = self.display.game_display.clone();
                     *CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
@@ -924,64 +926,86 @@ impl State {
                     }
                 }
             }
+            GameLifeCycleState::_Ended => {}
+
             // check if the game has ended and set corresponding end screen
-            GameLifeCycleState::Ended => {
-                //println!("{:?}", game_state_clone.life_cycle_state);
-                if game_state_clone.game_winner.unwrap() == self.client_id as u32 {
-                    self.display.change_to("display:victory".to_owned());
-                } else {
-                    self.display.change_to("display:defeat".to_owned());
-                }
-                //*CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
+            current_life_cycle_state => {
+                if let GameLifeCycleState::Running(_) = self.previous_game_life_cycle_state {
+                    {
+                        if current_life_cycle_state != self.previous_game_life_cycle_state {
+                            self.window.set_cursor_visible(true);
+                            //println!("{:?}", game_state_clone.life_cycle_state);
 
-                // Reset camera and player for lobby
-                self.camera_state.camera.position = glm::vec3(
-                    DEFAULT_CAMERA_POS.0,
-                    DEFAULT_CAMERA_POS.1,
-                    DEFAULT_CAMERA_POS.2,
-                );
-                self.camera_state.camera.target = glm::vec3(
-                    DEFAULT_CAMERA_TARGET.0,
-                    DEFAULT_CAMERA_TARGET.1,
-                    DEFAULT_CAMERA_TARGET.2,
-                );
-                self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
+                            if !game_state_clone.prev_winner.is_some() {
+                                return;
+                            }
 
-                let reset_ambient_multiplier = weather_config.default_weather_ambient_multiplier;
-                self.camera_state.camera.ambient_multiplier = glm::vec3(
-                    reset_ambient_multiplier,
-                    reset_ambient_multiplier,
-                    reset_ambient_multiplier,
-                );
+                            let (winner, winner_custom) = game_state_clone.prev_winner.unwrap();
 
-                self.camera_state
-                    .camera_uniform
-                    .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
-                self.queue.write_buffer(
-                    &self.camera_state.camera_buffer,
-                    0,
-                    bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
-                );
+                            if winner == self.client_id as u32 {
+                                self.display.change_to("display:victory".to_owned());
+                            } else {
+                                self.display.change_to("display:defeat".to_owned());
+                            }
+                            //*CURR_DISP.get().unwrap().lock().unwrap() = self.display.current.clone();
 
-                let winner = game_state_clone.game_winner.unwrap();
-                let winner_custom = game_state_clone.players_customization.get(&winner).unwrap();
-                if let Some(scene) = self.display.scene_map.get_mut("scene:end_screen_scene") {
-                    if let Some(node) = scene.scene_graph.get_mut("object:winner_model") {
-                        node.model = Some(winner_custom.model.clone());
-                        node.colors = Some(winner_custom.color.clone());
-                        node.materials = Some(winner_custom.materials.clone());
+                            // Reset camera and player for lobby
+                            self.camera_state.camera.position = glm::vec3(
+                                DEFAULT_CAMERA_POS.0,
+                                DEFAULT_CAMERA_POS.1,
+                                DEFAULT_CAMERA_POS.2,
+                            );
+                            self.camera_state.camera.target = glm::vec3(
+                                DEFAULT_CAMERA_TARGET.0,
+                                DEFAULT_CAMERA_TARGET.1,
+                                DEFAULT_CAMERA_TARGET.2,
+                            );
+                            self.camera_state.projection.fovy = DEFAULT_CAMERA_FOV.to_radians();
+
+                            let reset_ambient_multiplier =
+                                weather_config.default_weather_ambient_multiplier;
+                            self.camera_state.camera.ambient_multiplier = glm::vec3(
+                                reset_ambient_multiplier,
+                                reset_ambient_multiplier,
+                                reset_ambient_multiplier,
+                            );
+
+                            self.camera_state.camera_uniform.update_view_proj(
+                                &self.camera_state.camera,
+                                &self.camera_state.projection,
+                            );
+                            self.queue.write_buffer(
+                                &self.camera_state.camera_buffer,
+                                0,
+                                bytemuck::cast_slice(&[self.camera_state.camera_uniform]),
+                            );
+
+                            if let Some(scene) =
+                                self.display.scene_map.get_mut("scene:end_screen_scene")
+                            {
+                                if let Some(node) = scene.scene_graph.get_mut("object:winner_model")
+                                {
+                                    node.model = Some(winner_custom.model.clone());
+                                    node.colors = Some(winner_custom.color.clone());
+                                    node.materials = Some(winner_custom.materials.clone());
+                                }
+                                scene.draw_scene_dfs();
+                            }
+
+                            let loser_screen =
+                                self.display.screen_map.get_mut("screen:loser").unwrap();
+                            let winner_icon_index =
+                                *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
+                            loser_screen.icons[winner_icon_index].texture =
+                                format!("icon:player_{winner}");
+
+                            self.previous_game_life_cycle_state = GameLifeCycleState::_Ended;
+
+                            return;
+                        }
                     }
-                    scene.draw_scene_dfs();
                 }
-
-                let loser_screen = self.display.screen_map.get_mut("screen:loser").unwrap();
-                let winner_icon_index =
-                    *loser_screen.icon_id_map.get("icon:winner_number").unwrap();
-                loser_screen.icons[winner_icon_index].texture = format!("icon:player_{winner}");
-
-                return;
             }
-            _ => {}
         }
 
         self.previous_game_life_cycle_state = game_state_clone.life_cycle_state.clone();
@@ -1236,7 +1260,7 @@ impl State {
                         // Reset the properties for both icons to their default values
                         screen.icons[ind_atk_ult].tint[3] = 0.0;
                     }
-                    if (prev_transp != screen.icons[ind_atk_ult].tint[3]) {
+                    if prev_transp != screen.icons[ind_atk_ult].tint[3] {
                         let tint = screen.icons[ind_atk_ult].tint;
                         for v in &mut screen.icons[ind_atk_ult].vertices {
                             v.color = tint.into();
@@ -1357,15 +1381,30 @@ impl State {
         self.camera_state
             .camera_uniform
             .update_view_proj(&self.camera_state.camera, &self.camera_state.projection);
-        if  self.display.current == self.display.game_display.clone()  &&
-            self.player.on_cooldown.contains_key(&Command::Spawn) {
-                let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
-                let screen = self.display.screen_map.get_mut(&name).unwrap();
-                let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
-                screen.icons[ind].inst_range = 0..1;
-                self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
+        if self.display.current == self.display.game_display.clone()
+            && self.player.on_cooldown.contains_key(&Command::Spawn)
+        {
+            let name = self
+                .display
+                .groups
+                .get(&self.display.game_display.clone())
+                .unwrap()
+                .screen
+                .clone()
+                .unwrap();
+            let screen = self.display.screen_map.get_mut(&name).unwrap();
+            let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
+            screen.icons[ind].inst_range = 0..1;
+            self.camera_state.camera_uniform.ambient_multiplier[3] = 0.0;
         } else {
-            let name = self.display.groups.get(&self.display.game_display.clone()).unwrap().screen.clone().unwrap();
+            let name = self
+                .display
+                .groups
+                .get(&self.display.game_display.clone())
+                .unwrap()
+                .screen
+                .clone()
+                .unwrap();
             let screen = self.display.screen_map.get_mut(&name).unwrap();
             let ind = *screen.icon_id_map.get("icon:respawn").unwrap();
             screen.icons[ind].inst_range = 0..0;
@@ -1414,7 +1453,7 @@ impl State {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
                 .play_animation("idle".to_string(), "object:player_model".to_string());
-            /* Remove text since we're using icon image instead 
+            /* Remove text since we're using icon image instead
             let text_size = 0.07 * size.height as f32;
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.9),
@@ -1447,13 +1486,14 @@ impl State {
                 let size_second = 0.06 * size.height as f32;
                 // main text
                 self.glyph_brush.queue(Section {
-                    screen_position: (size.width as f32 * 0.5 + size.height as f32 * 0.074, size.height as f32 * 0.485),
+                    screen_position: (
+                        size.width as f32 * 0.5 + size.height as f32 * 0.074,
+                        size.height as f32 * 0.485,
+                    ),
                     bounds: (size.height as f32 * 0.09, size.height as f32),
-                    text: vec![
-                        Text::new(format!("{:.1}", spawn_cooldown).as_str())
-                            .with_color([0.0, 0.0, 0.0, 1.0])
-                            .with_scale(size_second),
-                    ],
+                    text: vec![Text::new(format!("{:.1}", spawn_cooldown).as_str())
+                        .with_color([0.0, 0.0, 0.0, 1.0])
+                        .with_scale(size_second)],
                     layout: Layout::default().h_align(HorizontalAlign::Center),
                     ..Section::default()
                 });
