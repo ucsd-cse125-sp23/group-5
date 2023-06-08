@@ -87,10 +87,10 @@ fn go_to_lobby(display: &mut screen::Display, _: Option<String>) {
         &mut curr_screen.icons[*curr_screen.icon_id_map.get("leaf_type_selector").unwrap()];
     curr_leaf_type.location = ScreenLocation {
         vert_disp: (0.0, 0.555),
-        horz_disp: (0.0, -1.333),
+        horz_disp: (-0.75, 0.0),
     };
 
-    for &i in &["leaf_color_selector", "wood_color_selector"] {
+    for &i in &["leaf_color_selector", "wood_color_selector", "ready_text"] {
         let ind = *curr_screen.icon_id_map.get(i).unwrap();
         let icon = &mut curr_screen.icons[ind];
         icon.location = ScreenLocation {

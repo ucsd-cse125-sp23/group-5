@@ -1406,6 +1406,7 @@ impl State {
             // TODO: update duration or delete this animation from the animaton_controller after animation is done playing
             self.animation_controller
                 .play_animation("idle".to_string(), "object:player_model".to_string());
+            /* Remove text since we're using icon image instead 
             let text_size = 0.07 * size.height as f32;
             self.glyph_brush.queue(Section {
                 screen_position: (size.width as f32 * 0.5, size.height as f32 * 0.9),
@@ -1418,6 +1419,7 @@ impl State {
                 layout: Layout::default().h_align(HorizontalAlign::Center),
                 ..Section::default()
             });
+            */
         } else if self.display.current == "display:victory"
             || self.display.current == "display:defeat"
         {

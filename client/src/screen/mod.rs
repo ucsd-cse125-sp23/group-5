@@ -307,6 +307,7 @@ impl Display {
                         "leaf_type_selector",
                         "leaf_color_selector",
                         "wood_color_selector",
+                        "ready_text",
                         "hover_icon",
                     ];
                     let mut icons_top = Vec::new();
@@ -410,6 +411,14 @@ impl Display {
                                     }
                                 }
                                 icon.relocate(curr_btn_loc, config.width, config.height, queue);
+                            } else if icon.id == "ready_text" {
+                                if self.customization_choices.ready {
+                                    let new_loc = ScreenLocation {
+                                        vert_disp: (0.0, -0.78055),
+                                        horz_disp: (0.49375, 0.0)
+                                    };
+                                    icon.relocate(new_loc, config.width, config.height, queue);
+                                }
                             }
 
                             render_pass.draw_ui_instanced(
@@ -425,7 +434,7 @@ impl Display {
             };
 
             // temporary solution because we want background in end screen but scene is loaded before background
-            if self.current == "display:victory" || self.current == "display:defeat" {
+            if self.current == "display:victory" || self.current == "display:defeat" || self.current == "display:lobby" {
                 render_pass.set_pipeline(&self.scene_pipeline);
                 render_pass.set_bind_group(2, &self.light_state.light_bind_group, &[]);
 
