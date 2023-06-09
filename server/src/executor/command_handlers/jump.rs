@@ -80,7 +80,7 @@ impl CommandHandler for JumpCommandHandler {
                 (false, false, false),
                 player_state.camera_forward,
             )),
-            Recipients::One(self.player_id as u8),
+            Recipients::All, // One(self.player_id as u8),
         );
 
         if player_state.jump_count > 1 {
@@ -168,7 +168,7 @@ impl CommandHandler for JumpResetCommandHandler {
                                 (false, false, false),
                                 player_state.camera_forward,
                             )),
-                            Recipients::One(self.player_id as u8),
+                            Recipients::All, // One(self.player_id as u8),
                         );
                     }
                     break;

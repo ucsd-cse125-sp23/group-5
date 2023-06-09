@@ -387,22 +387,8 @@ impl Executor {
     }
 }
 
-fn holding_flag_sound(ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn GameEventCollector) {
-    if let Some(id) = pw {
-        if let Some(pid) = ppw {
-            if id != pid {
-                game_events.add(
-                    GameEvent::SoundEvent(SoundSpec::new(
-                        glm::Vec3::new(0.0, 0.0, 0.0),
-                        "points_gain".to_string(),
-                        (0, false),
-                        (true, false, false),
-                        glm::Vec3::new(0.0,0.0,0.0),
-                    )),
-                    Recipients::One(pid as u8),
-                );
-            }
-        }
+fn holding_flag_sound(_ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn GameEventCollector) {
+    if let Some(_) = pw {
         game_events.add(
             GameEvent::SoundEvent(SoundSpec::new(
                 glm::Vec3::new(0.0, 0.0, 0.0),
@@ -411,10 +397,10 @@ fn holding_flag_sound(ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn G
                 (true, true, false),
                 glm::Vec3::new(0.0,0.0,0.0),
             )),
-            Recipients::One(id as u8),
+            Recipients::All,
         );
     }
-    else if let Some(pid) = ppw {
+    else {
         game_events.add(
             GameEvent::SoundEvent(SoundSpec::new(
                 glm::Vec3::new(0.0, 0.0, 0.0),
@@ -423,7 +409,7 @@ fn holding_flag_sound(ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn G
                 (true, false, false),
                 glm::Vec3::new(0.0,0.0,0.0),
             )),
-            Recipients::One(pid as u8),
+            Recipients::All,
         );
     }
 }

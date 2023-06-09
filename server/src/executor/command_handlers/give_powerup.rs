@@ -51,7 +51,7 @@ impl CommandHandler for GivePowerUpCommandHandler {
                 glm::Vec3::new(1.0, 1.0,1.0),
 
             )),
-            Recipients::One(self.player_id as u8),
+            Recipients::All, // One(self.player_id as u8),
         );
 
         Ok(())

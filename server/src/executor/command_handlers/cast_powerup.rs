@@ -218,7 +218,7 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         (false, false, false),
                         player_state.camera_forward,
                     )),
-                    Recipients::One(self.player_id as u8),
+                    Recipients::All // One(self.player_id as u8),
                 );
             }
         }
