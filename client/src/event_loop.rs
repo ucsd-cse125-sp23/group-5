@@ -1,4 +1,5 @@
 use instant::Instant;
+use winit::monitor::MonitorHandle;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -70,7 +71,7 @@ impl PlayerLoop {
                 )
                 .unwrap(),
             ))
-            // .with_inner_size(LogicalSize::new(960.0, 540.0))
+            .with_inner_size(LogicalSize::new(960.0, 540.0))
             .build(&event_loop)
             .unwrap();
 
