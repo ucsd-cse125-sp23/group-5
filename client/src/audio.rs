@@ -19,7 +19,7 @@ use std::{
 use common::core::{events::SoundSpec, states::GameState};
 use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 
-pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
+pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 10.0, 0.0];
 pub const FADE_DIST: f32 = 50.0;
 pub const SOUND_RADIUS: f32 = 25.0;
 pub const RADIUS_OFFSET: f32 = 0.2;
