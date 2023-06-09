@@ -31,8 +31,8 @@
       {
         "name": "wind_sound",
         "path": "assets/audio/sound_effects_new/wind_attack.mp3",
-        "seconds": 5,
-        "nanoseconds": 2500,
+        "seconds": 2,
+        "nanoseconds": 0,
         "fall_off_speed": 0.05 
       },
       {
@@ -100,7 +100,7 @@
       },
       {
         "name": "ice_sound",
-        "path": "assets/audio/sound_effects/ice.mp3",
+        "path": "assets/audio/sound_effects_new/ice_attack.mp3",
         "seconds": 3,
         "nanoseconds": 2500,
         "fall_off_speed": 0.05 

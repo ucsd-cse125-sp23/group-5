@@ -20,8 +20,10 @@ use common::core::{events::SoundSpec, states::GameState};
 use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 
 pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
-pub const FADE_DIST: f32 = 15.0;
-pub const SOUND_RADIUS: f32 = 25.0;
+pub const FADE_DIST: f32 = 30.0;
+pub const SOUND_RADIUS: f32 = 45.0;
+pub const RADIUS_OFFSET: f32 = 0.1;
+pub const RADIUS_MUL: f32 = 0.5;
 
 pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
@@ -185,7 +187,7 @@ impl Audio {
     }
 
     pub fn handle_fade_out(&mut self){
-        let percent = 1.5;
+        let percent = 0.2;
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
@@ -309,7 +311,7 @@ impl Audio {
                 } else if sound_instances[i].at_client {
                     sound_instances[i]
                         .controller
-                        .adjust_position([0.0, 25.0, 0.0]);
+                        .adjust_position([0.0, 5.0, 0.0]);
                 } else {
                     if true { // sound_instances[i].client == client_id {
                         // in case some sound effects shouldn't get quieter the farther they get
@@ -327,13 +329,12 @@ impl Audio {
                         //println!(""); // without this print_statement the sounds don't play; maybe need delay?
                     }
                     let pos = relative_position(sound_instances[i].position, player_pos, dir);
-                    println!();
-                    //println!("HERE: {:#?}", pos);
-                    println!();
                     if glm::magnitude(&pos) < SOUND_RADIUS { // !basically_zero(pos) {
                         sound_instances[i]
                             .controller
-                            .adjust_position([pos.x * 1.5, pos.z * 1.5, 0.0]);
+                            .adjust_position([pos.x, pos.z, 0.0]);
+                        // println!("HERE: {}, {}", pos.x, pos.z);
+
                     } 
                     else {
                         sound_instances[i]
@@ -424,7 +425,7 @@ impl Audio {
                     if !sfx_queue.sound_queue.is_empty() {
                         for i in 0..sfx_queue.sound_queue.len() {
                             let se = sfx_queue.sound_queue[i].clone();
-                            println!("SOUND: {}, {:?}", se.sound_id, se.ambient);
+                            // println!("SOUND: {}, {:?}", se.sound_id, se.ambient);
                             let at_client = se.at_client.0 == client_id as u32 && se.at_client.1;
                             let ambient = se.ambient.0;
                             if !ambient {
@@ -485,7 +486,7 @@ pub fn relative_position(
     let det = right_dir.x * new_pos.z - right_dir.z * new_pos.x;
     let angle = glm::atan2(&glm::Vec1::new(det), &glm::Vec1::new(dot)).x; // theta
 
-    let r = glm::magnitude(&rel_pos);
+    let r = glm::magnitude(&rel_pos)*RADIUS_MUL + RADIUS_OFFSET;
     let x = r * glm::cos(&glm::Vec1::new(-angle)).x;
     let z = r * glm::sin(&glm::Vec1::new(-angle)).x;
 
@@ -534,7 +535,7 @@ impl Audio {
 
         for sound in &json.sounds {
             let file = BufReader::new(File::open(sound.path.clone()).unwrap());
-            println!("{}", sound.path.clone());
+            // println!("{}", sound.path.clone());
             let source = Decoder::new(file).unwrap().buffered();
 
             audio.audio_assets.push((
