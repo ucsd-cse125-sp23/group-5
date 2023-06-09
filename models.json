@@ -62,6 +62,11 @@
       "name": "grass_3",
       "path": "assets/grass_3.obj",
       "phantom": true
+    },
+    {
+      "name": "decoration",
+      "path": "assets/islands_set_final_all_decorations.obj",
+      "phantom": true
     }
   ]
 }
