@@ -191,7 +191,7 @@ impl Audio {
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
-            println!("{}, {}", v.position, FADE_DIST*v.initial_dir);
+            //println!("{}, {}", v.position, FADE_DIST*v.initial_dir);
             if glm::magnitude(&v.position) > glm::magnitude(&(FADE_DIST * v.initial_dir)) {
                 v.controller.stop();
                 to_remove.push(k.clone());
@@ -334,7 +334,7 @@ impl Audio {
                         sound_instances[i]
                             .controller
                             .adjust_position([pos.x, pos.z, 0.0]);
-                        println!("POS: {}, {}", pos.x, pos.z);
+                        //println!("POS: {}, {}", pos.x, pos.z);
 
                     } 
                     else {

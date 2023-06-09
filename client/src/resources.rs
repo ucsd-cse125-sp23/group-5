@@ -87,7 +87,7 @@ pub async fn load_model(
     file_path: &str,
     resources: ModelLoadingResources<'_>,
 ) -> anyhow::Result<model::StaticModel> {
-    println!("loading {file_path:?}");
+    //println!("loading {file_path:?}");
     let (device, queue, layout) = resources;
     let obj_text = load_string(file_path).await?;
     let obj_cursor = Cursor::new(obj_text);

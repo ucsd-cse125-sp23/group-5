@@ -429,7 +429,7 @@ impl Scene {
     }
 
     fn add_node_from_config(scene: &mut Scene, json_node: &ConfigNode, parent_id: Option<NodeId>) {
-        println!("adding node config: {:?}", json_node);
+        //println!("adding node config: {:?}", json_node);
         let node_transform = Transform::new_translation(&json_node.transform.position)
             * glm::quat_to_mat4(&json_node.transform.rotation);
 
