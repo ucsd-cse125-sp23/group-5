@@ -42,18 +42,6 @@ impl CommandHandler for GivePowerUpCommandHandler {
             Recipients::All,
         );
 
-        game_events.add(
-            GameEvent::SoundEvent(SoundSpec::new(
-                glm::Vec3::new(1.0,1.0,1.0),
-                "pickup".to_string(),
-                (self.player_id, true),
-                (false, false, false),
-                glm::Vec3::new(1.0, 1.0,1.0),
-
-            )),
-            Recipients::All, // One(self.player_id as u8),
-        );
-
         Ok(())
     }
 }

@@ -21,7 +21,7 @@ mod cast_powerup;
 mod cheat_code;
 mod die;
 mod give_powerup;
-pub mod jump;
+mod jump;
 mod movement;
 mod refill;
 mod spawn;

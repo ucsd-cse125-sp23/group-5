@@ -20,7 +20,6 @@ use crate::core::weather::Weather;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct WorldState {
     pub weather: Option<Weather>,
-    // pub prev_weather: Option<Weather>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -69,8 +68,6 @@ pub struct PlayerState {
     pub status_effects: HashMap<StatusEffect, f32 /* time till status effect expire */>,
     pub active_action_states: HashSet<(ActionState, Duration)>,
     pub cheat_keys_enabled: bool,
-    pub last_step: u64,
-    pub respawn_sec: u32, // b/c seconds are unreliable
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Copy)]

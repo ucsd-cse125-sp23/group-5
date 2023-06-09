@@ -1,9 +1,9 @@
 use super::{CommandHandler, GameEventCollector, HandlerResult};
-use crate::Recipients;
 use crate::simulation::physics_state::PhysicsState;
+use crate::Recipients;
 use common::configs::game_config::ConfigGame;
 use common::core::command::Command;
-use common::core::events::{GameEvent, ParticleSpec, SoundSpec, ParticleType};
+use common::core::events::{GameEvent, ParticleSpec, ParticleType};
 use common::core::powerup_system::{OtherEffects, StatusEffect};
 use common::core::states::GameState;
 use derive_more::Constructor;
@@ -45,19 +45,6 @@ impl CommandHandler for RefillCommandHandler {
         if refill_point_result == None || player_state.command_on_cooldown(Command::Refill) {
             // signal player that he/she is not in refill area
             return Ok(());
-        }
-
-        if player_state.wind_charge < self.game_config.max_wind_charge {
-            game_events.add(
-                GameEvent::SoundEvent(SoundSpec::new(
-                    player_state.transform.translation,
-                    "refill".to_string(),
-                    (self.player_id, true),
-                    (false, false, false),
-                    player_state.camera_forward,
-                )),
-                Recipients::One(self.player_id as u8),
-            );
         }
 
         player_state.refill_wind_charge(

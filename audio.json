@@ -23,21 +23,21 @@
       },
       {
         "name": "background_loser",
-        "path": "assets/audio/background/er_quan_ying_yue_loop02.mp3",
+        "path": "assets/audio/background/er_quan_ying_yue_loop01.mp3",
         "seconds": 135,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
       },
       {
         "name": "wind_sound",
-        "path": "assets/audio/sound_effects_new/wind_attack.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.2 
+        "path": "assets/audio/sound_effects/woosh_sound.mp3",
+        "seconds": 5,
+        "nanoseconds": 2500,
+        "fall_off_speed": 0.25 
       },
       {
         "name": "step_sound",
-        "path": "assets/audio/sound_effects_new/step_sound_slowed.mp3",
+        "path": "assets/audio/sound_effects/step_sound.mp3",
         "seconds": 0,
         "nanoseconds": 500000000,
         "fall_off_speed": 0.0
@@ -47,104 +47,6 @@
         "path": "assets/audio/ambient/rain_sound_example.mp3",
         "seconds": 0,
         "nanoseconds": 500000000,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "jump_sound",
-        "path": "assets/audio/sound_effects/jump.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.0 
-      },
-      {
-        "name": "land_sound",
-        "path": "assets/audio/sound_effects_new/landing_sound.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "spawn_beep",
-        "path": "assets/audio/sound_effects/tick.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "die_sound",
-        "path": "assets/audio/sound_effects_new/die_1.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "spawn_sound",
-        "path": "assets/audio/sound_effects_new/spawn_sound.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "wind_weather",
-        "path": "assets/audio/sound_effects_new/weather_wind1.mp3",
-        "seconds": 89,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.3
-      },
-      {
-        "name": "powerup_pickup",
-        "path": "assets/audio/sound_effects_new/pick_up_pu.mp3",
-        "seconds": 2,
-        "nanoseconds": 0,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "ice_sound",
-        "path": "assets/audio/sound_effects_new/ice_attack.mp3",
-        "seconds": 3,
-        "nanoseconds": 2500,
-        "fall_off_speed": 0.2 
-      },
-      {
-        "name": "flash_sound",
-        "path": "assets/audio/sound_effects_new/flash.mp3",
-        "seconds": 2,
-        "nanoseconds": 2500,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "dash_sound",
-        "path": "assets/audio/sound_effects/dash.mp3",
-        "seconds": 2,
-        "nanoseconds": 2500,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "powerup",
-        "path": "assets/audio/sound_effects/beep_sound_1.mp3",
-        "seconds": 2,
-        "nanoseconds": 2500,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "refill",
-        "path": "assets/audio/sound_effects/beep_sound.mp3",
-        "seconds": 1,
-        "nanoseconds": 2500,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "points gain",
-        "path": "assets/audio/sound_effects_new/points_increase.mp3",
-        "seconds": 17,
-        "nanoseconds": 2500,
-        "fall_off_speed": 0.0
-      },
-      {
-        "name": "wind_weather_env",
-        "path": "assets/audio/ambient/wind_weather.mp3",
-        "seconds": 89,
-        "nanoseconds": 0,
         "fall_off_speed": 0.0
       }
     ]
