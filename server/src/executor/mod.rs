@@ -228,11 +228,11 @@ impl Executor {
                 error!("Failed to execute command: {:?}", e);
             }
             // TOOD: test that this fixes the land sound
-            JumpResetCommandHandler::new(client_command.client_id).handle(
-                &mut game_state,
-                &mut physics_state,
-                &mut game_events,
-            ).unwrap_or(());
+            // JumpResetCommandHandler::new(client_command.client_id).handle(
+            //     &mut game_state,
+            //     &mut physics_state,
+            //     &mut game_events,
+            // ).unwrap_or(());
         }
 
         info!("GameState: {:?}", game_state);

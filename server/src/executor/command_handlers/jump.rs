@@ -159,19 +159,19 @@ impl CommandHandler for JumpResetCommandHandler {
                 // see if player is above another collider by testing the normal angle
                 if nalgebra_glm::angle(&manifold.data.normal, &Vector3::y()) < PI / 3. {
                     should_reset_jump = true;
-                    if player_state.jump_count > 0 {
-                        game_events.add(
-                            GameEvent::SoundEvent(SoundSpec::new(
-                                player_state.transform.translation,
-                                "land".to_string(),
-                                (self.player_id, true),
-                                (false, false, false),
-                                player_state.camera_forward,
-                            )),
-                            Recipients::All, // One(self.player_id as u8),
-                        );
-                    }
-                    break;
+                    // if player_state.jump_count > 0 {
+                    //     game_events.add(
+                    //         GameEvent::SoundEvent(SoundSpec::new(
+                    //             player_state.transform.translation,
+                    //             "land".to_string(),
+                    //             (self.player_id, true),
+                    //             (false, false, false),
+                    //             player_state.camera_forward,
+                    //         )),
+                    //         Recipients::All, // One(self.player_id as u8),
+                    //     );
+                    // }
+                    // break;
                 }
             }
         }

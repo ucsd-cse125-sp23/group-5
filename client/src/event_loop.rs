@@ -1,4 +1,5 @@
 use instant::Instant;
+use winit::monitor::MonitorHandle;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
