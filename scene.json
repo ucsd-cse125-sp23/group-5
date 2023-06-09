@@ -18,11 +18,28 @@
       },
       "children": [
         {
+          "id": "object:decoration",
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "model": "decoration"
+        },
+        {
           "id": "object:refill_1",
           "transform": {
             "position": [
               16.5,
-              0.7,
+              0,
               16.5
             ],
             "rotation": [
@@ -39,7 +56,7 @@
           "transform": {
             "position": [
               16.5,
-              1.6,
+              1,
               -16.5
             ],
             "rotation": [
@@ -56,7 +73,7 @@
           "transform": {
             "position": [
               -16.5,
-              1.6,
+              1.2,
               16.5
             ],
             "rotation": [
@@ -84,227 +101,8 @@
             ]
           },
           "model": "refill"
-        },
-        {
-          "id": "object:grass_1_1",
-          "transform": {
-            "position": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0,
-              1
-            ]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_2_1",
-          "transform": {
-            "position": [
-              0.3,
-              0,
-              0.5
-            ],
-            "rotation": [
-              0,
-              0.8,
-              0,
-              1
-            ]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_3_1",
-          "transform": {
-            "position": [
-              -0.6,
-              0,
-              0.6
-            ],
-            "rotation": [
-              0,
-              0.4,
-              0,
-              1
-            ]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_3_2",
-          "transform": {
-            "position": [
-              0.3,
-              0,
-              -0.7
-            ],
-            "rotation": [
-              0,
-              0.4,
-              0,
-              1
-            ]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_2_2",
-          "transform": {
-            "position": [6.0874, 0.9772, 21.138],
-            "rotation": [0, 0.6, 0, 1]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_1_2",
-          "transform": {
-            "position": [13.3986, 0.698763, 18.6623],
-            "rotation": [0, 0.7, 0, 1]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_3_3",
-          "transform": {
-            "position": [19.5063, 0.74411, 7.59398],
-            "rotation": [0, 0.9, 0, 1]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_1_3",
-          "transform": {
-            "position": [19.506, 1.2708, -6.3154],
-            "rotation": [0, 0.5, 0, 1]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_2_3",
-          "transform": {
-            "position": [17.74, 1.4835, -18.187],
-            "rotation": [0, 0.3, 0, 1]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_3_4",
-          "transform": {
-            "position": [10.996, 1.3673, -18.187],
-            "rotation": [0, 0.8, 0, 1]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_1_4",
-          "transform": {
-            "position": [6.4919, 1.2012, -22.606],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_2_4",
-          "transform": {
-            "position": [-8.4277, 0.69214, -22.606],
-            "rotation": [0, 0.7, 0, 1]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_3_5",
-          "transform": {
-            "position": [-21.993, 0.56072, -9.4009],
-            "rotation": [0, 0.4, 0, 1]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_1_5",
-          "transform": {
-            "position": [-21.993, 1.1248, 5.9472],
-            "rotation": [0, 0.6, 0, 1]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_2_5",
-          "transform": {
-            "position": [-17.574, 1.4461, 17.444],
-            "rotation": [0, 0.8, 0, 1]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_3_6",
-          "transform": {
-            "position": [-9.7779, 1.3544, 20.915],
-            "rotation": [0, 0.1, 0, 1]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_1_6",
-          "transform": {
-            "position": [-11.401, 0.7332, 8.9728],
-            "rotation": [0, 0.9, 0, 1]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_2_6",
-          "transform": {
-            "position": [-11.401, -0.647, -6.4657],
-            "rotation": [0, 0.5, 0, 1]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_3_7",
-          "transform": {
-            "position": [-0.55485, 0.02121, -11.716],
-            "rotation": [0, 0.3, 0, 1]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_1_7",
-          "transform": {
-            "position": [7.4437, 0.45278, -11.716],
-            "rotation": [0, 0.7, 0, 1]
-          },
-          "model": "grass_1"
-        },
-        {
-          "id": "object:grass_2_7",
-          "transform": {
-            "position": [7.4437, -0.01952, 7.3608],
-            "rotation": [0, 0.2, 0, 1]
-          },
-          "model": "grass_2"
-        },
-        {
-          "id": "object:grass_3_8",
-          "transform": {
-            "position": [-8.7633, 0.7144, 11.202],
-            "rotation": [0, 0.4, 0, 1]
-          },
-          "model": "grass_3"
-        },
-        {
-          "id": "object:grass_1_8",
-          "transform": {
-            "position": [-11.513, -0.48557, 0.67146],
-            "rotation": [0, 0.6, 0, 1]
-          },
-          "model": "grass_1"
         }
+
       ]
     }
   ]
