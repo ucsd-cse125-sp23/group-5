@@ -125,7 +125,7 @@ impl Audio {
         let source = self.audio_assets[bkgd as usize]
             .0
             .clone()
-            .fade_in(Duration::new(0, 500000000))
+            .fade_in(Duration::new(0, 250000000))
             .repeat_infinite();
         let sound = self.audio_scene.play_at(source.convert_samples(), pos);
         self.sound_controller_background = (Some(sound), false);
@@ -185,7 +185,7 @@ impl Audio {
     }
 
     pub fn handle_fade_out(&mut self){
-        let percent = 0.5;
+        let percent = 1.5;
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
@@ -309,7 +309,7 @@ impl Audio {
                 } else if sound_instances[i].at_client {
                     sound_instances[i]
                         .controller
-                        .adjust_position([0.0, 10.0, 0.0]);
+                        .adjust_position([0.0, 25.0, 0.0]);
                 } else {
                     if true { // sound_instances[i].client == client_id {
                         // in case some sound effects shouldn't get quieter the farther they get
@@ -333,7 +333,7 @@ impl Audio {
                     if glm::magnitude(&pos) < SOUND_RADIUS { // !basically_zero(pos) {
                         sound_instances[i]
                             .controller
-                            .adjust_position([pos.x, pos.z, 0.0]);
+                            .adjust_position([pos.x * 1.5, pos.z * 1.5, 0.0]);
                     } 
                     else {
                         sound_instances[i]

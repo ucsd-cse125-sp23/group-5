@@ -65,7 +65,7 @@
       },
       {
         "name": "spawn_beep",
-        "path": "assets/audio/sound_effects/beep_sound.mp3",
+        "path": "assets/audio/sound_effects/tick.mp3",
         "seconds": 2,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
