@@ -18,3 +18,4 @@ pub use super::weather_cheat_key::WeatherCheatKeyCommandHandler;
 pub use super::CommandHandler;
 pub use super::GameEventCollector;
 pub use super::HandlerResult;
+pub use super::wave::WaveCommandHandler;

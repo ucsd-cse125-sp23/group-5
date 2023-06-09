@@ -1,0 +1,21 @@
+# Blender 3.4.1 MTL File: 'Lanterns_Temple_MV.blend'
+# www.blender.org
+
+newmtl MI_TempleLanterns_Gold
+Ns 200.000046
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd mat0_c.jpg
+
+newmtl MI_Tombs+Lanterns
+Ns 200.000046
+Ka 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd mat0_c.jpg

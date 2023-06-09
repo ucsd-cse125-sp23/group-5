@@ -58,6 +58,7 @@ pub enum Command {
     CheatCode(PowerUp),
     CheatCodeControl(CheatCodeControl),
     WeatherCheatKey(CheatKeyWeather),
+    Wave
 }
 
 impl Command {

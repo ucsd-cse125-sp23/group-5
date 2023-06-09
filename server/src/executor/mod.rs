@@ -215,6 +215,9 @@ impl Executor {
                     client_command.client_id,
                     _weather,
                 )),
+                Command::Wave => Box::new(WaveCommandHandler::new(
+                    client_command.client_id,
+                )),
                 _ => {
                     warn!("Unsupported command: {:?}", client_command.command);
                     return;

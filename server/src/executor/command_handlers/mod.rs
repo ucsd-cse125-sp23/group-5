@@ -33,6 +33,7 @@ mod weather;
 mod cheat_code_control;
 pub mod prelude;
 mod weather_cheat_key;
+mod wave;
 
 #[derive(Constructor, Error, Debug, Display)]
 pub struct HandlerError {
