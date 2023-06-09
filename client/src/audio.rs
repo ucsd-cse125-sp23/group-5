@@ -534,6 +534,7 @@ impl Audio {
 
         for sound in &json.sounds {
             let file = BufReader::new(File::open(sound.path.clone()).unwrap());
+            println!("{}", sound.path.clone());
             let source = Decoder::new(file).unwrap().buffered();
 
             audio.audio_assets.push((
