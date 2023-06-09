@@ -34,7 +34,7 @@ if __name__ == "__main__":
                         help="If specified, delete replaced .mtl files")
     args = parser.parse_args()
 
-    path_to_main_dir = "assets/korok_4"
+    path_to_main_dir = "assets/korok_1"
 
     desired_mtl_filename = "../../korok_texture_lib.mtl"
 
