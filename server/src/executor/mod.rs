@@ -8,7 +8,7 @@ use log::{debug, error, info, warn};
 use command_handlers::prelude::*;
 use common::configs::*;
 use common::core::command::{Command, MoveDirection, ServerSync};
-use common::core::events::GameEvent;
+use common::core::events::{GameEvent, SoundSpec};
 use common::core::states::GameLifeCycleState::{Ended, Running, Waiting};
 use common::core::states::GameState;
 
@@ -17,7 +17,8 @@ use crate::simulation::physics_state::PhysicsState;
 use crate::Recipients;
 
 pub mod command_handlers;
-
+use crate::executor::command_handlers::jump::JumpResetCommandHandler;
+use nalgebra_glm as glm;
 pub const DEFAULT_RESPAWN_LIMIT: f32 = -20.0;
 
 // 5ms
@@ -226,6 +227,12 @@ impl Executor {
             if let Err(e) = handler.handle(&mut game_state, &mut physics_state, &mut game_events) {
                 error!("Failed to execute command: {:?}", e);
             }
+            // TOOD: test that this fixes the land sound
+            JumpResetCommandHandler::new(client_command.client_id).handle(
+                &mut game_state,
+                &mut physics_state,
+                &mut game_events,
+            ).unwrap_or(());
         }
 
         info!("GameState: {:?}", game_state);
@@ -270,7 +277,10 @@ impl Executor {
                 game_state.players_customization.get(&id).unwrap().clone(),
             ));
         }
+        let pptw = game_state.previous_tick_winner.clone();
         game_state.previous_tick_winner = game_state.has_single_winner(game_config);
+        let mut game_events = self.game_events.borrow_mut();
+        holding_flag_sound(pptw, game_state.previous_tick_winner.clone(), &mut game_events);
     }
 
     pub(crate) fn collect_game_events(&self) -> Vec<(GameEvent, Recipients)> {
@@ -293,7 +303,7 @@ impl Executor {
             .players
             .iter()
             .filter(|(_, player)| {
-                player.is_dead && !player.on_cooldown.contains_key(&Command::Spawn)
+                player.is_dead // && !player.on_cooldown.contains_key(&Command::Spawn)
             })
             .map(|(&id, _)| id)
             .collect::<Vec<_>>()
@@ -377,5 +387,32 @@ impl Executor {
                 commands.push(ClientCommand::new(client_id, Command::Spawn));
             }
         }
+    }
+}
+
+fn holding_flag_sound(_ppw: Option<u32>, pw: Option<u32>, game_events: &mut dyn GameEventCollector) {
+    if let Some(_) = pw {
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                glm::Vec3::new(0.0, 0.0, 0.0),
+                "points_gain".to_string(),
+                (0, false),
+                (true, true, false),
+                glm::Vec3::new(0.0,0.0,0.0),
+            )),
+            Recipients::All,
+        );
+    }
+    else {
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                glm::Vec3::new(0.0, 0.0, 0.0),
+                "points_gain".to_string(),
+                (0, false),
+                (true, false, false),
+                glm::Vec3::new(0.0,0.0,0.0),
+            )),
+            Recipients::All,
+        );
     }
 }

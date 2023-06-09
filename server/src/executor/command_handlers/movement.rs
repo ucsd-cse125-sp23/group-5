@@ -36,7 +36,7 @@ impl CommandHandler for MoveCommandHandler {
 
         // normalize the direction vector
         let dir_vec = self.direction.normalize();
-
+        let gs_clone = game_state.clone();
         let player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
@@ -106,16 +106,29 @@ impl CommandHandler for MoveCommandHandler {
             dir_vec * self.physics_config.movement_config.step_size,
         );
 
-        // TODO: replace this example with actual implementation
-        game_events.add(
-            GameEvent::SoundEvent(SoundSpec::new(
-                player_state.transform.translation,
-                "foot_step".to_string(),
-                (self.player_id, true),
-                (false, false),
-            )),
-            Recipients::One(self.player_id as u8),
-        );
+        let action_state = player_state
+                .active_action_states
+                .iter()
+                .map(|(action_state, _)| action_state)
+                .max_by_key(|action_state| action_state.priority());
+
+        if let Some(a_s) = action_state {
+            let curr_time = gs_clone.life_cycle_state.unwrap_running();
+            if *a_s == ActionState::Walking && (curr_time - player_state.last_step) > 9 {
+                // TODO: replace this example with actual implementation
+                game_events.add(
+                    GameEvent::SoundEvent(SoundSpec::new(
+                        player_state.transform.translation, // TODO: glm::Vec3::new(10000.0, 10000.0, 10000.0),
+                        "foot_step".to_string(),
+                        (self.player_id, true),
+                        (false, false, false),
+                        player_state.camera_forward,
+                    )),
+                    Recipients::All, // One(self.player_id as u8),
+                );
+                player_state.last_step = curr_time;
+            }
+        }
 
         player_state.active_action_states.insert((
             ActionState::Walking,
