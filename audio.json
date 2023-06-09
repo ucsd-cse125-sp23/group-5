@@ -103,7 +103,7 @@
         "path": "assets/audio/sound_effects_new/ice_attack.mp3",
         "seconds": 3,
         "nanoseconds": 2500,
-        "fall_off_speed": 0.05 
+        "fall_off_speed": 0.2 
       },
       {
         "name": "flash_sound",

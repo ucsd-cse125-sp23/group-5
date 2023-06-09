@@ -93,7 +93,7 @@ impl CommandHandler for UpdateWeatherCommandHandler {
         if game_state.life_cycle_state.unwrap_running() < WEATHER_START_DELAY {
             return Ok(());
         }
-        game_state.world.prev_weather = game_state.world.weather;
+        // game_state.world.prev_weather = game_state.world.weather;
         game_state.world.weather = game_state.world.weather.next();
 
         Ok(())
