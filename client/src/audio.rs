@@ -340,7 +340,7 @@ impl Audio {
                     else {
                         sound_instances[i]
                             .controller
-                            .adjust_position([f32::powf(pos.x, 1.5), f32::powf(pos.x, 1.5), 0.0]); // TODO: 
+                            .adjust_position([10000.0, 10000.0, 10000.0]); // TODO: f32::powf(pos.x, 1.5), f32::powf(pos.x, 1.5), 0.0
                     }
                     // else {
                     //     sound_instances[i]
