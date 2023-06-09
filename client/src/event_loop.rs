@@ -70,7 +70,7 @@ impl PlayerLoop {
                 )
                 .unwrap(),
             ))
-            .with_inner_size(LogicalSize::new(960.0, 540.0))
+            // .with_inner_size(LogicalSize::new(960.0, 540.0))
             .build(&event_loop)
             .unwrap();
 
