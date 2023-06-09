@@ -312,7 +312,7 @@ impl Audio {
                 } else if sound_instances[i].at_client {
                     sound_instances[i]
                         .controller
-                        .adjust_position([0.0, 7.5, 0.0]); // 10.0
+                        .adjust_position([0.0, 10.0, 0.0]); // 10.0
                 } else {
                     if true { // sound_instances[i].client == client_id {
                         // in case some sound effects shouldn't get quieter the farther they get

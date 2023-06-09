@@ -37,17 +37,17 @@ impl CommandHandler for DieCommandHandler {
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
 
-        game_events.add(
-            GameEvent::SoundEvent(SoundSpec::new(
-                player_state.transform.translation,
-                "die".to_string(),
-                (self.player_id, true),
-                (false, false, false),
-                player_state.camera_forward,
+        // game_events.add(
+        //     GameEvent::SoundEvent(SoundSpec::new(
+        //         player_state.transform.translation,
+        //         "die".to_string(),
+        //         (self.player_id, true),
+        //         (false, false, false),
+        //         player_state.camera_forward,
 
-            )),
-            Recipients::One(self.player_id as u8),
-        );
+        //     )),
+        //     Recipients::One(self.player_id as u8),
+        // );
 
         player_state.reset_status_effects();
         player_state.power_up = None;

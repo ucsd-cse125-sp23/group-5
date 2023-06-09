@@ -65,23 +65,23 @@ impl CommandHandler for SpawnCommandHandler {
                     self.game_config.max_wind_charge,
                 );
             }
-            else {
-                let cd_m = *player.on_cooldown.get(&Command::Spawn).unwrap();
-                if cd_m <= 3.0 && player.respawn_sec as f32 - cd_m > 0.0 { // cd_m % 1.0 >= 0.97 {
-                    game_events.add(
-                        GameEvent::SoundEvent(SoundSpec::new(
-                            glm::Vec3::new(1.0,1.0,1.0),
-                            "spawn_beep".to_string(),
-                            (self.player_id, true),
-                            (false, false, false),
-                            glm::Vec3::new(1.0, 1.0,1.0),
+            // else {
+            //     let cd_m = *player.on_cooldown.get(&Command::Spawn).unwrap();
+            //     if cd_m <= 3.0 && player.respawn_sec as f32 - cd_m > 0.0 { // cd_m % 1.0 >= 0.97 {
+            //         game_events.add(
+            //             GameEvent::SoundEvent(SoundSpec::new(
+            //                 glm::Vec3::new(1.0,1.0,1.0),
+            //                 "spawn_beep".to_string(),
+            //                 (self.player_id, true),
+            //                 (false, false, false),
+            //                 glm::Vec3::new(1.0, 1.0,1.0),
             
-                        )),
-                        Recipients::One(self.player_id as u8),
-                    );
-                    player.respawn_sec -= 1;
-                }
-            }
+            //             )),
+            //             Recipients::One(self.player_id as u8),
+            //         );
+            //         player.respawn_sec -= 1;
+            //     }
+            // }
         } else {
             let collider = geometry::ColliderBuilder::capsule_y(0.5, 0.25)
                 .mass(0.0)
