@@ -20,10 +20,10 @@ use common::core::{events::SoundSpec, states::GameState};
 use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCycleState};
 
 pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
-pub const FADE_DIST: f32 = 30.0;
-pub const SOUND_RADIUS: f32 = 45.0;
-pub const RADIUS_OFFSET: f32 = 0.1;
-pub const RADIUS_MUL: f32 = 0.5;
+pub const FADE_DIST: f32 = 50.0;
+pub const SOUND_RADIUS: f32 = 25.0;
+pub const RADIUS_OFFSET: f32 = 0.2;
+pub const RADIUS_MUL: f32 = 1.0;
 
 pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
@@ -187,11 +187,12 @@ impl Audio {
     }
 
     pub fn handle_fade_out(&mut self){
-        let percent = 0.2;
+        let percent = 0.75;
         let mut to_remove = Vec::new();
 
         for (k,v) in self.fading_out.iter_mut() {
-            if v.position > FADE_DIST * v.initial_dir {
+            println!("{}, {}", v.position, FADE_DIST*v.initial_dir);
+            if glm::magnitude(&v.position) > glm::magnitude(&(FADE_DIST * v.initial_dir)) {
                 v.controller.stop();
                 to_remove.push(k.clone());
                 continue;
@@ -311,7 +312,7 @@ impl Audio {
                 } else if sound_instances[i].at_client {
                     sound_instances[i]
                         .controller
-                        .adjust_position([0.0, 5.0, 0.0]);
+                        .adjust_position([0.0, 7.5, 0.0]);
                 } else {
                     if true { // sound_instances[i].client == client_id {
                         // in case some sound effects shouldn't get quieter the farther they get
@@ -333,7 +334,7 @@ impl Audio {
                         sound_instances[i]
                             .controller
                             .adjust_position([pos.x, pos.z, 0.0]);
-                        // println!("HERE: {}, {}", pos.x, pos.z);
+                        println!("POS: {}, {}", pos.x, pos.z);
 
                     } 
                     else {

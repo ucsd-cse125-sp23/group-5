@@ -33,7 +33,7 @@
         "path": "assets/audio/sound_effects_new/wind_attack.mp3",
         "seconds": 2,
         "nanoseconds": 0,
-        "fall_off_speed": 0.05 
+        "fall_off_speed": 0.2 
       },
       {
         "name": "step_sound",
