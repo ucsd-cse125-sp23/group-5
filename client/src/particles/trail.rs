@@ -108,7 +108,7 @@ impl ParticleGenerator for PathTrailGenerator {
                     z_max: 0.0,
                     visible_time: self.visible_time,
                 };
-                println!("trail piece: {:?}", trail);
+                //println!("trail piece: {:?}", trail);
                 list.push(trail.to_particle());
             }
         }

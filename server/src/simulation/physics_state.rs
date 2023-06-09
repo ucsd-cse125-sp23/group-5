@@ -65,13 +65,13 @@ impl PhysicsState {
         );
         while let Ok(collision_event) = collision_recv.try_recv() {
             // Handle the collision event.
-            println!("Received collision event: {:?}", collision_event);
+            //println!("Received collision event: {:?}", collision_event);
             panic!("Collision event received")
         }
 
         while let Ok(contact_force_event) = contact_force_recv.try_recv() {
             // Handle the contact force event.
-            println!("Received contact force event: {:?}", contact_force_event);
+            //println!("Received contact force event: {:?}", contact_force_event);
             panic!("Contact force event received")
         }
 

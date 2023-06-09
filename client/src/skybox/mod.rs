@@ -23,7 +23,7 @@ impl SkyBoxDrawer {
     ) -> Self {
         //vertex and index
         let mut vertices = constants::SKYBOX_VTX.clone();
-        println!("skybox vtxs: {:?}", vertices);
+        //println!("skybox vtxs: {:?}", vertices);
         for vtx in vertices.iter_mut() {
             for coord in vtx.iter_mut() {
                 *coord *= scale;

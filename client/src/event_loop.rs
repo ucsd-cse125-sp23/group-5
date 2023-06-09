@@ -144,7 +144,7 @@ impl PlayerLoop {
                                         _ => {}
                                     }
                                     node.transform *= glm::quat_to_mat4(&rot);
-                                    println!("QUAT: {:#?}", glm::to_quat(&node.transform.clone()));
+                                    //println!("QUAT: {:#?}", glm::to_quat(&node.transform.clone()));
                                     scene.draw_scene_dfs();
                                     std::thread::sleep(instant::Duration::new(0, 10));
                                 }

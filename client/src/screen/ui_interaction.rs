@@ -45,7 +45,7 @@ fn game_start(display: &mut screen::Display, _: Option<String>) {
         display.customization_choices.ready = true;
 
         let final_choices = display.customization_choices.final_choices.clone();
-        println!("{:#?}", final_choices);
+        //println!("{:#?}", final_choices);
 
         // Send final customization choices to server
         match display

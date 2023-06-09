@@ -77,7 +77,7 @@ fn create_icon(
     s.icons
         .iter()
         .map(|i| {
-            println!("Creating icon: {}", i.id);
+            //println!("Creating icon: {}", i.id);
             map.insert(i.id.clone(), ind);
             ind += 1;
             let mut vertices = objects::TITLE_VERT;
