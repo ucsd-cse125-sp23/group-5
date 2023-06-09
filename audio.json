@@ -30,7 +30,7 @@
       },
       {
         "name": "wind_sound",
-        "path": "assets/audio/sound_effects_new/wind_attack.wav",
+        "path": "assets/audio/sound_effects_new/wind_attack.mp3",
         "seconds": 5,
         "nanoseconds": 2500,
         "fall_off_speed": 0.05 
@@ -72,28 +72,28 @@
       },
       {
         "name": "die_sound",
-        "path": "assets/audio/sound_effects_new/die_1.wav",
+        "path": "assets/audio/sound_effects_new/die_1.mp3",
         "seconds": 2,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
       },
       {
         "name": "spawn_sound",
-        "path": "assets/audio/sound_effects_new/spawn_sound.wav",
+        "path": "assets/audio/sound_effects_new/spawn_sound.mp3",
         "seconds": 2,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
       },
       {
         "name": "wind_weather",
-        "path": "assets/audio/sound_effects_new/weather_wind1.wav",
+        "path": "assets/audio/sound_effects_new/weather_wind1.mp3",
         "seconds": 89,
         "nanoseconds": 0,
         "fall_off_speed": 0.3
       },
       {
         "name": "powerup_pickup",
-        "path": "assets/audio/sound_effects_new/pick_up_pu.wav",
+        "path": "assets/audio/sound_effects_new/pick_up_pu.mp3",
         "seconds": 2,
         "nanoseconds": 0,
         "fall_off_speed": 0.0
@@ -107,7 +107,7 @@
       },
       {
         "name": "flash_sound",
-        "path": "assets/audio/sound_effects_new/flash.wav",
+        "path": "assets/audio/sound_effects_new/flash.mp3",
         "seconds": 2,
         "nanoseconds": 2500,
         "fall_off_speed": 0.0
@@ -135,7 +135,7 @@
       },
       {
         "name": "points gain",
-        "path": "assets/audio/sound_effects_new/points_increase.wav",
+        "path": "assets/audio/sound_effects_new/points_increase.mp3",
         "seconds": 17,
         "nanoseconds": 2500,
         "fall_off_speed": 0.0
