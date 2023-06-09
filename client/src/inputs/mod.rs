@@ -154,6 +154,10 @@ impl InputEventProcessor {
                 GameKeyKind::Pressable,
                 Command::WeatherCheatKey(CheatKeyWeather::Reset),
             )),
+            VirtualKeyCode::Tab => Some((
+                GameKeyKind::Pressable,
+                Command::Wave
+            )),
             _ => None,
         }
     }

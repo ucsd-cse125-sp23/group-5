@@ -9,6 +9,7 @@ pub enum ActionState {
     SpecialAttacking,
     CastingPowerUp,
     Frozen,
+    Wave
 }
 
 impl Default for ActionState {
@@ -21,12 +22,13 @@ impl ActionState {
     pub fn priority(&self) -> u8 {
         match self {
             ActionState::Idle => 0,
-            ActionState::Jumping => 2,
-            ActionState::Walking => 1,
+            ActionState::Jumping => 3,
+            ActionState::Walking => 2,
             ActionState::Attacking => 3,
-            ActionState::SpecialAttacking => 4,
-            ActionState::CastingPowerUp => 5,
-            ActionState::Frozen => 6,
+            ActionState::SpecialAttacking => 5,
+            ActionState::CastingPowerUp => 6,
+            ActionState::Frozen => 7,
+            ActionState::Wave => 1
         }
     }
 
@@ -39,6 +41,7 @@ impl ActionState {
             ActionState::SpecialAttacking => "special_attack",
             ActionState::CastingPowerUp => "powerup_attack",
             ActionState::Frozen => "frozen",
+            ActionState::Wave => "wave"
         }
     }
 }

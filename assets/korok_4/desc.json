@@ -1,1 +1,1 @@
-{"frozen": {"cyclic": true}, "dance": {"cyclic": true}, "jump": {"cyclic": false}, "powerup_attack": {"cyclic": false}, "regular_attack": {"cyclic": false}, "special_attack": {"cyclic": false}, "stand": {"cyclic": true}, "walk": {"cyclic": true}}
+{"frozen": {"cyclic": true}, "dance": {"cyclic": true}, "jump": {"cyclic": false}, "powerup_attack": {"cyclic": false}, "regular_attack": {"cyclic": false}, "special_attack": {"cyclic": false}, "stand": {"cyclic": true}, "walk": {"cyclic": true}, "wave": {"cyclic": true}}
