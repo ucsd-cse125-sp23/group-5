@@ -118,7 +118,7 @@ impl CommandHandler for MoveCommandHandler {
                 // TODO: replace this example with actual implementation
                 game_events.add(
                     GameEvent::SoundEvent(SoundSpec::new(
-                        player_state.transform.translation,
+                        player_state.transform.translation, // TODO: glm::Vec3::new(10000.0, 10000.0, 10000.0),
                         "foot_step".to_string(),
                         (self.player_id, true),
                         (false, false, false),

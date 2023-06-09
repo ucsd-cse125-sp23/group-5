@@ -312,7 +312,7 @@ impl Audio {
                 } else if sound_instances[i].at_client {
                     sound_instances[i]
                         .controller
-                        .adjust_position([0.0, 7.5, 0.0]);
+                        .adjust_position([0.0, 7.5, 0.0]); // 10.0
                 } else {
                     if true { // sound_instances[i].client == client_id {
                         // in case some sound effects shouldn't get quieter the farther they get
@@ -340,7 +340,7 @@ impl Audio {
                     else {
                         sound_instances[i]
                             .controller
-                            .adjust_position([10000.0, 10000.0, 10000.0]);
+                            .adjust_position([10000.0, 10000.0, 10000.0]); // TODO: f32::powf(pos.x, 1.5), f32::powf(pos.x, 1.5), 0.0
                     }
                     // else {
                     //     sound_instances[i]
@@ -488,6 +488,7 @@ pub fn relative_position(
     let angle = glm::atan2(&glm::Vec1::new(det), &glm::Vec1::new(dot)).x; // theta
 
     let r = glm::magnitude(&rel_pos)*RADIUS_MUL + RADIUS_OFFSET;
+    // TODO: let mut r = glm::magnitude(&rel_pos)*RADIUS_MUL + RADIUS_OFFSET; if r < 3.0 {r = 3.0; }
     let x = r * glm::cos(&glm::Vec1::new(-angle)).x;
     let z = r * glm::sin(&glm::Vec1::new(-angle)).x;
 
