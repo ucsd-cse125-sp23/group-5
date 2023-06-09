@@ -114,7 +114,7 @@ impl CommandHandler for MoveCommandHandler {
 
         if let Some(a_s) = action_state {
             let curr_time = gs_clone.life_cycle_state.unwrap_running();
-            if *a_s == ActionState::Walking && (curr_time - player_state.last_step) > 8 {
+            if *a_s == ActionState::Walking && (curr_time - player_state.last_step) > 9 {
                 // TODO: replace this example with actual implementation
                 game_events.add(
                     GameEvent::SoundEvent(SoundSpec::new(

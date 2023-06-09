@@ -146,7 +146,7 @@ impl WeatherEffectCommandHandler {
                 )
             }
 
-            if std::mem::discriminant(&game_state.world.prev_weather) != std::mem::discriminant(&game_state.world.weather) {
+            // if std::mem::discriminant(&game_state.world.prev_weather) != std::mem::discriminant(&game_state.world.weather) {
 
                 // TODO: change to actual sound event
                 game_events.add(
@@ -171,7 +171,7 @@ impl WeatherEffectCommandHandler {
                     )),
                     Recipients::One(player_id as u8),
                 );
-            }
+            // }
 
             if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
                 super::reset_weather(physics_state, player_id);
@@ -213,7 +213,7 @@ impl WeatherEffectCommandHandler {
                 )
             }
             
-            if std::mem::discriminant(&game_state.world.prev_weather) != std::mem::discriminant(&game_state.world.weather) {
+            // if std::mem::discriminant(&game_state.world.prev_weather) != std::mem::discriminant(&game_state.world.weather) {
                 // TODO: change to actual sound event
                 // reset rain sound
                 game_events.add(
@@ -237,7 +237,7 @@ impl WeatherEffectCommandHandler {
                     )),
                     Recipients::One(player_id as u8),
                 );
-            }
+            // }
 
             if player_state.holds_status_effect(StatusEffect::Power(PowerUpEffects::Invincible)) {
                 super::reset_weather(physics_state, player_id);
@@ -262,7 +262,7 @@ impl WeatherEffectCommandHandler {
         for (&player_id, _) in game_state.players.iter() {
             super::reset_weather(physics_state, player_id);
 
-            if std::mem::discriminant(&game_state.world.prev_weather) != std::mem::discriminant(&game_state.world.weather) {
+            // if std::mem::discriminant(&game_state.world.prev_weather) != std::mem::discriminant(&game_state.world.weather) {
                 // TODO: change to actual sound event
                 // reset rain sound
                 game_events.add(
@@ -287,7 +287,7 @@ impl WeatherEffectCommandHandler {
                     )),
                     Recipients::One(player_id as u8),
                 );
-            }
+            // }
         }
         Ok(())
     }

@@ -21,7 +21,7 @@ use common::{configs::audio_config::ConfigAudioAssets, core::states::GameLifeCyc
 
 pub const AUDIO_POS_AT_CLIENT: [f32; 3] = [0.0, 25.0, 0.0];
 pub const FADE_DIST: f32 = 15.0;
-pub const SOUND_RADIUS: f32 = 10.0;
+pub const SOUND_RADIUS: f32 = 25.0;
 
 pub static CURR_DISP: OnceCell<Mutex<String>> = OnceCell::new();
 
@@ -218,7 +218,7 @@ impl Audio {
         let source = self.audio_assets[sound as usize]
             .0
             .clone()
-            // .fade_in(Duration::new(1, 0))
+            .fade_in(Duration::new(1, 0))
             .repeat_infinite();            
         let sc = self.audio_scene.play_at(source.convert_samples(), pos);
         sc
