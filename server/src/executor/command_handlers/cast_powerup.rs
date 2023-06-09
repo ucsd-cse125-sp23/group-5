@@ -128,6 +128,17 @@ impl CommandHandler for CastPowerUpCommandHandler {
                         Recipients::All,
                     );
 
+                    game_events.add(
+                        GameEvent::SoundEvent(SoundSpec::new(
+                            player_pos,
+                            "ice".to_string(),
+                            (self.player_id, false),
+                            (false, false, false),
+                            player_state.camera_forward,
+                        )),
+                        Recipients::All,
+                    );
+
                     // loop over all other players
                     for (other_player_id, other_player_state) in game_state.players.iter_mut() {
                         if &self.player_id == other_player_id {
@@ -196,16 +207,21 @@ impl CommandHandler for CastPowerUpCommandHandler {
         };
 
         // TODO: replace this example with actual implementation, with sound_id powerups etc.
-        let player_pos = player_state.transform.translation;
-        game_events.add(
-            GameEvent::SoundEvent(SoundSpec::new(
-                player_pos,
-                "wind".to_string(),
-                (self.player_id, false),
-                (false, false),
-            )),
-            Recipients::All,
-        );
+        if let Some((x, PowerUpStatus::Held)) = player_state.power_up.clone() {
+            if x != PowerUp::Blizzard {
+                let player_pos = player_state.transform.translation;
+                game_events.add(
+                    GameEvent::SoundEvent(SoundSpec::new(
+                        player_pos,
+                        "powerup".to_string(),
+                        (self.player_id, true),
+                        (false, false, false),
+                        player_state.camera_forward,
+                    )),
+                    Recipients::All // One(self.player_id as u8),
+                );
+            }
+        }
         // End of TODO
 
         // apply effects to other players
@@ -228,7 +244,7 @@ fn flash(
     player_id: u32,
     game_config: ConfigGame,
     physics_state: &mut PhysicsState,
-    _game_events: &mut dyn GameEventCollector,
+    game_events: &mut dyn GameEventCollector,
 ) -> HandlerResult {
     let player_state = game_state
         .player_mut(player_id)
@@ -245,18 +261,18 @@ fn flash(
         return Ok(());
     }
 
-    let _player_pos = player_state.transform.translation;
+    let player_pos = player_state.transform.translation;
 
-    // TODO: replace this example with actual implementation
-    // game_events.add(
-    //     GameEvent::SoundEvent(SoundSpec::new(
-    //         player_pos,
-    //         "wind".to_string(),
-    //         (self.player_id, false),
-    //     )),
-    //     Recipients::All,
-    // );
-    // End TODO
+    game_events.add(
+        GameEvent::SoundEvent(SoundSpec::new(
+            player_pos,
+            "flash".to_string(),
+            (player_id, true),
+            (false, false, false),
+            player_state.camera_forward,
+        )),
+        Recipients::All,
+    );
 
     let player_rigid_body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
 
@@ -308,7 +324,7 @@ fn dash(
     player_id: u32,
     game_config: ConfigGame,
     physics_state: &mut PhysicsState,
-    _game_events: &mut dyn GameEventCollector,
+    game_events: &mut dyn GameEventCollector,
 ) -> HandlerResult {
     let player_state = game_state
         .player_mut(player_id)
@@ -331,18 +347,18 @@ fn dash(
         game_config.powerup_config.dash_blocking_duration,
     );
 
-    let _player_pos = player_state.transform.translation;
+    let player_pos = player_state.transform.translation;
 
-    // TODO: replace this example with actual implementation
-    // game_events.add(
-    //     GameEvent::SoundEvent(SoundSpec::new(
-    //         player_pos,
-    //         "wind".to_string(),
-    //         (self.player_id, false),
-    //     )),
-    //     Recipients::All,
-    // );
-    // End TODO
+    game_events.add(
+        GameEvent::SoundEvent(SoundSpec::new(
+            player_pos,
+            "dash".to_string(),
+            (player_id, true),
+            (false, false, false),
+            player_state.camera_forward,
+        )),
+        Recipients::All,
+    );
 
     let player_rigid_body = physics_state.get_entity_rigid_body_mut(player_id).unwrap();
 

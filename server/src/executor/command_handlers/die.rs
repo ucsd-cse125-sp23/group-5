@@ -1,7 +1,9 @@
 use super::{CommandHandler, GameEventCollector, HandlerError, HandlerResult};
 extern crate nalgebra_glm as glm;
+use crate::Recipients;
 use crate::simulation::physics_state::PhysicsState;
-use common::configs::game_config::ConfigGame;
+use common::core::events::GameEvent;
+use common::{configs::game_config::ConfigGame, core::events::SoundSpec};
 use common::core::command::Command;
 use common::core::states::GameState;
 use derive_more::Constructor;
@@ -21,7 +23,7 @@ impl CommandHandler for DieCommandHandler {
         &self,
         game_state: &mut GameState,
         physics_state: &mut PhysicsState,
-        _: &mut dyn GameEventCollector,
+        game_events: &mut dyn GameEventCollector,
     ) -> HandlerResult {
         // calculate elapsed time since game start in seconds
         let elapsed_time =
@@ -34,6 +36,18 @@ impl CommandHandler for DieCommandHandler {
         let player_state = game_state
             .player_mut(self.player_id)
             .ok_or_else(|| HandlerError::new(format!("Player {} not found", self.player_id)))?;
+
+        game_events.add(
+            GameEvent::SoundEvent(SoundSpec::new(
+                player_state.transform.translation,
+                "die".to_string(),
+                (self.player_id, true),
+                (false, false, false),
+                player_state.camera_forward,
+
+            )),
+            Recipients::One(self.player_id as u8),
+        );
 
         player_state.reset_status_effects();
         player_state.power_up = None;
@@ -49,6 +63,8 @@ impl CommandHandler for DieCommandHandler {
         }
 
         player_state.is_dead = true;
+        player_state.jump_count = 1;
+        player_state.respawn_sec = 3;
         player_state.insert_cooldown(Command::Spawn, new_spawn_cooldown);
 
         Ok(())
