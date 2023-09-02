@@ -28,6 +28,8 @@ sky islands, this immersive battle game invites you and your friends to enjoy to
 universe of As the Wind Blows!
 
 
+![cover](cover.png)
+
 <!-- GETTING STARTED -->
 
 ## Getting Started
