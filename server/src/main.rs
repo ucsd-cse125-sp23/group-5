@@ -3,8 +3,8 @@ use common::core::states::GameState;
 
 use std::sync::atomic::AtomicU8;
 
-use clap::__derive_refs::once_cell::sync::Lazy;
 use log::info;
+use once_cell::sync::Lazy;
 use server::game_loop::GameLoop;
 use std::sync::atomic::AtomicBool;
 use std::sync::{mpsc, Arc, Mutex};
